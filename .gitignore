@@ -1,0 +1,18 @@
+.DS_Store
+.env
+.env.local
+bin/
+tmp/
+coverage/
+*.out
+*.test
+
+# Go
+vendor/
+
+# Node
+node_modules/
+dist/
+.vite/
+apps/operator-ui/playwright-report/
+apps/operator-ui/test-results/

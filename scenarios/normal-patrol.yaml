@@ -1,0 +1,51 @@
+scenario: normal-patrol
+description: >
+  Baseline scenario: a patrol asset moves along a route while a synthetic
+  source reports periodic context observations. No geofence breaches occur.
+seed: 42
+playback_speed: 1
+
+sources:
+  - id: simulator-02
+    name: Synthetic Simulator 02
+    type: synthetic
+
+assets:
+  - id: patrol-02
+    name: Patrol 02
+    type: vehicle
+    start: { lat: 24.7050, lng: 46.6650 }
+
+tracks:
+  - id: traffic-01
+    start: { lat: 24.7060, lng: 46.6680 }
+
+events:
+  - after: 0s
+    action: move
+    asset: patrol-02
+    speed_mps: 10
+    waypoints:
+      - { lat: 24.7080, lng: 46.6680 }
+      - { lat: 24.7100, lng: 46.6650 }
+
+  - after: 10s
+    action: move
+    track: traffic-01
+    speed_mps: 12
+    waypoints:
+      - { lat: 24.7100, lng: 46.6700 }
+
+  - after: 12s
+    action: observe
+    source: simulator-02
+    track: traffic-01
+    interval: 6s
+    until: 80s
+    jitter_m: 10
+
+  - after: 20s
+    action: classify
+    track: traffic-01
+    label: passenger vehicle
+    confidence: 0.9

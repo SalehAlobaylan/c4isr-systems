@@ -1,0 +1,23 @@
+name: c4isr
+
+services:
+  postgres:
+    # Community multi-arch build of the official PostGIS image (amd64 + arm64).
+    image: imresamu/postgis:17-3.5
+    container_name: c4isr-postgres
+    environment:
+      POSTGRES_USER: c4isr
+      POSTGRES_PASSWORD: c4isr
+      POSTGRES_DB: c4isr
+    ports:
+      - "5433:5432"
+    volumes:
+      - c4isr-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U c4isr -d c4isr"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+volumes:
+  c4isr-postgres-data:

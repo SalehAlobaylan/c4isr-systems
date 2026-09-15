@@ -1,0 +1,82 @@
+scenario: multi-source-track
+description: >
+  Two independent sources observe the same entity with different noise levels.
+  The track accumulates evidence from both sources while observations remain
+  distinct and attributable. Includes an intentionally stale observation.
+seed: 2027
+playback_speed: 1
+
+sources:
+  - id: radar-sim
+    name: Synthetic Radar
+    type: sensor
+  - id: camera-sim
+    name: Synthetic Camera
+    type: sensor
+
+tracks:
+  - id: unknown-04
+    start: { lat: 24.7100, lng: 46.6600 }
+
+geofences:
+  - id: surveillance-area-b
+    name: Surveillance Area B
+    type: surveillance
+    severity: low
+    polygon:
+      - { lat: 24.7140, lng: 46.6660 }
+      - { lat: 24.7140, lng: 46.6720 }
+      - { lat: 24.7080, lng: 46.6720 }
+      - { lat: 24.7080, lng: 46.6660 }
+
+events:
+  - after: 0s
+    action: move
+    track: unknown-04
+    speed_mps: 8
+    waypoints:
+      - { lat: 24.7120, lng: 46.6700 }
+
+  - after: 3s
+    action: observe
+    source: radar-sim
+    track: unknown-04
+    interval: 4s
+    until: 90s
+    jitter_m: 40
+
+  - after: 6s
+    action: observe
+    source: camera-sim
+    track: unknown-04
+    interval: 5s
+    until: 90s
+    jitter_m: 6
+
+  # A duplicate delivery of one radar observation exercises idempotent ingest.
+  - after: 30s
+    action: observe
+    source: radar-sim
+    track: unknown-04
+    duplicate: true
+    delay: 1s
+
+  # A stale observation that arrives after newer evidence; it must not regress
+  # the track's current state.
+  - after: 45s
+    action: observe
+    source: radar-sim
+    track: unknown-04
+    stale_for: 60s
+
+  - after: 20s
+    action: classify
+    track: unknown-04
+    label: vessel
+    confidence: 0.55
+
+  - after: 55s
+    action: classify
+    track: unknown-04
+    label: passenger vehicle
+    confidence: 0.81

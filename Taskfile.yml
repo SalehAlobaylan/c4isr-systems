@@ -1,0 +1,122 @@
+version: "3"
+
+vars:
+  TOOLBIN: "{{.HOME}}/go/bin"
+  DATABASE_URL: '{{.C4ISR_DATABASE_URL | default "postgres://c4isr:c4isr@localhost:5433/c4isr?sslmode=disable"}}'
+  COMPOSE: docker compose -f deployments/docker-compose.yml
+
+tasks:
+  default:
+    desc: List available tasks
+    cmds:
+      - task --list
+
+  setup:
+    desc: Install Go tooling and frontend dependencies
+    cmds:
+      - go install github.com/go-task/task/v3/cmd/task@latest
+      - go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+      - go install github.com/pressly/goose/v3/cmd/goose@latest
+      - pnpm install
+
+  dev:db:
+    desc: Start PostgreSQL/PostGIS via Docker Compose
+    cmds:
+      - "{{.COMPOSE}} up -d --wait"
+
+  db:down:
+    desc: Stop local infrastructure
+    cmds:
+      - "{{.COMPOSE}} down"
+
+  db:reset:
+    desc: Recreate the database volume, migrate, and stop nothing else
+    cmds:
+      - "{{.COMPOSE}} down -v"
+      - task: dev:db
+      - task: db:migrate
+
+  db:migrate:
+    desc: Apply SQL migrations
+    cmds:
+      - '"{{.TOOLBIN}}/goose" -dir db/migrations postgres "{{.DATABASE_URL}}" up'
+
+  db:rollback:
+    desc: Roll back the most recent migration
+    cmds:
+      - '"{{.TOOLBIN}}/goose" -dir db/migrations postgres "{{.DATABASE_URL}}" down'
+
+  db:status:
+    desc: Show migration status
+    cmds:
+      - '"{{.TOOLBIN}}/goose" -dir db/migrations postgres "{{.DATABASE_URL}}" status'
+
+  sqlc:
+    desc: Regenerate Go database code from SQL
+    dir: db
+    cmds:
+      - '"{{.TOOLBIN}}/sqlc" generate'
+
+  build:
+    desc: Build the server binary
+    cmds:
+      - mkdir -p bin
+      - go build -o bin/c4isr-server ./apps/c4isr-server
+
+  dev:api:
+    desc: Run the Go C4ISR server on the host
+    env:
+      C4ISR_DATABASE_URL: "{{.DATABASE_URL}}"
+    cmds:
+      - go run ./apps/c4isr-server
+
+  dev:web:
+    desc: Run the Vite operator UI on the host
+    dir: apps/operator-ui
+    cmds:
+      - pnpm dev
+
+  test:
+    desc: Run all Go tests
+    cmds:
+      - go test ./...
+
+  test:unit:
+    desc: Run unit tests only
+    cmds:
+      - go test ./internal/... ./apps/...
+
+  test:integration:
+    desc: Run integration tests against real PostgreSQL/PostGIS (Docker required)
+    env:
+      C4ISR_TEST_INTEGRATION: "1"
+    cmds:
+      - go test -count=1 ./internal/integration/...
+
+  lint:
+    desc: Vet and formatting checks
+    cmds:
+      - go vet ./...
+      - test -z "$(gofmt -l apps internal | tee /dev/stderr)"
+
+  scenario:list:
+    desc: List available scenarios
+    cmds:
+      - curl -sS http://localhost:8080/api/v1/scenarios | python3 -m json.tool
+
+  scenario:run:
+    desc: Start a scenario by name (NAME=restricted-area-intrusion)
+    requires:
+      vars: [NAME]
+    cmds:
+      - >-
+        curl -sS -X POST
+        "http://localhost:8080/api/v1/scenarios/{{.NAME}}/start"
+        -H "Content-Type: application/json"
+        -d '{"speed": {{.SPEED | default "1"}}}'
+        | python3 -m json.tool
+
+  scenario:runs:
+    desc: Show recent scenario runs
+    cmds:
+      - curl -sS http://localhost:8080/api/v1/scenarios/runs | python3 -m json.tool

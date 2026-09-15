@@ -1,0 +1,94 @@
+scenario: restricted-area-intrusion
+description: >
+  A synthetic source tracks an unknown vehicle approaching a restricted zone.
+  The track breaches the geofence, the platform raises an alert, and a patrol
+  asset is available to respond. Deterministic for replay: fixed seed, fixed
+  event order, no wall-clock dependent decisions.
+seed: 1007
+playback_speed: 1
+
+sources:
+  - id: simulator-01
+    name: Synthetic Simulator 01
+    type: synthetic
+
+assets:
+  - id: patrol-01
+    name: Patrol 01
+    type: vehicle
+    start: { lat: 24.7130, lng: 46.6820 }
+
+geofences:
+  - id: restricted-zone-a
+    name: Restricted Zone A
+    type: restricted
+    severity: high
+    polygon:
+      - { lat: 24.7200, lng: 46.6740 }
+      - { lat: 24.7200, lng: 46.6800 }
+      - { lat: 24.7160, lng: 46.6800 }
+      - { lat: 24.7160, lng: 46.6740 }
+
+tracks:
+  - id: unknown-01
+    start: { lat: 24.7175, lng: 46.6700 }
+
+events:
+  # The unknown vehicle moves east toward the restricted zone.
+  # It crosses the western boundary (lng 46.6740) after roughly 36 seconds.
+  - after: 5s
+    action: move
+    track: unknown-01
+    speed_mps: 25
+    waypoints:
+      - { lat: 24.7175, lng: 46.6815 }
+
+  # Observations start early and continue through and past the breach.
+  - after: 5s
+    action: observe
+    source: simulator-01
+    track: unknown-01
+    interval: 3s
+    until: 150s
+    jitter_m: 15
+
+  # An explicit (hypothesis-carrying) classification record, not a field.
+  - after: 15s
+    action: classify
+    track: unknown-01
+    label: vehicle
+    confidence: 0.72
+
+  # The patrol moves toward the zone but does not enter it.
+  - after: 20s
+    action: move
+    asset: patrol-01
+    speed_mps: 12
+    waypoints:
+      - { lat: 24.7160, lng: 46.6790 }
+
+  # Connectivity degradation and recovery for the patrol link.
+  - after: 90s
+    action: connection
+    asset: patrol-01
+    state: degraded
+
+  - after: 105s
+    action: connection
+    asset: patrol-01
+    state: connected
+
+  # A scenario-issued command demonstrates the command lifecycle even when no
+  # operator is present. Operator-issued commands follow the same path.
+  - after: 110s
+    action: issue_command
+    asset: patrol-01
+    type: move_to
+    payload:
+      lat: 24.7155
+      lng: 46.6785
+
+command_simulation:
+  behavior: normal
+  acknowledge_after: 3s
+  complete_after: 8s
