@@ -1,0 +1,8 @@
+/* aegis- prefixed styles for the operational picture — ported from
+   docs/C2-Operational-Awareness-Prototype/index.html (picture layout, disclosure
+   contract, compact controls, popover, resizer/spine, responsive breakpoints).
+
+   Depends on prototype tokens (--bg --surface --surface-2 --band --fg --fg-2
+   --muted --faint --line --line-2 --st-ok --st-track --st-warn --st-unknown
+   --st-crit) and shared classes (aegis-dsc, aegis-iconbtn, aegis-ent) defined
+   globally. */
