@@ -1,29 +1,23 @@
-import { useQuery } from '@tanstack/react-query'
 import { Outlet } from '@tanstack/react-router'
 
-import { Sidebar } from '@/components/layout/Sidebar'
 import { TopBar } from '@/components/layout/TopBar'
 import { ToastViewport } from '@/components/ui/toast'
-import { api } from '@/lib/api'
-import { queryKeys } from '@/lib/queryKeys'
-
-const ACTIVE_ALERT_FILTER = { state: 'ACTIVE', limit: 1 }
+import { OPERATOR_ID } from '@/lib/api'
 
 export function AppShell() {
-  const alertsQuery = useQuery({
-    queryKey: queryKeys.alerts.list(ACTIVE_ALERT_FILTER),
-    queryFn: () => api.listAlerts(ACTIVE_ALERT_FILTER),
-  })
-
   return (
-    <div className="flex h-screen overflow-hidden bg-bg text-ink">
-      <Sidebar alertCount={alertsQuery.data?.total} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar />
-        <main className="min-h-0 flex-1 overflow-hidden">
-          <Outlet />
-        </main>
-      </div>
+    <div className="aegis-app">
+      <TopBar />
+      <main className="aegis-main">
+        <Outlet />
+      </main>
+      <footer className="aegis-pagefoot">
+        <span dir="ltr">
+          EMAD | <bdi lang="ar" dir="rtl">عِماد</bdi> · C4ISR operational awareness
+        </span>
+        <span>Sources → observations → tracks → picture → decision → command</span>
+        <span className="aegis-foot-op">Role operator · {OPERATOR_ID.toUpperCase()}</span>
+      </footer>
       <ToastViewport />
     </div>
   )
