@@ -8,6 +8,7 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
 )
 
 // DefaultLimit and MaxLimit bound list queries.
@@ -54,22 +55,28 @@ func (s *Service) HandleGeofenceBreached(ctx context.Context, ev events.Geofence
 	}
 
 	now := s.now()
+	sourceReference := map[string]any{
+		"rule":         geofenceBreachType,
+		"geofenceId":   ev.GeofenceID,
+		"geofenceName": ev.GeofenceName,
+		"geofenceType": ev.GeofenceType,
+		"trackId":      ev.TrackID,
+	}
+	if scope, ok := runctx.ScopeFrom(ctx); ok {
+		sourceReference["scenarioRunId"] = scope.RunID
+		sourceReference["resourceNamespace"] = scope.ResourceNamespace
+	}
+
 	alert := Alert{
-		ID:       ids.New("alr"),
-		Type:     geofenceBreachType,
-		Severity: normalizeSeverity(ev.Severity),
-		State:    StateActive,
-		Title:    fmt.Sprintf("Track %s entered %s", ev.TrackID, ev.GeofenceName),
-		Message:  fmt.Sprintf("Track %s entered %s geofence %s", ev.TrackID, ev.GeofenceType, ev.GeofenceName),
-		SourceReference: map[string]any{
-			"rule":         geofenceBreachType,
-			"geofenceId":   ev.GeofenceID,
-			"geofenceName": ev.GeofenceName,
-			"geofenceType": ev.GeofenceType,
-			"trackId":      ev.TrackID,
-		},
-		TrackID:    ev.TrackID,
-		GeofenceID: ev.GeofenceID,
+		ID:              ids.New("alr"),
+		Type:            geofenceBreachType,
+		Severity:        normalizeSeverity(ev.Severity),
+		State:           StateActive,
+		Title:           fmt.Sprintf("Track %s entered %s", ev.TrackID, ev.GeofenceName),
+		Message:         fmt.Sprintf("Track %s entered %s geofence %s", ev.TrackID, ev.GeofenceType, ev.GeofenceName),
+		SourceReference: sourceReference,
+		TrackID:         ev.TrackID,
+		GeofenceID:      ev.GeofenceID,
 	}
 	created, err := s.repo.Create(ctx, alert)
 	if err != nil {

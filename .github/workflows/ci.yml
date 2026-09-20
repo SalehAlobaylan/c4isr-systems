@@ -24,6 +24,10 @@ jobs:
           cache: pnpm
       - uses: bufbuild/buf-setup-action@v1
       - run: pnpm install --frozen-lockfile
+      - name: Validate staging operations configuration
+        run: |
+          sh -n scripts/ops/*.sh deployments/nginx/40-c4isr-config.sh
+          ./scripts/ops/validate-staging.sh
       - run: go test ./...
       - run: go vet ./...
       - run: test -z "$(gofmt -l apps internal)"

@@ -1,0 +1,32 @@
+FROM golang:1.25-bookworm AS build
+
+ARG TARGETOS
+ARG TARGETARCH
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} \
+    go build -trimpath -ldflags='-s -w' -o /out/c4isr-server ./apps/c4isr-server
+RUN GOBIN=/out go install github.com/pressly/goose/v3/cmd/goose@v3.24.3
+
+FROM debian:bookworm-slim
+
+ARG C4ISR_VERSION=dev
+ENV C4ISR_VERSION=${C4ISR_VERSION}
+
+RUN apt-get update \
+    && apt-get install --no-install-recommends --yes ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=build /out/c4isr-server /usr/local/bin/c4isr-server
+COPY --from=build /out/goose /usr/local/bin/goose
+COPY db/migrations ./db/migrations
+COPY scenarios ./scenarios
+
+USER nobody:nogroup
+EXPOSE 8080
+ENTRYPOINT ["/usr/local/bin/c4isr-server"]

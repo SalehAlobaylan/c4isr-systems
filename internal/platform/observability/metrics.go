@@ -25,12 +25,17 @@ type Metrics struct {
 	valueCount   sync.Map // metric name -> *counter
 	requestNanos atomic.Uint64
 	requestTotal atomic.Uint64
+	databaseUp   atomic.Int64 // -1 means no health probe has completed yet.
 }
 
 type counter struct{ value atomic.Uint64 }
 
 // New creates a metrics registry.
-func New() *Metrics { return &Metrics{startedAt: time.Now().UTC()} }
+func New() *Metrics {
+	m := &Metrics{startedAt: time.Now().UTC()}
+	m.databaseUp.Store(-1)
+	return m
+}
 
 // ObserveRequest records a completed HTTP request. Path is supplied by the
 // HTTP adapter and remains deliberately low-cardinality in this application.
@@ -86,6 +91,20 @@ func (m *Metrics) ObserveAuthFailure() {
 	}
 }
 
+// ObserveDatabaseHealth records the latest database readiness result. It is a
+// gauge because a failed probe must remain visible until a successful probe
+// clears it, even if no request is currently reaching the API.
+func (m *Metrics) ObserveDatabaseHealth(up bool) {
+	if m == nil {
+		return
+	}
+	if up {
+		m.databaseUp.Store(1)
+		return
+	}
+	m.databaseUp.Store(0)
+}
+
 // Handler returns the Prometheus text exposition endpoint.
 func (m *Metrics) Handler() http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
@@ -97,6 +116,11 @@ func (m *Metrics) Handler() http.HandlerFunc {
 		_, _ = fmt.Fprint(w, "# HELP c4isr_uptime_seconds Seconds since the server metrics registry was created.\n")
 		_, _ = fmt.Fprint(w, "# TYPE c4isr_uptime_seconds gauge\n")
 		_, _ = fmt.Fprintf(w, "c4isr_uptime_seconds %.3f\n", time.Since(m.startedAt).Seconds())
+		if databaseUp := m.databaseUp.Load(); databaseUp >= 0 {
+			_, _ = fmt.Fprint(w, "# HELP c4isr_database_up Whether the latest database health probe succeeded.\n")
+			_, _ = fmt.Fprint(w, "# TYPE c4isr_database_up gauge\n")
+			_, _ = fmt.Fprintf(w, "c4isr_database_up %d\n", databaseUp)
+		}
 
 		writeCounterMap(w, "c4isr_http_requests_total", "Completed HTTP requests.", "method", "path", "status", &m.requestCount, func(key string) []string {
 			parts := strings.SplitN(key, "|", 3)

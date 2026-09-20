@@ -1,0 +1,74 @@
+groups:
+  - name: c4isr-availability
+    rules:
+      - alert: C4ISRAPIDown
+        expr: up{job="c4isr-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: c4isr-api
+          component: availability
+          runbook: docs/operations.md#api-unavailable
+        annotations:
+          summary: C4ISR API is unavailable
+          description: Prometheus cannot scrape the C4ISR API metrics endpoint for two minutes.
+
+      - alert: C4ISRDatabaseUnavailable
+        expr: c4isr_database_up{job="c4isr-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: c4isr-api
+          component: database
+          runbook: docs/operations.md#database-unavailable
+        annotations:
+          summary: C4ISR database health probe is failing
+          description: The API is reachable, but its latest database health probe is down.
+
+  - name: c4isr-performance
+    rules:
+      - alert: C4ISRHighServerErrorRate
+        expr: |
+          sum(rate(c4isr_http_requests_total{job="c4isr-api",status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(c4isr_http_requests_total{job="c4isr-api"}[5m])), 1)
+          > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          service: c4isr-api
+          component: http
+          runbook: docs/operations.md#high-server-error-rate
+        annotations:
+          summary: C4ISR server error rate is above 5 percent
+          description: More than 5 percent of requests have returned 5xx responses for ten minutes.
+
+      - alert: C4ISRHighRequestLatency
+        expr: |
+          sum(rate(c4isr_http_request_duration_seconds_sum{job="c4isr-api"}[5m]))
+          /
+          clamp_min(sum(rate(c4isr_http_request_duration_seconds_count{job="c4isr-api"}[5m])), 1)
+          > 1
+        for: 10m
+        labels:
+          severity: warning
+          service: c4isr-api
+          component: http
+          runbook: docs/operations.md#high-request-latency
+        annotations:
+          summary: C4ISR request latency is above one second
+          description: The average completed request duration has exceeded one second for ten minutes.
+
+  - name: c4isr-security
+    rules:
+      - alert: C4ISRAuthenticationFailures
+        expr: increase(c4isr_platform_total{job="c4isr-api",metric="auth_failures_total"}[10m]) > 20
+        for: 5m
+        labels:
+          severity: warning
+          service: c4isr-api
+          component: authentication
+          runbook: docs/operations.md#authentication-failures
+        annotations:
+          summary: Elevated C4ISR authentication failures
+          description: More than twenty bearer-token authentication failures occurred in ten minutes.

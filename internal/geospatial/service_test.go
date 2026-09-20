@@ -9,6 +9,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
 )
 
 type setStateCall struct {
@@ -192,6 +193,55 @@ func TestHandleTrackUpdatedIgnoresPersistedOutsideState(t *testing.T) {
 	}
 	if len(recorder.breaches) != 0 || len(recorder.exits) != 0 {
 		t.Fatal("expected no events for an outside state")
+	}
+}
+
+func TestHandleTrackUpdatedScopesScenarioGeofences(t *testing.T) {
+	scope := runctx.Scope{RunID: "run-1", ResourceNamespace: "run-1__"}
+	owned := Geofence{ID: "run-1__geofence__zone", Name: "Scenario Zone"}
+	repo := &fakeRepository{
+		containing: []Geofence{owned, {ID: "legacy-zone", Name: "Legacy Zone"}},
+		states: map[string]bool{
+			owned.ID:      false,
+			"legacy-zone": false,
+		},
+	}
+	svc, recorder := newTestService(repo)
+	position := geo.Point{Lat: 10, Lng: 20}
+
+	svc.HandleTrackUpdated(runctx.WithScope(context.Background(), scope), events.TrackUpdated{
+		TrackID:  "trk_1",
+		Position: &position,
+	})
+
+	if len(recorder.breaches) != 1 || recorder.breaches[0].GeofenceID != owned.ID {
+		t.Fatalf("scenario track evaluated unrelated geofences: %+v", recorder.breaches)
+	}
+	if len(repo.setStateCalls) != 1 || repo.setStateCalls[0].geofenceID != owned.ID {
+		t.Fatalf("scenario track persisted unrelated geofence state: %+v", repo.setStateCalls)
+	}
+}
+
+func TestHandleTrackUpdatedScopesScenarioExitState(t *testing.T) {
+	scope := runctx.Scope{RunID: "run-1", ResourceNamespace: "run-1__"}
+	ownedID := "run-1__geofence__zone"
+	repo := &fakeRepository{states: map[string]bool{
+		ownedID:       true,
+		"legacy-zone": true,
+	}}
+	svc, recorder := newTestService(repo)
+	position := geo.Point{Lat: 10, Lng: 20}
+
+	svc.HandleTrackUpdated(runctx.WithScope(context.Background(), scope), events.TrackUpdated{
+		TrackID:  "trk_1",
+		Position: &position,
+	})
+
+	if len(recorder.exits) != 1 || recorder.exits[0].GeofenceID != ownedID {
+		t.Fatalf("scenario track emitted unrelated exits: %+v", recorder.exits)
+	}
+	if len(repo.setStateCalls) != 1 || repo.setStateCalls[0].geofenceID != ownedID {
+		t.Fatalf("scenario track updated unrelated exit state: %+v", repo.setStateCalls)
 	}
 }
 

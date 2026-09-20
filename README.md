@@ -68,6 +68,10 @@ api/openapi/           browser contract (Phase 19)
 api/proto/             machine contract (Phase 19)
 scenarios/             deterministic YAML scenarios
 deployments/           docker-compose for PostgreSQL/PostGIS
+  staging/              production-shaped staging Compose stack
+  observability/        Prometheus, Alertmanager, Loki, Alloy, Grafana config
+scripts/ops/            secret bootstrap, migration, backup, restore tooling
+deployments/backup/     scheduled backup reference units and procedure
 ```
 
 ## Prerequisites
@@ -145,13 +149,16 @@ Copy `.env.example` to `.env` for reference; the Taskfile exports `C4ISR_DATABAS
 | `C4ISR_HTTP_ADDR` | `:8080` | HTTP listen address |
 | `C4ISR_DATABASE_URL` | required | PostgreSQL/PostGIS DSN |
 | `C4ISR_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
-| `C4ISR_LOG_FORMAT` | `text` | `text` or `json` |
+| `C4ISR_LOG_FORMAT` | `json` outside development/test | `text` or `json`; staging/production require `json` |
 | `C4ISR_SCENARIOS_DIR` | `./scenarios` | Scenario YAML directory |
 | `C4ISR_ALLOWED_ORIGINS` | empty | Comma-separated CORS origins |
-| `C4ISR_ENV` | `production` | `development`, `test`, or `production` |
+| `C4ISR_ENV` | `production` | `development`, `test`, `staging`, or `production` |
 | `C4ISR_AUTH_REQUIRED` | `true` | Keep bearer authentication enabled outside local test harnesses |
 | `C4ISR_AUTH_TOKENS` | required in production | Comma-separated `operator-id=token` pairs; development has an explicit local fallback |
-| `VITE_API_TOKEN` | empty | Explicit bearer token injected into the operator UI build |
+| `C4ISR_DATABASE_URL_FILE` | empty | File-backed database DSN; mutually exclusive with `C4ISR_DATABASE_URL` |
+| `C4ISR_AUTH_TOKENS_FILE` | empty | File-backed bearer-token mapping; mutually exclusive with `C4ISR_AUTH_TOKENS` |
+| `C4ISR_VERSION` | `dev` | Build/release identifier included in structured logs |
+| `VITE_API_TOKEN` | empty | Local-development fallback; staging/production injects the token at UI container startup |
 | `VITE_MAP_STYLE_URL` | OSM raster | Optional MapLibre style URL for the UI |
 
 ## API overview
@@ -257,11 +264,18 @@ Replay with the same seed produces the same observation sequence (positions incl
 - Queries are sqlc definitions in `db/queries/`; generated code lives in `internal/dbgen/`.
 
 ```bash
-task db:migrate          # apply migrations
-task db:rollback         # roll back the latest migration
+task db:migrate          # apply migrations after the migration preflight
+task db:rollback         # guarded rollback; staging/production require approval
 task db:status           # migration status
+task db:backup           # custom-format dump plus SHA-256 checksum
+task db:restore:test BACKUP=backups/example.dump
 task sqlc                # regenerate internal/dbgen after changing SQL
 ```
+
+Operational deployment, secret rotation, backup/restore, migration, log,
+metric, and alert procedures are documented in [docs/operations.md](docs/operations.md).
+The production-shaped local staging stack is started with `task staging:init`
+and `task staging:up`; validate it first with `task ops:validate`.
 
 Never edit `internal/dbgen/` by hand.
 
@@ -271,7 +285,11 @@ Browser and machine contracts:
 - `apps/operator-ui/src/lib/openapi.generated.ts` is generated with `pnpm --dir apps/operator-ui contracts:generate`.
 - `api/proto/c4isr/v1/ingestion.proto` defines versioned observation and telemetry ingestion services; `buf lint api/proto` is enforced in CI.
 
-The server wraps HTTP with OpenTelemetry HTTP instrumentation and emits structured request logs containing request, trace, operator, and role identifiers. `/metrics` exposes request duration/counts, domain event counts, ingestion aggregates, and authentication failures in Prometheus text format.
+The server wraps HTTP with OpenTelemetry HTTP instrumentation and emits JSON
+structured request logs in staging/production containing service, environment,
+version, request, trace, operator, and role identifiers. `/metrics` exposes
+request duration/counts, response bytes, database health, domain event counts,
+ingestion aggregates, and authentication failures in Prometheus text format.
 
 ## Local development model
 

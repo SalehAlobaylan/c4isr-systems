@@ -149,6 +149,6 @@ test.describe('scenario console', () => {
     test.skip(testInfo.project.name !== 'no-token', 'Runs once against the no-token build')
     await mockApi(page, { unauthorized: true })
     await page.goto('/scenarios')
-    await expect(page.getByText('Authentication failed. Configure VITE_API_TOKEN for the operator UI.').first()).toBeVisible()
+	await expect(page.getByText('Authentication failed. Configure the operator UI API token.').first()).toBeVisible()
   })
 })

@@ -102,6 +102,9 @@ func TestTrackCorrelationKeepsEvidenceAndIgnoresStaleState(t *testing.T) {
 	if position["lat"].(float64) < 24.7005 || position["lat"].(float64) > 24.7015 {
 		t.Fatalf("track state regressed or did not update: %v", position)
 	}
+	if track["observationCount"] != float64(3) {
+		t.Fatalf("track observation count = %v, want 3", track["observationCount"])
+	}
 
 	trackID := track["id"].(string)
 

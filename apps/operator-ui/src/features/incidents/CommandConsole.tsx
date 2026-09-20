@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useForm } from '@tanstack/react-form'
+import { useForm, useStore } from '@tanstack/react-form'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo } from 'react'
 
@@ -22,6 +22,11 @@ const COMMAND_TRANSITIONS: Record<string, string[]> = {
   ACKNOWLEDGED: ['COMPLETED', 'FAILED', 'CANCELLED'],
 }
 
+const MISSION_TRANSITIONS: Record<string, string[]> = {
+  PLANNED: ['ACTIVE', 'ABORTED'],
+  ACTIVE: ['COMPLETED', 'ABORTED'],
+}
+
 const COMMAND_TYPES = [
   { value: 'move_to', label: 'move_to' },
   { value: 'hold', label: 'hold' },
@@ -31,6 +36,11 @@ const COMMAND_TYPES = [
 
 export function CommandConsole({ incidentId }: { incidentId: string }) {
   const queryClient = useQueryClient()
+  const incidentAuditKey = queryKeys.audit.list({
+    subject_type: 'incident',
+    subject_id: incidentId,
+    limit: 100,
+  })
 
   const missionsQuery = useQuery({
     queryKey: queryKeys.missions.list({ limit: 100 }),
@@ -61,7 +71,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
       { value: '', label: 'No mission' },
       ...incidentMissions.map((mission) => ({
         value: mission.id,
-        label: `${mission.name} (${mission.status})`,
+        label: `${mission.name} (${mission.status}) · ${mission.id}`,
       })),
     ],
     [incidentMissions],
@@ -71,7 +81,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
     () =>
       (assetsQuery.data?.items ?? []).map((asset) => ({
         value: asset.id,
-        label: `${asset.name} (${asset.status})`,
+        label: `${asset.name} (${asset.status}) · ${asset.id}`,
       })),
     [assetsQuery.data],
   )
@@ -101,12 +111,14 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
       form.reset()
     },
   })
+  const selectedAssetId = useStore(form.store, (state) => state.values.assetId)
 
   const issueMutation = useMutation({
     mutationFn: api.issueCommand,
     onSuccess: (command) => {
       toast({ title: 'Command issued', description: command.type, variant: 'success' })
       void queryClient.invalidateQueries({ queryKey: queryKeys.commands.all })
+      void queryClient.invalidateQueries({ queryKey: incidentAuditKey })
     },
     onError: (error) => {
       toast({
@@ -123,10 +135,28 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
     onSuccess: (command) => {
       toast({ title: `Command ${command.state.toLowerCase()}`, variant: 'success' })
       void queryClient.invalidateQueries({ queryKey: queryKeys.commands.all })
+      void queryClient.invalidateQueries({ queryKey: incidentAuditKey })
     },
     onError: (error) => {
       toast({
         title: 'Transition failed',
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'error',
+      })
+    },
+  })
+
+  const missionStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      api.updateMissionStatus(id, status),
+    onSuccess: (mission) => {
+      toast({ title: `Mission ${mission.status.toLowerCase()}`, variant: 'success' })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.missions.all })
+      void queryClient.invalidateQueries({ queryKey: incidentAuditKey })
+    },
+    onError: (error) => {
+      toast({
+        title: 'Mission transition failed',
         description: error instanceof Error ? error.message : undefined,
         variant: 'error',
       })
@@ -298,7 +328,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
             <Button
               type="submit"
               className="w-full"
-              disabled={issueMutation.isPending || !form.state.values.assetId}
+              disabled={issueMutation.isPending || !selectedAssetId}
             >
               {issueMutation.isPending ? 'Issuing…' : 'Issue command'}
             </Button>
@@ -345,6 +375,22 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
                   <p className="mt-2 font-mono text-[10px] text-ink-faint">
                     assets: {mission.assets.map((asset) => asset.id).join(', ')}
                   </p>
+                ) : null}
+                {(MISSION_TRANSITIONS[mission.status] ?? []).length > 0 ? (
+                  <div className="mt-3 flex items-center gap-1">
+                    {(MISSION_TRANSITIONS[mission.status] ?? []).map((status) => (
+                      <Button
+                        key={status}
+                        variant="outline"
+                        size="sm"
+                        className="h-6 px-2 font-mono text-[10px]"
+                        disabled={missionStatusMutation.isPending}
+                        onClick={() => missionStatusMutation.mutate({ id: mission.id, status })}
+                      >
+                        {status}
+                      </Button>
+                    ))}
+                  </div>
                 ) : null}
               </li>
             ))}

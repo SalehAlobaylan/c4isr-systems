@@ -68,6 +68,14 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
     )
   }
 
+  const scenarioRunId =
+    typeof track.metadata?.scenarioRunId === 'string' ? track.metadata.scenarioRunId : undefined
+  const resourceNamespace =
+    typeof track.metadata?.resourceNamespace === 'string'
+      ? track.metadata.resourceNamespace
+      : undefined
+  const sourceId = typeof track.metadata?.sourceId === 'string' ? track.metadata.sourceId : undefined
+
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex items-center justify-between gap-2">
@@ -88,6 +96,20 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
           { label: 'Updated', value: formatRelative(track.updatedAt) },
         ]}
       />
+
+      <section className="flex flex-col gap-2">
+        <SectionTitle>Provenance</SectionTitle>
+        <DetailList
+          columns={1}
+          items={[
+            { label: 'Source', value: sourceId || '—', mono: true },
+            { label: 'Scenario run', value: scenarioRunId || 'External / operator', mono: true },
+            ...(resourceNamespace
+              ? [{ label: 'Resource namespace', value: resourceNamespace, mono: true }]
+              : []),
+          ]}
+        />
+      </section>
 
       <Button
         variant={showHistory ? 'default' : 'outline'}

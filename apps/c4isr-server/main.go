@@ -31,6 +31,11 @@ func run() error {
 	}
 
 	logger := logging.New(os.Stdout, cfg.LogFormat, cfg.LogLevel)
+	logger = logger.With(
+		"service", "c4isr-server",
+		"environment", cfg.Environment,
+		"version", cfg.Version,
+	)
 	slog.SetDefault(logger)
 
 	ctx := context.Background()

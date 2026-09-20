@@ -11,6 +11,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
 )
 
 type fakeRepository struct {
@@ -189,6 +190,28 @@ func TestHandleGeofenceBreachedSuppressesDuplicate(t *testing.T) {
 	}
 	if len(recorder.created) != 0 {
 		t.Fatalf("expected no events, got %d", len(recorder.created))
+	}
+}
+
+func TestHandleGeofenceBreachedIncludesScenarioProvenance(t *testing.T) {
+	repo := &fakeRepository{}
+	svc, _ := newTestService(repo)
+	scope := runctx.Scope{RunID: "run-1", ResourceNamespace: "run-1__"}
+
+	svc.HandleGeofenceBreached(runctx.WithScope(context.Background(), scope), events.GeofenceBreached{
+		GeofenceID:   "run-1__geofence__zone",
+		GeofenceName: "Scenario Zone",
+		GeofenceType: "restricted",
+		Severity:     "high",
+		TrackID:      "trk_1",
+	})
+
+	if len(repo.createdCalls) != 1 {
+		t.Fatalf("expected one alert, got %d", len(repo.createdCalls))
+	}
+	ref := repo.createdCalls[0].SourceReference
+	if ref["scenarioRunId"] != "run-1" || ref["resourceNamespace"] != "run-1__" {
+		t.Fatalf("scenario provenance missing from source reference: %+v", ref)
 	}
 }
 

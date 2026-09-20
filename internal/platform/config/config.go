@@ -15,6 +15,7 @@ type Config struct {
 	LogFormat      string
 	ScenariosDir   string
 	AllowedOrigins []string
+	Version        string
 	// Environment controls safety-sensitive configuration defaults. It is
 	// intentionally explicit so production cannot accidentally inherit local
 	// development credentials.
@@ -32,18 +33,27 @@ type Config struct {
 // Load reads configuration from the process environment and applies
 // documented, production-safe defaults.
 func Load() (Config, error) {
+	environment := strings.ToLower(strings.TrimSpace(envOr("C4ISR_ENV", EnvironmentProduction)))
+	defaultLogFormat := "json"
+	if environment == EnvironmentDevelopment || environment == EnvironmentTest {
+		defaultLogFormat = "text"
+	}
 	cfg := Config{
 		HTTPAddr:     envOr("C4ISR_HTTP_ADDR", ":8080"),
-		DatabaseURL:  os.Getenv("C4ISR_DATABASE_URL"),
+		DatabaseURL:  "",
 		LogLevel:     envOr("C4ISR_LOG_LEVEL", "info"),
-		LogFormat:    envOr("C4ISR_LOG_FORMAT", "text"),
+		LogFormat:    envOr("C4ISR_LOG_FORMAT", defaultLogFormat),
 		ScenariosDir: envOr("C4ISR_SCENARIOS_DIR", "./scenarios"),
-		Environment:  envOr("C4ISR_ENV", EnvironmentProduction),
+		Environment:  environment,
+		Version:      envOr("C4ISR_VERSION", "dev"),
 		AuthRequired: true,
 	}
-	cfg.Environment = strings.ToLower(strings.TrimSpace(cfg.Environment))
+	var err error
+	if cfg.DatabaseURL, err = secretEnv("C4ISR_DATABASE_URL"); err != nil {
+		return Config{}, err
+	}
 	if cfg.DatabaseURL == "" {
-		return Config{}, fmt.Errorf("C4ISR_DATABASE_URL is required")
+		return Config{}, fmt.Errorf("C4ISR_DATABASE_URL or C4ISR_DATABASE_URL_FILE is required")
 	}
 	if raw := os.Getenv("C4ISR_ALLOWED_ORIGINS"); raw != "" {
 		for _, origin := range strings.Split(raw, ",") {
@@ -61,10 +71,12 @@ func Load() (Config, error) {
 		}
 		cfg.AuthRequired = parsed
 	}
-	if raw := os.Getenv("C4ISR_AUTH_TOKENS"); raw != "" {
-		parsed, err := parseAuthTokens(raw)
-		if err != nil {
-			return Config{}, err
+	if raw, err := secretEnv("C4ISR_AUTH_TOKENS"); err != nil {
+		return Config{}, err
+	} else if raw != "" {
+		parsed, parseErr := parseAuthTokens(raw)
+		if parseErr != nil {
+			return Config{}, parseErr
 		}
 		cfg.AuthTokens = parsed
 	} else if cfg.Environment == EnvironmentDevelopment {
@@ -83,15 +95,16 @@ func Load() (Config, error) {
 const (
 	EnvironmentDevelopment = "development"
 	EnvironmentTest        = "test"
+	EnvironmentStaging     = "staging"
 	EnvironmentProduction  = "production"
 )
 
 func validateEnvironment(value string) error {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case EnvironmentDevelopment, EnvironmentTest, EnvironmentProduction:
+	case EnvironmentDevelopment, EnvironmentTest, EnvironmentStaging, EnvironmentProduction:
 		return nil
 	default:
-		return fmt.Errorf("C4ISR_ENV must be development, test, or production")
+		return fmt.Errorf("C4ISR_ENV must be development, test, staging, or production")
 	}
 }
 
@@ -107,11 +120,14 @@ func (cfg Config) Validate() error {
 			return fmt.Errorf("C4ISR_AUTH_TOKENS entries require an operator id and token")
 		}
 	}
-	if !cfg.AuthRequired && environment == EnvironmentProduction {
+	if !cfg.AuthRequired && environment != EnvironmentDevelopment && environment != EnvironmentTest {
 		return fmt.Errorf("C4ISR_AUTH_REQUIRED=false is only permitted in development or test")
 	}
 	if cfg.AuthRequired && len(cfg.AuthTokens) == 0 && environment != EnvironmentDevelopment && environment != EnvironmentTest {
-		return fmt.Errorf("C4ISR_AUTH_TOKENS is required when authentication is enabled outside development")
+		return fmt.Errorf("C4ISR_AUTH_TOKENS is required when authentication is enabled outside development and test")
+	}
+	if environment != EnvironmentDevelopment && environment != EnvironmentTest && !strings.EqualFold(strings.TrimSpace(cfg.LogFormat), "json") {
+		return fmt.Errorf("C4ISR_LOG_FORMAT=json is required in staging and production")
 	}
 	return nil
 }
@@ -121,6 +137,29 @@ func envOr(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// secretEnv reads a value from KEY or KEY_FILE. File-backed configuration is
+// the deployment default so credentials can be mounted by a secret manager
+// without appearing in process arguments or Compose files.
+func secretEnv(key string) (string, error) {
+	value := strings.TrimSpace(os.Getenv(key))
+	file := strings.TrimSpace(os.Getenv(key + "_FILE"))
+	if value != "" && file != "" {
+		return "", fmt.Errorf("%s and %s_FILE cannot both be set", key, key)
+	}
+	if file == "" {
+		return value, nil
+	}
+	raw, err := os.ReadFile(file)
+	if err != nil {
+		return "", fmt.Errorf("read %s_FILE: %w", key, err)
+	}
+	value = strings.TrimSpace(string(raw))
+	if value == "" {
+		return "", fmt.Errorf("%s_FILE must contain a non-empty value", key)
+	}
+	return value, nil
 }
 
 func parseBool(key, raw string) (bool, error) {

@@ -115,9 +115,14 @@ export type AuditFilters = QueryOf<'listAudit'>
 /* Transport                                                           */
 /* ------------------------------------------------------------------ */
 
-export const API_TOKEN = (import.meta.env.VITE_API_TOKEN ?? '').trim()
+const runtimeConfig = typeof window === 'undefined' ? {} : (window.__C4ISR_CONFIG__ ?? {})
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/+$/, '')
+// Runtime configuration keeps staging/production tokens out of the immutable
+// UI image. Vite values remain available for local development and tests.
+export const API_TOKEN = (runtimeConfig.apiToken ?? import.meta.env.VITE_API_TOKEN ?? '').trim()
+
+const API_BASE = (runtimeConfig.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/+$/, '')
+export const MAP_STYLE_URL = (runtimeConfig.mapStyleUrl ?? import.meta.env.VITE_MAP_STYLE_URL ?? '').trim()
 
 type QueryValue = string | number | boolean | null | undefined
 
@@ -147,7 +152,7 @@ async function parseError(response: Response): Promise<ApiError> {
     // Non-JSON error body; keep the generic message.
   }
   if (response.status === 401) {
-    message = 'Authentication failed. Configure VITE_API_TOKEN for the operator UI.'
+    message = 'Authentication failed. Configure the operator UI API token.'
   } else if (response.status === 403) {
     message = 'You are authenticated but not authorized for this operation.'
   }
@@ -298,7 +303,7 @@ export const api = {
 }
 
 export function realtimeUrl(): string {
-  const base = import.meta.env.VITE_API_BASE_URL
+  const base = API_BASE
   if (base && /^https?:\/\//.test(base)) {
     const url = new URL(base)
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'

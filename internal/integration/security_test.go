@@ -1,7 +1,9 @@
 package integration
 
 import (
+	"io"
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -14,9 +16,16 @@ func TestComposedPublicEndpointsAndAuthenticationBoundary(t *testing.T) {
 		if err != nil {
 			t.Fatalf("GET %s: %v", path, err)
 		}
+		body, readErr := io.ReadAll(response.Body)
 		response.Body.Close()
+		if readErr != nil {
+			t.Fatalf("read GET %s: %v", path, readErr)
+		}
 		if response.StatusCode != http.StatusOK {
 			t.Fatalf("GET %s status = %d, want 200", path, response.StatusCode)
+		}
+		if path == "/metrics" && !strings.Contains(string(body), "c4isr_database_up 1") {
+			t.Fatalf("GET /metrics did not expose a healthy database gauge:\n%s", body)
 		}
 	}
 

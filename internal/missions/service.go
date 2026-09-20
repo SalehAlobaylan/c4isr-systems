@@ -79,6 +79,14 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Mission, error) {
 		}
 	}
 
+	// Return the same hydrated representation that a subsequent GET returns.
+	// Without this read-back, callers could successfully assign assets and
+	// create tasks while receiving a mission with empty relation arrays.
+	created, err = s.repo.Get(ctx, created.ID)
+	if err != nil {
+		return Mission{}, err
+	}
+
 	s.bus.Publish(ctx, events.MissionCreated{
 		At:        time.Now().UTC(),
 		MissionID: created.ID,

@@ -1,0 +1,21 @@
+FROM node:20-alpine AS build
+
+WORKDIR /src
+RUN corepack enable
+RUN corepack prepare pnpm@10.29.3 --activate
+COPY pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/operator-ui/package.json apps/operator-ui/package.json
+RUN pnpm install --frozen-lockfile --filter @c4isr/operator-ui...
+COPY apps/operator-ui apps/operator-ui
+RUN pnpm --dir apps/operator-ui build
+
+FROM nginx:1.29-alpine
+
+COPY --from=build /src/apps/operator-ui/dist /usr/share/nginx/html
+COPY deployments/nginx/default.conf.template /etc/nginx/templates/default.conf.template
+COPY deployments/nginx/config.js.template /usr/share/nginx/html/config.js.template
+COPY deployments/nginx/40-c4isr-config.sh /docker-entrypoint.d/40-c4isr-config.sh
+
+RUN chmod +x /docker-entrypoint.d/40-c4isr-config.sh
+
+EXPOSE 80

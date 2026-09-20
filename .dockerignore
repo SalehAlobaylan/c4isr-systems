@@ -1,0 +1,15 @@
+.git
+.gitignore
+.DS_Store
+node_modules
+**/node_modules
+apps/operator-ui/dist
+apps/operator-ui/playwright-report
+apps/operator-ui/test-results
+bin
+tmp
+backups
+coverage
+docs/C2-Operational-Awareness-Prototype.zip
+deployments/staging/.secrets
+deployments/staging/.env.staging

@@ -54,9 +54,12 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Mission, error
 		}
 		return Mission{}, err
 	}
-	mission := toDomain(row)
+	return r.withRelations(ctx, toDomain(row))
+}
 
-	assets, err := q.ListMissionAssets(ctx, id)
+func (r *PostgresRepository) withRelations(ctx context.Context, mission Mission) (Mission, error) {
+	q := dbgen.New(r.pool)
+	assets, err := q.ListMissionAssets(ctx, mission.ID)
 	if err != nil {
 		return Mission{}, err
 	}
@@ -65,7 +68,7 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Mission, error
 		mission.Assets = append(mission.Assets, toRelatedAsset(asset))
 	}
 
-	tasks, err := q.ListMissionTasks(ctx, id)
+	tasks, err := q.ListMissionTasks(ctx, mission.ID)
 	if err != nil {
 		return Mission{}, err
 	}
@@ -94,7 +97,11 @@ func (r *PostgresRepository) List(ctx context.Context, status string, limit, off
 	}
 	out := make([]Mission, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, toDomain(row))
+		mission, err := r.withRelations(ctx, toDomain(row))
+		if err != nil {
+			return nil, 0, err
+		}
+		out = append(out, mission)
 	}
 	return out, int(total), nil
 }

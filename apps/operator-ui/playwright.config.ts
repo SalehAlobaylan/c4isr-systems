@@ -24,12 +24,14 @@ export default defineConfig({
     {
       command: 'VITE_API_TOKEN= pnpm dev --host 127.0.0.1 --port 5173',
       port: 5173,
-      reuseExistingServer: !process.env.CI,
+      // Token-isolation tests must never reuse a manually configured Vite
+      // process; its environment could invalidate the no-token assertions.
+      reuseExistingServer: false,
     },
     {
       command: 'VITE_API_TOKEN=e2e-explicit-token pnpm dev --host 127.0.0.1 --port 5174',
       port: 5174,
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: false,
     },
   ],
 })

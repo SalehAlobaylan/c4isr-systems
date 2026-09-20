@@ -221,7 +221,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 		httpx.Authorization,
 	)
 
-	router.Get("/health", healthHandler(pool))
+	router.Get("/health", healthHandler(pool, metrics))
 	router.Get("/metrics", metrics.Handler())
 
 	router.Route("/api/v1", func(r chi.Router) {
@@ -276,7 +276,7 @@ type healthResponse struct {
 	Time     time.Time `json:"time"`
 }
 
-func healthHandler(pool *pgxpool.Pool) http.HandlerFunc {
+func healthHandler(pool *pgxpool.Pool, metrics *observability.Metrics) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
@@ -287,6 +287,9 @@ func healthHandler(pool *pgxpool.Pool) http.HandlerFunc {
 			response.Status = "degraded"
 			response.Database = "down"
 			status = http.StatusServiceUnavailable
+			metrics.ObserveDatabaseHealth(false)
+		} else {
+			metrics.ObserveDatabaseHealth(true)
 		}
 		httpx.JSON(w, status, response)
 	}

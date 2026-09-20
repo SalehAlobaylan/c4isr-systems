@@ -15,6 +15,7 @@ func TestMetricsExposeRequestsEventsAndFailures(t *testing.T) {
 	m.ObserveEvent("observation.received")
 	m.ObserveEvent("alert.created")
 	m.ObserveAuthFailure()
+	m.ObserveDatabaseHealth(true)
 
 	recorder := httptest.NewRecorder()
 	m.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/metrics", nil))
@@ -24,6 +25,7 @@ func TestMetricsExposeRequestsEventsAndFailures(t *testing.T) {
 		`c4isr_http_response_bytes_total{method="GET",path="/api/v1/tracks",status="200"} 42`,
 		`c4isr_domain_events_total{topic="observation.received"} 1`,
 		`c4isr_platform_total{metric="auth_failures_total"} 1`,
+		`c4isr_database_up 1`,
 		`c4isr_http_request_duration_seconds_count 1`,
 	} {
 		if !strings.Contains(body, expected) {

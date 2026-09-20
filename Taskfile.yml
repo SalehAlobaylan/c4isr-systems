@@ -4,6 +4,7 @@ vars:
   TOOLBIN: "{{.HOME}}/go/bin"
   DATABASE_URL: '{{.C4ISR_DATABASE_URL | default "postgres://c4isr:c4isr@localhost:5433/c4isr?sslmode=disable"}}'
   COMPOSE: docker compose -f deployments/docker-compose.yml
+  STAGING_COMPOSE: docker compose --env-file deployments/staging/.env.staging -f deployments/staging/docker-compose.yml
 
 tasks:
   default:
@@ -37,19 +38,59 @@ tasks:
       - task: db:migrate
 
   db:migrate:
-    desc: Apply SQL migrations
+    desc: Apply SQL migrations after the migration preflight
+    env:
+      C4ISR_DATABASE_URL: "{{.DATABASE_URL}}"
+      GOOSE_BIN: "{{.TOOLBIN}}/goose"
     cmds:
-      - '"{{.TOOLBIN}}/goose" -dir db/migrations postgres "{{.DATABASE_URL}}" up'
+      - ./scripts/ops/migrate.sh up
 
   db:rollback:
-    desc: Roll back the most recent migration
+    desc: Roll back the most recent migration (production/staging require explicit approval)
+    env:
+      C4ISR_DATABASE_URL: "{{.DATABASE_URL}}"
+      GOOSE_BIN: "{{.TOOLBIN}}/goose"
     cmds:
-      - '"{{.TOOLBIN}}/goose" -dir db/migrations postgres "{{.DATABASE_URL}}" down'
+      - ./scripts/ops/migrate.sh down
 
   db:status:
     desc: Show migration status
+    env:
+      C4ISR_DATABASE_URL: "{{.DATABASE_URL}}"
+      GOOSE_BIN: "{{.TOOLBIN}}/goose"
     cmds:
-      - '"{{.TOOLBIN}}/goose" -dir db/migrations postgres "{{.DATABASE_URL}}" status'
+      - ./scripts/ops/migrate.sh status
+
+  db:backup:
+    desc: Create an encrypted-at-rest-ready custom PostgreSQL dump and checksum
+    env:
+      C4ISR_DATABASE_URL: "{{.DATABASE_URL}}"
+    cmds:
+      - cmd: |
+          if [ -n "{{.BACKUP | default ""}}" ]; then
+            ./scripts/ops/backup.sh "{{.BACKUP}}"
+          else
+            ./scripts/ops/backup.sh
+          fi
+
+  db:restore:test:
+    desc: Restore a dump into a temporary database and verify PostGIS/schema integrity
+    requires:
+      vars: [BACKUP]
+    env:
+      C4ISR_DATABASE_URL: "{{.DATABASE_URL}}"
+    cmds:
+      - ./scripts/ops/restore-test.sh "{{.BACKUP}}"
+
+  staging:backup:
+    desc: Dump the staging database from inside the Compose network
+    cmds:
+      - cmd: |
+          if [ -n "{{.BACKUP | default ""}}" ]; then
+            ./scripts/ops/staging-backup.sh "{{.BACKUP}}"
+          else
+            ./scripts/ops/staging-backup.sh
+          fi
 
   sqlc:
     desc: Regenerate Go database code from SQL
@@ -107,6 +148,37 @@ tasks:
       C4ISR_TEST_INTEGRATION: "1"
     cmds:
       - go test -count=1 ./internal/integration/...
+
+  ops:validate:
+    desc: Validate staging Compose, secret mounts, and observability configuration
+    cmds:
+      - ./scripts/ops/validate-staging.sh
+
+  staging:init:
+    desc: Generate ignored staging secret files and the local staging env file
+    cmds:
+      - ./scripts/ops/init-staging.sh
+
+  staging:up:
+    desc: Build and start the production-shaped local staging stack
+    deps: [staging:init]
+    cmds:
+      - "{{.STAGING_COMPOSE}} up -d --build --wait"
+
+  staging:down:
+    desc: Stop staging without deleting persistent volumes
+    cmds:
+      - "{{.STAGING_COMPOSE}} down"
+
+  staging:status:
+    desc: Show staging service status
+    cmds:
+      - "{{.STAGING_COMPOSE}} ps"
+
+  staging:logs:
+    desc: Follow centralized staging logs through Docker
+    cmds:
+      - "{{.STAGING_COMPOSE}} logs -f --tail=200 api alloy loki"
 
   lint:
     desc: Vet and formatting checks

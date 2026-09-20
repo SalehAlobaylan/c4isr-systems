@@ -1,0 +1,18 @@
+[Unit]
+Description=C4ISR PostgreSQL backup
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=c4isr
+Group=c4isr
+WorkingDirectory=/opt/c4isr
+Environment=C4ISR_BACKUP_DIR=/var/lib/c4isr/backups
+Environment=C4ISR_DATABASE_URL_FILE=/etc/c4isr/secrets/database_url
+ExecStart=/opt/c4isr/scripts/ops/backup.sh
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/c4isr/backups

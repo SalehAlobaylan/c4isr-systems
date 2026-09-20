@@ -1,0 +1,5 @@
+window.__C4ISR_CONFIG__ = {
+  apiBaseUrl: "${C4ISR_UI_API_BASE_URL}",
+  apiToken: "${C4ISR_API_TOKEN}",
+  mapStyleUrl: "${VITE_MAP_STYLE_URL}"
+};

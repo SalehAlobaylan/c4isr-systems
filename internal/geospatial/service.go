@@ -4,11 +4,13 @@ import (
 	"context"
 	"log/slog"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
 )
 
 // DefaultLimit and MaxLimit bound list queries.
@@ -52,11 +54,13 @@ func (s *Service) HandleTrackUpdated(ctx context.Context, ev events.TrackUpdated
 		slog.Default().Error("geospatial: list containing geofences", "track_id", ev.TrackID, "error", err)
 		return
 	}
+	containing = scopedGeofences(ctx, containing)
 	states, err := s.repo.StatesForTrack(ctx, ev.TrackID)
 	if err != nil {
 		slog.Default().Error("geospatial: list geofence states", "track_id", ev.TrackID, "error", err)
 		return
 	}
+	states = scopedStates(ctx, states)
 
 	containingSet := make(map[string]Geofence, len(containing))
 	for _, geofence := range containing {
@@ -108,6 +112,41 @@ func (s *Service) HandleTrackUpdated(ctx context.Context, ev events.TrackUpdated
 			Position:   *ev.Position,
 		})
 	}
+}
+
+// scopedGeofences keeps scenario-owned tracks inside their own synthetic
+// world. Geofence containment is normally global for operator and external
+// tracks, but a scenario event carries a run scope and must not evaluate
+// against a previous run's or an operator-created geofence with the same
+// polygon.
+func scopedGeofences(ctx context.Context, geofences []Geofence) []Geofence {
+	scope, ok := runctx.ScopeFrom(ctx)
+	if !ok {
+		return geofences
+	}
+	prefix := scope.ResourceNamespace + "geofence__"
+	out := make([]Geofence, 0, len(geofences))
+	for _, geofence := range geofences {
+		if strings.HasPrefix(geofence.ID, prefix) {
+			out = append(out, geofence)
+		}
+	}
+	return out
+}
+
+func scopedStates(ctx context.Context, states map[string]bool) map[string]bool {
+	scope, ok := runctx.ScopeFrom(ctx)
+	if !ok {
+		return states
+	}
+	prefix := scope.ResourceNamespace + "geofence__"
+	out := make(map[string]bool, len(states))
+	for id, inside := range states {
+		if strings.HasPrefix(id, prefix) {
+			out[id] = inside
+		}
+	}
+	return out
 }
 
 // Create registers a geofence and publishes geofence.created.

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useForm } from '@tanstack/react-form'
+import { useForm, useStore } from '@tanstack/react-form'
+import { useEffect } from 'react'
 
 import { Field, fieldError } from '@/components/shared/form'
 import { Button } from '@/components/ui/button'
@@ -68,6 +69,14 @@ export function AttachRelationDialog({
       await attachMutation.mutateAsync({ kind: value.kind, id: value.entityId })
     },
   })
+  const selectedRelationKind = useStore(form.store, (state) => state.values.kind)
+  const selectedEntityId = useStore(form.store, (state) => state.values.entityId)
+
+  useEffect(() => {
+    if (open) {
+      form.reset({ kind: initialKind, entityId: '' })
+    }
+  }, [form, initialKind, open])
 
   const attachMutation = useMutation({
     mutationFn: ({ kind, id }: { kind: string; id: string }) =>
@@ -75,6 +84,9 @@ export function AttachRelationDialog({
     onSuccess: () => {
       toast({ title: 'Relation attached', variant: 'success' })
       void queryClient.invalidateQueries({ queryKey: queryKeys.incidents.detail(incidentId) })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.audit.list({ subject_type: 'incident', subject_id: incidentId, limit: 100 }),
+      })
       onOpenChange(false)
     },
     onError: (error) => {
@@ -131,7 +143,7 @@ export function AttachRelationDialog({
           </Button>
           <Button
             onClick={() => void form.handleSubmit()}
-            disabled={attachMutation.isPending || !form.state.values.entityId}
+            disabled={attachMutation.isPending || !selectedEntityId}
           >
             {attachMutation.isPending ? 'Attaching…' : 'Attach'}
           </Button>
@@ -173,7 +185,7 @@ export function AttachRelationDialog({
                 id="relation-entity"
                 value={field.state.value}
                 onValueChange={(value) => field.handleChange(value)}
-                options={optionsForKind(form.state.values.kind)}
+                options={optionsForKind(selectedRelationKind)}
                 placeholder="Select record…"
               />
             </Field>

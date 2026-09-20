@@ -1,6 +1,10 @@
 package config
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestParseAuthTokens(t *testing.T) {
 	got, err := parseAuthTokens("operator-01=one, supervisor-01=two")
@@ -43,8 +47,14 @@ func TestValidateEnvironmentAuthenticationSafety(t *testing.T) {
 	if err := (Config{Environment: EnvironmentTest, AuthRequired: false}).Validate(); err != nil {
 		t.Fatalf("test should allow disabled authentication: %v", err)
 	}
-	if err := (Config{Environment: "staging", AuthRequired: true, AuthTokens: map[string]string{"token": "operator-01"}}).Validate(); err == nil {
+	if err := (Config{Environment: "unknown", AuthRequired: true, AuthTokens: map[string]string{"token": "operator-01"}}).Validate(); err == nil {
 		t.Fatal("unknown environment should fail")
+	}
+	if err := (Config{Environment: EnvironmentStaging, AuthRequired: true, LogFormat: "json", AuthTokens: map[string]string{"token": "operator-01"}}).Validate(); err != nil {
+		t.Fatalf("staging should allow production-safe authentication: %v", err)
+	}
+	if err := (Config{Environment: EnvironmentStaging, AuthRequired: true, LogFormat: "text", AuthTokens: map[string]string{"token": "operator-01"}}).Validate(); err == nil {
+		t.Fatal("staging should require JSON logs")
 	}
 	if err := (Config{Environment: EnvironmentProduction, AuthRequired: true, AuthTokens: map[string]string{"": "operator-01"}}).Validate(); err == nil {
 		t.Fatal("empty configured token should fail")
@@ -74,5 +84,46 @@ func TestLoadDevelopmentInstallsOnlyExplicitDevelopmentFallback(t *testing.T) {
 		t.Fatalf("test mode may omit tokens for isolated harnesses: %v", err)
 	} else if len(testCfg.AuthTokens) != 0 {
 		t.Fatalf("test mode unexpectedly installed tokens: %#v", testCfg.AuthTokens)
+	}
+}
+
+func TestLoadReadsFileBackedSecrets(t *testing.T) {
+	dir := t.TempDir()
+	databaseFile := filepath.Join(dir, "database-url")
+	tokensFile := filepath.Join(dir, "auth-tokens")
+	if err := os.WriteFile(databaseFile, []byte("postgres://file-example\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(tokensFile, []byte("operator-01=file-token\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("C4ISR_DATABASE_URL", "")
+	t.Setenv("C4ISR_DATABASE_URL_FILE", databaseFile)
+	t.Setenv("C4ISR_AUTH_TOKENS", "")
+	t.Setenv("C4ISR_AUTH_TOKENS_FILE", tokensFile)
+	t.Setenv("C4ISR_ENV", EnvironmentStaging)
+	t.Setenv("C4ISR_LOG_FORMAT", "json")
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.DatabaseURL != "postgres://file-example" || cfg.AuthTokens["file-token"] != "operator-01" {
+		t.Fatalf("file-backed secrets were not loaded: %#v", cfg)
+	}
+}
+
+func TestLoadRejectsInlineAndFileSecretTogether(t *testing.T) {
+	dir := t.TempDir()
+	databaseFile := filepath.Join(dir, "database-url")
+	if err := os.WriteFile(databaseFile, []byte("postgres://file-example"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("C4ISR_DATABASE_URL", "postgres://inline-example")
+	t.Setenv("C4ISR_DATABASE_URL_FILE", databaseFile)
+	t.Setenv("C4ISR_AUTH_TOKENS", "")
+	t.Setenv("C4ISR_AUTH_TOKENS_FILE", "")
+	t.Setenv("C4ISR_ENV", EnvironmentDevelopment)
+	if _, err := Load(); err == nil {
+		t.Fatal("inline and file-backed database secrets should not be accepted together")
 	}
 }

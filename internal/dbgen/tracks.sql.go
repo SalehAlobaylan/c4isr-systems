@@ -247,28 +247,30 @@ SELECT
     s.speed, s.heading, s.updated_at AS state_updated_at,
     (s.position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(s.position::geometry), 0)::float8 AS lat,
-    COALESCE(ST_X(s.position::geometry), 0)::float8 AS lng
+    COALESCE(ST_X(s.position::geometry), 0)::float8 AS lng,
+    (SELECT count(*) FROM track_observations tobs WHERE tobs.track_id = t.id)::int AS observation_count
 FROM tracks t
 LEFT JOIN track_state s ON s.track_id = t.id
 WHERE t.id = $1
 `
 
 type GetTrackDetailRow struct {
-	ID             string
-	ExternalRef    *string
-	Status         string
-	FirstSeenAt    pgtype.Timestamptz
-	LastSeenAt     pgtype.Timestamptz
-	Metadata       []byte
-	CreatedAt      pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-	ClosedAt       pgtype.Timestamptz
-	Speed          *float64
-	Heading        *float64
-	StateUpdatedAt pgtype.Timestamptz
-	HasPosition    bool
-	Lat            float64
-	Lng            float64
+	ID               string
+	ExternalRef      *string
+	Status           string
+	FirstSeenAt      pgtype.Timestamptz
+	LastSeenAt       pgtype.Timestamptz
+	Metadata         []byte
+	CreatedAt        pgtype.Timestamptz
+	UpdatedAt        pgtype.Timestamptz
+	ClosedAt         pgtype.Timestamptz
+	Speed            *float64
+	Heading          *float64
+	StateUpdatedAt   pgtype.Timestamptz
+	HasPosition      bool
+	Lat              float64
+	Lng              float64
+	ObservationCount int32
 }
 
 func (q *Queries) GetTrackDetail(ctx context.Context, id string) (GetTrackDetailRow, error) {
@@ -290,6 +292,7 @@ func (q *Queries) GetTrackDetail(ctx context.Context, id string) (GetTrackDetail
 		&i.HasPosition,
 		&i.Lat,
 		&i.Lng,
+		&i.ObservationCount,
 	)
 	return i, err
 }
@@ -301,7 +304,8 @@ SELECT
     s.speed, s.heading, s.updated_at AS state_updated_at,
     (s.position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(s.position::geometry), 0)::float8 AS lat,
-    COALESCE(ST_X(s.position::geometry), 0)::float8 AS lng
+    COALESCE(ST_X(s.position::geometry), 0)::float8 AS lng,
+    (SELECT count(*) FROM track_observations tobs WHERE tobs.track_id = t.id)::int AS observation_count
 FROM tracks t
 LEFT JOIN track_state s ON s.track_id = t.id
 ORDER BY t.last_seen_at DESC
@@ -314,21 +318,22 @@ type ListTrackDetailsParams struct {
 }
 
 type ListTrackDetailsRow struct {
-	ID             string
-	ExternalRef    *string
-	Status         string
-	FirstSeenAt    pgtype.Timestamptz
-	LastSeenAt     pgtype.Timestamptz
-	Metadata       []byte
-	CreatedAt      pgtype.Timestamptz
-	UpdatedAt      pgtype.Timestamptz
-	ClosedAt       pgtype.Timestamptz
-	Speed          *float64
-	Heading        *float64
-	StateUpdatedAt pgtype.Timestamptz
-	HasPosition    bool
-	Lat            float64
-	Lng            float64
+	ID               string
+	ExternalRef      *string
+	Status           string
+	FirstSeenAt      pgtype.Timestamptz
+	LastSeenAt       pgtype.Timestamptz
+	Metadata         []byte
+	CreatedAt        pgtype.Timestamptz
+	UpdatedAt        pgtype.Timestamptz
+	ClosedAt         pgtype.Timestamptz
+	Speed            *float64
+	Heading          *float64
+	StateUpdatedAt   pgtype.Timestamptz
+	HasPosition      bool
+	Lat              float64
+	Lng              float64
+	ObservationCount int32
 }
 
 func (q *Queries) ListTrackDetails(ctx context.Context, arg ListTrackDetailsParams) ([]ListTrackDetailsRow, error) {
@@ -356,6 +361,7 @@ func (q *Queries) ListTrackDetails(ctx context.Context, arg ListTrackDetailsPara
 			&i.HasPosition,
 			&i.Lat,
 			&i.Lng,
+			&i.ObservationCount,
 		); err != nil {
 			return nil, err
 		}

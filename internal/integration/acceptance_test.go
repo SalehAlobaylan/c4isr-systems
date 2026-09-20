@@ -124,6 +124,13 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 		t.Fatalf("create incident: %d (%v)", status, incident)
 	}
 	incidentID := incident["id"].(string)
+	var linkedAlert map[string]any
+	if status := h.do(http.MethodGet, "/api/v1/alerts/"+alertID, nil, &linkedAlert); status != http.StatusOK {
+		t.Fatalf("get linked alert: %d", status)
+	}
+	if linkedAlert["incidentId"] != incidentID {
+		t.Fatalf("alert incident link = %v, want %s", linkedAlert["incidentId"], incidentID)
+	}
 
 	// 7. Operator attaches the patrol asset to the incident.
 	if status := h.do(http.MethodPost, "/api/v1/incidents/"+incidentID+"/relations",
@@ -144,6 +151,10 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 		t.Fatalf("create mission: %d (%v)", status, mission)
 	}
 	missionID := mission["id"].(string)
+	missionAssets, ok := mission["assets"].([]any)
+	if !ok || len(missionAssets) != 1 || missionAssets[0].(map[string]any)["id"] != assetID {
+		t.Fatalf("mission response lost assigned asset: %v", mission["assets"])
+	}
 
 	// 9. Operator issues a command toward the asset.
 	var command map[string]any

@@ -172,11 +172,24 @@ func (r *PostgresRepository) Update(ctx context.Context, incident Incident) (Inc
 
 // AttachAlert links an alert to an incident.
 func (r *PostgresRepository) AttachAlert(ctx context.Context, incidentID, alertID string) error {
-	err := dbgen.New(r.pool).AddIncidentAlert(ctx, dbgen.AddIncidentAlertParams{
+	q := dbgen.New(r.pool)
+	err := q.AddIncidentAlert(ctx, dbgen.AddIncidentAlertParams{
 		IncidentID: incidentID,
 		AlertID:    alertID,
 	})
-	return relationError(err, "alert", alertID)
+	if err != nil {
+		return relationError(err, "alert", alertID)
+	}
+	// Keep the denormalized alert pointer in sync with the relation table. The
+	// alert list uses this field for the direct incident handoff, while the
+	// incident detail uses incident_alerts for the complete relation view.
+	if err := q.SetAlertIncident(ctx, dbgen.SetAlertIncidentParams{
+		IncidentID: pgconv.TextPtr(incidentID),
+		ID:         alertID,
+	}); err != nil {
+		return err
+	}
+	return nil
 }
 
 // AttachTrack links a track to an incident.

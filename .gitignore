@@ -6,6 +6,9 @@ tmp/
 coverage/
 *.out
 *.test
+backups/
+deployments/staging/.env.staging
+deployments/staging/.secrets/
 
 # Go
 vendor/

@@ -63,6 +63,7 @@ export function IncidentDetailPage() {
     onSuccess: (incident) => {
       toast({ title: `Incident ${incident.status.toLowerCase()}`, variant: 'success' })
       void queryClient.invalidateQueries({ queryKey: queryKeys.incidents.all })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.audit.list(auditFilters) })
     },
     onError: (error) => {
       toast({

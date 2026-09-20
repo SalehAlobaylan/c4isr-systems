@@ -63,6 +63,9 @@ export function MissionFormDialog({
       toast({ title: 'Mission created', description: mission.name, variant: 'success' })
       void queryClient.invalidateQueries({ queryKey: queryKeys.missions.all })
       void queryClient.invalidateQueries({ queryKey: queryKeys.incidents.detail(incidentId) })
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.audit.list({ subject_type: 'incident', subject_id: incidentId, limit: 100 }),
+      })
     },
     onError: (error) => {
       toast({

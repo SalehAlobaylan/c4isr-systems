@@ -7,7 +7,7 @@ import maplibregl, {
 } from 'maplibre-gl'
 import { useEffect, useRef, useState } from 'react'
 
-import type { Asset, Geofence, Track, TrackHistoryPoint } from '@/lib/api'
+import { MAP_STYLE_URL, type Asset, type Geofence, type Track, type TrackHistoryPoint } from '@/lib/api'
 import type { MapMode, Selection } from '@/stores/ui'
 
 import {
@@ -267,7 +267,7 @@ export function MapCanvas({
 
     let map: maplibregl.Map | null = null
     try {
-      const styleUrl = import.meta.env.VITE_MAP_STYLE_URL
+      const styleUrl = MAP_STYLE_URL
       map = new maplibregl.Map({
         container,
         style: styleUrl && styleUrl.length > 0 ? styleUrl : rasterStyle(),

@@ -10,7 +10,7 @@ import { ErrorState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { api, type Alert } from '@/lib/api'
-import { formatRelative, formatTimestamp } from '@/lib/format'
+import { formatRelative, formatTimestamp, truncateId } from '@/lib/format'
 import { queryKeys } from '@/lib/queryKeys'
 import { toast } from '@/stores/toasts'
 
@@ -28,6 +28,26 @@ const SEVERITY_OPTIONS = [
   { value: 'medium', label: 'Medium' },
   { value: 'low', label: 'Low' },
 ]
+
+function sourceReferenceValue(alert: Alert, key: string): string | undefined {
+  const value = alert.sourceReference?.[key]
+  return typeof value === 'string' && value.trim() ? value : undefined
+}
+
+function alertProvenance(alert: Alert) {
+  const geofenceId = alert.geofenceId || sourceReferenceValue(alert, 'geofenceId') || ''
+  const qualifiedGeofenceMarker = '__geofence__'
+  const qualifiedGeofenceIndex = geofenceId.indexOf(qualifiedGeofenceMarker)
+  const inferredRunId =
+    qualifiedGeofenceIndex > 0 ? geofenceId.slice(0, qualifiedGeofenceIndex) : undefined
+  const runId = sourceReferenceValue(alert, 'scenarioRunId') || inferredRunId
+  const geofenceName = sourceReferenceValue(alert, 'geofenceName')
+  return {
+    label: runId ? `Scenario run ${truncateId(runId, 18)}` : 'External rule',
+    detail: geofenceName || (geofenceId ? `geofence ${truncateId(geofenceId, 18)}` : 'rule source unavailable'),
+    title: [runId ? `scenario run ${runId}` : 'external rule', geofenceId ? `geofence ${geofenceId}` : ''].filter(Boolean).join(' · '),
+  }
+}
 
 export function AlertsPage() {
   const search = useSearch({ from: '/alerts' })
@@ -98,10 +118,26 @@ export function AlertsPage() {
               {row.original.title}
             </p>
             <p className="mt-0.5 truncate font-mono text-[10px] text-ink-faint">
-              {row.original.type}
+              {row.original.type} · {row.original.message}
             </p>
           </div>
         ),
+      },
+      {
+        id: 'provenance',
+        header: 'Provenance',
+        enableSorting: false,
+        cell: ({ row }) => {
+          const provenance = alertProvenance(row.original)
+          return (
+            <div className="max-w-[220px] min-w-0" title={provenance.title}>
+              <p className="truncate text-xs text-ink">{provenance.label}</p>
+              <p className="mt-0.5 truncate font-mono text-[10px] text-ink-faint">
+                {provenance.detail}
+              </p>
+            </div>
+          )
+        },
       },
       {
         id: 'entities',

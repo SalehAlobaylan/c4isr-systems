@@ -54,12 +54,6 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Track, error) 
 	}
 	track := fromGetRow(row)
 
-	total, err := q.CountTrackObservations(ctx, id)
-	if err != nil {
-		return Track{}, err
-	}
-	track.ObservationCount = int(total)
-
 	counts, err := q.CountObservationsBySourceForTrack(ctx, id)
 	if err != nil {
 		return Track{}, err
@@ -239,15 +233,67 @@ type trackDetailRow struct {
 }
 
 func fromGetRow(row dbgen.GetTrackDetailRow) Track {
-	return fromDetailRow(trackDetailRow(row))
+	track := fromDetailRow(trackDetailRow{
+		ID:             row.ID,
+		ExternalRef:    row.ExternalRef,
+		Status:         row.Status,
+		FirstSeenAt:    row.FirstSeenAt,
+		LastSeenAt:     row.LastSeenAt,
+		Metadata:       row.Metadata,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
+		ClosedAt:       row.ClosedAt,
+		Speed:          row.Speed,
+		Heading:        row.Heading,
+		StateUpdatedAt: row.StateUpdatedAt,
+		HasPosition:    row.HasPosition,
+		Lat:            row.Lat,
+		Lng:            row.Lng,
+	})
+	track.ObservationCount = int(row.ObservationCount)
+	return track
 }
 
 func fromFindRow(row dbgen.FindTrackByExternalRefRow) Track {
-	return fromDetailRow(trackDetailRow(row))
+	return fromDetailRow(trackDetailRow{
+		ID:             row.ID,
+		ExternalRef:    row.ExternalRef,
+		Status:         row.Status,
+		FirstSeenAt:    row.FirstSeenAt,
+		LastSeenAt:     row.LastSeenAt,
+		Metadata:       row.Metadata,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
+		ClosedAt:       row.ClosedAt,
+		Speed:          row.Speed,
+		Heading:        row.Heading,
+		StateUpdatedAt: row.StateUpdatedAt,
+		HasPosition:    row.HasPosition,
+		Lat:            row.Lat,
+		Lng:            row.Lng,
+	})
 }
 
 func fromListRow(row dbgen.ListTrackDetailsRow) Track {
-	return fromDetailRow(trackDetailRow(row))
+	track := fromDetailRow(trackDetailRow{
+		ID:             row.ID,
+		ExternalRef:    row.ExternalRef,
+		Status:         row.Status,
+		FirstSeenAt:    row.FirstSeenAt,
+		LastSeenAt:     row.LastSeenAt,
+		Metadata:       row.Metadata,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
+		ClosedAt:       row.ClosedAt,
+		Speed:          row.Speed,
+		Heading:        row.Heading,
+		StateUpdatedAt: row.StateUpdatedAt,
+		HasPosition:    row.HasPosition,
+		Lat:            row.Lat,
+		Lng:            row.Lng,
+	})
+	track.ObservationCount = int(row.ObservationCount)
+	return track
 }
 
 func fromDetailRow(row trackDetailRow) Track {
