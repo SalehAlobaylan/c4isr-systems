@@ -14,6 +14,9 @@ SELECT * FROM scenario_runs
 ORDER BY started_at DESC
 LIMIT @limit_count OFFSET @offset_count;
 
+-- name: CountScenarioRuns :one
+SELECT count(*)::bigint FROM scenario_runs;
+
 -- name: UpdateScenarioRunStatus :one
 UPDATE scenario_runs
 SET status = @status,

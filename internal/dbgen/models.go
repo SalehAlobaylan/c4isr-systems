@@ -243,16 +243,30 @@ type Operator struct {
 }
 
 type ScenarioRun struct {
-	ID            string
-	ScenarioName  string
-	Seed          int64
-	Status        string
-	PlaybackSpeed float64
+	ID             string
+	ScenarioName   string
+	Seed           int64
+	Status         string
+	PlaybackSpeed  float64
+	VirtualTimeMs  int64
+	StartedAt      pgtype.Timestamptz
+	EndedAt        pgtype.Timestamptz
+	Error          *string
+	CreatedAt      pgtype.Timestamptz
+	LastAction     *string
+	LastActionAtMs int64
+	ActionError    *string
+}
+
+type ScenarioRunEvent struct {
+	RunID         string
+	Sequence      int32
 	VirtualTimeMs int64
-	StartedAt     pgtype.Timestamptz
-	EndedAt       pgtype.Timestamptz
+	ActionName    string
+	Status        string
 	Error         *string
 	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
 }
 
 type Source struct {

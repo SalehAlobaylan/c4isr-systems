@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "contracts:generate": "openapi-typescript ../../api/openapi/openapi.yaml -o src/lib/openapi.generated.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@base-ui-components/react": "1.0.0-rc.0",
@@ -29,6 +31,8 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^5.2.0",
+    "openapi-typescript": "7.13.0",
+    "@playwright/test": "^1.55.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.9.0",
     "vite": "^7.3.6"

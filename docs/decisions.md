@@ -58,11 +58,13 @@ Material decisions made while implementing the C2 + Operational Awareness milest
 
 **Why:** Event publication happens inside request/ingestion paths; backpressure from one slow operator must never stall ingestion. Clients reconnect and re-fetch authoritative state via REST.
 
-## D9. Operator identity via header until Phase 17
+## D9. Operator identity via header before Phase 17 (superseded)
 
-**Decision:** `X-Operator-ID` (default `operator-01`) identifies the actor; it flows into events with actor fields and into the audit log. A default operator row is ensured at startup.
+**Historical decision:** Before bearer authentication was introduced, `X-Operator-ID` (default `operator-01`) identified the actor; it flowed into events with actor fields and into the audit log. A default operator row was ensured at startup.
 
-**Why:** RBAC is Phase 17. Attribute-before-authenticate keeps operator actions auditable now and leaves one seam (the middleware and `Append`) to enforce later.
+**Why:** RBAC was introduced in Phase 17. The header remains only as an explicitly disabled-auth compatibility path for development and test harnesses.
+
+**Current state:** Authenticated requests use the operator resolved from the configured bearer token; see D16.
 
 ## D10. Audit is event-derived plus explicit attribution
 
@@ -99,3 +101,31 @@ Material decisions made while implementing the C2 + Operational Awareness milest
 **Decision:** `assessment_evidence` stores `(evidence_type, evidence_id)` pairs (observation, track, asset, incident, source, classification, alert) instead of typed foreign keys.
 
 **Why:** Assessments may reference any combination of evidence across modules; a typed FK per evidence kind would require schema changes whenever a new evidence source appears. The trade-off (no referential integrity on evidence ids) is acceptable while assessments remain operator-facing, and it is the seam where a future intelligence layer adds validation or a knowledge graph.
+
+## D16. Phase 17 authentication is configuration-backed bearer identity
+
+**Decision:** The server resolves opaque bearer tokens from `C4ISR_AUTH_TOKENS` (`operator-id=token` pairs) to operator records and applies RBAC at the HTTP boundary. Auth is required by `config.Load`; only an explicitly disabled server accepts `X-Operator-ID` for local test harnesses.
+
+**Why:** The first milestone needs trustworthy actor attribution and authorization without coupling the core to an external identity provider. Token verification and operator lookup form a narrow seam for a future OIDC/JWT adapter.
+
+**Limits:** Tokens are static configuration secrets, not a user-facing login system. Production deployments must replace the local development token and should supply secrets through a secret manager.
+
+## D17. Phase 18 faults remain application-service inputs
+
+**Decision:** Scenario actions for duplicate, delayed, stale, conflicting, invalid, and missing observations, asset status changes, assessments, incidents, and command outcomes all call the same application services used by external integrations. Faults are recorded in the runner event cursor when validation rejects them.
+
+**Why:** This keeps the scenario runner deterministic while ensuring it exercises validation, provenance, lifecycle, audit, and realtime behavior instead of creating a test-only state path.
+
+## D18. REST and machine contracts are source-controlled artifacts
+
+**Decision:** OpenAPI is the browser contract and generated TypeScript types are committed. Protobuf defines the first external ingestion contracts and Buf lint is part of CI.
+
+**Why:** Browser clients and external systems need a reviewable compatibility boundary before adding generated server stubs or a separate gateway.
+
+## D19. In-process metrics plus OpenTelemetry HTTP instrumentation
+
+**Decision:** The server exposes a low-cardinality in-memory `/metrics` endpoint and wraps the router with `otelhttp`. Structured logs include request/trace/operator dimensions.
+
+**Why:** This provides useful local and CI diagnostics without introducing a broker, metrics daemon, or exporter-specific domain dependency. Deployments can install an OpenTelemetry provider/exporter later.
+
+**Limits:** Metrics reset on process restart and are intended for the current modular-monolith milestone; durable aggregation belongs to deployment infrastructure.

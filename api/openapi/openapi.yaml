@@ -1,0 +1,1042 @@
+openapi: 3.1.0
+info:
+  title: C4ISR Operational Platform API
+  version: 1.0.0
+  license:
+    name: Internal use
+    identifier: LicenseRef-Internal
+  description: |
+    Versioned browser contract for the C2 and operational-awareness core.
+    Observations and telemetry are evidence/ingestion boundaries; tracks and
+    assets are current operational projections.
+servers:
+  - url: http://{host}:{port}
+    description: Local development
+    variables:
+      host: { default: localhost }
+      port: { default: '8080' }
+tags:
+  - { name: system, description: 'Service health, metrics, and realtime delivery.' }
+  - { name: identity, description: 'Operator identity and access.' }
+  - { name: sources, description: 'Information source registration and status.' }
+  - { name: observations, description: 'Append-only observation evidence.' }
+  - { name: assets, description: 'Controlled assets and telemetry.' }
+  - { name: tracks, description: 'Derived tracks and analytical hypotheses.' }
+  - { name: geospatial, description: 'Geofences and spatial queries.' }
+  - { name: alerts, description: 'Operational alerts and acknowledgments.' }
+  - { name: incidents, description: 'Incident coordination and relations.' }
+  - { name: missions, description: 'Mission planning and task execution.' }
+  - { name: commands, description: 'Asset command lifecycle.' }
+  - { name: assessments, description: 'Analytical assessments and evidence.' }
+  - { name: audit, description: 'Immutable operational history.' }
+  - { name: scenarios, description: 'Deterministic scenario replay control.' }
+paths:
+  /health:
+    get:
+      tags: [system]
+      security: []
+      operationId: getHealth
+      summary: Get health
+      responses:
+        '200':
+          description: Service and database health
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+  /metrics:
+    get:
+      tags: [system]
+      security: []
+      operationId: getMetrics
+      summary: Get metrics
+      responses:
+        '200':
+          description: Prometheus text exposition
+          content:
+            text/plain: { schema: { type: string } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+  /api/v1/auth/me:
+    get:
+      tags: [identity]
+      operationId: getCurrentOperator
+      summary: Get current operator
+      responses:
+        '200':
+          description: Authenticated operator and effective permissions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [operator, permissions]
+                properties:
+                  operator: { $ref: '#/components/schemas/CurrentOperator' }
+                  permissions:
+                    type: array
+                    items: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /api/v1/sources:
+    get:
+      tags: [sources]
+      operationId: listSources
+      summary: List sources
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/SourceList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      tags: [sources]
+      operationId: createSource
+      summary: Create source
+      requestBody: { $ref: '#/components/requestBodies/Source' }
+      responses: { '201': { $ref: '#/components/responses/Source' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/sources/{id}:
+    get:
+      tags: [sources]
+      operationId: getSource
+      summary: Get source
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Source' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/sources/{id}/status:
+    post:
+      tags: [sources]
+      operationId: updateSourceStatus
+      summary: Update source status
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties: { status: { type: string, enum: [active, degraded, offline] } }
+      responses: { '200': { $ref: '#/components/responses/Source' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/observations:
+    get:
+      tags: [observations]
+      operationId: listObservations
+      summary: List observations
+      parameters:
+        - { $ref: '#/components/parameters/TrackId' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Offset' }
+      responses: { '200': { $ref: '#/components/responses/ObservationList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      tags: [observations]
+      operationId: ingestObservation
+      summary: Ingest observation
+      requestBody: { $ref: '#/components/requestBodies/ObservationInput' }
+      responses:
+        '201': { $ref: '#/components/responses/Observation' }
+        '200': { $ref: '#/components/responses/Observation' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/observations/{id}:
+    get:
+      tags: [observations]
+      operationId: getObservation
+      summary: Get observation
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Observation' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/assets:
+    get:
+      tags: [assets]
+      operationId: listAssets
+      summary: List assets
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/AssetList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      tags: [assets]
+      operationId: createAsset
+      summary: Create asset
+      requestBody: { $ref: '#/components/requestBodies/Asset' }
+      responses: { '201': { $ref: '#/components/responses/Asset' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/assets/{id}:
+    get:
+      tags: [assets]
+      operationId: getAsset
+      summary: Get asset
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Asset' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/assets/{id}/status:
+    post:
+      tags: [assets]
+      operationId: updateAssetStatus
+      summary: Update asset status
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties: { status: { type: string, enum: [available, assigned, unavailable, offline, maintenance] } }
+      responses: { '200': { $ref: '#/components/responses/Asset' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/assets/{id}/telemetry:
+    get:
+      tags: [assets]
+      operationId: listAssetTelemetry
+      summary: List asset telemetry
+      parameters: [{ $ref: '#/components/parameters/Id' }, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/TelemetryList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/telemetry:
+    post:
+      tags: [assets]
+      operationId: ingestTelemetry
+      summary: Ingest telemetry
+      requestBody: { $ref: '#/components/requestBodies/TelemetryInput' }
+      responses:
+        '201': { $ref: '#/components/responses/Telemetry' }
+        '200': { $ref: '#/components/responses/Telemetry' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /api/v1/tracks:
+    get:
+      tags: [tracks]
+      operationId: listTracks
+      summary: List tracks
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/TrackList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/tracks/{id}:
+    get:
+      tags: [tracks]
+      operationId: getTrack
+      summary: Get track
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Track' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/tracks/{id}/history:
+    get:
+      tags: [tracks]
+      operationId: getTrackHistory
+      summary: Get track history
+      parameters: [{ $ref: '#/components/parameters/Id' }, {$ref: '#/components/parameters/Limit'}]
+      responses: { '200': { $ref: '#/components/responses/TrackHistoryList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/tracks/{id}/classifications:
+    get:
+      tags: [tracks]
+      operationId: listTrackClassifications
+      summary: List track classifications
+      parameters: [{ $ref: '#/components/parameters/Id' }, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/ClassificationList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/classifications:
+    post:
+      tags: [tracks]
+      operationId: createClassification
+      summary: Create classification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trackId, label]
+              properties:
+                trackId: { type: string }
+                label: { type: string }
+                confidence: { type: number, minimum: 0, maximum: 1 }
+                method: { type: string, enum: [SCENARIO, OPERATOR, RULE, ALGORITHM, AI] }
+                sourceReference: { type: string }
+      responses: { '201': { $ref: '#/components/responses/Classification' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/classifications/{id}:
+    get:
+      tags: [tracks]
+      operationId: getClassification
+      summary: Get classification
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Classification' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/geofences:
+    get:
+      tags: [geospatial]
+      operationId: listGeofences
+      summary: List geofences
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/GeofenceList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      tags: [geospatial]
+      operationId: createGeofence
+      summary: Create geofence
+      requestBody: { $ref: '#/components/requestBodies/Geofence' }
+      responses: { '201': { $ref: '#/components/responses/Geofence' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/geofences/{id}:
+    get:
+      tags: [geospatial]
+      operationId: getGeofence
+      summary: Get geofence
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Geofence' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/geofences/{id}/active:
+    post:
+      tags: [geospatial]
+      operationId: setGeofenceActive
+      summary: Set geofence active state
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [active]
+              properties: { active: { type: boolean } }
+      responses: { '200': { $ref: '#/components/responses/Geofence' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/geospatial/geofences-containing:
+    get:
+      tags: [geospatial]
+      operationId: listContainingGeofences
+      summary: List containing geofences
+      parameters: [{ $ref: '#/components/parameters/Lat' }, { $ref: '#/components/parameters/Lng' }]
+      responses: { '200': { $ref: '#/components/responses/GeofenceList' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/geospatial/assets-within:
+    get:
+      tags: [geospatial]
+      operationId: listAssetsWithin
+      summary: List assets within
+      parameters: [{ $ref: '#/components/parameters/Lat' }, { $ref: '#/components/parameters/Lng' }, { $ref: '#/components/parameters/RadiusM' }]
+      responses: { '200': { $ref: '#/components/responses/AssetWithinList' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/geospatial/nearest-assets:
+    get:
+      tags: [geospatial]
+      operationId: listNearestAssets
+      summary: List nearest assets
+      parameters: [{ $ref: '#/components/parameters/Lat' }, { $ref: '#/components/parameters/Lng' }, { $ref: '#/components/parameters/Limit' }]
+      responses: { '200': { $ref: '#/components/responses/AssetWithinList' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/alerts:
+    get:
+      tags: [alerts]
+      operationId: listAlerts
+      summary: List alerts
+      parameters:
+        - { name: state, in: query, schema: { type: string } }
+        - { name: severity, in: query, schema: { type: string } }
+        - { name: track_id, in: query, schema: { type: string } }
+        - { name: incident_id, in: query, schema: { type: string } }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Offset' }
+      responses: { '200': { $ref: '#/components/responses/AlertList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/alerts/{id}:
+    get:
+      tags: [alerts]
+      operationId: getAlert
+      summary: Get alert
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Alert' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/alerts/{id}/acknowledge:
+    post:
+      tags: [alerts]
+      operationId: acknowledgeAlert
+      summary: Acknowledge alert
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Alert' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/alerts/{id}/resolve:
+    post:
+      tags: [alerts]
+      operationId: resolveAlert
+      summary: Resolve alert
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Alert' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/incidents:
+    get:
+      tags: [incidents]
+      operationId: listIncidents
+      summary: List incidents
+      parameters: [{ name: status, in: query, schema: { type: string } }, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/IncidentList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      tags: [incidents]
+      operationId: createIncident
+      summary: Create incident
+      requestBody: { $ref: '#/components/requestBodies/Incident' }
+      responses: { '201': { $ref: '#/components/responses/Incident' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/incidents/{id}:
+    get:
+      tags: [incidents]
+      operationId: getIncident
+      summary: Get incident
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/IncidentDetail' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+    patch:
+      tags: [incidents]
+      operationId: updateIncident
+      summary: Update incident metadata
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title: { type: string }
+                description: { type: string }
+                priority: { type: string, enum: [low, medium, high, critical] }
+                assignedOperator: { type: string }
+      responses: { '200': { $ref: '#/components/responses/Incident' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/incidents/{id}/status:
+    post:
+      tags: [incidents]
+      operationId: updateIncidentStatus
+      summary: Update incident status
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [status], properties: { status: { type: string } } }
+      responses: { '200': { $ref: '#/components/responses/Incident' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/incidents/{id}/relations:
+    post:
+      tags: [incidents]
+      operationId: attachIncidentRelation
+      summary: Attach incident relation
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, id]
+              properties: { kind: { type: string }, id: { type: string } }
+      responses: { '200': { $ref: '#/components/responses/Incident' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/missions:
+    get:
+      tags: [missions]
+      operationId: listMissions
+      summary: List missions
+      parameters: [{ name: status, in: query, schema: { type: string } }, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/MissionList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      tags: [missions]
+      operationId: createMission
+      summary: Create mission
+      requestBody: { $ref: '#/components/requestBodies/Mission' }
+      responses: { '201': { $ref: '#/components/responses/Mission' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/missions/{id}:
+    get:
+      tags: [missions]
+      operationId: getMission
+      summary: Get mission
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Mission' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/missions/{id}/status:
+    post:
+      tags: [missions]
+      operationId: updateMissionStatus
+      summary: Update mission status
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [status], properties: { status: { type: string } } }
+      responses: { '200': { $ref: '#/components/responses/Mission' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/missions/{id}/assets:
+    post:
+      tags: [missions]
+      operationId: assignMissionAsset
+      summary: Assign mission asset
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [assetId], properties: { assetId: { type: string } } }
+      responses: { '200': { $ref: '#/components/responses/Mission' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/missions/{id}/tasks:
+    post:
+      tags: [missions]
+      operationId: addMissionTask
+      summary: Add mission task
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type]
+              properties:
+                type: { type: string }
+                description: { type: string }
+                target: { $ref: '#/components/schemas/Point' }
+      responses: { '201': { $ref: '#/components/responses/MissionTask' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/missions/{id}/tasks/{taskId}/status:
+    post:
+      tags: [missions]
+      operationId: updateMissionTaskStatus
+      summary: Update mission task status
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+        - { name: taskId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties: { status: { type: string, enum: [PENDING, ACTIVE, COMPLETED, FAILED, CANCELLED] } }
+      responses: { '200': { $ref: '#/components/responses/MissionTask' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/commands:
+    get:
+      tags: [commands]
+      operationId: listCommands
+      summary: List commands
+      parameters: [{ name: asset_id, in: query, schema: { type: string } }, { name: state, in: query, schema: { type: string } }, { name: mission_id, in: query, schema: { type: string } }, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/CommandList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      tags: [commands]
+      operationId: issueCommand
+      summary: Issue command
+      requestBody: { $ref: '#/components/requestBodies/Command' }
+      responses: { '201': { $ref: '#/components/responses/Command' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/commands/{id}:
+    get:
+      tags: [commands]
+      operationId: getCommand
+      summary: Get command
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Command' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/commands/{id}/transition:
+    post:
+      tags: [commands]
+      operationId: transitionCommand
+      summary: Transition command
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [state], properties: { state: { type: string }, reason: { type: string } } }
+      responses: { '200': { $ref: '#/components/responses/Command' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/assessments:
+    get:
+      tags: [assessments]
+      operationId: listAssessments
+      summary: List assessments
+      parameters: [{ name: subject_type, in: query, schema: { type: string } }, { name: subject_id, in: query, schema: { type: string } }, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/AssessmentList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      tags: [assessments]
+      operationId: createAssessment
+      summary: Create assessment
+      requestBody: { $ref: '#/components/requestBodies/Assessment' }
+      responses: { '201': { $ref: '#/components/responses/Assessment' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/assessments/{id}:
+    get:
+      tags: [assessments]
+      operationId: getAssessment
+      summary: Get assessment
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Assessment' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/audit:
+    get:
+      tags: [audit]
+      operationId: listAudit
+      summary: List audit
+      parameters: [{ name: subject_type, in: query, schema: { type: string } }, { name: subject_id, in: query, schema: { type: string } }, { name: action, in: query, schema: { type: string } }, { name: since, in: query, schema: { type: string, format: date-time } }, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/AuditList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/operators:
+    get:
+      tags: [identity]
+      operationId: listOperators
+      summary: List operators
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/OperatorList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+    post:
+      tags: [identity]
+      operationId: createOperator
+      summary: Create operator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, role]
+              properties: { id: { type: string }, name: { type: string }, role: { type: string, enum: [operator, supervisor, administrator, analyst] } }
+      responses: { '201': { $ref: '#/components/responses/Operator' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/operators/{id}:
+    get:
+      tags: [identity]
+      operationId: getOperator
+      summary: Get operator
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/Operator' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/scenarios:
+    get:
+      tags: [scenarios]
+      operationId: listScenarios
+      summary: List scenarios
+      responses: { '200': { $ref: '#/components/responses/ScenarioSummaryList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/scenarios/{name}:
+    get:
+      tags: [scenarios]
+      operationId: getScenario
+      summary: Get scenario
+      parameters: [{ $ref: '#/components/parameters/ScenarioName' }]
+      responses: { '200': { description: Parsed scenario, content: { application/json: { schema: { $ref: '#/components/schemas/Scenario' } } } }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/scenarios/definitions/{name}/start:
+    post:
+      tags: [scenarios]
+      operationId: startScenario
+      summary: Start scenario
+      parameters: [{ $ref: '#/components/parameters/ScenarioName' }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { speed: { type: number, minimum: 0 }, seed: { type: integer, format: int64 } } }
+      responses: { '201': { $ref: '#/components/responses/ScenarioRun' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/scenarios/runs:
+    get:
+      tags: [scenarios]
+      operationId: listScenarioRuns
+      summary: List scenario runs
+      parameters: [{$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Offset'}]
+      responses: { '200': { $ref: '#/components/responses/ScenarioRunList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/scenarios/runs/{id}:
+    get:
+      tags: [scenarios]
+      operationId: getScenarioRun
+      summary: Get scenario run
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/ScenarioRun' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/scenarios/runs/{id}/events:
+    get:
+      tags: [scenarios]
+      operationId: inspectScenarioRunEvents
+      summary: Inspect scenario run events
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/ScenarioEventList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
+  /api/v1/scenarios/runs/{id}/pause:
+    post:
+      tags: [scenarios]
+      operationId: pauseScenarioRun
+      summary: Pause scenario run
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/ScenarioRun' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/scenarios/runs/{id}/resume:
+    post:
+      tags: [scenarios]
+      operationId: resumeScenarioRun
+      summary: Resume scenario run
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/ScenarioRun' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/scenarios/runs/{id}/stop:
+    post:
+      tags: [scenarios]
+      operationId: stopScenarioRun
+      summary: Stop scenario run
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '200': { $ref: '#/components/responses/ScenarioRun' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/scenarios/runs/{id}/speed:
+    post:
+      tags: [scenarios]
+      operationId: setScenarioRunSpeed
+      summary: Set scenario run speed
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [speed], properties: { speed: { type: number, exclusiveMinimum: 0 } } }
+      responses: { '200': { $ref: '#/components/responses/ScenarioRun' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/scenarios/runs/{id}/restart:
+    post:
+      tags: [scenarios]
+      operationId: restartScenarioRun
+      summary: Restart scenario run
+      parameters: [{ $ref: '#/components/parameters/Id' }]
+      responses: { '201': { $ref: '#/components/responses/ScenarioRun' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/realtime:
+    get:
+      tags: [system]
+      security: [{ BearerAuth: [] }]
+      description: WebSocket endpoint. Browser clients pass the bearer token as access_token during upgrade.
+      operationId: realtime
+      summary: Realtime
+      responses:
+        '101': { description: WebSocket upgrade }
+        '200': { description: WebSocket negotiation response }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+  parameters:
+    Id: { name: id, in: path, required: true, schema: { type: string } }
+    ScenarioName: { name: name, in: path, required: true, schema: { type: string, pattern: '^(?!runs$)[A-Za-z0-9][A-Za-z0-9_-]*$' } }
+    Limit: { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 1000, default: 100 } }
+    Offset: { name: offset, in: query, schema: { type: integer, minimum: 0, default: 0 } }
+    TrackId: { name: track_id, in: query, schema: { type: string } }
+    Lat: { name: lat, in: query, required: true, schema: { type: number, minimum: -90, maximum: 90 } }
+    Lng: { name: lng, in: query, required: true, schema: { type: number, minimum: -180, maximum: 180 } }
+    RadiusM: { name: radius_m, in: query, required: true, schema: { type: number, exclusiveMinimum: 0 } }
+  requestBodies:
+    Source:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name, type]
+            properties: { id: { type: string }, name: { type: string }, type: { type: string, enum: [synthetic, operator, external, sensor] }, metadata: { type: object, additionalProperties: true } }
+    ObservationInput:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [sourceId, type, observedAt]
+            properties:
+              id: { type: string }
+              sourceId: { type: string }
+              type: { type: string }
+              observedAt: { type: string, format: date-time }
+              receivedAt: { type: string, format: date-time }
+              position: { $ref: '#/components/schemas/Point' }
+              payload: { type: object, additionalProperties: true }
+              quality: { type: object, additionalProperties: true }
+              trackHint: { type: string }
+    TelemetryInput:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [assetId, observedAt]
+            properties:
+              messageId: { type: string }
+              assetId: { type: string }
+              sourceId: { type: string }
+              observedAt: { type: string, format: date-time }
+              receivedAt: { type: string, format: date-time }
+              position: { $ref: '#/components/schemas/Point' }
+              speed: { type: number }
+              heading: { type: number }
+              health: { type: string }
+              connectionState: { type: string }
+              payload: { type: object, additionalProperties: true }
+    Asset:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name, type]
+            properties: { id: { type: string }, name: { type: string }, type: { type: string }, status: { type: string }, capabilities: { type: array, items: { type: string } }, metadata: { type: object, additionalProperties: true } }
+    Geofence:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name, type, polygon]
+            properties: { id: { type: string }, name: { type: string }, type: { type: string }, severity: { type: string }, polygon: { type: array, minItems: 3, items: { $ref: '#/components/schemas/Point' } } }
+    Incident:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [title]
+            properties: { title: { type: string }, description: { type: string }, priority: { type: string }, alertIds: { type: array, items: { type: string } }, trackIds: { type: array, items: { type: string } }, assetIds: { type: array, items: { type: string } }, observationIds: { type: array, items: { type: string } }, assessmentIds: { type: array, items: { type: string } } }
+    Mission:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [name]
+            properties: { name: { type: string }, objective: { type: string }, priority: { type: string }, incidentId: { type: string }, assets: { type: array, items: { type: string } }, tasks: { type: array, items: { type: object, properties: { type: { type: string }, description: { type: string }, target: { $ref: '#/components/schemas/Point' } } } } }
+    Command:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [assetId, type]
+            properties: { assetId: { type: string }, missionId: { type: string }, incidentId: { type: string }, type: { type: string }, payload: { type: object, additionalProperties: true } }
+    Assessment:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [subjectType, subjectId, type, conclusion]
+            properties: { subjectType: { type: string }, subjectId: { type: string }, type: { type: string }, conclusion: { type: string }, confidence: { type: number, minimum: 0, maximum: 1 }, method: { type: string }, createdBy: { type: string }, evidence: { type: array, items: { type: object, required: [type, id], properties: { type: { type: string }, id: { type: string } } } } }
+  schemas:
+    Point:
+      type: object
+      required: [lat, lng]
+      properties: { lat: { type: number, minimum: -90, maximum: 90 }, lng: { type: number, minimum: -180, maximum: 180 } }
+    Health:
+      type: object
+      required: [status, database, time]
+      properties: { status: { type: string }, database: { type: string }, time: { type: string, format: date-time } }
+    Source:
+      type: object
+      required: [id, name, type, status, metadata, createdAt, updatedAt]
+      properties: { id: { type: string }, name: { type: string }, type: { type: string }, status: { type: string }, metadata: { type: object, additionalProperties: true }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } }
+    Observation:
+      type: object
+      required: [id, sourceId, type, observedAt, receivedAt, payload, createdAt]
+      properties: { id: { type: string }, sourceId: { type: string }, type: { type: string }, observedAt: { type: string, format: date-time }, receivedAt: { type: string, format: date-time }, processedAt: { type: string, format: date-time }, position: { $ref: '#/components/schemas/Point' }, payload: { type: object, additionalProperties: true }, quality: { type: object, additionalProperties: true }, trackHint: { type: string }, createdAt: { type: string, format: date-time }, duplicate: { type: boolean } }
+    Asset:
+      type: object
+      required: [id, name, type, status, capabilities, metadata, speed, heading, health, connectionState, lastSeenAt, createdAt, updatedAt]
+      properties: { id: { type: string }, name: { type: string }, type: { type: string }, status: { type: string }, capabilities: { type: array, items: { type: string } }, metadata: { type: object, additionalProperties: true }, position: { $ref: '#/components/schemas/Point' }, speed: { type: [number, 'null'] }, heading: { type: [number, 'null'] }, health: { type: string }, connectionState: { type: string }, lastSeenAt: { type: [string, 'null'], format: date-time }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } }
+    Telemetry:
+      type: object
+      properties: { id: { type: string }, messageId: { type: string }, assetId: { type: string }, sourceId: { type: string }, observedAt: { type: string, format: date-time }, receivedAt: { type: string, format: date-time }, position: { $ref: '#/components/schemas/Point' }, speed: { type: number }, heading: { type: number }, health: { type: string }, connectionState: { type: string }, payload: { type: object, additionalProperties: true }, stale: { type: boolean }, duplicate: { type: boolean } }
+    Track:
+      type: object
+      required: [id, externalRef, status, firstSeenAt, lastSeenAt, position, speed, heading, metadata, createdAt, updatedAt, closedAt, observationCount]
+      properties: { id: { type: string }, externalRef: { type: string }, status: { type: string }, position: { oneOf: [{ $ref: '#/components/schemas/Point' }, { type: 'null' }] }, speed: { type: [number, 'null'] }, heading: { type: [number, 'null'] }, firstSeenAt: { type: string, format: date-time }, lastSeenAt: { type: string, format: date-time }, metadata: { type: object, additionalProperties: true }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time }, closedAt: { type: [string, 'null'], format: date-time }, observationCount: { type: integer } }
+    TrackHistoryPoint:
+      type: object
+      required: [id, observedAt, position, speed, heading]
+      properties: { id: { type: string }, observedAt: { type: string, format: date-time }, position: { oneOf: [{ $ref: '#/components/schemas/Point' }, { type: 'null' }] }, speed: { type: [number, 'null'] }, heading: { type: [number, 'null'] } }
+    Classification:
+      type: object
+      required: [id, trackId, label, confidence, method, sourceReference, createdBy, createdAt]
+      properties: { id: { type: string }, trackId: { type: string }, label: { type: string }, confidence: { type: [number, 'null'] }, method: { type: string }, sourceReference: { type: string }, createdBy: { type: string }, createdAt: { type: string, format: date-time } }
+    Geofence:
+      type: object
+      required: [id, name, type, severity, active, geojson, metadata, createdAt, updatedAt]
+      properties: { id: { type: string }, name: { type: string }, type: { type: string }, severity: { type: string }, active: { type: boolean }, geojson: { type: string }, metadata: { type: object, additionalProperties: true }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } }
+    Alert:
+      type: object
+      required: [id, type, severity, state, title, message, sourceReference, trackId, assetId, geofenceId, incidentId, createdAt, updatedAt, acknowledgedAt, acknowledgedBy, resolvedAt, resolvedBy]
+      properties: { id: { type: string }, type: { type: string }, severity: { type: string }, state: { type: string }, title: { type: string }, message: { type: string }, sourceReference: { type: object, additionalProperties: true }, trackId: { type: string }, assetId: { type: string }, geofenceId: { type: string }, incidentId: { type: string }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time }, acknowledgedAt: { type: [string, 'null'], format: date-time }, acknowledgedBy: { type: string }, resolvedAt: { type: [string, 'null'], format: date-time }, resolvedBy: { type: string } }
+    Incident:
+      type: object
+      required: [id, title, description, priority, status, createdAt, updatedAt]
+      properties: { id: { type: string }, title: { type: string }, description: { type: string }, priority: { type: string }, status: { type: string }, assignedOperator: { type: string }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time }, resolvedAt: { type: string, format: date-time }, closedAt: { type: string, format: date-time } }
+    IncidentDetail:
+      allOf:
+        - $ref: '#/components/schemas/Incident'
+        - type: object
+          required: [alerts, tracks, assets, observations, assessments]
+          properties:
+            alerts: { type: array, items: { $ref: '#/components/schemas/RelatedAlert' } }
+            tracks: { type: array, items: { $ref: '#/components/schemas/RelatedTrack' } }
+            assets: { type: array, items: { $ref: '#/components/schemas/RelatedAsset' } }
+            observations: { type: array, items: { $ref: '#/components/schemas/RelatedObservation' } }
+            assessments: { type: array, items: { $ref: '#/components/schemas/RelatedAssessment' } }
+    RelatedAlert:
+      type: object
+      required: [id, type, severity, state, title, createdAt]
+      properties: { id: { type: string }, type: { type: string }, severity: { type: string }, state: { type: string }, title: { type: string }, createdAt: { type: string, format: date-time } }
+    RelatedTrack:
+      type: object
+      required: [id, status, lastSeenAt]
+      properties: { id: { type: string }, externalRef: { type: string }, status: { type: string }, position: { $ref: '#/components/schemas/Point' }, lastSeenAt: { type: string, format: date-time } }
+    RelatedAsset:
+      type: object
+      required: [id, name, type, status]
+      properties: { id: { type: string }, name: { type: string }, type: { type: string }, status: { type: string }, position: { $ref: '#/components/schemas/Point' }, connectionState: { type: string } }
+    RelatedObservation:
+      type: object
+      required: [id, sourceId, type, observedAt]
+      properties: { id: { type: string }, sourceId: { type: string }, type: { type: string }, observedAt: { type: string, format: date-time }, position: { $ref: '#/components/schemas/Point' } }
+    RelatedAssessment:
+      type: object
+      required: [id, subjectType, subjectId, type, conclusion, method, createdAt]
+      properties: { id: { type: string }, subjectType: { type: string }, subjectId: { type: string }, type: { type: string }, conclusion: { type: string }, method: { type: string }, confidence: { type: number }, createdAt: { type: string, format: date-time } }
+    Mission:
+      type: object
+      required: [id, name, objective, priority, status, createdAt, updatedAt, assets, tasks]
+      properties: { id: { type: string }, name: { type: string }, objective: { type: string }, priority: { type: string }, status: { type: string }, incidentId: { type: string }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time }, startedAt: { type: string, format: date-time }, endedAt: { type: string, format: date-time }, assets: { type: array, items: { $ref: '#/components/schemas/RelatedAsset' } }, tasks: { type: array, items: { $ref: '#/components/schemas/MissionTask' } } }
+    MissionTask:
+      type: object
+      required: [id, missionId, type, description, status, createdAt, updatedAt]
+      properties: { id: { type: string }, missionId: { type: string }, type: { type: string }, description: { type: string }, status: { type: string }, target: { $ref: '#/components/schemas/Point' }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } }
+    Command:
+      type: object
+      required: [id, assetId, type, payload, state, createdAt, updatedAt]
+      properties: { id: { type: string }, assetId: { type: string }, missionId: { type: string }, incidentId: { type: string }, type: { type: string }, payload: { type: object, additionalProperties: true }, state: { type: string }, createdBy: { type: string }, correlationId: { type: string }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time }, queuedAt: { type: string, format: date-time }, sentAt: { type: string, format: date-time }, acknowledgedAt: { type: string, format: date-time }, completedAt: { type: string, format: date-time }, failureReason: { type: string } }
+    Assessment:
+      type: object
+      required: [id, subjectType, subjectId, type, conclusion, confidence, method, createdBy, createdAt, evidence]
+      properties: { id: { type: string }, subjectType: { type: string }, subjectId: { type: string }, type: { type: string }, conclusion: { type: string }, confidence: { type: [number, 'null'] }, method: { type: string }, createdBy: { type: string }, createdAt: { type: string, format: date-time }, evidence: { type: array, items: { $ref: '#/components/schemas/AssessmentEvidence' } } }
+    AssessmentEvidence:
+      type: object
+      required: [type, id, addedAt]
+      properties: { type: { type: string }, id: { type: string }, addedAt: { type: string, format: date-time } }
+    AuditEntry:
+      type: object
+      required: [id, occurredAt, actorType, actorId, action, subjectType, subjectId, correlationId, data]
+      properties: { id: { type: string }, occurredAt: { type: string, format: date-time }, actorType: { type: string }, actorId: { type: string }, action: { type: string }, subjectType: { type: string }, subjectId: { type: string }, correlationId: { type: string }, data: { type: object, additionalProperties: true } }
+    Operator:
+      type: object
+      required: [id, name, role, createdAt]
+      properties: { id: { type: string }, name: { type: string }, role: { type: string }, createdAt: { type: string, format: date-time } }
+    CurrentOperator:
+      type: object
+      required: [id, name, role]
+      properties: { id: { type: string }, name: { type: string }, role: { type: string } }
+    ScenarioSummary:
+      type: object
+      required: [name, description, seed, sources, assets, tracks, geofences, events]
+      properties: { name: { type: string }, description: { type: string }, seed: { type: integer, format: int64 }, sources: { type: integer }, assets: { type: integer }, tracks: { type: integer }, geofences: { type: integer }, events: { type: integer } }
+    Scenario:
+      type: object
+      required: [name, description, seed, playbackSpeed, sources, assets, geofences, tracks, events, commandSimulation]
+      properties:
+        name: { type: string }
+        description: { type: string }
+        seed: { type: integer, format: int64 }
+        playbackSpeed: { type: number }
+        sources: { type: [array, 'null'], items: { $ref: '#/components/schemas/ScenarioSource' } }
+        assets: { type: [array, 'null'], items: { $ref: '#/components/schemas/ScenarioAsset' } }
+        geofences: { type: [array, 'null'], items: { $ref: '#/components/schemas/ScenarioGeofence' } }
+        tracks: { type: [array, 'null'], items: { $ref: '#/components/schemas/ScenarioTrack' } }
+        events: { type: [array, 'null'], items: { $ref: '#/components/schemas/ScenarioEventSpec' } }
+        commandSimulation: { oneOf: [{ $ref: '#/components/schemas/CommandSimulation' }, { type: 'null' }] }
+    ScenarioSource:
+      type: object
+      required: [id, name, type]
+      properties: { id: { type: string }, name: { type: string }, type: { type: string } }
+    ScenarioAsset:
+      type: object
+      required: [id, name, type, start, speedMps]
+      properties: { id: { type: string }, name: { type: string }, type: { type: string }, start: { oneOf: [{ $ref: '#/components/schemas/Point' }, { type: 'null' }] }, speedMps: { type: [number, 'null'] } }
+    ScenarioGeofence:
+      type: object
+      required: [id, name, type, severity, polygon]
+      properties: { id: { type: string }, name: { type: string }, type: { type: string }, severity: { type: string }, polygon: { type: array, items: { $ref: '#/components/schemas/Point' } } }
+    ScenarioTrack:
+      type: object
+      required: [id, start]
+      properties: { id: { type: string }, start: { oneOf: [{ $ref: '#/components/schemas/Point' }, { type: 'null' }] } }
+    ScenarioEventSpec:
+      type: object
+      required: [after, action, source, track, asset, interval, until, waypoints, speedMps, label, confidence, state, status, type, payload, quality, position, jitterM, delay, duplicate, staleFor, fault, subjectType, subjectId, assessmentType, conclusion, method, evidence, incidentRef, incidentTitle, incidentDescription, incidentPriority, incidentStatus]
+      properties:
+        after: { type: string }
+        action: { type: string }
+        source: { type: string }
+        track: { type: string }
+        asset: { type: string }
+        interval: { type: string }
+        until: { type: string }
+        waypoints: { type: [array, 'null'], items: { $ref: '#/components/schemas/Point' } }
+        speedMps: { type: [number, 'null'] }
+        label: { type: string }
+        confidence: { type: [number, 'null'] }
+        state: { type: string }
+        status: { type: string }
+        type: { type: string }
+        payload: { type: [object, 'null'], additionalProperties: true }
+        quality: { type: [object, 'null'], additionalProperties: true }
+        position: { oneOf: [{ $ref: '#/components/schemas/Point' }, { type: 'null' }] }
+        jitterM: { type: number }
+        delay: { type: string }
+        duplicate: { type: boolean }
+        staleFor: { type: string }
+        fault: { type: string }
+        subjectType: { type: string }
+        subjectId: { type: string }
+        assessmentType: { type: string }
+        conclusion: { type: string }
+        method: { type: string }
+        evidence: { type: [array, 'null'], items: { $ref: '#/components/schemas/ScenarioEvidence' } }
+        incidentRef: { type: string }
+        incidentTitle: { type: string }
+        incidentDescription: { type: string }
+        incidentPriority: { type: string }
+        incidentStatus: { type: string }
+    ScenarioEvidence:
+      type: object
+      required: [type, id]
+      properties: { type: { type: string }, id: { type: string } }
+    CommandSimulation:
+      type: object
+      required: [behavior, acknowledgeAfter, completeAfter]
+      properties: { behavior: { type: string, enum: ['', normal, reject, fail, timeout] }, acknowledgeAfter: { type: string }, completeAfter: { type: string } }
+    ScenarioRun:
+      type: object
+      required: [id, resourceNamespace, scenarioName, seed, status, playbackSpeed, virtualTimeMs, eventsRun, eventsTotal, startedAt]
+      properties: { id: { type: string }, resourceNamespace: { type: string }, scenarioName: { type: string }, seed: { type: integer, format: int64 }, status: { type: string }, playbackSpeed: { type: number }, virtualTimeMs: { type: integer, format: int64 }, lastAction: { type: string }, lastActionAtMs: { type: integer, format: int64 }, actionError: { type: string }, eventsRun: { type: integer }, eventsTotal: { type: integer }, startedAt: { type: string, format: date-time }, endedAt: { type: [string, 'null'], format: date-time }, error: { type: string } }
+    ScenarioEvent:
+      type: object
+      required: [sequence, atMs, name, status]
+      properties: { sequence: { type: integer }, atMs: { type: integer, format: int64 }, name: { type: string }, status: { type: string, enum: [pending, running, completed, failed, skipped] }, error: { type: string } }
+    Error:
+      type: object
+      required: [error]
+      properties: { error: { type: object, required: [code, message], properties: { code: { type: string }, message: { type: string } } } }
+    SourceList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Source' } }, total: { type: integer } } }
+    ObservationList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Observation' } }, total: { type: integer } } }
+    AssetList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Asset' } }, total: { type: integer } } }
+    TelemetryList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Telemetry' } }, total: { type: integer } } }
+    TrackList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Track' } }, total: { type: integer } } }
+    TrackHistoryList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/TrackHistoryPoint' } }, total: { type: integer } } }
+    ClassificationList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Classification' } }, total: { type: integer } } }
+    GeofenceList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Geofence' } }, total: { type: integer } } }
+    AssetWithinList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/AssetDistance' } }, total: { type: integer } } }
+    AssetDistance:
+      type: object
+      required: [assetId, name, type, status, connectionState, position, distanceM, lastSeenAt]
+      properties: { assetId: { type: string }, name: { type: string }, type: { type: string }, status: { type: string }, connectionState: { type: string }, position: { oneOf: [{ $ref: '#/components/schemas/Point' }, { type: 'null' }] }, distanceM: { type: number }, lastSeenAt: { type: [string, 'null'], format: date-time } }
+    AlertList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Alert' } }, total: { type: integer } } }
+    IncidentList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Incident' } }, total: { type: integer } } }
+    MissionList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Mission' } }, total: { type: integer } } }
+    CommandList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Command' } }, total: { type: integer } } }
+    AssessmentList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Assessment' } }, total: { type: integer } } }
+    AuditList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/AuditEntry' } }, total: { type: integer } } }
+    OperatorList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/Operator' } }, total: { type: integer } } }
+    ScenarioSummaryList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/ScenarioSummary' } }, total: { type: integer } } }
+    ScenarioRunList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/ScenarioRun' } }, total: { type: integer } } }
+    ScenarioEventList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/ScenarioEvent' } }, total: { type: integer } } }
+  responses:
+    BadRequest: { description: Invalid request, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Unauthorized: { description: Authentication required, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Forbidden: { description: Authorization denied, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Conflict: { description: Lifecycle conflict, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    NotFound: { description: Resource not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    ServiceUnavailable: { description: Dependency unavailable, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+    Source: { description: Source, content: { application/json: { schema: { $ref: '#/components/schemas/Source' } } } }
+    SourceList: { description: Sources, content: { application/json: { schema: { $ref: '#/components/schemas/SourceList' } } } }
+    Observation: { description: Observation, content: { application/json: { schema: { $ref: '#/components/schemas/Observation' } } } }
+    ObservationList: { description: Observations, content: { application/json: { schema: { $ref: '#/components/schemas/ObservationList' } } } }
+    Asset: { description: Asset, content: { application/json: { schema: { $ref: '#/components/schemas/Asset' } } } }
+    AssetList: { description: Assets, content: { application/json: { schema: { $ref: '#/components/schemas/AssetList' } } } }
+    Telemetry: { description: Telemetry sample, content: { application/json: { schema: { $ref: '#/components/schemas/Telemetry' } } } }
+    TelemetryList: { description: Telemetry samples, content: { application/json: { schema: { $ref: '#/components/schemas/TelemetryList' } } } }
+    Track: { description: Track, content: { application/json: { schema: { $ref: '#/components/schemas/Track' } } } }
+    TrackList: { description: Tracks, content: { application/json: { schema: { $ref: '#/components/schemas/TrackList' } } } }
+    TrackHistoryList: { description: Track history, content: { application/json: { schema: { $ref: '#/components/schemas/TrackHistoryList' } } } }
+    Classification: { description: Classification, content: { application/json: { schema: { $ref: '#/components/schemas/Classification' } } } }
+    ClassificationList: { description: Classifications, content: { application/json: { schema: { $ref: '#/components/schemas/ClassificationList' } } } }
+    Geofence: { description: Geofence, content: { application/json: { schema: { $ref: '#/components/schemas/Geofence' } } } }
+    GeofenceList: { description: Geofences, content: { application/json: { schema: { $ref: '#/components/schemas/GeofenceList' } } } }
+    AssetWithinList: { description: Assets with distance, content: { application/json: { schema: { $ref: '#/components/schemas/AssetWithinList' } } } }
+    Alert: { description: Alert, content: { application/json: { schema: { $ref: '#/components/schemas/Alert' } } } }
+    AlertList: { description: Alerts, content: { application/json: { schema: { $ref: '#/components/schemas/AlertList' } } } }
+    Incident: { description: Incident, content: { application/json: { schema: { $ref: '#/components/schemas/Incident' } } } }
+    IncidentDetail: { description: Incident detail, content: { application/json: { schema: { $ref: '#/components/schemas/IncidentDetail' } } } }
+    IncidentList: { description: Incidents, content: { application/json: { schema: { $ref: '#/components/schemas/IncidentList' } } } }
+    Mission: { description: Mission, content: { application/json: { schema: { $ref: '#/components/schemas/Mission' } } } }
+    MissionList: { description: Missions, content: { application/json: { schema: { $ref: '#/components/schemas/MissionList' } } } }
+    Command: { description: Command, content: { application/json: { schema: { $ref: '#/components/schemas/Command' } } } }
+    CommandList: { description: Commands, content: { application/json: { schema: { $ref: '#/components/schemas/CommandList' } } } }
+    Assessment: { description: Assessment, content: { application/json: { schema: { $ref: '#/components/schemas/Assessment' } } } }
+    AssessmentList: { description: Assessments, content: { application/json: { schema: { $ref: '#/components/schemas/AssessmentList' } } } }
+    AuditList: { description: Audit entries, content: { application/json: { schema: { $ref: '#/components/schemas/AuditList' } } } }
+    Operator: { description: Operator, content: { application/json: { schema: { $ref: '#/components/schemas/Operator' } } } }
+    OperatorList: { description: Operators, content: { application/json: { schema: { $ref: '#/components/schemas/OperatorList' } } } }
+    MissionTask: { description: Mission task, content: { application/json: { schema: { $ref: '#/components/schemas/MissionTask' } } } }
+    ScenarioSummaryList: { description: Scenarios, content: { application/json: { schema: { $ref: '#/components/schemas/ScenarioSummaryList' } } } }
+    ScenarioRun: { description: Scenario run, content: { application/json: { schema: { $ref: '#/components/schemas/ScenarioRun' } } } }
+    ScenarioRunList: { description: Scenario runs, content: { application/json: { schema: { $ref: '#/components/schemas/ScenarioRunList' } } } }
+    ScenarioEventList: { description: Scheduled scenario events, content: { application/json: { schema: { $ref: '#/components/schemas/ScenarioEventList' } } } }
+security:
+  - BearerAuth: []

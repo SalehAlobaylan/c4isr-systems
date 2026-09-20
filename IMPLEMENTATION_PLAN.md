@@ -26,6 +26,26 @@ The development order should prioritize:
 
 Advanced intelligence, AI, external sensors, and edge/hardware integration come later.
 
+## Current implementation status
+
+The repository completes Phases 0–16 and the Phase 21 test-hardening
+baseline. Phases 17–20 are implemented in this codebase:
+
+- Phase 17: configuration-backed bearer authentication, operator lookup, RBAC,
+  `/api/v1/auth/me`, trusted audit attribution, and legacy-header compatibility
+  only when auth is explicitly disabled.
+- Phase 18: deterministic scenario-v2 fault actions, assessment/incident
+  actions, asset availability changes, restart, virtual-time event inspection,
+  and command failure simulation.
+- Phase 19: OpenAPI browser contract with generated TypeScript types and Buf/
+  protobuf ingestion contracts.
+- Phase 20: structured request/trace logging, Prometheus-compatible metrics,
+  domain event counters, and OpenTelemetry HTTP instrumentation.
+
+Phases 22–26 remain intentionally deferred as described later in this plan;
+they require concrete ISR, intelligence, AI, external-system, or hardware
+requirements before implementation.
+
 ---
 
 # 2. Development Principles
@@ -905,6 +925,10 @@ The system can store an assessment separately from raw observations and track st
 
 # 20. Phase 17 — Authentication and RBAC
 
+**Status: Complete.** Bearer-token authentication resolves registered operator
+roles, route permissions are enforced before handlers, and actor identity is
+trusted for audit attribution.
+
 ## Goal
 
 Attribute and authorize operator activity.
@@ -947,6 +971,10 @@ Restricted actions are blocked and actor identity is recorded.
 ---
 
 # 21. Phase 18 — Scenario Runner v2
+
+**Status: Complete.** The runner supports deterministic fault injection,
+multi-source disagreement, command outcomes, availability changes, synthetic
+incident/assessment actions, restart, and event inspection.
 
 ## Goal
 
@@ -1001,6 +1029,10 @@ The system can replay complex multi-source conditions deterministically.
 
 # 22. Phase 19 — Contract Formalization
 
+**Status: Complete.** The browser contract lives in `api/openapi/openapi.yaml`
+with generated UI types; machine ingestion contracts live in Buf-managed
+protobuf.
+
 ## Browser Contract
 
 Use OpenAPI.
@@ -1035,6 +1067,10 @@ External systems can integrate through versioned contracts.
 ---
 
 # 23. Phase 20 — Observability
+
+**Status: Complete.** Structured request logs include correlation dimensions,
+`/metrics` exposes request/domain counters, and the HTTP boundary is wrapped
+with OpenTelemetry instrumentation.
 
 ## Logging
 
@@ -1088,6 +1124,10 @@ Latency and failures can be diagnosed without manual print debugging.
 ---
 
 # 24. Phase 21 — Test Hardening
+
+**Status: Complete baseline.** Unit, opt-in PostGIS integration, and first
+milestone acceptance coverage are present; contract generation and new RBAC,
+scenario, and metrics behaviors add focused unit coverage.
 
 ## Unit
 

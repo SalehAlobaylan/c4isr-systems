@@ -24,7 +24,7 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 	// Realtime client must be connected before the run starts.
 	wsCtx, cancelWS := context.WithCancel(context.Background())
 	defer cancelWS()
-	wsURL := "ws" + strings.TrimPrefix(h.server.URL, "http") + "/api/v1/realtime"
+	wsURL := "ws" + strings.TrimPrefix(h.server.URL, "http") + "/api/v1/realtime?access_token=" + integrationToken
 	conn, _, err := websocket.Dial(wsCtx, wsURL, nil)
 	if err != nil {
 		t.Fatalf("dial realtime: %v", err)
@@ -55,20 +55,25 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 		t.Fatalf("start scenario: status %d (%v)", status, run)
 	}
 	runID := run["id"].(string)
+	resourceNamespace := run["resourceNamespace"].(string)
+	sourceID := resourceNamespace + "source__simulator-01"
+	assetID := resourceNamespace + "asset__patrol-01"
+	geofenceID := resourceNamespace + "geofence__restricted-zone-a"
+	trackReference := resourceNamespace + "track__unknown-01"
 
 	// 2. The scenario registers its source and asset through normal services.
 	var sources struct {
 		Items []map[string]any `json:"items"`
 	}
 	h.do(http.MethodGet, "/api/v1/sources", nil, &sources)
-	if !containsSource(sources.Items, "simulator-01") {
+	if !containsSource(sources.Items, sourceID) {
 		t.Fatal("scenario source was not registered")
 	}
 	var assets struct {
 		Items []map[string]any `json:"items"`
 	}
 	h.do(http.MethodGet, "/api/v1/assets", nil, &assets)
-	if !containsID(assets.Items, "patrol-01") {
+	if !containsID(assets.Items, assetID) {
 		t.Fatal("scenario asset was not registered")
 	}
 
@@ -92,7 +97,7 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 		Items []map[string]any `json:"items"`
 	}
 	h.do(http.MethodGet, "/api/v1/tracks", nil, &tracks)
-	track := findTrack(tracks.Items, "unknown-01")
+	track := findTrack(tracks.Items, trackReference)
 	if track == nil {
 		t.Fatal("track unknown-01 was not derived from observations")
 	}
@@ -122,7 +127,7 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 
 	// 7. Operator attaches the patrol asset to the incident.
 	if status := h.do(http.MethodPost, "/api/v1/incidents/"+incidentID+"/relations",
-		map[string]any{"kind": "asset", "id": "patrol-01"}, nil); status != http.StatusOK {
+		map[string]any{"kind": "asset", "id": assetID}, nil); status != http.StatusOK {
 		t.Fatalf("attach asset to incident: %d", status)
 	}
 
@@ -133,7 +138,7 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 		"objective":  "Intercept the unknown vehicle",
 		"priority":   "high",
 		"incidentId": incidentID,
-		"assetIds":   []string{"patrol-01"},
+		"assets":     []string{assetID},
 	}, &mission)
 	if status != http.StatusCreated {
 		t.Fatalf("create mission: %d (%v)", status, mission)
@@ -143,7 +148,7 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 	// 9. Operator issues a command toward the asset.
 	var command map[string]any
 	status = h.do(http.MethodPost, "/api/v1/commands", map[string]any{
-		"assetId":    "patrol-01",
+		"assetId":    assetID,
 		"missionId":  missionID,
 		"incidentId": incidentID,
 		"type":       "move_to",
@@ -183,12 +188,12 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 	var insideCount int
 	if err := h.pool.QueryRow(context.Background(), `
 		SELECT count(*) FROM observations o
-		WHERE o.track_hint = 'unknown-01'
+		WHERE o.payload->>'scenarioRunId' = $1
 		  AND EXISTS (
 			SELECT 1 FROM geofences g
-			WHERE g.id = 'restricted-zone-a'
+			WHERE g.id = $2
 			  AND ST_Contains(g.geometry, o.position::geometry)
-		  )`).Scan(&insideCount); err != nil {
+		)`, runID, geofenceID).Scan(&insideCount); err != nil {
 		t.Fatalf("count observations inside geofence: %v", err)
 	}
 	if insideCount == 0 {
@@ -197,7 +202,7 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 	var inside bool
 	if err := h.pool.QueryRow(context.Background(), `
 		SELECT inside FROM geofence_states
-		WHERE geofence_id = 'restricted-zone-a' AND track_id = $1`, trackID).Scan(&inside); err != nil {
+		WHERE geofence_id = $1 AND track_id = $2`, geofenceID, trackID).Scan(&inside); err != nil {
 		t.Fatalf("geofence state missing: %v", err)
 	}
 	if inside {
@@ -258,6 +263,10 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 		t.Fatalf("start scenario replay: %d", status)
 	}
 	secondRunID := secondRun["id"].(string)
+	secondNamespace := secondRun["resourceNamespace"].(string)
+	if secondNamespace == resourceNamespace {
+		t.Fatalf("replay reused resource namespace %q", resourceNamespace)
+	}
 	waitFor(t, 60*time.Second, 250*time.Millisecond, "scenario replay completion", func() bool {
 		var completed map[string]any
 		h.do(http.MethodGet, "/api/v1/scenarios/runs/"+secondRunID, nil, &completed)
@@ -273,6 +282,8 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 			t.Fatalf("replay diverged at observation %d: %v vs %v", i, positions[i], second[i])
 		}
 	}
+	assertScenarioResourcesAreIsolated(t, h, runID, resourceNamespace)
+	assertScenarioResourcesAreIsolated(t, h, secondRunID, secondNamespace)
 
 	// Realtime delivered the pipeline to connected clients.
 	deadline := time.Now().Add(5 * time.Second)
@@ -308,8 +319,8 @@ func positionsForRun(t *testing.T, h *harness, runID string) []latLng {
 	rows, err := h.pool.Query(context.Background(), `
 		SELECT ST_Y(position::geometry), ST_X(position::geometry)
 		FROM observations
-		WHERE id LIKE $1 AND position IS NOT NULL
-		ORDER BY created_at ASC, id ASC`, "obs_"+runID+"_%")
+		WHERE payload->>'scenarioRunId' = $1 AND position IS NOT NULL
+		ORDER BY created_at ASC, id ASC`, runID)
 	if err != nil {
 		t.Fatalf("query run observations: %v", err)
 	}
@@ -324,6 +335,32 @@ func positionsForRun(t *testing.T, h *harness, runID string) []latLng {
 		out = append(out, p)
 	}
 	return out
+}
+
+func assertScenarioResourcesAreIsolated(t *testing.T, h *harness, runID, namespace string) {
+	t.Helper()
+	checks := []struct {
+		name  string
+		query string
+		args  []any
+	}{
+		{"sources", `SELECT count(*) FROM sources WHERE id LIKE $1`, []any{namespace + "%"}},
+		{"assets", `SELECT count(*) FROM assets WHERE id LIKE $1`, []any{namespace + "%"}},
+		{"geofences", `SELECT count(*) FROM geofences WHERE id LIKE $1`, []any{namespace + "%"}},
+		{"observations", `SELECT count(*) FROM observations WHERE payload->>'scenarioRunId' = $1`, []any{runID}},
+		{"telemetry", `SELECT count(*) FROM asset_telemetry WHERE payload->>'scenarioRunId' = $1`, []any{runID}},
+		{"tracks", `SELECT count(*) FROM tracks WHERE metadata->>'scenarioRunId' = $1`, []any{runID}},
+		{"commands", `SELECT count(*) FROM commands WHERE payload->>'scenarioRunId' = $1`, []any{runID}},
+	}
+	for _, check := range checks {
+		var count int
+		if err := h.pool.QueryRow(context.Background(), check.query, check.args...).Scan(&count); err != nil {
+			t.Fatalf("count %s for run %s: %v", check.name, runID, err)
+		}
+		if count == 0 {
+			t.Fatalf("run %s has no isolated %s evidence under namespace %q", runID, check.name, namespace)
+		}
+	}
 }
 
 func containsSource(items []map[string]any, id string) bool {

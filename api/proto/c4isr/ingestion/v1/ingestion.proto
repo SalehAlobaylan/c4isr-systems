@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package c4isr.ingestion.v1;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/SalehAlobaylan/c4isr-systems/api/proto/gen/go/c4isr/ingestion/v1;ingestionv1";
+
+// ObservationIngestionService is the stable machine contract for external
+// sources. The core still uses the same application service when receiving
+// HTTP observations or scenario data.
+service ObservationIngestionService {
+  rpc IngestObservation(IngestObservationRequest) returns (IngestObservationResponse);
+}
+
+// TelemetryIngestionService is the stable machine contract for controlled
+// asset telemetry gateways.
+service TelemetryIngestionService {
+  rpc IngestTelemetry(IngestTelemetryRequest) returns (IngestTelemetryResponse);
+}
+
+message Point {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+message IngestObservationRequest {
+  string id = 1;
+  string source_id = 2;
+  string observation_type = 3;
+  google.protobuf.Timestamp observed_at = 4;
+  Point position = 5;
+  google.protobuf.Struct payload = 6;
+  google.protobuf.Struct quality = 7;
+  string track_hint = 8;
+}
+
+message IngestTelemetryRequest {
+  string message_id = 1;
+  string asset_id = 2;
+  string source_id = 3;
+  google.protobuf.Timestamp observed_at = 4;
+  Point position = 5;
+  optional double speed_mps = 6;
+  optional double heading_degrees = 7;
+  string health = 8;
+  string connection_state = 9;
+  google.protobuf.Struct payload = 10;
+}
+
+message IngestObservationResponse {
+  string id = 1;
+  bool duplicate = 2;
+  bool stale = 3;
+  google.protobuf.Timestamp received_at = 4;
+}
+
+message IngestTelemetryResponse {
+  string id = 1;
+  bool duplicate = 2;
+  bool stale = 3;
+  google.protobuf.Timestamp received_at = 4;
+}

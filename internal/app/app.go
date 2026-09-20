@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/alerts"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/assessments"
@@ -27,6 +28,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/config"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/realtime"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/scenarios"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/sources"
@@ -34,21 +36,25 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/tracks"
 )
 
-// DefaultOperator is the fallback actor until Phase 17 introduces
-// authentication and RBAC.
+// DefaultOperator is the local-development actor used when authentication is
+// explicitly disabled (for example, by the opt-in integration harness).
 const DefaultOperator = "operator-01"
 
 // App is the assembled server.
 type App struct {
-	config  config.Config
-	logger  *slog.Logger
-	pool    *pgxpool.Pool
-	handler http.Handler
+	config    config.Config
+	logger    *slog.Logger
+	pool      *pgxpool.Pool
+	handler   http.Handler
+	scenarios *scenarios.Service
 }
 
 // New opens the database, verifies migrations, wires every module, and builds
 // the HTTP router.
 func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, error) {
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
 	pool, err := db.Open(ctx, cfg.DatabaseURL)
 	if err != nil {
 		return nil, err
@@ -65,6 +71,12 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 	}
 
 	bus := events.NewDispatcher(logger)
+	metrics := observability.New()
+	for _, topic := range events.AllTopics() {
+		bus.Subscribe(topic, func(_ context.Context, ev events.Event) {
+			metrics.ObserveEvent(ev.Topic())
+		})
+	}
 
 	// Infrastructure modules first so audit and realtime observe the full
 	// stream and operator actions remain traceable.
@@ -76,6 +88,17 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		Role: operators.RoleOperator,
 	}); err != nil {
 		return nil, fmt.Errorf("ensure default operator: %w", err)
+	}
+	lookupOperator := func(ctx context.Context, id string) (httpx.Identity, error) {
+		operator, err := operatorSvc.Get(ctx, id)
+		if err != nil {
+			return httpx.Identity{}, err
+		}
+		return httpx.Identity{
+			ID:   operator.ID,
+			Name: operator.Name,
+			Role: string(operator.Role),
+		}, nil
 	}
 
 	sourceSvc := sources.NewService(sources.NewPostgresRepository(pool), bus)
@@ -105,6 +128,8 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 			Telemetry:       telemetrySvc,
 			Geofences:       geofenceSvc,
 			Classifications: classificationSvc,
+			Assessments:     assessmentSvc,
+			Incidents:       incidentSvc,
 			Commands:        commandSvc,
 			Tracks:          trackSvc,
 			Logger:          logger,
@@ -112,7 +137,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		bus,
 	)
 
-	router := buildRouter(cfg, logger, pool, moduleHandlers{
+	router := buildRouter(cfg, logger, pool, metrics, lookupOperator, moduleHandlers{
 		sources:         sources.NewHandler(sourceSvc),
 		observations:    observations.NewHandler(observationSvc),
 		assets:          assets.NewHandler(assetSvc),
@@ -133,10 +158,11 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 
 	poolClosed = true
 	return &App{
-		config:  cfg,
-		logger:  logger,
-		pool:    pool,
-		handler: router,
+		config:    cfg,
+		logger:    logger,
+		pool:      pool,
+		handler:   router,
+		scenarios: scenarioSvc,
 	}, nil
 }
 
@@ -145,6 +171,15 @@ func (a *App) Handler() http.Handler { return a.handler }
 
 // Close releases the connection pool.
 func (a *App) Close() {
+	if a.scenarios != nil {
+		// Drain scenario engines before closing the pool. The scenario service
+		// bounds its terminal persistence operations; using a cancelable
+		// shutdown context here could otherwise close the pool while a runner
+		// still has an in-flight action that needs to persist its final state.
+		if err := a.scenarios.Close(context.Background()); err != nil && a.logger != nil {
+			a.logger.Error("close scenario service", "error", err)
+		}
+	}
 	if a.pool != nil {
 		a.pool.Close()
 	}
@@ -169,19 +204,38 @@ type moduleHandlers struct {
 	hub             *realtime.Hub
 }
 
-func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, h moduleHandlers) http.Handler {
+func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, metrics *observability.Metrics, lookupOperator httpx.OperatorLookup, h moduleHandlers) http.Handler {
 	router := chi.NewRouter()
 	router.Use(
 		httpx.RequestID,
 		httpx.Recoverer(logger),
-		httpx.Logger(logger),
+		httpx.LoggerWithMetrics(logger, metrics),
 		httpx.CORS(cfg.AllowedOrigins),
-		httpx.OperatorIdentity(DefaultOperator),
+		httpx.Authenticate(httpx.AuthOptions{
+			Required:        cfg.AuthRequired,
+			Tokens:          cfg.AuthTokens,
+			DefaultOperator: DefaultOperator,
+			Lookup:          lookupOperator,
+			OnFailure:       metrics.ObserveAuthFailure,
+		}),
+		httpx.Authorization,
 	)
 
 	router.Get("/health", healthHandler(pool))
+	router.Get("/metrics", metrics.Handler())
 
 	router.Route("/api/v1", func(r chi.Router) {
+		r.Get("/auth/me", func(w http.ResponseWriter, req *http.Request) {
+			identity := sessionOperator{
+				ID:   httpx.GetOperatorID(req.Context()),
+				Name: httpx.GetOperatorName(req.Context()),
+				Role: httpx.GetOperatorRole(req.Context()),
+			}
+			httpx.JSON(w, http.StatusOK, map[string]any{
+				"operator":    identity,
+				"permissions": permissionsForRole(identity.Role),
+			})
+		})
 		h.sources.Mount(r)
 		h.observations.Mount(r)
 		h.assets.Mount(r)
@@ -200,7 +254,20 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, h m
 		h.hub.Mount(r)
 	})
 
-	return router
+	// otelhttp uses the process-wide OpenTelemetry provider. With no exporter
+	// configured it is a cheap no-op; deployments can install a provider and
+	// exporter without changing the router or domain modules.
+	return otelhttp.NewHandler(router, "c4isr.http")
+}
+
+type sessionOperator struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	Role string `json:"role"`
+}
+
+func permissionsForRole(role string) []string {
+	return httpx.PermissionsForRole(role)
 }
 
 type healthResponse struct {

@@ -12,10 +12,10 @@ The system is designed C4ISR-aware but C2-first: the information model (sources,
 | 7-12 | Scenario runner v1, tracks, classifications, PostGIS geofences, alerts, audit | Done |
 | 13-16 | Incidents, missions, commands, assessments | Done |
 | 21 | Unit, integration (Testcontainers + PostGIS), and acceptance tests | Done |
-| 17-20 | Authentication/RBAC, scenario runner v2, OpenAPI/gRPC contracts, OpenTelemetry | Next |
+| 17-20 | Authentication/RBAC, scenario runner v2, OpenAPI/gRPC contracts, OpenTelemetry | Done |
 | 22-26 | ISR expansion, intelligence, AI assistance, external integrations, edge/hardware | Later |
 
-The first product milestone is covered end to end by `internal/integration/acceptance_test.go`: scenario source -> observation -> track -> geofence breach -> alert -> operator acknowledgement -> incident -> mission -> command -> audit, including a deterministic replay check.
+The first product milestone is covered end to end by `internal/integration/acceptance_test.go`: scenario source -> observation -> track -> geofence breach -> alert -> operator acknowledgement -> incident -> mission -> command -> audit, including a deterministic replay check. Phase 17–20 additions are covered by focused unit tests and contract generation checks.
 
 ## Architecture at a glance
 
@@ -148,6 +148,10 @@ Copy `.env.example` to `.env` for reference; the Taskfile exports `C4ISR_DATABAS
 | `C4ISR_LOG_FORMAT` | `text` | `text` or `json` |
 | `C4ISR_SCENARIOS_DIR` | `./scenarios` | Scenario YAML directory |
 | `C4ISR_ALLOWED_ORIGINS` | empty | Comma-separated CORS origins |
+| `C4ISR_ENV` | `production` | `development`, `test`, or `production` |
+| `C4ISR_AUTH_REQUIRED` | `true` | Keep bearer authentication enabled outside local test harnesses |
+| `C4ISR_AUTH_TOKENS` | required in production | Comma-separated `operator-id=token` pairs; development has an explicit local fallback |
+| `VITE_API_TOKEN` | empty | Explicit bearer token injected into the operator UI build |
 | `VITE_MAP_STYLE_URL` | OSM raster | Optional MapLibre style URL for the UI |
 
 ## API overview
@@ -155,8 +159,9 @@ Copy `.env.example` to `.env` for reference; the Taskfile exports `C4ISR_DATABAS
 All routes are under `/api/v1`. Collections return `{"items": [...], "total": n}`; errors return `{"error": {"code", "message"}}`.
 
 ```text
-GET/POST        /sources, /assets, /tracks, /geofences, /alerts, /incidents,
-                /missions, /commands, /assessments, /operators
+GET/POST        /sources, /assets, /geofences, /incidents, /missions,
+                /commands, /assessments, /operators
+GET             /tracks, /alerts
 GET/POST        /observations                    (POST ingests evidence)
 POST            /telemetry                       (asset telemetry ingestion)
 GET             /tracks/{id}/history, /tracks/{id}/classifications
@@ -165,15 +170,19 @@ POST            /alerts/{id}/acknowledge|resolve
 POST            /incidents/{id}/status|relations
 POST            /missions/{id}/status|assets
 POST            /commands/{id}/transition
-POST            /tracks/{id}/classifications
 GET             /geospatial/geofences-containing|assets-within|nearest-assets
 GET             /audit                            (filters: subject_type, subject_id, action, since)
-GET/POST        /scenarios, /scenarios/{name}/start, /scenarios/runs/{id}/...
+GET             /scenarios, /scenarios/{name}, /scenarios/runs/{id}/events
+POST            /scenarios/definitions/{name}/start, /scenarios/runs/{id}/...
+GET             /auth/me
 GET             /realtime                         (WebSocket)
 GET             /health
+GET             /metrics                          (Prometheus text)
 ```
 
-Operator actions are attributed with the `X-Operator-ID` header (default `operator-01`) until Phase 17 adds authentication and RBAC.
+The server requires a bearer token by default. Local development uses `dev-operator-token`, which resolves to `operator-01`; the UI sends it through `VITE_API_TOKEN`. Replace both values in deployment configuration with secrets and registered operator ids. The legacy `X-Operator-ID` header is accepted only when authentication is explicitly disabled in development or test mode; the opt-in integration suite uses bearer authentication as well.
+
+`GET /api/v1/auth/me` returns the authenticated operator and effective permissions. Roles are stored in the `operators` table: `operator`, `supervisor`, `administrator`, and `analyst`. Restricted writes return `403` and never trust a spoofed operator header.
 
 ### Realtime
 
@@ -223,19 +232,22 @@ events:
     jitter_m: 15
 ```
 
-Supported actions: `observe` (with `interval`, `until`, `jitter_m`, `delay`, `duplicate`, `stale_for`), `move` (assets and tracks), `classify`, `connection`, `issue_command`. `command_simulation` controls how the runner acknowledges commands issued against scenario assets.
+Supported actions: `observe` (with `interval`, `until`, `jitter_m`, `delay`, `duplicate`, `stale_for`, `quality`, `fault`, and explicit `position`), `move` (assets and tracks), `classify`, `assessment`, `connection`, `asset_status`, `incident`, and `issue_command`. `command_simulation` controls normal, rejected, failed, or timed-out commands issued against scenario assets. Run responses expose the last virtual-time action and the `/events` endpoint exposes the scheduled event cursor. Restarting a run preserves its scenario and seed while creating a new run id.
 
 Control endpoints:
 
 ```text
 GET  /api/v1/scenarios                     list scenario files
 GET  /api/v1/scenarios/{name}              parsed scenario
-POST /api/v1/scenarios/{name}/start        {"speed": 1, "seed": 1007}
+POST /api/v1/scenarios/definitions/{name}/start  {"speed": 1, "seed": 1007}
 GET  /api/v1/scenarios/runs                recent runs
-GET  /api/v1/scenarios/runs/{id}           run state + virtual time
+GET  /api/v1/scenarios/runs/{id}           run state, namespace, cursor + virtual time
 POST /api/v1/scenarios/runs/{id}/pause|resume|stop
 POST /api/v1/scenarios/runs/{id}/speed     {"speed": 5}
+POST /api/v1/scenarios/runs/{id}/restart
 ```
+
+Scenario resources use a run-qualified namespace (`{runId}__...`) and are retained after completion, failure, stop, or restart for audit and investigation. The `/events` endpoint remains inspectable after the in-memory engine is released.
 
 Replay with the same seed produces the same observation sequence (positions included), which the acceptance test asserts exactly.
 
@@ -252,6 +264,14 @@ task sqlc                # regenerate internal/dbgen after changing SQL
 ```
 
 Never edit `internal/dbgen/` by hand.
+
+Browser and machine contracts:
+
+- `api/openapi/openapi.yaml` is the REST/WebSocket contract.
+- `apps/operator-ui/src/lib/openapi.generated.ts` is generated with `pnpm --dir apps/operator-ui contracts:generate`.
+- `api/proto/c4isr/v1/ingestion.proto` defines versioned observation and telemetry ingestion services; `buf lint api/proto` is enforced in CI.
+
+The server wraps HTTP with OpenTelemetry HTTP instrumentation and emits structured request logs containing request, trace, operator, and role identifiers. `/metrics` exposes request duration/counts, domain event counts, ingestion aggregates, and authentication failures in Prometheus text format.
 
 ## Local development model
 

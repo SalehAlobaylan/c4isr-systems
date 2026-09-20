@@ -1,0 +1,46 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - uses: bufbuild/buf-setup-action@v1
+      - run: pnpm install --frozen-lockfile
+      - run: go test ./...
+      - run: go vet ./...
+      - run: test -z "$(gofmt -l apps internal)"
+      - run: go test -race ./internal/platform/httpx ./internal/platform/observability ./internal/scenarios
+      - run: pnpm --dir apps/operator-ui build
+      - run: pnpm --dir apps/operator-ui contracts:generate
+      - run: git diff --exit-code -- apps/operator-ui/src/lib/openapi.generated.ts
+      - run: pnpm --package=@redocly/cli dlx redocly lint api/openapi/openapi.yaml
+      - run: buf lint api/proto
+      - name: Check protobuf compatibility
+        shell: bash
+        run: |
+          if git ls-tree -r --name-only origin/main -- api/proto | grep -q '\.proto$'; then
+            buf breaking api/proto --against '.git#branch=main,subdir=api/proto'
+          else
+            echo "No protobuf baseline exists on main; skipping the initial compatibility comparison."
+          fi
+      - run: C4ISR_TEST_INTEGRATION=1 go test -count=1 ./internal/integration/...
+      - run: pnpm --dir apps/operator-ui exec playwright install --with-deps chromium
+      - run: pnpm --dir apps/operator-ui exec playwright test

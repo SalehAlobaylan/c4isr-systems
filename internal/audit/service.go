@@ -8,7 +8,9 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
 )
 
 // DefaultLimit and MaxLimit bound list queries.
@@ -72,7 +74,23 @@ func (s *Service) Handle(ctx context.Context, ev events.Event) {
 	if ev == nil {
 		return
 	}
-	if _, err := s.Append(ctx, entryFromEvent(ev)); err != nil {
+	entry := entryFromEvent(ev)
+	entry.CorrelationID = httpx.GetRequestID(ctx)
+	if entry.Data == nil {
+		entry.Data = map[string]any{}
+	}
+	if traceID := httpx.GetTraceID(ctx); traceID != "" {
+		entry.Data["traceId"] = traceID
+	}
+	if scope, ok := runctx.ScopeFrom(ctx); ok {
+		entry.Data["scenarioRunId"] = scope.RunID
+		entry.Data["resourceNamespace"] = scope.ResourceNamespace
+		if entry.ActorID == "" {
+			entry.ActorType = ActorScenario
+			entry.ActorID = scope.ActorID()
+		}
+	}
+	if _, err := s.Append(ctx, entry); err != nil {
 		slog.Default().Error("audit event not recorded", "topic", ev.Topic(), "error", err)
 	}
 }
@@ -302,7 +320,11 @@ func setOperator(entry *Entry, actor string) {
 	if actor == "" {
 		return
 	}
-	entry.ActorType = ActorOperator
+	if strings.HasPrefix(actor, "scenario:") {
+		entry.ActorType = ActorScenario
+	} else {
+		entry.ActorType = ActorOperator
+	}
 	entry.ActorID = actor
 }
 

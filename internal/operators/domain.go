@@ -1,6 +1,6 @@
-// Package operators models the humans acting on the system. It stays minimal
-// until Phase 17 introduces full authentication and RBAC, but every operator
-// action is attributable today.
+// Package operators models the humans acting on the system. Authentication and
+// RBAC resolve identities at the HTTP boundary while this module owns the
+// persisted operator record and role vocabulary.
 package operators
 
 import (

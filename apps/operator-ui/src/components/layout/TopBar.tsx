@@ -7,7 +7,7 @@ import { ActivityIcon, UserIcon } from '@/components/icons'
 import { ScenarioBar } from '@/components/layout/ScenarioBar'
 import { Menu } from '@/components/ui/menu'
 import { Tooltip } from '@/components/ui/tooltip'
-import { OPERATOR_ID, fetchHealth, realtimeUrl } from '@/lib/api'
+import { API_TOKEN, api, fetchHealth, realtimeUrl } from '@/lib/api'
 import { formatRelative } from '@/lib/format'
 import { queryKeys } from '@/lib/queryKeys'
 import { cn } from '@/lib/utils'
@@ -75,6 +75,18 @@ export function TopBar() {
     refetchInterval: 30_000,
     retry: 1,
   })
+
+  const sessionQuery = useQuery({
+    queryKey: queryKeys.currentOperator(),
+    queryFn: () => api.getCurrentOperator(),
+    retry: false,
+    staleTime: 5 * 60_000,
+  })
+
+  const authenticated = Boolean(sessionQuery.data?.operator?.id)
+  const operatorID = sessionQuery.data?.operator?.id ?? 'not authenticated'
+  const operatorRole = sessionQuery.data?.operator?.role ?? (API_TOKEN ? 'checking' : 'token required')
+  const operatorLabel = operatorID.toUpperCase()
 
   const healthOk = healthQuery.isSuccess && healthQuery.data.status === 'ok'
   const healthDown = healthQuery.isError
@@ -203,18 +215,20 @@ export function TopBar() {
               <button
                 type="button"
                 className="aegis-iconbtn"
-                title={`Signed in as ${OPERATOR_ID}`}
-                aria-label={`Signed in as ${OPERATOR_ID}`}
+                title={authenticated ? `Signed in as ${operatorID}` : 'Authentication status'}
+                aria-label={authenticated ? `Signed in as ${operatorID}` : 'Authentication status'}
               >
                 <UserIcon className="size-3.5" />
-                <span className="aegis-operator-id">{OPERATOR_ID.toUpperCase()}</span>
+                <span className="aegis-operator-id">{operatorLabel}</span>
               </button>
             }
             items={[
               {
                 label: 'Copy operator ID',
+                disabled: !authenticated,
                 onSelect: () => {
-                  void navigator.clipboard.writeText(OPERATOR_ID)
+                  if (!authenticated) return
+                  void navigator.clipboard.writeText(operatorID)
                   toast({ title: 'Operator ID copied', variant: 'success' })
                 },
               },
@@ -278,7 +292,7 @@ export function TopBar() {
               </div>
             </div>
             <div className="aegis-sheet-f">
-              <span className="cap faint">Operator {OPERATOR_ID.toUpperCase()}</span>
+              <span className="cap faint">{operatorRole.toUpperCase()} · {operatorLabel}</span>
               <span className="spacer" />
               <a
                 className="aegis-sheet-link"

@@ -67,12 +67,17 @@ tasks:
     desc: Run the Go C4ISR server on the host
     env:
       C4ISR_DATABASE_URL: "{{.DATABASE_URL}}"
+      C4ISR_ENV: development
+      C4ISR_AUTH_REQUIRED: "true"
+      C4ISR_AUTH_TOKENS: 'operator-01={{.C4ISR_API_TOKEN | default "dev-operator-token"}}'
     cmds:
       - go run ./apps/c4isr-server
 
   dev:web:
     desc: Run the Vite operator UI on the host
     dir: apps/operator-ui
+    env:
+      VITE_API_TOKEN: '{{.C4ISR_API_TOKEN | default "dev-operator-token"}}'
     cmds:
       - pnpm dev
 
@@ -85,6 +90,16 @@ tasks:
     desc: Run unit tests only
     cmds:
       - go test ./internal/... ./apps/...
+
+  test:race:
+    desc: Run concurrency-sensitive tests with the race detector
+    cmds:
+      - go test -race ./internal/platform/httpx ./internal/platform/observability ./internal/scenarios
+
+  test:e2e:
+    desc: Run operator UI browser smoke tests (Chromium required)
+    cmds:
+      - pnpm --dir apps/operator-ui exec playwright test
 
   test:integration:
     desc: Run integration tests against real PostgreSQL/PostGIS (Docker required)
@@ -99,10 +114,33 @@ tasks:
       - go vet ./...
       - test -z "$(gofmt -l apps internal | tee /dev/stderr)"
 
+  contracts:openapi:
+    desc: Regenerate browser TypeScript types from the OpenAPI contract
+    cmds:
+      - pnpm --dir apps/operator-ui contracts:generate
+
+  contracts:buf:
+    desc: Lint protobuf contracts with Buf (install Buf separately)
+    cmds:
+      - buf lint api/proto
+
+  contracts:buf-breaking:
+    desc: Check protobuf compatibility against the main branch module
+    cmds:
+      - >-
+        if git ls-tree -r --name-only origin/main -- api/proto | grep -q '\.proto$'; then
+        buf breaking api/proto --against '.git#branch=main,subdir=api/proto';
+        else
+        echo "No protobuf baseline exists on main; skipping the initial compatibility comparison.";
+        fi
+
   scenario:list:
     desc: List available scenarios
     cmds:
-      - curl -sS http://localhost:8080/api/v1/scenarios | python3 -m json.tool
+      - >-
+        curl -sS http://localhost:8080/api/v1/scenarios
+        -H "Authorization: Bearer {{.C4ISR_API_TOKEN | default \"dev-operator-token\"}}"
+        | python3 -m json.tool
 
   scenario:run:
     desc: Start a scenario by name (NAME=restricted-area-intrusion)
@@ -111,12 +149,16 @@ tasks:
     cmds:
       - >-
         curl -sS -X POST
-        "http://localhost:8080/api/v1/scenarios/{{.NAME}}/start"
+        "http://localhost:8080/api/v1/scenarios/definitions/{{.NAME}}/start"
         -H "Content-Type: application/json"
+        -H "Authorization: Bearer {{.C4ISR_API_TOKEN | default \"dev-operator-token\"}}"
         -d '{"speed": {{.SPEED | default "1"}}}'
         | python3 -m json.tool
 
   scenario:runs:
     desc: Show recent scenario runs
     cmds:
-      - curl -sS http://localhost:8080/api/v1/scenarios/runs | python3 -m json.tool
+      - >-
+        curl -sS http://localhost:8080/api/v1/scenarios/runs
+        -H "Authorization: Bearer {{.C4ISR_API_TOKEN | default \"dev-operator-token\"}}"
+        | python3 -m json.tool

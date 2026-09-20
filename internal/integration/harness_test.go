@@ -30,6 +30,7 @@ import (
 )
 
 const integrationEnv = "C4ISR_TEST_INTEGRATION"
+const integrationToken = "integration-token"
 
 type harness struct {
 	t      *testing.T
@@ -76,13 +77,24 @@ func newHarness(t *testing.T) *harness {
 		t.Fatalf("open pool: %v", err)
 	}
 	applyMigrations(ctx, t, pool)
+	if _, err := pool.Exec(ctx, `
+		INSERT INTO operators (id, name, role)
+		VALUES ('operator-01', 'Operator 01', 'supervisor')
+		ON CONFLICT (id) DO UPDATE SET role = EXCLUDED.role
+	`); err != nil {
+		t.Fatalf("seed integration operator: %v", err)
+	}
 
 	cfg := config.Config{
-		HTTPAddr:     ":0",
-		DatabaseURL:  dsn,
-		LogLevel:     "error",
-		LogFormat:    "text",
-		ScenariosDir: scenariosDir(),
+		HTTPAddr:       ":0",
+		DatabaseURL:    dsn,
+		LogLevel:       "error",
+		LogFormat:      "text",
+		ScenariosDir:   scenariosDir(),
+		AllowedOrigins: []string{"http://operator.test"},
+		Environment:    config.EnvironmentTest,
+		AuthRequired:   true,
+		AuthTokens:     map[string]string{integrationToken: "operator-01"},
 	}
 	logger := logging.New(io.Discard, "text", "error")
 	application, err := app.New(ctx, cfg, logger)
@@ -169,7 +181,7 @@ func (h *harness) do(method, path string, body any, out any) int {
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
-	req.Header.Set("X-Operator-ID", "operator-01")
+	req.Header.Set("Authorization", "Bearer "+integrationToken)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

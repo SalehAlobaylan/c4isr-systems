@@ -9,6 +9,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
 )
 
 // DefaultLimit and MaxLimit bound list queries.
@@ -173,13 +174,19 @@ func (s *Service) correlate(ctx context.Context, update ObservationUpdate, now t
 }
 
 func (s *Service) createTrack(ctx context.Context, update ObservationUpdate, now time.Time) (Track, error) {
+	metadata := map[string]any{"sourceId": update.SourceID}
+	if scope, ok := runctx.ScopeFrom(ctx); ok {
+		metadata["scenarioRunId"] = scope.RunID
+		metadata["resourceNamespace"] = scope.ResourceNamespace
+		metadata["scenarioTrackRef"] = update.TrackHint
+	}
 	track := Track{
 		ID:          ids.New("trk"),
 		ExternalRef: update.TrackHint,
 		Status:      StatusActive,
 		FirstSeenAt: update.ObservedAt,
 		LastSeenAt:  update.ObservedAt,
-		Metadata:    map[string]any{"sourceId": update.SourceID},
+		Metadata:    metadata,
 	}
 	created, err := s.repo.Create(ctx, track)
 	if err != nil {

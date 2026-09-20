@@ -1,0 +1,8 @@
+version: v2
+plugins:
+  # Generation is intentionally opt-in until the repository standardizes the
+  # exact Go/protobuf runtime and external plugin cache in CI.
+  - local: protoc-gen-go
+    out: gen/go
+    opt:
+      - paths=source_relative

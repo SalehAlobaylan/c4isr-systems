@@ -38,6 +38,7 @@ export function ScenarioBar() {
   })
 
   const [startName, setStartName] = useState('')
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
 
   const scenarios = scenariosQuery.data?.items ?? []
 
@@ -61,9 +62,24 @@ export function ScenarioBar() {
     },
   })
 
-  const activeRun = useMemo(
-    () => (runsQuery.data?.items ?? []).find((run) => ACTIVE_STATES.has(run.status)) ?? null,
+  const activeRuns = useMemo(
+    () => (runsQuery.data?.items ?? []).filter((run) => ACTIVE_STATES.has(run.status)),
     [runsQuery.data],
+  )
+
+  useEffect(() => {
+    if (activeRuns.length === 0) {
+      setSelectedRunId(null)
+      return
+    }
+    if (!selectedRunId || !activeRuns.some((run) => run.id === selectedRunId)) {
+      setSelectedRunId(activeRuns[0].id)
+    }
+  }, [activeRuns, selectedRunId])
+
+  const activeRun = useMemo(
+    () => activeRuns.find((run) => run.id === selectedRunId) ?? activeRuns[0] ?? null,
+    [activeRuns, selectedRunId],
   )
 
   const invalidate = useCallback(() => {
@@ -92,13 +108,7 @@ export function ScenarioBar() {
   })
 
   const replayMutation = useMutation({
-    mutationFn: async (run: ScenarioRun) => {
-      await api.stopScenarioRun(run.id)
-      return api.startScenario(run.scenarioName, {
-        speed: run.playbackSpeed || 1,
-        seed: run.seed,
-      })
-    },
+    mutationFn: (run: ScenarioRun) => api.restartScenarioRun(run.id),
     onSuccess: (run) => {
       toast({
         title: 'Replay started',
@@ -184,6 +194,20 @@ export function ScenarioBar() {
         <span className="aegis-scenario">
           {activeRun ? `${activeRun.scenarioName} · seed ${activeRun.seed}` : 'No active run'}
         </span>
+        {activeRuns.length > 1 ? (
+          <select
+            aria-label="Select active scenario run"
+            className="max-w-48"
+            value={activeRun?.id ?? ''}
+            onChange={(event) => setSelectedRunId(event.target.value || null)}
+          >
+            {activeRuns.map((run) => (
+              <option key={run.id} value={run.id}>
+                {run.scenarioName} · {run.id}
+              </option>
+            ))}
+          </select>
+        ) : null}
         <span className="aegis-clock" id="aegis-run-clock">
           {activeRun
             ? `T+${formatVirtualTime(activeRun.virtualTimeMs)} · ${activeRun.playbackSpeed}×`

@@ -1,0 +1,113 @@
+scenario: operational-failure-matrix
+description: >
+  Deterministic Phase 18 harness for multi-source disagreement, quality
+  faults, asset availability, command rejection, incident escalation, and
+  assessment revision. Invalid observations are intentionally rejected and
+  remain visible in the scenario event inspection view.
+seed: 9090
+playback_speed: 1
+
+sources:
+  - id: radar-fault-sim
+    name: Fault Injection Radar
+    type: sensor
+  - id: camera-fault-sim
+    name: Fault Injection Camera
+    type: sensor
+
+assets:
+  - id: responder-01
+    name: Responder 01
+    type: vehicle
+    start: { lat: 24.7100, lng: 46.6650 }
+
+tracks:
+  - id: ambiguous-01
+    start: { lat: 24.7120, lng: 46.6680 }
+
+events:
+  - after: 0s
+    action: observe
+    source: radar-fault-sim
+    track: ambiguous-01
+    payload: { sensorMode: radar, hypothesis: vehicle }
+    quality: { positionConfidence: 0.45 }
+
+  # Same entity, independent source, intentionally conflicting position.
+  - after: 2s
+    action: observe
+    source: camera-fault-sim
+    track: ambiguous-01
+    position: { lat: 24.7140, lng: 46.6700 }
+    payload: { sensorMode: camera, hypothesis: person }
+    quality: { positionConfidence: 0.88 }
+
+  - after: 4s
+    action: observe
+    source: radar-fault-sim
+    track: ambiguous-01
+    duplicate: true
+    stale_for: 45s
+
+  # The service rejects this observation because the coordinate is invalid;
+  # the runner records the failed action without stopping the rest of the run.
+  - after: 5s
+    action: observe
+    source: camera-fault-sim
+    track: ambiguous-01
+    fault: invalid_coordinate
+
+  - after: 6s
+    action: classify
+    track: ambiguous-01
+    label: unknown
+    confidence: 0.42
+
+  - after: 8s
+    action: assessment
+    subject_type: track
+    subject_id: ambiguous-01
+    assessment_type: identity
+    conclusion: "Sources disagree; identity remains unresolved."
+    confidence: 0.42
+    method: RULE
+    evidence:
+      - { type: track, id: ambiguous-01 }
+
+  - after: 10s
+    action: assessment
+    subject_type: track
+    subject_id: ambiguous-01
+    assessment_type: identity
+    conclusion: "Camera evidence increases confidence that the entity is a person."
+    confidence: 0.71
+    method: OPERATOR
+    evidence:
+      - { type: source, id: camera-fault-sim }
+
+  - after: 12s
+    action: asset_status
+    asset: responder-01
+    status: unavailable
+
+  - after: 14s
+    action: incident
+    incident_ref: ambiguous-response
+    incident_title: Ambiguous entity requires review
+    incident_description: Conflicting multi-source evidence requires operator investigation.
+    incident_priority: high
+
+  - after: 16s
+    action: incident
+    incident_ref: ambiguous-response
+    incident_status: INVESTIGATING
+
+  - after: 18s
+    action: issue_command
+    asset: responder-01
+    type: move_to
+    payload: { lat: 24.7140, lng: 46.6700 }
+
+command_simulation:
+  behavior: reject
+  acknowledge_after: 2s

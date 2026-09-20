@@ -11,4 +11,9 @@ type Repository interface {
 	UpdateStatus(ctx context.Context, id, status, errorMessage string) (Run, error)
 	UpdateSpeed(ctx context.Context, id string, speed float64) (Run, error)
 	UpdateProgress(ctx context.Context, id string, virtualTimeMs int64) error
+	UpdateCursor(ctx context.Context, id string, virtualTimeMs int64, lastAction string, lastActionAt int64, actionError string) error
+	CreateEvent(ctx context.Context, runID string, event EventInspection) error
+	UpdateEvent(ctx context.Context, runID string, sequence int, status, errorMessage string) error
+	ListEvents(ctx context.Context, runID string) ([]EventInspection, error)
+	SkipPendingEvents(ctx context.Context, runID, errorMessage string) error
 }

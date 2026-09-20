@@ -35,6 +35,7 @@ const SPEED_OPTIONS = [
 export function ScenariosPage() {
   const queryClient = useQueryClient()
   const [startTarget, setStartTarget] = useState<ScenarioSummary | null>(null)
+  const [inspectedRunId, setInspectedRunId] = useState<string | null>(null)
 
   const scenariosQuery = useQuery({
     queryKey: queryKeys.scenarios.list(),
@@ -114,7 +115,33 @@ export function ScenariosPage() {
     },
   })
 
+  const restartMutation = useMutation({
+    mutationFn: (id: string) => api.restartScenarioRun(id),
+    onSuccess: (run) => {
+      toast({
+        title: 'Scenario restarted',
+        description: `${run.scenarioName} replaying with seed ${run.seed}`,
+        variant: 'success',
+      })
+      invalidate()
+    },
+    onError: (error) => {
+      toast({
+        title: 'Scenario restart failed',
+        description: error instanceof Error ? error.message : undefined,
+        variant: 'error',
+      })
+    },
+  })
+
   const runs = runsQuery.data?.items ?? []
+  const inspectedRun = runs.find((run) => run.id === inspectedRunId) ?? null
+  const eventsQuery = useQuery({
+    queryKey: queryKeys.scenarios.events(inspectedRunId ?? ''),
+    queryFn: () => api.listScenarioRunEvents(inspectedRunId ?? ''),
+    enabled: inspectedRunId !== null,
+    refetchInterval: inspectedRun && (inspectedRun.status === 'RUNNING' || inspectedRun.status === 'PAUSED') ? 2_000 : false,
+  })
 
   const columns = useMemo<Array<ColumnDef<ScenarioRun, any>>>(
     () => [
@@ -147,6 +174,20 @@ export function ScenariosPage() {
           <span className="font-mono text-xs text-ink-muted">
             {formatVirtualTime(row.original.virtualTimeMs)}
           </span>
+        ),
+      },
+      {
+        id: 'eventProgress',
+        header: 'Event cursor',
+        cell: ({ row }) => (
+          <div className="min-w-32">
+            <p className="truncate font-mono text-[11px] text-ink-muted" title={row.original.lastAction}>
+              {row.original.lastAction || '—'}
+            </p>
+            <p className="font-mono text-[10px] text-ink-faint">
+              {row.original.eventsRun}/{row.original.eventsTotal} actions
+            </p>
+          </div>
         ),
       },
       {
@@ -236,23 +277,26 @@ export function ScenariosPage() {
                 variant="outline"
                 size="sm"
                 title="Restart with same seed"
-                onClick={() =>
-                  startMutation.mutate({
-                    name: run.scenarioName,
-                    speed: run.playbackSpeed || 1,
-                    seed: run.seed,
-                  })
-                }
+                onClick={() => restartMutation.mutate(run.id)}
+                disabled={restartMutation.isPending}
               >
                 <RefreshIcon className="size-3.5" />
                 Restart
+              </Button>
+              <Button
+                variant={inspectedRunId === run.id ? 'default' : 'outline'}
+                size="sm"
+                title="Inspect durable event history"
+                onClick={() => setInspectedRunId((current) => (current === run.id ? null : run.id))}
+              >
+                Events
               </Button>
             </div>
           )
         },
       },
     ],
-    [runActionMutation, speedMutation, startMutation],
+    [inspectedRunId, restartMutation, runActionMutation, speedMutation, startMutation],
   )
 
   return (
@@ -330,6 +374,63 @@ export function ScenariosPage() {
             </div>
           )}
         </section>
+
+        {inspectedRun ? (
+          <section className="flex flex-col gap-3" aria-label={`Events for ${inspectedRun.id}`}>
+            <SectionTitle
+              action={
+                <Button variant="ghost" size="sm" onClick={() => setInspectedRunId(null)}>
+                  Close
+                </Button>
+              }
+            >
+              Event history · {inspectedRun.scenarioName}
+            </SectionTitle>
+            <div className="rounded-lg border border-edge bg-panel p-4">
+              <div className="mb-4 grid grid-cols-1 gap-2 text-xs text-ink-muted md:grid-cols-3">
+                <span className="font-mono">run {inspectedRun.id}</span>
+                <span className="font-mono">namespace {inspectedRun.resourceNamespace}</span>
+                <span className="font-mono">
+                  {inspectedRun.eventsRun}/{inspectedRun.eventsTotal} executed
+                </span>
+              </div>
+              {eventsQuery.isError ? (
+                <ErrorState error={eventsQuery.error} onRetry={() => void eventsQuery.refetch()} />
+              ) : eventsQuery.isLoading ? (
+                <div className="h-32 animate-pulse rounded border border-edge bg-panel-raised" />
+              ) : eventsQuery.data?.items.length ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[620px] text-left text-xs">
+                    <thead className="border-b border-edge text-[10px] tracking-widest text-ink-faint uppercase">
+                      <tr>
+                        <th className="px-2 py-2 font-medium">Seq</th>
+                        <th className="px-2 py-2 font-medium">Virtual time</th>
+                        <th className="px-2 py-2 font-medium">Action</th>
+                        <th className="px-2 py-2 font-medium">Status</th>
+                        <th className="px-2 py-2 font-medium">Error</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-edge">
+                      {eventsQuery.data.items.map((event) => (
+                        <tr key={event.sequence} className="text-ink-muted">
+                          <td className="px-2 py-2 font-mono text-ink-faint">{event.sequence}</td>
+                          <td className="px-2 py-2 font-mono">{formatVirtualTime(event.atMs)}</td>
+                          <td className="px-2 py-2 font-mono text-ink">{event.name}</td>
+                          <td className="px-2 py-2"><StateBadge value={event.status} /></td>
+                          <td className="max-w-sm px-2 py-2 text-red-300/80">{event.error ?? '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="py-8 text-center text-xs text-ink-muted">
+                  No persisted events are available for this legacy run.
+                </p>
+              )}
+            </div>
+          </section>
+        ) : null}
       </div>
 
       {startTarget ? (
@@ -369,7 +470,16 @@ function StartScenarioDialog({
       seed: String(scenario.seed),
     },
     onSubmit: ({ value }) => {
-      const seed = value.seed.trim() ? Number(value.seed) : undefined
+      const rawSeed = value.seed.trim()
+      const seed = rawSeed ? Number(rawSeed) : undefined
+      if (seed !== undefined && !Number.isSafeInteger(seed)) {
+        toast({
+          title: 'Invalid seed',
+          description: 'Seed must be a whole number within the supported range.',
+          variant: 'error',
+        })
+        return
+      }
       onStart(Number(value.speed), seed)
     },
   })
@@ -420,6 +530,11 @@ function StartScenarioDialog({
               <Input
                 id="scenario-seed"
                 className="font-mono"
+                inputMode="numeric"
+                min={Number.MIN_SAFE_INTEGER}
+                max={Number.MAX_SAFE_INTEGER}
+                step="1"
+                type="number"
                 value={field.state.value}
                 onBlur={field.handleBlur}
                 onChange={(event) => field.handleChange(event.target.value)}

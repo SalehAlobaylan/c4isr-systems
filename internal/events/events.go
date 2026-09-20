@@ -112,6 +112,9 @@ type Dispatcher struct {
 
 // NewDispatcher creates an empty dispatcher.
 func NewDispatcher(logger *slog.Logger) *Dispatcher {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	return &Dispatcher{
 		logger:   logger,
 		handlers: make(map[string][]Handler),

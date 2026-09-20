@@ -43,6 +43,12 @@ const STATE_TONES: Record<string, BadgeVariant> = {
   RUNNING: 'success',
   PAUSED: 'warning',
   STOPPED: 'muted',
+  // scenario event inspection
+  pending: 'muted',
+  running: 'info',
+  completed: 'success',
+  failed: 'danger',
+  skipped: 'warning',
   // priorities / severities
   low: 'muted',
   medium: 'info',

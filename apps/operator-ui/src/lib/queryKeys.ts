@@ -6,6 +6,7 @@
  */
 export const queryKeys = {
   health: () => ['health'] as const,
+  currentOperator: () => ['current-operator'] as const,
   operators: () => ['operators'] as const,
 
   sources: {
@@ -78,5 +79,7 @@ export const queryKeys = {
     list: () => ['scenarios', 'list'] as const,
     detail: (name: string) => ['scenarios', 'detail', name] as const,
     runs: (filters?: Record<string, unknown>) => ['scenarios', 'runs', filters ?? {}] as const,
+    run: (id: string) => ['scenarios', 'run', id] as const,
+    events: (id: string) => ['scenarios', 'run', id, 'events'] as const,
   },
 } as const

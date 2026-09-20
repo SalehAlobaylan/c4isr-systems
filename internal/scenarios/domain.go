@@ -7,9 +7,11 @@ package scenarios
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/assessments"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 )
@@ -23,12 +25,23 @@ const (
 	StatusFailed    = "FAILED"
 )
 
+const (
+	EventPending   = "pending"
+	EventRunning   = "running"
+	EventCompleted = "completed"
+	EventFailed    = "failed"
+	EventSkipped   = "skipped"
+)
+
 // Action names supported in scenario event specs.
 const (
 	ActionObserve      = "observe"
 	ActionMove         = "move"
 	ActionClassify     = "classify"
+	ActionAssessment   = "assessment"
 	ActionConnection   = "connection"
+	ActionAssetStatus  = "asset_status"
+	ActionIncident     = "incident"
 	ActionIssueCommand = "issue_command"
 )
 
@@ -102,12 +115,41 @@ type EventSpec struct {
 	Label      string         `yaml:"label" json:"label"`
 	Confidence *float64       `yaml:"confidence" json:"confidence"`
 	State      string         `yaml:"state" json:"state"`
+	Status     string         `yaml:"status" json:"status"`
 	Type       string         `yaml:"type" json:"type"`
 	Payload    map[string]any `yaml:"payload" json:"payload"`
+	Quality    map[string]any `yaml:"quality" json:"quality"`
+	Position   *Position      `yaml:"position" json:"position"`
 	JitterM    float64        `yaml:"jitter_m" json:"jitterM"`
 	Delay      string         `yaml:"delay" json:"delay"`
 	Duplicate  bool           `yaml:"duplicate" json:"duplicate"`
 	StaleFor   string         `yaml:"stale_for" json:"staleFor"`
+	Fault      string         `yaml:"fault" json:"fault"`
+
+	// Assessment fields support deterministic analytical history. Each action
+	// appends a new assessment, so a later conclusion is a revision rather than
+	// an in-place mutation of prior evidence.
+	SubjectType    string         `yaml:"subject_type" json:"subjectType"`
+	SubjectID      string         `yaml:"subject_id" json:"subjectId"`
+	AssessmentType string         `yaml:"assessment_type" json:"assessmentType"`
+	Conclusion     string         `yaml:"conclusion" json:"conclusion"`
+	Method         string         `yaml:"method" json:"method"`
+	Evidence       []EvidenceSpec `yaml:"evidence" json:"evidence"`
+
+	// Incident fields support a synthetic escalation path. IncidentRef is a
+	// scenario-local stable name; the generated database id is resolved by the
+	// runner and can be referenced by later actions.
+	IncidentRef         string `yaml:"incident_ref" json:"incidentRef"`
+	IncidentTitle       string `yaml:"incident_title" json:"incidentTitle"`
+	IncidentDescription string `yaml:"incident_description" json:"incidentDescription"`
+	IncidentPriority    string `yaml:"incident_priority" json:"incidentPriority"`
+	IncidentStatus      string `yaml:"incident_status" json:"incidentStatus"`
+}
+
+// EvidenceSpec is a scenario-friendly assessment evidence reference.
+type EvidenceSpec struct {
+	Type string `yaml:"type" json:"type"`
+	ID   string `yaml:"id" json:"id"`
 }
 
 // CommandSimSpec controls how the runner simulates command acknowledgments for
@@ -129,15 +171,32 @@ func (p Position) Point() geo.Point { return geo.Point{Lat: p.Lat, Lng: p.Lng} }
 
 // Run is the persisted control-plane state of a scenario execution.
 type Run struct {
-	ID            string
-	ScenarioName  string
-	Seed          int64
-	Status        string
-	PlaybackSpeed float64
-	VirtualTimeMs int64
-	StartedAt     time.Time
-	EndedAt       *time.Time
-	Error         string
+	ID                string
+	ResourceNamespace string
+	ScenarioName      string
+	Seed              int64
+	Status            string
+	PlaybackSpeed     float64
+	VirtualTimeMs     int64
+	LastAction        string
+	LastActionAt      int64
+	ActionError       string
+	EventsRun         int
+	EventsTotal       int
+	StartedAt         time.Time
+	EndedAt           *time.Time
+	Error             string
+}
+
+// EventInspection is a deterministic runner event in virtual-time order.
+// It is intentionally a control-plane view; it does not replace audit facts
+// emitted by the application services.
+type EventInspection struct {
+	Sequence int    `json:"sequence"`
+	AtMs     int64  `json:"atMs"`
+	Name     string `json:"name"`
+	Status   string `json:"status"`
+	Error    string `json:"error,omitempty"`
 }
 
 // Summary describes an available scenario file.
@@ -182,12 +241,28 @@ func ParseDurationMs(raw string) (int64, error) {
 	return d.Milliseconds(), nil
 }
 
+// validateLogicalID protects the run-qualified namespace from collapsing
+// distinct logical identifiers onto the same physical resource. RunScope.ID
+// intentionally trims identifiers for stable generated IDs, so accepting
+// surrounding whitespace here would make values such as "asset-1" and
+// " asset-1 " collide during setup.
+func validateLogicalID(kind, id string) error {
+	trimmed := strings.TrimSpace(id)
+	if trimmed == "" {
+		return apperr.Validation("every " + kind + " requires an id")
+	}
+	if trimmed != id {
+		return apperr.Validation(kind + " id must not have surrounding whitespace: " + id)
+	}
+	return nil
+}
+
 // Validate checks scenario structure and cross references.
 func (s *Scenario) Validate() error {
 	if strings.TrimSpace(s.Name) == "" {
 		return apperr.Validation("scenario name is required")
 	}
-	if s.PlaybackSpeed < 0 {
+	if s.PlaybackSpeed < 0 || math.IsNaN(s.PlaybackSpeed) || math.IsInf(s.PlaybackSpeed, 0) {
 		return apperr.Validation("playback_speed must be positive")
 	}
 	if s.CommandSimulation != nil {
@@ -196,12 +271,41 @@ func (s *Scenario) Validate() error {
 		default:
 			return apperr.Validation("command_simulation.behavior must be normal, reject, fail, or timeout")
 		}
+		var acknowledgeAfter, completeAfter int64
+		for _, item := range []struct {
+			field string
+			raw   string
+		}{
+			{field: "acknowledge_after", raw: s.CommandSimulation.AcknowledgeAfter},
+			{field: "complete_after", raw: s.CommandSimulation.CompleteAfter},
+		} {
+			parsed, err := ParseDurationMs(item.raw)
+			if err != nil {
+				return apperr.Validation("command_simulation." + item.field + ": " + err.Error())
+			}
+			if item.field == "acknowledge_after" {
+				acknowledgeAfter = parsed
+			} else {
+				completeAfter = parsed
+			}
+		}
+		if s.CommandSimulation.Behavior == "" || s.CommandSimulation.Behavior == "normal" {
+			if acknowledgeAfter == 0 {
+				acknowledgeAfter = defaultAckDelayMs
+			}
+			if completeAfter == 0 {
+				completeAfter = defaultCompleteDelay
+			}
+			if completeAfter < acknowledgeAfter {
+				return apperr.Validation("command_simulation.complete_after must not be before acknowledge_after")
+			}
+		}
 	}
 
 	sourceIDs := map[string]bool{}
 	for _, src := range s.Sources {
-		if strings.TrimSpace(src.ID) == "" {
-			return apperr.Validation("every source requires an id")
+		if err := validateLogicalID("source", src.ID); err != nil {
+			return err
 		}
 		if sourceIDs[src.ID] {
 			return apperr.Validation("duplicate source id: " + src.ID)
@@ -211,8 +315,8 @@ func (s *Scenario) Validate() error {
 
 	assetIDs := map[string]bool{}
 	for _, a := range s.Assets {
-		if a.ID == "" {
-			return apperr.Validation("every asset requires an id")
+		if err := validateLogicalID("asset", a.ID); err != nil {
+			return err
 		}
 		if assetIDs[a.ID] {
 			return apperr.Validation("duplicate asset id: " + a.ID)
@@ -224,12 +328,15 @@ func (s *Scenario) Validate() error {
 		if a.SpeedMPS != nil && *a.SpeedMPS <= 0 {
 			return apperr.Validation("asset " + a.ID + " speed_mps must be positive")
 		}
+		if a.SpeedMPS != nil && (math.IsNaN(*a.SpeedMPS) || math.IsInf(*a.SpeedMPS, 0)) {
+			return apperr.Validation("asset " + a.ID + " speed_mps must be finite")
+		}
 	}
 
 	trackIDs := map[string]bool{}
 	for _, t := range s.Tracks {
-		if t.ID == "" {
-			return apperr.Validation("every track requires an id")
+		if err := validateLogicalID("track", t.ID); err != nil {
+			return err
 		}
 		if trackIDs[t.ID] {
 			return apperr.Validation("duplicate track id: " + t.ID)
@@ -240,10 +347,15 @@ func (s *Scenario) Validate() error {
 		}
 	}
 
+	geofenceIDs := map[string]bool{}
 	for _, gf := range s.Geofences {
-		if gf.ID == "" {
-			return apperr.Validation("every geofence requires an id")
+		if err := validateLogicalID("geofence", gf.ID); err != nil {
+			return err
 		}
+		if geofenceIDs[gf.ID] {
+			return apperr.Validation("duplicate geofence id: " + gf.ID)
+		}
+		geofenceIDs[gf.ID] = true
 		if len(gf.Polygon) < 3 {
 			return apperr.Validation("geofence " + gf.ID + " requires at least 3 polygon points")
 		}
@@ -275,6 +387,40 @@ func (s *Scenario) Validate() error {
 		if _, err := ParseDurationMs(ev.StaleFor); err != nil {
 			return apperr.Validation(fmt.Sprintf("event %d: %v", i, err))
 		}
+		switch ev.Fault {
+		case "", "missing_position", "invalid_coordinate", "duplicate", "stale", "conflict":
+		default:
+			return apperr.Validation(fmt.Sprintf("event %d has unknown fault %q", i, ev.Fault))
+		}
+		if ev.Position != nil && ev.Fault != "invalid_coordinate" && !ev.Position.Point().Valid() {
+			return apperr.Validation(fmt.Sprintf("event %d has an invalid position", i))
+		}
+		for waypointIndex, waypoint := range ev.Waypoints {
+			if !waypoint.Point().Valid() {
+				return apperr.Validation(fmt.Sprintf("event %d waypoint %d has an invalid position", i, waypointIndex))
+			}
+		}
+		if ev.Confidence != nil && (math.IsNaN(*ev.Confidence) || math.IsInf(*ev.Confidence, 0) || *ev.Confidence < 0 || *ev.Confidence > 1) {
+			return apperr.Validation(fmt.Sprintf("event %d confidence must be between 0 and 1", i))
+		}
+		if math.IsNaN(ev.JitterM) || math.IsInf(ev.JitterM, 0) || ev.JitterM < 0 {
+			return apperr.Validation(fmt.Sprintf("event %d jitter_m must be finite and non-negative", i))
+		}
+		afterMs, _ := ParseDurationMs(ev.After)
+		untilMs, _ := ParseDurationMs(ev.Until)
+		intervalMs, _ := ParseDurationMs(ev.Interval)
+		delayMs, _ := ParseDurationMs(ev.Delay)
+		if ev.Until != "" && untilMs < afterMs {
+			return apperr.Validation(fmt.Sprintf("event %d until must not be before after", i))
+		}
+		if _, ok := addMilliseconds(afterMs, delayMs); !ok {
+			return apperr.Validation(fmt.Sprintf("event %d timeline is too large", i))
+		}
+		if intervalMs > 0 && ev.Until == "" {
+			if _, ok := addMilliseconds(afterMs, defaultObserveUntilMs); !ok {
+				return apperr.Validation(fmt.Sprintf("event %d observe timeline is too large", i))
+			}
+		}
 
 		switch ev.Action {
 		case ActionObserve:
@@ -284,9 +430,18 @@ func (s *Scenario) Validate() error {
 			if !trackIDs[ev.Track] {
 				return apperr.Validation(fmt.Sprintf("event %d references unknown track %q", i, ev.Track))
 			}
+			if ev.Duplicate || ev.Fault == "duplicate" {
+				observationAt, _ := addMilliseconds(afterMs, delayMs)
+				if _, ok := addMilliseconds(observationAt, 500); !ok {
+					return apperr.Validation(fmt.Sprintf("event %d duplicate timeline is too large", i))
+				}
+			}
 		case ActionMove:
 			if ev.Asset == "" && ev.Track == "" {
 				return apperr.Validation(fmt.Sprintf("event %d move requires asset or track", i))
+			}
+			if ev.Asset != "" && ev.Track != "" {
+				return apperr.Validation(fmt.Sprintf("event %d move must target exactly one asset or track", i))
 			}
 			if ev.Asset != "" && !assetIDs[ev.Asset] {
 				return apperr.Validation(fmt.Sprintf("event %d references unknown asset %q", i, ev.Asset))
@@ -297,15 +452,80 @@ func (s *Scenario) Validate() error {
 			if len(ev.Waypoints) == 0 {
 				return apperr.Validation(fmt.Sprintf("event %d move requires waypoints", i))
 			}
-			if ev.SpeedMPS != nil && *ev.SpeedMPS <= 0 {
+			if ev.SpeedMPS != nil && (*ev.SpeedMPS <= 0 || math.IsNaN(*ev.SpeedMPS) || math.IsInf(*ev.SpeedMPS, 0)) {
 				return apperr.Validation(fmt.Sprintf("event %d speed_mps must be positive", i))
 			}
 		case ActionClassify:
 			if !trackIDs[ev.Track] {
 				return apperr.Validation(fmt.Sprintf("event %d references unknown track %q", i, ev.Track))
 			}
-			if ev.Label == "" {
+			if strings.TrimSpace(ev.Label) == "" {
 				return apperr.Validation(fmt.Sprintf("event %d classify requires a label", i))
+			}
+		case ActionAssessment:
+			if strings.TrimSpace(ev.SubjectType) == "" || strings.TrimSpace(ev.SubjectID) == "" {
+				return apperr.Validation(fmt.Sprintf("event %d assessment requires subject_type and subject_id", i))
+			}
+			switch ev.SubjectType {
+			case "track", "asset", "incident", "observation", "source":
+			default:
+				return apperr.Validation(fmt.Sprintf("event %d assessment subject_type is invalid", i))
+			}
+			if strings.TrimSpace(ev.AssessmentType) == "" || strings.TrimSpace(ev.Conclusion) == "" {
+				return apperr.Validation(fmt.Sprintf("event %d assessment requires assessment_type and conclusion", i))
+			}
+			if ev.Method != "" {
+				switch assessments.Method(ev.Method) {
+				case assessments.MethodOperator, assessments.MethodRule, assessments.MethodAlgorithm, assessments.MethodAI:
+				default:
+					return apperr.Validation(fmt.Sprintf("event %d assessment method is invalid", i))
+				}
+			}
+			for evidenceIndex, evidence := range ev.Evidence {
+				if err := assessments.EvidenceType(evidence.Type).Validate(); err != nil {
+					return apperr.Validation(fmt.Sprintf("event %d evidence %d: %v", i, evidenceIndex, err))
+				}
+				if strings.TrimSpace(evidence.ID) == "" {
+					return apperr.Validation(fmt.Sprintf("event %d evidence %d requires an id", i, evidenceIndex))
+				}
+			}
+		case ActionAssetStatus:
+			if !assetIDs[ev.Asset] {
+				return apperr.Validation(fmt.Sprintf("event %d references unknown asset %q", i, ev.Asset))
+			}
+			switch ev.Status {
+			case "available", "assigned", "unavailable", "offline", "maintenance":
+			default:
+				return apperr.Validation(fmt.Sprintf("event %d asset status must be available, assigned, unavailable, offline, or maintenance", i))
+			}
+		case ActionIncident:
+			incidentRefPresent := strings.TrimSpace(ev.IncidentRef) != ""
+			incidentTitlePresent := strings.TrimSpace(ev.IncidentTitle) != ""
+			incidentStatusPresent := strings.TrimSpace(ev.IncidentStatus) != ""
+			if !incidentRefPresent && !incidentTitlePresent && !incidentStatusPresent {
+				return apperr.Validation(fmt.Sprintf("event %d incident requires incident_ref, incident_title, or incident_status", i))
+			}
+			if incidentRefPresent {
+				if err := validateLogicalID("incident_ref", ev.IncidentRef); err != nil {
+					return apperr.Validation(fmt.Sprintf("event %d: %v", i, err))
+				}
+			}
+			if incidentStatusPresent && !incidentRefPresent {
+				return apperr.Validation(fmt.Sprintf("event %d incident_status requires incident_ref", i))
+			}
+			if ev.IncidentPriority != "" {
+				switch ev.IncidentPriority {
+				case "low", "medium", "high", "critical":
+				default:
+					return apperr.Validation(fmt.Sprintf("event %d incident priority is invalid", i))
+				}
+			}
+			if ev.IncidentStatus != "" {
+				switch ev.IncidentStatus {
+				case "OPEN", "ACKNOWLEDGED", "INVESTIGATING", "RESPONDING", "RESOLVED", "CLOSED":
+				default:
+					return apperr.Validation(fmt.Sprintf("event %d incident status is invalid", i))
+				}
 			}
 		case ActionConnection:
 			if !assetIDs[ev.Asset] {
@@ -320,7 +540,7 @@ func (s *Scenario) Validate() error {
 			if !assetIDs[ev.Asset] {
 				return apperr.Validation(fmt.Sprintf("event %d references unknown asset %q", i, ev.Asset))
 			}
-			if ev.Type == "" {
+			if strings.TrimSpace(ev.Type) == "" {
 				return apperr.Validation(fmt.Sprintf("event %d issue_command requires a type", i))
 			}
 		default:
