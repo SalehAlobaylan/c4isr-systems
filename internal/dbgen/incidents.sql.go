@@ -548,16 +548,18 @@ SET status = $1,
     resolved_at = CASE WHEN $1::text = 'RESOLVED' THEN now() ELSE resolved_at END,
     closed_at = CASE WHEN $1::text = 'CLOSED' THEN now() ELSE closed_at END
 WHERE id = $2
+  AND status = $3
 RETURNING id, title, description, priority, status, assigned_operator, created_at, updated_at, resolved_at, closed_at
 `
 
 type UpdateIncidentStatusParams struct {
-	Status string
-	ID     string
+	Status         string
+	ID             string
+	ExpectedStatus string
 }
 
 func (q *Queries) UpdateIncidentStatus(ctx context.Context, arg UpdateIncidentStatusParams) (Incident, error) {
-	row := q.db.QueryRow(ctx, updateIncidentStatus, arg.Status, arg.ID)
+	row := q.db.QueryRow(ctx, updateIncidentStatus, arg.Status, arg.ID, arg.ExpectedStatus)
 	var i Incident
 	err := row.Scan(
 		&i.ID,

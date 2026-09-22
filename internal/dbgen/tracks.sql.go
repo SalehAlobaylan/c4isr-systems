@@ -11,6 +11,63 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const applyTrackObservation = `-- name: ApplyTrackObservation :one
+WITH advanced AS (
+    UPDATE tracks
+    SET last_seen_at = $1, updated_at = now()
+    WHERE id = $2
+      AND last_seen_at = $3
+      AND (
+          last_seen_at < $1
+          OR NOT EXISTS (SELECT 1 FROM track_state WHERE track_id = tracks.id)
+      )
+    RETURNING id
+), projected AS (
+    INSERT INTO track_state (track_id, position, speed, heading, updated_at)
+    SELECT
+        id,
+        CASE WHEN $4::boolean
+             THEN ST_SetSRID(ST_MakePoint($5::float8, $6::float8), 4326)::geography
+             ELSE NULL END,
+        $7, $8, now()
+    FROM advanced
+    ON CONFLICT (track_id) DO UPDATE SET
+        position = CASE WHEN $4::boolean THEN EXCLUDED.position ELSE track_state.position END,
+        speed = COALESCE(EXCLUDED.speed, track_state.speed),
+        heading = COALESCE(EXCLUDED.heading, track_state.heading),
+        updated_at = now()
+    RETURNING track_id
+)
+SELECT EXISTS (SELECT 1 FROM projected)::boolean AS applied
+`
+
+type ApplyTrackObservationParams struct {
+	ObservedAt         pgtype.Timestamptz
+	TrackID            string
+	ExpectedLastSeenAt pgtype.Timestamptz
+	HasPosition        bool
+	Lng                float64
+	Lat                float64
+	Speed              *float64
+	Heading            *float64
+}
+
+func (q *Queries) ApplyTrackObservation(ctx context.Context, arg ApplyTrackObservationParams) (bool, error) {
+	row := q.db.QueryRow(ctx, applyTrackObservation,
+		arg.ObservedAt,
+		arg.TrackID,
+		arg.ExpectedLastSeenAt,
+		arg.HasPosition,
+		arg.Lng,
+		arg.Lat,
+		arg.Speed,
+		arg.Heading,
+	)
+	var applied bool
+	err := row.Scan(&applied)
+	return applied, err
+}
+
 const attachObservationToTrack = `-- name: AttachObservationToTrack :execrows
 INSERT INTO track_observations (track_id, observation_id, source_id, observed_at, position)
 SELECT $1, o.id, o.source_id, o.observed_at, o.position
@@ -220,6 +277,65 @@ type FindTrackByExternalRefRow struct {
 func (q *Queries) FindTrackByExternalRef(ctx context.Context, externalRef *string) (FindTrackByExternalRefRow, error) {
 	row := q.db.QueryRow(ctx, findTrackByExternalRef, externalRef)
 	var i FindTrackByExternalRefRow
+	err := row.Scan(
+		&i.ID,
+		&i.ExternalRef,
+		&i.Status,
+		&i.FirstSeenAt,
+		&i.LastSeenAt,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ClosedAt,
+		&i.Speed,
+		&i.Heading,
+		&i.StateUpdatedAt,
+		&i.HasPosition,
+		&i.Lat,
+		&i.Lng,
+	)
+	return i, err
+}
+
+const findTrackByObservationID = `-- name: FindTrackByObservationID :one
+SELECT
+    t.id, t.external_ref, t.status, t.first_seen_at, t.last_seen_at,
+    t.metadata, t.created_at, t.updated_at, t.closed_at,
+    s.speed, s.heading, s.updated_at AS state_updated_at,
+    (s.position IS NOT NULL)::boolean AS has_position,
+    COALESCE(ST_Y(s.position::geometry), 0)::float8 AS lat,
+    COALESCE(ST_X(s.position::geometry), 0)::float8 AS lng
+FROM tracks t
+LEFT JOIN track_state s ON s.track_id = t.id
+LEFT JOIN track_observations tobs
+       ON tobs.track_id = t.id AND tobs.observation_id = $1
+WHERE tobs.observation_id = $1
+   OR t.metadata->>'initialObservationId' = $1
+ORDER BY (tobs.observation_id = $1) DESC
+LIMIT 1
+`
+
+type FindTrackByObservationIDRow struct {
+	ID             string
+	ExternalRef    *string
+	Status         string
+	FirstSeenAt    pgtype.Timestamptz
+	LastSeenAt     pgtype.Timestamptz
+	Metadata       []byte
+	CreatedAt      pgtype.Timestamptz
+	UpdatedAt      pgtype.Timestamptz
+	ClosedAt       pgtype.Timestamptz
+	Speed          *float64
+	Heading        *float64
+	StateUpdatedAt pgtype.Timestamptz
+	HasPosition    bool
+	Lat            float64
+	Lng            float64
+}
+
+func (q *Queries) FindTrackByObservationID(ctx context.Context, observationID string) (FindTrackByObservationIDRow, error) {
+	row := q.db.QueryRow(ctx, findTrackByObservationID, observationID)
+	var i FindTrackByObservationIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.ExternalRef,

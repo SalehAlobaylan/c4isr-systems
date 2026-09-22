@@ -17,8 +17,17 @@ fi
 
 if [ "$secret_count" -eq 5 ]; then
     if [ "${FORCE:-}" != "1" ]; then
-        echo "staging secrets already exist at $secret_dir; use FORCE=1 to rotate the UI/operator/Grafana secrets" >&2
-        exit 1
+        for required in postgres_password database_url auth_tokens ui_token grafana_admin_password; do
+            if [ ! -s "$secret_dir/$required" ]; then
+                echo "staging secret directory is incomplete; repair it manually before continuing: $secret_dir" >&2
+                exit 1
+            fi
+        done
+        if [ ! -e "$env_file" ]; then
+            cp "$ROOT/deployments/staging/.env.staging.example" "$env_file"
+        fi
+        echo "staging secrets already exist at $secret_dir; preserving them (use FORCE=1 to rotate the UI/operator/Grafana secrets)"
+        exit 0
     fi
     password=$(cat "$secret_dir/postgres_password")
     database_url=$(cat "$secret_dir/database_url")

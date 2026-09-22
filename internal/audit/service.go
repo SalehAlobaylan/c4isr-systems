@@ -38,6 +38,7 @@ func (s *Service) SubscribeAll(bus *events.Dispatcher) {
 		events.TopicSourceCreated,
 		events.TopicSourceUpdated,
 		events.TopicObservationReceived,
+		events.TopicObservationRejected,
 		events.TopicAssetCreated,
 		events.TopicAssetUpdated,
 		events.TopicAssetPositionUpdated,
@@ -155,12 +156,18 @@ func entryFromEvent(ev events.Event) Entry {
 		entry.Data["sourceId"] = e.SourceID
 		entry.Data["type"] = e.Type
 		entry.Data["duplicate"] = e.Duplicate
+		entry.Data["retry"] = e.Retry
 		if e.Position != nil {
 			entry.Data["position"] = pointData(*e.Position)
 		}
 		if e.TrackHint != "" {
 			entry.Data["trackHint"] = e.TrackHint
 		}
+	case events.ObservationRejected:
+		entry.SubjectType, entry.SubjectID = "observation", e.ObservationID
+		entry.Data["sourceId"] = e.SourceID
+		entry.Data["trackHint"] = e.TrackHint
+		entry.Data["reason"] = e.Reason
 	case events.AssetCreated:
 		entry.SubjectType, entry.SubjectID = "asset", e.AssetID
 		entry.Data["name"] = e.Name

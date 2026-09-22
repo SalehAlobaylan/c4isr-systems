@@ -3,14 +3,15 @@ package geospatial
 import (
 	"context"
 	"log/slog"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // DefaultLimit and MaxLimit bound list queries.
@@ -21,9 +22,17 @@ const (
 
 // Service implements geofence registration and containment tracking.
 type Service struct {
-	repo Repository
-	bus  *events.Dispatcher
-	now  func() time.Time
+	repo     Repository
+	bus      *events.Dispatcher
+	now      func() time.Time
+	observer EvaluationObserver
+}
+
+// EvaluationObserver receives one duration for each geofence evaluation. It
+// is intentionally a small interface so the domain service remains usable in
+// tests and by deployments that do not install a metrics backend.
+type EvaluationObserver interface {
+	ObserveGeofenceEvaluation(time.Duration)
 }
 
 // NewService wires a geospatial service and subscribes it to track updates.
@@ -41,73 +50,79 @@ func NewService(repo Repository, bus *events.Dispatcher) *Service {
 	return s
 }
 
+// SetObserver attaches an optional geofence evaluation observer.
+func (s *Service) SetObserver(observer EvaluationObserver) {
+	s.observer = observer
+}
+
 // HandleTrackUpdated derives breach and exit events from real containment
 // transitions, persisting state before publishing.
 func (s *Service) HandleTrackUpdated(ctx context.Context, ev events.TrackUpdated) {
 	if ev.Position == nil {
 		return
 	}
+	started := time.Now()
+	spanCtx, span := observability.StartSpan(ctx, "c4isr.geofence.evaluate",
+		attribute.String("track.id", ev.TrackID),
+		attribute.String("geofence.evaluation", "containment"),
+	)
+	ctx = spanCtx
+	var spanErr error
+	defer func() {
+		if s.observer != nil {
+			s.observer.ObserveGeofenceEvaluation(time.Since(started))
+		}
+		observability.EndSpan(span, spanErr)
+	}()
 	now := s.now()
 
 	containing, err := s.repo.ContainingPoint(ctx, *ev.Position)
 	if err != nil {
+		spanErr = err
 		slog.Default().Error("geospatial: list containing geofences", "track_id", ev.TrackID, "error", err)
 		return
 	}
 	containing = scopedGeofences(ctx, containing)
-	states, err := s.repo.StatesForTrack(ctx, ev.TrackID)
-	if err != nil {
-		slog.Default().Error("geospatial: list geofence states", "track_id", ev.TrackID, "error", err)
-		return
-	}
-	states = scopedStates(ctx, states)
-
 	containingSet := make(map[string]Geofence, len(containing))
+	containingIDs := make([]string, 0, len(containing))
 	for _, geofence := range containing {
 		containingSet[geofence.ID] = geofence
+		containingIDs = append(containingIDs, geofence.ID)
 	}
-
-	for _, geofence := range containing {
-		wasInside := states[geofence.ID]
-		if err := s.repo.SetState(ctx, geofence.ID, ev.TrackID, true); err != nil {
-			slog.Default().Error("geospatial: persist geofence state",
-				"geofence_id", geofence.ID, "track_id", ev.TrackID, "error", err)
-			continue
-		}
-		if wasInside {
-			continue
-		}
-		s.bus.Publish(ctx, events.GeofenceBreached{
-			At:           now,
-			GeofenceID:   geofence.ID,
-			GeofenceName: geofence.Name,
-			GeofenceType: string(geofence.Type),
-			Severity:     string(geofence.Severity),
-			TrackID:      ev.TrackID,
-			Position:     *ev.Position,
-		})
+	scopePrefix := ""
+	if scope, ok := runctx.ScopeFrom(ctx); ok {
+		scopePrefix = scope.ResourceNamespace + "geofence__"
 	}
-
-	exited := make([]string, 0, len(states))
-	for id, inside := range states {
-		if !inside {
-			continue
-		}
-		if _, ok := containingSet[id]; ok {
-			continue
-		}
-		exited = append(exited, id)
+	observedAt := ev.ObservedAt
+	if observedAt.IsZero() {
+		observedAt = ev.LastSeenAt
 	}
-	sort.Strings(exited)
-	for _, id := range exited {
-		if err := s.repo.SetState(ctx, id, ev.TrackID, false); err != nil {
-			slog.Default().Error("geospatial: persist geofence state",
-				"geofence_id", id, "track_id", ev.TrackID, "error", err)
+	transitions, err := s.repo.ReconcileStates(ctx, ev.TrackID, containingIDs, scopePrefix, observedAt)
+	if err != nil {
+		spanErr = err
+		slog.Default().Error("geospatial: reconcile geofence states", "track_id", ev.TrackID, "error", err)
+		return
+	}
+	for _, transition := range transitions {
+		if transition.Inside {
+			geofence, ok := containingSet[transition.GeofenceID]
+			if !ok {
+				continue
+			}
+			s.bus.Publish(ctx, events.GeofenceBreached{
+				At:           now,
+				GeofenceID:   geofence.ID,
+				GeofenceName: geofence.Name,
+				GeofenceType: string(geofence.Type),
+				Severity:     string(geofence.Severity),
+				TrackID:      ev.TrackID,
+				Position:     *ev.Position,
+			})
 			continue
 		}
 		s.bus.Publish(ctx, events.GeofenceExited{
 			At:         now,
-			GeofenceID: id,
+			GeofenceID: transition.GeofenceID,
 			TrackID:    ev.TrackID,
 			Position:   *ev.Position,
 		})

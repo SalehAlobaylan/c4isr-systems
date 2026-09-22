@@ -44,7 +44,11 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Health' }
         '400': { $ref: '#/components/responses/BadRequest' }
-        '503': { $ref: '#/components/responses/ServiceUnavailable' }
+        '503':
+          description: Database unavailable; the service returns its degraded health payload.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
   /metrics:
     get:
       tags: [system]
@@ -1002,7 +1006,6 @@ components:
     Forbidden: { description: Authorization denied, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     Conflict: { description: Lifecycle conflict, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     NotFound: { description: Resource not found, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
-    ServiceUnavailable: { description: Dependency unavailable, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
     Source: { description: Source, content: { application/json: { schema: { $ref: '#/components/schemas/Source' } } } }
     SourceList: { description: Sources, content: { application/json: { schema: { $ref: '#/components/schemas/SourceList' } } } }
     Observation: { description: Observation, content: { application/json: { schema: { $ref: '#/components/schemas/Observation' } } } }

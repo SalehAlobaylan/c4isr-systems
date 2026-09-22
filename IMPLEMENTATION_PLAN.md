@@ -28,8 +28,9 @@ Advanced intelligence, AI, external sensors, and edge/hardware integration come 
 
 ## Current implementation status
 
-The repository completes Phases 0–16 and the Phase 21 test-hardening
-baseline. Phases 17–20 are implemented in this codebase:
+The repository completes Phases 0–21. The first product milestone is covered
+by real PostGIS integration acceptance tests, a mocked browser operator
+workflow, and CI verification. Phases 17–21 are implemented in this codebase:
 
 - Phase 17: configuration-backed bearer authentication, operator lookup, RBAC,
   `/api/v1/auth/me`, trusted audit attribution, and legacy-header compatibility
@@ -37,10 +38,22 @@ baseline. Phases 17–20 are implemented in this codebase:
 - Phase 18: deterministic scenario-v2 fault actions, assessment/incident
   actions, asset availability changes, restart, virtual-time event inspection,
   and command failure simulation.
-- Phase 19: OpenAPI browser contract with generated TypeScript types and Buf/
-  protobuf ingestion contracts.
-- Phase 20: structured request/trace logging, Prometheus-compatible metrics,
-  domain event counters, and OpenTelemetry HTTP instrumentation.
+- Phase 19: OpenAPI browser contract with generated TypeScript types, a
+  contract-backed `openapi-fetch` client, and Buf/protobuf ingestion contracts.
+- Phase 20: structured request/domain-event logs, bounded Prometheus metrics
+  for the operational path, database/query instrumentation, and OpenTelemetry
+  spans from ingestion through WebSocket publication.
+- Phase 21: unit, race, Testcontainers/PostGIS integration, operational failure
+  matrix, terminal scenario-event inspection, and Playwright browser coverage
+  for the map and observation-to-command operator workflow.
+
+The repository also includes a production-shaped staging Compose reference with
+file-backed secrets, forward migration commands, encrypted-at-rest-ready dump
+and restore-drill scripts, centralized Loki/Prometheus/Grafana/Alertmanager
+configuration, alert rules, and an executable `task staging:smoke` readiness
+check. Cloud secret-manager wiring, off-site immutable backup storage, and live
+incident delivery remain deployment-owned configuration rather than local
+application code.
 
 Phases 22–26 remain intentionally deferred as described later in this plan;
 they require concrete ISR, intelligence, AI, external-system, or hardware
@@ -1030,17 +1043,18 @@ The system can replay complex multi-source conditions deterministically.
 # 22. Phase 19 — Contract Formalization
 
 **Status: Complete.** The browser contract lives in `api/openapi/openapi.yaml`
-with generated UI types; machine ingestion contracts live in Buf-managed
-protobuf.
+with generated UI types and a typed runtime client; machine ingestion contracts
+live in Buf-managed protobuf.
 
 ## Browser Contract
 
 Use OpenAPI.
 
-Generate:
+Generate/adopt:
 
 - TypeScript types
-- client functions
+- client functions through `openapi-fetch`, parameterized by the generated
+  `paths` type
 
 Enforce in CI.
 
@@ -1068,9 +1082,10 @@ External systems can integrate through versioned contracts.
 
 # 23. Phase 20 — Observability
 
-**Status: Complete.** Structured request logs include correlation dimensions,
-`/metrics` exposes request/domain counters, and the HTTP boundary is wrapped
-with OpenTelemetry instrumentation.
+**Status: Complete.** Structured request and domain-event logs include
+correlation dimensions, `/metrics` exposes bounded HTTP/domain/operational
+counters and latency summaries, database queries are instrumented, and the
+HTTP plus domain boundaries are wrapped with OpenTelemetry instrumentation.
 
 ## Logging
 
@@ -1125,9 +1140,11 @@ Latency and failures can be diagnosed without manual print debugging.
 
 # 24. Phase 21 — Test Hardening
 
-**Status: Complete baseline.** Unit, opt-in PostGIS integration, and first
-milestone acceptance coverage are present; contract generation and new RBAC,
-scenario, and metrics behaviors add focused unit coverage.
+**Status: Complete.** Unit, race, opt-in PostGIS integration, operational
+failure-matrix, terminal-event, contract-generation, and browser acceptance
+coverage are present. The Playwright smoke covers map rendering/provenance and
+the operator path from alert acknowledgment through incident, mission,
+command, and completed outcome.
 
 ## Unit
 

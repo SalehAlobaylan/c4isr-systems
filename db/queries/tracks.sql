@@ -45,10 +45,56 @@ FROM tracks t
 LEFT JOIN track_state s ON s.track_id = t.id
 WHERE t.external_ref = @external_ref;
 
+-- name: FindTrackByObservationID :one
+SELECT
+    t.id, t.external_ref, t.status, t.first_seen_at, t.last_seen_at,
+    t.metadata, t.created_at, t.updated_at, t.closed_at,
+    s.speed, s.heading, s.updated_at AS state_updated_at,
+    (s.position IS NOT NULL)::boolean AS has_position,
+    COALESCE(ST_Y(s.position::geometry), 0)::float8 AS lat,
+    COALESCE(ST_X(s.position::geometry), 0)::float8 AS lng
+FROM tracks t
+LEFT JOIN track_state s ON s.track_id = t.id
+LEFT JOIN track_observations tobs
+       ON tobs.track_id = t.id AND tobs.observation_id = @observation_id
+WHERE tobs.observation_id = @observation_id
+   OR t.metadata->>'initialObservationId' = @observation_id
+ORDER BY (tobs.observation_id = @observation_id) DESC
+LIMIT 1;
+
 -- name: TouchTrack :exec
 UPDATE tracks
 SET last_seen_at = GREATEST(last_seen_at, @observed_at), updated_at = now()
 WHERE id = @id;
+
+-- name: ApplyTrackObservation :one
+WITH advanced AS (
+    UPDATE tracks
+    SET last_seen_at = @observed_at, updated_at = now()
+    WHERE id = @track_id
+      AND last_seen_at = @expected_last_seen_at
+      AND (
+          last_seen_at < @observed_at
+          OR NOT EXISTS (SELECT 1 FROM track_state WHERE track_id = tracks.id)
+      )
+    RETURNING id
+), projected AS (
+    INSERT INTO track_state (track_id, position, speed, heading, updated_at)
+    SELECT
+        id,
+        CASE WHEN @has_position::boolean
+             THEN ST_SetSRID(ST_MakePoint(@lng::float8, @lat::float8), 4326)::geography
+             ELSE NULL END,
+        @speed, @heading, now()
+    FROM advanced
+    ON CONFLICT (track_id) DO UPDATE SET
+        position = CASE WHEN @has_position::boolean THEN EXCLUDED.position ELSE track_state.position END,
+        speed = COALESCE(EXCLUDED.speed, track_state.speed),
+        heading = COALESCE(EXCLUDED.heading, track_state.heading),
+        updated_at = now()
+    RETURNING track_id
+)
+SELECT EXISTS (SELECT 1 FROM projected)::boolean AS applied;
 
 -- name: CloseTrack :one
 UPDATE tracks

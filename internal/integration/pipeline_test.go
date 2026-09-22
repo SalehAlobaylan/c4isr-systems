@@ -3,9 +3,93 @@ package integration
 import (
 	"context"
 	"net/http"
+	"os"
 	"testing"
 	"time"
+
+	"github.com/SalehAlobaylan/c4isr-systems/internal/telemetry"
 )
+
+func TestConcurrencyGuardMigrationRepairsLegacyDuplicates(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	if _, err := h.pool.Exec(ctx, `
+		DROP INDEX alerts_active_geofence_track_key;
+		DROP INDEX tracks_initial_observation_id_key;
+		INSERT INTO tracks (id, first_seen_at, last_seen_at, metadata)
+		VALUES ('migration-track', now() - interval '2 minutes', now() - interval '2 minutes', '{}'::jsonb);
+		INSERT INTO tracks (id, first_seen_at, last_seen_at, metadata)
+		VALUES
+			('migration-track-old', now() - interval '2 minutes', now() - interval '2 minutes', '{"initialObservationId":"legacy-observation"}'::jsonb),
+			('migration-track-new', now() - interval '1 minute', now() - interval '1 minute', '{"initialObservationId":"legacy-observation"}'::jsonb);
+		INSERT INTO geofences (id, name, type, geometry)
+		VALUES ('migration-geofence', 'Migration fence', 'restricted', ST_GeomFromText('POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))', 4326));
+		INSERT INTO alerts (id, type, severity, state, title, track_id, geofence_id, created_at)
+		VALUES
+			('migration-alert-old', 'geofence.breach', 'high', 'ACTIVE', 'old', 'migration-track', 'migration-geofence', now() - interval '2 minutes'),
+			('migration-alert-new', 'geofence.breach', 'high', 'ACTIVE', 'new', 'migration-track', 'migration-geofence', now() - interval '1 minute');
+	`); err != nil {
+		t.Fatalf("seed legacy duplicate alerts: %v", err)
+	}
+	raw, err := os.ReadFile("../../db/migrations/00017_concurrency_guards.sql")
+	if err != nil {
+		t.Fatalf("read concurrency migration: %v", err)
+	}
+	if _, err := h.pool.Exec(ctx, extractUpSection(string(raw))); err != nil {
+		t.Fatalf("apply concurrency migration to duplicate data: %v", err)
+	}
+	var unresolved, migratedResolved, retainedOwners int
+	if err := h.pool.QueryRow(ctx, `
+		SELECT count(*) FILTER (WHERE state <> 'RESOLVED'),
+		       count(*) FILTER (WHERE resolved_by = 'migration:00017'),
+		       (SELECT count(*) FROM tracks WHERE metadata->>'initialObservationId' = 'legacy-observation')
+		FROM alerts
+		WHERE geofence_id = 'migration-geofence' AND track_id = 'migration-track'
+	`).Scan(&unresolved, &migratedResolved, &retainedOwners); err != nil {
+		t.Fatalf("check repaired alerts: %v", err)
+	}
+	if unresolved != 1 || migratedResolved != 1 || retainedOwners != 1 {
+		t.Fatalf("repaired legacy data = unresolved %d, migrated resolved %d, retained track owners %d; want 1, 1, 1", unresolved, migratedResolved, retainedOwners)
+	}
+}
+
+func TestStaleMonitorIncludesNeverSeenAssetsAndClearsAfterTelemetry(t *testing.T) {
+	h := newHarness(t)
+	h.createSource("stale-source")
+	if status := h.do(http.MethodPost, "/api/v1/assets", map[string]any{
+		"id": "never-seen", "name": "Never Seen", "type": "vehicle",
+	}, nil); status != http.StatusCreated {
+		t.Fatalf("create never-seen asset: status %d", status)
+	}
+	if _, err := h.pool.Exec(context.Background(), `UPDATE assets SET created_at = now() - interval '10 minutes' WHERE id = 'never-seen'`); err != nil {
+		t.Fatalf("age never-seen asset: %v", err)
+	}
+	repo := telemetry.NewPostgresRepository(h.pool)
+	cutoff := time.Now().UTC().Add(-5 * time.Minute)
+	ids, err := repo.ListStaleAssetIDs(context.Background(), cutoff)
+	if err != nil {
+		t.Fatalf("list never-seen stale assets: %v", err)
+	}
+	if !containsString(ids, "never-seen") {
+		t.Fatalf("stale assets = %v, want never-seen", ids)
+	}
+
+	if status := h.do(http.MethodPost, "/api/v1/telemetry", map[string]any{
+		"messageId":  "never-seen-recovered",
+		"assetId":    "never-seen",
+		"sourceId":   "stale-source",
+		"observedAt": time.Now().UTC().Add(-time.Second).Format(time.RFC3339Nano),
+	}, nil); status != http.StatusCreated {
+		t.Fatalf("recover never-seen asset: status %d", status)
+	}
+	ids, err = repo.ListStaleAssetIDs(context.Background(), cutoff)
+	if err != nil {
+		t.Fatalf("list recovered stale assets: %v", err)
+	}
+	if containsString(ids, "never-seen") {
+		t.Fatalf("recovered asset remained stale: %v", ids)
+	}
+}
 
 func TestObservationIngestionPreservesEvidenceAndTime(t *testing.T) {
 	h := newHarness(t)

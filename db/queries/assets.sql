@@ -37,7 +37,8 @@ SELECT
 FROM asset_state
 WHERE asset_id = @asset_id;
 
--- name: UpsertAssetState :exec
+-- name: UpsertAssetState :one
+WITH applied AS (
 INSERT INTO asset_state (
     asset_id, position, speed, heading, health, connection_state, last_seen_at, updated_at
 ) VALUES (
@@ -54,7 +55,28 @@ ON CONFLICT (asset_id) DO UPDATE SET
     health = COALESCE(EXCLUDED.health, asset_state.health),
     connection_state = COALESCE(EXCLUDED.connection_state, asset_state.connection_state),
     last_seen_at = EXCLUDED.last_seen_at,
-    updated_at = now();
+    updated_at = now()
+WHERE (
+    (
+        @expected_last_seen_at::timestamptz IS NULL
+        AND asset_state.last_seen_at IS NULL
+    )
+    OR asset_state.last_seen_at = @expected_last_seen_at::timestamptz
+)
+AND (
+    asset_state.last_seen_at IS NULL
+    OR asset_state.last_seen_at < EXCLUDED.last_seen_at
+)
+RETURNING asset_id
+)
+SELECT EXISTS (SELECT 1 FROM applied)::boolean AS applied;
+
+-- name: ListStaleAssetIDs :many
+SELECT a.id AS asset_id
+FROM assets AS a
+LEFT JOIN asset_state AS s ON s.asset_id = a.id
+WHERE a.created_at < @cutoff
+  AND (s.last_seen_at IS NULL OR s.last_seen_at < @cutoff);
 
 -- name: ListAssetsWithState :many
 SELECT

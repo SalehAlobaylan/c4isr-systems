@@ -107,14 +107,18 @@ func (r *PostgresRepository) List(ctx context.Context, status string, limit, off
 }
 
 // UpdateStatus changes mission lifecycle status.
-func (r *PostgresRepository) UpdateStatus(ctx context.Context, id string, status Status) (Mission, error) {
+func (r *PostgresRepository) UpdateStatus(ctx context.Context, id string, status, expected Status) (Mission, error) {
 	row, err := dbgen.New(r.pool).UpdateMissionStatus(ctx, dbgen.UpdateMissionStatusParams{
-		ID:     id,
-		Status: string(status),
+		ID:             id,
+		Status:         string(status),
+		ExpectedStatus: string(expected),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return Mission{}, apperr.NotFound("mission", id)
+			if _, getErr := r.Get(ctx, id); getErr != nil {
+				return Mission{}, getErr
+			}
+			return Mission{}, apperr.Conflict("mission status changed concurrently")
 		}
 		return Mission{}, err
 	}
@@ -174,10 +178,11 @@ func (r *PostgresRepository) ListTasks(ctx context.Context, missionID string) ([
 }
 
 // UpdateTaskStatus changes a task's status.
-func (r *PostgresRepository) UpdateTaskStatus(ctx context.Context, taskID string, status TaskStatus) (Task, error) {
+func (r *PostgresRepository) UpdateTaskStatus(ctx context.Context, missionID, taskID string, status TaskStatus) (Task, error) {
 	row, err := dbgen.New(r.pool).UpdateMissionTaskStatus(ctx, dbgen.UpdateMissionTaskStatusParams{
-		ID:     taskID,
-		Status: string(status),
+		ID:        taskID,
+		MissionID: missionID,
+		Status:    string(status),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

@@ -381,16 +381,18 @@ SET status = $1,
     started_at = CASE WHEN $1::text = 'ACTIVE' AND started_at IS NULL THEN now() ELSE started_at END,
     ended_at = CASE WHEN $1::text IN ('COMPLETED', 'ABORTED') THEN now() ELSE ended_at END
 WHERE id = $2
+  AND status = $3
 RETURNING id, name, objective, priority, status, incident_id, created_at, updated_at, started_at, ended_at
 `
 
 type UpdateMissionStatusParams struct {
-	Status string
-	ID     string
+	Status         string
+	ID             string
+	ExpectedStatus string
 }
 
 func (q *Queries) UpdateMissionStatus(ctx context.Context, arg UpdateMissionStatusParams) (Mission, error) {
-	row := q.db.QueryRow(ctx, updateMissionStatus, arg.Status, arg.ID)
+	row := q.db.QueryRow(ctx, updateMissionStatus, arg.Status, arg.ID, arg.ExpectedStatus)
 	var i Mission
 	err := row.Scan(
 		&i.ID,
@@ -411,6 +413,7 @@ const updateMissionTaskStatus = `-- name: UpdateMissionTaskStatus :one
 UPDATE mission_tasks
 SET status = $1, updated_at = now()
 WHERE id = $2
+  AND mission_id = $3
 RETURNING id, mission_id, type, description, status, created_at, updated_at,
     (target_position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(target_position::geometry), 0)::float8 AS lat,
@@ -418,8 +421,9 @@ RETURNING id, mission_id, type, description, status, created_at, updated_at,
 `
 
 type UpdateMissionTaskStatusParams struct {
-	Status string
-	ID     string
+	Status    string
+	ID        string
+	MissionID string
 }
 
 type UpdateMissionTaskStatusRow struct {
@@ -436,7 +440,7 @@ type UpdateMissionTaskStatusRow struct {
 }
 
 func (q *Queries) UpdateMissionTaskStatus(ctx context.Context, arg UpdateMissionTaskStatusParams) (UpdateMissionTaskStatusRow, error) {
-	row := q.db.QueryRow(ctx, updateMissionTaskStatus, arg.Status, arg.ID)
+	row := q.db.QueryRow(ctx, updateMissionTaskStatus, arg.Status, arg.ID, arg.MissionID)
 	var i UpdateMissionTaskStatusRow
 	err := row.Scan(
 		&i.ID,

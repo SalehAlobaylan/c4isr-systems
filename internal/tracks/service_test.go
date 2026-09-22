@@ -2,6 +2,7 @@ package tracks
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"math"
@@ -15,11 +16,14 @@ import (
 )
 
 type fakeRepository struct {
-	tracks   map[string]Track
-	states   map[string]StateUpdate
-	history  []HistoryPoint
-	attached map[string]string
-	touched  map[string]time.Time
+	tracks            map[string]Track
+	states            map[string]StateUpdate
+	history           []HistoryPoint
+	attached          map[string]string
+	touched           map[string]time.Time
+	createErr         error
+	externalRefMisses int
+	historyErr        error
 }
 
 func newFakeRepository() *fakeRepository {
@@ -32,6 +36,9 @@ func newFakeRepository() *fakeRepository {
 }
 
 func (f *fakeRepository) Create(_ context.Context, track Track) (Track, error) {
+	if f.createErr != nil {
+		return Track{}, f.createErr
+	}
 	f.tracks[track.ID] = track
 	return track, nil
 }
@@ -45,12 +52,37 @@ func (f *fakeRepository) Get(_ context.Context, id string) (Track, error) {
 }
 
 func (f *fakeRepository) FindByExternalRef(_ context.Context, ref string) (Track, error) {
+	if f.externalRefMisses > 0 {
+		f.externalRefMisses--
+		return Track{}, apperr.NotFound("track", ref)
+	}
 	for _, track := range f.tracks {
 		if track.ExternalRef == ref {
 			return track, nil
 		}
 	}
 	return Track{}, apperr.NotFound("track", ref)
+}
+
+func (f *fakeRepository) FindByObservationID(_ context.Context, observationID string) (Track, error) {
+	trackID, ok := f.attached[observationID]
+	if !ok {
+		for candidateID, candidate := range f.tracks {
+			if initialID, matches := candidate.Metadata["initialObservationId"].(string); matches && initialID == observationID {
+				trackID = candidateID
+				ok = true
+				break
+			}
+		}
+	}
+	if !ok {
+		return Track{}, apperr.NotFound("track for observation", observationID)
+	}
+	track, ok := f.tracks[trackID]
+	if !ok {
+		return Track{}, apperr.NotFound("track", trackID)
+	}
+	return track, nil
 }
 
 func (f *fakeRepository) List(_ context.Context, _, _ int) ([]Track, int, error) {
@@ -100,6 +132,58 @@ func (f *fakeRepository) UpsertState(_ context.Context, update StateUpdate) erro
 	return nil
 }
 
+func (f *fakeRepository) ApplyObservation(ctx context.Context, update StateUpdate, observedAt, expectedLastSeenAt time.Time) (bool, error) {
+	track, ok := f.tracks[update.TrackID]
+	if !ok {
+		return false, apperr.NotFound("track", update.TrackID)
+	}
+	if !track.LastSeenAt.Equal(expectedLastSeenAt) {
+		return false, nil
+	}
+	if observedAt.Before(track.LastSeenAt) {
+		return false, nil
+	}
+	if _, projected := f.states[update.TrackID]; projected && observedAt.Equal(track.LastSeenAt) {
+		return false, nil
+	}
+	if err := f.UpsertState(ctx, update); err != nil {
+		return false, err
+	}
+	if err := f.Touch(ctx, update.TrackID, observedAt); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func (f *fakeRepository) ApplyObservationWithHistory(ctx context.Context, update StateUpdate, observedAt, expectedLastSeenAt time.Time, history *HistoryPoint, _ string) (bool, error) {
+	oldTrack := f.tracks[update.TrackID]
+	oldState, hadState := f.states[update.TrackID]
+	oldTouched, hadTouched := f.touched[update.TrackID]
+	oldHistoryLen := len(f.history)
+	applied, err := f.ApplyObservation(ctx, update, observedAt, expectedLastSeenAt)
+	if err != nil || !applied {
+		return applied, err
+	}
+	if history != nil {
+		if err := f.AddHistoryEntry(ctx, *history); err != nil {
+			f.tracks[update.TrackID] = oldTrack
+			if hadState {
+				f.states[update.TrackID] = oldState
+			} else {
+				delete(f.states, update.TrackID)
+			}
+			if hadTouched {
+				f.touched[update.TrackID] = oldTouched
+			} else {
+				delete(f.touched, update.TrackID)
+			}
+			f.history = f.history[:oldHistoryLen]
+			return false, err
+		}
+	}
+	return true, nil
+}
+
 func (f *fakeRepository) AttachObservation(_ context.Context, trackID, observationID string) (bool, error) {
 	if _, ok := f.attached[observationID]; ok {
 		return false, nil
@@ -109,6 +193,9 @@ func (f *fakeRepository) AttachObservation(_ context.Context, trackID, observati
 }
 
 func (f *fakeRepository) AddHistoryEntry(_ context.Context, entry HistoryPoint) error {
+	if f.historyErr != nil {
+		return f.historyErr
+	}
 	f.history = append(f.history, entry)
 	return nil
 }
@@ -231,6 +318,84 @@ func TestHandleObservationReceivedCreatesTrackForHint(t *testing.T) {
 	}
 	if len(processor.processed) != 1 || processor.processed[0] != "obs_1" {
 		t.Errorf("processed = %v, want [obs_1]", processor.processed)
+	}
+}
+
+func TestHandleObservationReceivedResolvesTrackHintInsertCollision(t *testing.T) {
+	bus := testDispatcher()
+	repo := newFakeRepository()
+	observedAt := time.Date(2026, 3, 1, 10, 0, 0, 0, time.UTC)
+	repo.tracks["trk_winner"] = Track{
+		ID:          "trk_winner",
+		ExternalRef: "TRK-HINT-1",
+		Status:      StatusActive,
+		FirstSeenAt: observedAt,
+		LastSeenAt:  observedAt,
+		Position:    &geo.Point{Lat: 36, Lng: 36},
+		Metadata:    map[string]any{},
+	}
+	// The lookup missed while another writer inserted the same external ref.
+	repo.externalRefMisses = 1
+	repo.createErr = ErrDuplicateExternalRef
+	processor := &fakeProcessor{}
+	svc := NewService(repo, processor, bus)
+
+	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+		ObservationID: "obs_race",
+		SourceID:      "src_1",
+		ObservedAt:    observedAt.Add(time.Minute),
+		Position:      &geo.Point{Lat: 36.001, Lng: 36.001},
+		TrackHint:     "TRK-HINT-1",
+	})
+
+	if len(repo.tracks) != 1 {
+		t.Fatalf("tracks = %d, want only the winning track", len(repo.tracks))
+	}
+	if repo.attached["obs_race"] != "trk_winner" {
+		t.Fatalf("observation attached to %q, want trk_winner", repo.attached["obs_race"])
+	}
+	if len(repo.history) != 1 || len(processor.processed) != 1 {
+		t.Fatalf("collision was not projected: history=%d processed=%d", len(repo.history), len(processor.processed))
+	}
+}
+
+func TestHandleObservationReceivedDoesNotPublishWhenHistoryCommitFails(t *testing.T) {
+	bus := testDispatcher()
+	var updated []events.TrackUpdated
+	bus.Subscribe(events.TopicTrackUpdated, func(_ context.Context, ev events.Event) {
+		updated = append(updated, ev.(events.TrackUpdated))
+	})
+	repo := newFakeRepository()
+	observedAt := time.Date(2026, 3, 1, 10, 0, 0, 0, time.UTC)
+	repo.tracks["trk_existing"] = Track{
+		ID:          "trk_existing",
+		ExternalRef: "TRK-HINT-1",
+		Status:      StatusActive,
+		FirstSeenAt: observedAt,
+		LastSeenAt:  observedAt,
+		Position:    &geo.Point{Lat: 36, Lng: 36},
+		Metadata:    map[string]any{},
+	}
+	repo.historyErr = errors.New("history insert failed")
+	processor := &fakeProcessor{}
+	svc := NewService(repo, processor, bus)
+
+	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+		ObservationID: "obs_history_failure",
+		SourceID:      "src_1",
+		ObservedAt:    observedAt.Add(time.Minute),
+		Position:      &geo.Point{Lat: 36.001, Lng: 36.001},
+		TrackHint:     "TRK-HINT-1",
+	})
+
+	if len(updated) != 0 {
+		t.Fatalf("published %d track updates after history failure", len(updated))
+	}
+	if !repo.tracks["trk_existing"].LastSeenAt.Equal(observedAt) {
+		t.Fatal("track watermark advanced despite failed history transaction")
+	}
+	if len(repo.history) != 0 || len(processor.processed) != 0 {
+		t.Fatalf("partial projection remained: history=%d processed=%d", len(repo.history), len(processor.processed))
 	}
 }
 
@@ -368,6 +533,52 @@ func TestHandleObservationReceivedAttachIsIdempotent(t *testing.T) {
 	}
 	if len(processor.processed) != 0 {
 		t.Errorf("re-attachment marked processed: %v", processor.processed)
+	}
+}
+
+func TestHandleObservationReceivedRetryCompletesAfterAttachment(t *testing.T) {
+	bus := testDispatcher()
+	var updated []events.TrackUpdated
+	bus.Subscribe(events.TopicTrackUpdated, func(_ context.Context, ev events.Event) {
+		if e, ok := ev.(events.TrackUpdated); ok {
+			updated = append(updated, e)
+		}
+	})
+
+	repo := newFakeRepository()
+	observedAt := time.Date(2026, 3, 1, 10, 5, 0, 0, time.UTC)
+	repo.tracks["trk_existing"] = Track{
+		ID:          "trk_existing",
+		Status:      StatusActive,
+		FirstSeenAt: observedAt.Add(-time.Minute),
+		LastSeenAt:  observedAt,
+		Position:    &geo.Point{Lat: 37, Lng: 37},
+		Metadata:    map[string]any{},
+	}
+	// The first attempt attached durable evidence and then failed before the
+	// projection was recorded. A duplicate retry must finish the projection.
+	repo.attached["obs_retry"] = "trk_existing"
+	processor := &fakeProcessor{}
+	svc := NewService(repo, processor, bus)
+	event := events.ObservationReceived{
+		ObservationID: "obs_retry",
+		SourceID:      "src_1",
+		ObservedAt:    observedAt,
+		Position:      &geo.Point{Lat: 37.1, Lng: 37.1},
+		Duplicate:     true,
+		Retry:         true,
+	}
+
+	svc.HandleObservationReceived(context.Background(), event)
+	if len(repo.history) != 1 || len(processor.processed) != 1 || len(updated) != 1 {
+		t.Fatalf("retry did not complete projection: history=%d processed=%d updates=%d", len(repo.history), len(processor.processed), len(updated))
+	}
+
+	// Replaying the same retry after projection is already present is idempotent
+	// and must not append a second history point.
+	svc.HandleObservationReceived(context.Background(), event)
+	if len(repo.history) != 1 || len(updated) != 1 {
+		t.Fatalf("repeated retry was not idempotent: history=%d processed=%d updates=%d", len(repo.history), len(processor.processed), len(updated))
 	}
 }
 

@@ -24,9 +24,8 @@ services:
       dockerfile: deployments/Dockerfile.server
       args:
         C4ISR_VERSION: ${C4ISR_VERSION:-staging}
+    entrypoint: ["/bin/sh", "-c"]
     command:
-      - /bin/sh
-      - -c
       - >-
         goose -dir /app/db/migrations postgres
         "$$(cat /run/secrets/database_url)" up
@@ -53,6 +52,7 @@ services:
       C4ISR_LOG_LEVEL: info
       C4ISR_LOG_FORMAT: json
       C4ISR_SCENARIOS_DIR: /app/scenarios
+      C4ISR_TELEMETRY_STALE_AFTER: ${C4ISR_TELEMETRY_STALE_AFTER:-5m}
       C4ISR_ALLOWED_ORIGINS: ${C4ISR_ALLOWED_ORIGINS:-http://localhost:8081}
     secrets:
       - database_url

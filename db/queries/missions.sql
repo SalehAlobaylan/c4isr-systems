@@ -26,6 +26,7 @@ SET status = @status,
     started_at = CASE WHEN @status::text = 'ACTIVE' AND started_at IS NULL THEN now() ELSE started_at END,
     ended_at = CASE WHEN @status::text IN ('COMPLETED', 'ABORTED') THEN now() ELSE ended_at END
 WHERE id = @id
+  AND status = @expected_status
 RETURNING *;
 
 -- name: AssignAssetToMission :exec
@@ -73,6 +74,7 @@ ORDER BY created_at ASC;
 UPDATE mission_tasks
 SET status = @status, updated_at = now()
 WHERE id = @id
+  AND mission_id = @mission_id
 RETURNING id, mission_id, type, description, status, created_at, updated_at,
     (target_position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(target_position::geometry), 0)::float8 AS lat,

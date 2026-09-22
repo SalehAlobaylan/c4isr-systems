@@ -296,6 +296,93 @@ func (q *Queries) ListGeofences(ctx context.Context, arg ListGeofencesParams) ([
 	return items, nil
 }
 
+const reconcileGeofenceStates = `-- name: ReconcileGeofenceStates :many
+WITH locked AS (
+    SELECT pg_advisory_xact_lock(hashtext($1::text)) AS acquired
+), eligible AS (
+    SELECT 1
+    FROM tracks t
+    CROSS JOIN locked
+    WHERE t.id = $1
+      AND $2::timestamptz >= t.last_seen_at
+), existing AS (
+    SELECT gs.geofence_id, gs.inside
+    FROM geofence_states gs
+    CROSS JOIN locked
+    CROSS JOIN eligible
+    WHERE gs.track_id = $1
+      AND ($3::text = '' OR gs.geofence_id LIKE $3::text || '%')
+    FOR UPDATE
+), containing AS (
+    SELECT DISTINCT id
+    FROM unnest($4::text[]) AS ids(id)
+), entered AS (
+    INSERT INTO geofence_states (geofence_id, track_id, inside, since, updated_at)
+    SELECT c.id, $1, true, now(), now()
+    FROM containing c
+    CROSS JOIN locked
+    CROSS JOIN eligible
+    ON CONFLICT (geofence_id, track_id) DO UPDATE SET
+        inside = EXCLUDED.inside,
+        since = now(),
+        updated_at = now()
+    WHERE geofence_states.inside IS DISTINCT FROM EXCLUDED.inside
+    RETURNING geofence_id, inside
+), exited AS (
+    UPDATE geofence_states gs
+    SET inside = false,
+        since = now(),
+        updated_at = now()
+    FROM existing e
+    WHERE gs.geofence_id = e.geofence_id
+      AND gs.track_id = $1
+      AND e.inside
+      AND NOT EXISTS (SELECT 1 FROM containing c WHERE c.id = e.geofence_id)
+    RETURNING gs.geofence_id, gs.inside
+)
+SELECT geofence_id, inside FROM entered
+UNION ALL
+SELECT geofence_id, inside FROM exited
+ORDER BY geofence_id
+`
+
+type ReconcileGeofenceStatesParams struct {
+	TrackID       string
+	ObservedAt    pgtype.Timestamptz
+	ScopePrefix   string
+	ContainingIds []string
+}
+
+type ReconcileGeofenceStatesRow struct {
+	GeofenceID string
+	Inside     bool
+}
+
+func (q *Queries) ReconcileGeofenceStates(ctx context.Context, arg ReconcileGeofenceStatesParams) ([]ReconcileGeofenceStatesRow, error) {
+	rows, err := q.db.Query(ctx, reconcileGeofenceStates,
+		arg.TrackID,
+		arg.ObservedAt,
+		arg.ScopePrefix,
+		arg.ContainingIds,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ReconcileGeofenceStatesRow{}
+	for rows.Next() {
+		var i ReconcileGeofenceStatesRow
+		if err := rows.Scan(&i.GeofenceID, &i.Inside); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateGeofenceActive = `-- name: UpdateGeofenceActive :one
 UPDATE geofences
 SET active = $1, updated_at = now()

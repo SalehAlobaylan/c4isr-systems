@@ -12,6 +12,8 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 const (
@@ -24,17 +26,33 @@ const (
 // domain state and never blocks event processing: a client that cannot keep
 // up is disconnected.
 type Hub struct {
-	logger  *slog.Logger
-	mu      sync.RWMutex
-	clients map[*client]struct{}
+	logger   *slog.Logger
+	mu       sync.RWMutex
+	clients  map[*client]struct{}
+	observer PublishObserver
+}
+
+// PublishObserver receives the duration of each attempted WebSocket write,
+// including failed writes that are useful when diagnosing slow or disconnected
+// clients.
+type PublishObserver interface {
+	ObserveWebSocketPublish(time.Duration)
 }
 
 // NewHub creates a hub and subscribes it to every domain topic. Register the
 // hub after other subscribers so operator notifications observe final state.
-func NewHub(logger *slog.Logger, bus *events.Dispatcher) *Hub {
+func NewHub(logger *slog.Logger, bus *events.Dispatcher, observers ...PublishObserver) *Hub {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	var observer PublishObserver
+	if len(observers) > 0 {
+		observer = observers[0]
+	}
 	h := &Hub{
-		logger:  logger,
-		clients: make(map[*client]struct{}),
+		logger:   logger,
+		clients:  make(map[*client]struct{}),
+		observer: observer,
 	}
 	for _, topic := range events.AllTopics() {
 		bus.Subscribe(topic, h.handleEvent)
@@ -47,10 +65,17 @@ func (h *Hub) Mount(r chi.Router) {
 	r.Get("/realtime", h.serveWS)
 }
 
-func (h *Hub) handleEvent(_ context.Context, ev events.Event) {
+func (h *Hub) handleEvent(ctx context.Context, ev events.Event) {
+	_, span := observability.StartSpan(ctx, "c4isr.websocket.publish",
+		attribute.String("event.type", ev.Topic()),
+	)
+	var spanErr error
+	defer func() { observability.EndSpan(span, spanErr) }()
+
 	envelope := MapEnvelope(ev)
 	payload, err := json.Marshal(envelope)
 	if err != nil {
+		spanErr = err
 		h.logger.Error("marshal realtime envelope", "topic", ev.Topic(), "error", err)
 		return
 	}
@@ -143,8 +168,12 @@ func (h *Hub) writeLoop(ctx context.Context, c *client) {
 			return
 		case payload := <-c.send:
 			writeCtx, cancel := context.WithTimeout(ctx, writeTimeout)
+			started := time.Now()
 			err := c.conn.Write(writeCtx, websocket.MessageText, payload)
 			cancel()
+			if h.observer != nil {
+				h.observer.ObserveWebSocketPublish(time.Since(started))
+			}
 			if err != nil {
 				h.logger.Debug("realtime write failed", "client_id", c.id, "error", err)
 				return

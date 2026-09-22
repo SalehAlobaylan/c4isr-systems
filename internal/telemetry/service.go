@@ -8,6 +8,8 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // DefaultLimit and MaxLimit bound list queries.
@@ -20,6 +22,19 @@ const (
 // Implemented by the assets module.
 type AssetRegistry interface {
 	Exists(ctx context.Context, id string) (bool, error)
+}
+
+// StaleEntityObserver receives the current stale status of an asset. It is
+// intentionally small so the telemetry service does not depend on a metrics
+// implementation.
+type StaleEntityObserver interface {
+	ObserveStaleEntity(assetID string, stale bool)
+}
+
+// StaleEntityReconciler can replace the whole stale set in one operation,
+// allowing observers to clear assets that recovered without a new event.
+type StaleEntityReconciler interface {
+	ReplaceStaleEntities(assetIDs []string)
 }
 
 // Service implements telemetry ingestion and retrieval.
@@ -53,17 +68,30 @@ type IngestResult struct {
 // never move the state projection backwards.
 func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, error) {
 	in.Normalize()
+	spanCtx, span := observability.StartSpan(ctx, "c4isr.telemetry.ingest",
+		attribute.String("telemetry.id", in.ID),
+		attribute.String("asset.id", in.AssetID),
+		attribute.String("source.id", in.SourceID),
+	)
+	ctx = spanCtx
+	var spanErr error
+	defer func() { observability.EndSpan(span, spanErr) }()
+
 	now := s.now()
 	if err := in.Validate(now); err != nil {
+		spanErr = err
 		return IngestResult{}, err
 	}
 
 	exists, err := s.assets.Exists(ctx, in.AssetID)
 	if err != nil {
+		spanErr = err
 		return IngestResult{}, err
 	}
 	if !exists {
-		return IngestResult{}, apperr.Validation("unknown asset: " + in.AssetID)
+		err := apperr.Validation("unknown asset: " + in.AssetID)
+		spanErr = err
+		return IngestResult{}, err
 	}
 
 	sample := Sample{
@@ -87,18 +115,26 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 		if errors.Is(err, ErrDuplicateMessage) {
 			return IngestResult{Duplicate: true}, nil
 		}
+		spanErr = err
 		return IngestResult{}, err
 	}
 
-	snapshot, err := s.repo.StateSnapshot(ctx, created.AssetID)
-	if err != nil {
-		return IngestResult{}, err
-	}
+	result := IngestResult{Sample: created}
+	// Reload the predecessor after every failed compare-and-set. Deriving from
+	// one stale snapshot lets concurrent samples compute motion from the same
+	// point, so the winner's kinematics can skip the observation that arrived
+	// between the two reads.
+	for attempt := 0; attempt < 3; attempt++ {
+		snapshot, err := s.repo.StateSnapshot(ctx, created.AssetID)
+		if err != nil {
+			spanErr = err
+			return IngestResult{}, err
+		}
+		if snapshot.LastSeenAt != nil && created.ObservedAt.Before(*snapshot.LastSeenAt) {
+			result.Stale = true
+			break
+		}
 
-	stale := snapshot.LastSeenAt != nil && created.ObservedAt.Before(*snapshot.LastSeenAt)
-	result := IngestResult{Sample: created, Stale: stale}
-
-	if !stale {
 		update := StateUpdate{
 			AssetID:         created.AssetID,
 			Position:        created.Position,
@@ -113,8 +149,14 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 			update.ConnectionState = "connected"
 		}
 
-		if err := s.repo.ApplyState(ctx, update); err != nil {
+		applied, err := s.repo.ApplyState(ctx, update, snapshot.LastSeenAt)
+		if err != nil {
+			spanErr = err
 			return IngestResult{}, err
+		}
+		if !applied {
+			result.Stale = true
+			continue
 		}
 
 		if created.Position != nil {
@@ -135,7 +177,9 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 				Health:          update.Health,
 			})
 		}
+		result.Stale = false
 		result.StateUpdated = true
+		break
 	}
 
 	s.bus.Publish(ctx, events.TelemetryReceived{
@@ -144,10 +188,30 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 		AssetID:     created.AssetID,
 		SourceID:    created.SourceID,
 		ObservedAt:  created.ObservedAt,
-		Stale:       stale,
+		Stale:       result.Stale,
 		Duplicate:   false,
 	})
 	return result, nil
+}
+
+// ReconcileStale marks every asset older than cutoff as stale for the
+// operational metrics surface. It is safe to call periodically.
+func (s *Service) ReconcileStale(ctx context.Context, cutoff time.Time, observer StaleEntityObserver) error {
+	if observer == nil {
+		return nil
+	}
+	assetIDs, err := s.repo.ListStaleAssetIDs(ctx, cutoff)
+	if err != nil {
+		return err
+	}
+	if reconciler, ok := observer.(StaleEntityReconciler); ok {
+		reconciler.ReplaceStaleEntities(assetIDs)
+		return nil
+	}
+	for _, assetID := range assetIDs {
+		observer.ObserveStaleEntity(assetID, true)
+	}
+	return nil
 }
 
 // ListByAsset returns telemetry for an asset newest first.

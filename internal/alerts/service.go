@@ -2,13 +2,16 @@ package alerts
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // DefaultLimit and MaxLimit bound list queries.
@@ -44,8 +47,17 @@ func NewService(repo Repository, bus *events.Dispatcher) *Service {
 // HandleGeofenceBreached raises an alert for a breach, suppressing duplicates
 // while an alert for the same geofence and track remains unresolved.
 func (s *Service) HandleGeofenceBreached(ctx context.Context, ev events.GeofenceBreached) {
+	spanCtx, span := observability.StartSpan(ctx, "c4isr.alert.generate",
+		attribute.String("geofence.id", ev.GeofenceID),
+		attribute.String("track.id", ev.TrackID),
+	)
+	ctx = spanCtx
+	var spanErr error
+	defer func() { observability.EndSpan(span, spanErr) }()
+
 	existing, err := s.repo.FindUnresolvedForGeofenceTrack(ctx, ev.GeofenceID, ev.TrackID)
 	if err != nil {
+		spanErr = err
 		slog.Default().Error("alerts: find unresolved breach alert",
 			"geofence_id", ev.GeofenceID, "track_id", ev.TrackID, "error", err)
 		return
@@ -80,6 +92,10 @@ func (s *Service) HandleGeofenceBreached(ctx context.Context, ev events.Geofence
 	}
 	created, err := s.repo.Create(ctx, alert)
 	if err != nil {
+		if errors.Is(err, ErrDuplicateGeofenceBreach) {
+			return
+		}
+		spanErr = err
 		slog.Default().Error("alerts: create breach alert",
 			"geofence_id", ev.GeofenceID, "track_id", ev.TrackID, "error", err)
 		return

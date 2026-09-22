@@ -2,6 +2,7 @@ package tracks
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -9,7 +10,9 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // DefaultLimit and MaxLimit bound list queries.
@@ -53,9 +56,18 @@ func NewService(repo Repository, processor ObservationProcessor, bus *events.Dis
 // HandleObservationReceived correlates one observation into a track. It is
 // exported so tests and scenario tooling can drive correlation directly.
 func (s *Service) HandleObservationReceived(ctx context.Context, ev events.ObservationReceived) {
-	if ev.Duplicate {
+	if ev.Duplicate && !ev.Retry {
 		return
 	}
+	spanCtx, span := observability.StartSpan(ctx, "c4isr.track.update",
+		attribute.String("observation.id", ev.ObservationID),
+		attribute.String("source.id", ev.SourceID),
+		attribute.String("track.reference", ev.TrackHint),
+	)
+	ctx = spanCtx
+	var spanErr error
+	defer func() { observability.EndSpan(span, spanErr) }()
+
 	now := s.now()
 	update := ObservationUpdate{
 		ObservationID: ev.ObservationID,
@@ -63,58 +75,106 @@ func (s *Service) HandleObservationReceived(ctx context.Context, ev events.Obser
 		ObservedAt:    ev.ObservedAt,
 		Position:      ev.Position,
 		TrackHint:     ev.TrackHint,
+		Duplicate:     ev.Duplicate,
 	}
 
 	track, err := s.correlate(ctx, update, now)
 	if err != nil {
+		spanErr = err
 		slog.Default().Error("correlate observation", "error", err, "observation_id", ev.ObservationID)
 		return
 	}
 
 	attached, err := s.repo.AttachObservation(ctx, track.ID, update.ObservationID)
 	if err != nil {
+		spanErr = err
 		slog.Default().Error("attach observation", "error", err,
 			"observation_id", update.ObservationID, "track_id", track.ID)
 		return
 	}
-	if !attached {
+	// A retry can find the evidence link already present when an earlier
+	// projection attempt failed after attachment. Continue through the state
+	// projection in that case.
+	if !attached && !ev.Retry {
 		return
 	}
-
-	// Stale evidence stays attached but must not move the track backwards.
-	if update.ObservedAt.Before(track.LastSeenAt) {
-		s.markProcessed(ctx, update)
-		return
+	if !attached && ev.Retry {
+		owner, lookupErr := s.repo.FindByObservationID(ctx, update.ObservationID)
+		if lookupErr != nil {
+			slog.Default().Error("resolve duplicate observation owner", "error", lookupErr,
+				"observation_id", update.ObservationID)
+			return
+		}
+		track = owner
 	}
 
-	var speed, heading *float64
-	if update.Position != nil {
-		speed, heading = s.motion(track, update)
-		if err := s.repo.UpsertState(ctx, StateUpdate{
+	var (
+		applied        bool
+		speed, heading *float64
+	)
+	// The expected watermark makes the kinematics calculation optimistic: if
+	// another update changes the track between the read and the write, reload
+	// the winner and derive motion from that state before retrying.
+	for attempt := 0; attempt < 3; attempt++ {
+		if update.ObservedAt.Before(track.LastSeenAt) {
+			s.markProcessed(ctx, update)
+			return
+		}
+		speed, heading = nil, nil
+		if update.Position != nil {
+			speed, heading = s.motion(track, update)
+		}
+		stateUpdate := StateUpdate{
 			TrackID:  track.ID,
 			Position: update.Position,
 			Speed:    speed,
 			Heading:  heading,
-		}); err != nil {
-			slog.Default().Error("upsert track state", "error", err, "track_id", track.ID)
+		}
+		var history *HistoryPoint
+		if update.Position != nil {
+			history = &HistoryPoint{
+				ID:         ids.New("trh"),
+				TrackID:    track.ID,
+				ObservedAt: update.ObservedAt,
+				Position:   update.Position,
+				Speed:      speed,
+				Heading:    heading,
+			}
+		}
+		applied, err = s.repo.ApplyObservationWithHistory(ctx, stateUpdate,
+			update.ObservedAt, track.LastSeenAt, history, update.ObservationID)
+		if err != nil {
+			spanErr = err
+			slog.Default().Error("apply track observation", "error", err, "track_id", track.ID)
 			return
 		}
-		if err := s.repo.AddHistoryEntry(ctx, HistoryPoint{
-			ID:         ids.New("trh"),
-			TrackID:    track.ID,
-			ObservedAt: update.ObservedAt,
-			Position:   update.Position,
-			Speed:      speed,
-			Heading:    heading,
-		}); err != nil {
-			slog.Default().Error("add track history", "error", err, "track_id", track.ID)
+		if applied {
+			break
 		}
-	}
 
-	if err := s.repo.Touch(ctx, track.ID, update.ObservedAt); err != nil {
-		slog.Default().Error("touch track", "error", err, "track_id", track.ID)
+		fresh, err := s.repo.Get(ctx, track.ID)
+		if err != nil {
+			spanErr = err
+			slog.Default().Error("reload track after concurrent update", "error", err, "track_id", track.ID)
+			return
+		}
+		if !fresh.LastSeenAt.After(track.LastSeenAt) && !update.ObservedAt.After(fresh.LastSeenAt) {
+			s.markProcessed(ctx, update)
+			return
+		}
+		track = fresh
 	}
-
+	if !applied {
+		// A continuously moving track can exhaust the bounded retry window. The
+		// evidence remains attached, but this event must not publish a projection
+		// derived from a stale base state.
+		slog.Default().Warn("track update lost concurrent retries", "track_id", track.ID, "observation_id", update.ObservationID)
+		s.markProcessed(ctx, update)
+		return
+	}
+	// Postgres marks the observation inside the projection transaction. Keep the
+	// processor callback idempotent for alternate repositories and existing
+	// adapters; it is safe because MarkProcessed only sets a timestamp.
 	s.markProcessed(ctx, update)
 
 	s.bus.Publish(ctx, events.TrackUpdated{
@@ -160,6 +220,15 @@ func (s *Service) Close(ctx context.Context, id string) (Track, error) {
 }
 
 func (s *Service) correlate(ctx context.Context, update ObservationUpdate, now time.Time) (Track, error) {
+	if update.Duplicate {
+		track, err := s.repo.FindByObservationID(ctx, update.ObservationID)
+		if err == nil {
+			return track, nil
+		}
+		if !apperr.Is(err, apperr.CodeNotFound) {
+			return Track{}, err
+		}
+	}
 	if update.TrackHint == "" {
 		return s.createTrack(ctx, update, now)
 	}
@@ -174,7 +243,10 @@ func (s *Service) correlate(ctx context.Context, update ObservationUpdate, now t
 }
 
 func (s *Service) createTrack(ctx context.Context, update ObservationUpdate, now time.Time) (Track, error) {
-	metadata := map[string]any{"sourceId": update.SourceID}
+	metadata := map[string]any{
+		"sourceId":             update.SourceID,
+		"initialObservationId": update.ObservationID,
+	}
 	if scope, ok := runctx.ScopeFrom(ctx); ok {
 		metadata["scenarioRunId"] = scope.RunID
 		metadata["resourceNamespace"] = scope.ResourceNamespace
@@ -190,6 +262,17 @@ func (s *Service) createTrack(ctx context.Context, update ObservationUpdate, now
 	}
 	created, err := s.repo.Create(ctx, track)
 	if err != nil {
+		// A concurrent retry may win the unique initial-observation guard while
+		// this insert is waiting. Resolve that durable owner and continue rather
+		// than creating or projecting a second track.
+		if existing, lookupErr := s.repo.FindByObservationID(ctx, update.ObservationID); lookupErr == nil {
+			return existing, nil
+		}
+		if errors.Is(err, ErrDuplicateExternalRef) && update.TrackHint != "" {
+			if existing, lookupErr := s.repo.FindByExternalRef(ctx, update.TrackHint); lookupErr == nil {
+				return existing, nil
+			}
+		}
 		return Track{}, err
 	}
 	s.bus.Publish(ctx, events.TrackCreated{
@@ -219,6 +302,9 @@ func (s *Service) motion(track Track, update ObservationUpdate) (*float64, *floa
 }
 
 func (s *Service) markProcessed(ctx context.Context, update ObservationUpdate) {
+	if s.processor == nil {
+		return
+	}
 	if err := s.processor.MarkProcessed(ctx, update.ObservationID); err != nil {
 		slog.Default().Error("mark observation processed", "error", err,
 			"observation_id", update.ObservationID)

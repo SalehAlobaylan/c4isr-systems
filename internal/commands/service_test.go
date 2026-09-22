@@ -52,7 +52,7 @@ func (f *fakeRepo) List(_ context.Context, filter ListFilter, limit, offset int)
 	return out, len(out), nil
 }
 
-func (f *fakeRepo) Transition(_ context.Context, id string, state State, failureReason string) (Command, error) {
+func (f *fakeRepo) Transition(_ context.Context, id string, _ State, state State, failureReason string) (Command, error) {
 	command, ok := f.commands[id]
 	if !ok {
 		return Command{}, apperr.NotFound("command", id)

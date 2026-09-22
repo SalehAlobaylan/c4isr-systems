@@ -35,5 +35,5 @@ SET state = @state,
     completed_at = CASE WHEN @state::text = 'COMPLETED' AND completed_at IS NULL THEN now() ELSE completed_at END,
     failure_reason = CASE WHEN @state::text IN ('REJECTED', 'FAILED', 'TIMED_OUT')
                           THEN @failure_reason ELSE failure_reason END
-WHERE id = @id
+WHERE id = @id AND state = @from_state
 RETURNING *;

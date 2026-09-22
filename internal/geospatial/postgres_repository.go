@@ -3,6 +3,7 @@ package geospatial
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -143,6 +144,26 @@ func (r *PostgresRepository) StatesForTrack(ctx context.Context, trackID string)
 		out[row.GeofenceID] = row.Inside
 	}
 	return out, nil
+}
+
+// ReconcileStates serializes all containment decisions for one track with a
+// transaction-scoped advisory lock. The query returns only state transitions,
+// so concurrent evaluations cannot duplicate breach or exit events.
+func (r *PostgresRepository) ReconcileStates(ctx context.Context, trackID string, containingIDs []string, scopePrefix string, observedAt time.Time) ([]StateTransition, error) {
+	rows, err := dbgen.New(r.pool).ReconcileGeofenceStates(ctx, dbgen.ReconcileGeofenceStatesParams{
+		TrackID:       trackID,
+		ContainingIds: containingIDs,
+		ScopePrefix:   scopePrefix,
+		ObservedAt:    pgconv.TS(observedAt),
+	})
+	if err != nil {
+		return nil, err
+	}
+	transitions := make([]StateTransition, 0, len(rows))
+	for _, row := range rows {
+		transitions = append(transitions, StateTransition{GeofenceID: row.GeofenceID, Inside: row.Inside})
+	}
+	return transitions, nil
 }
 
 // AssetsWithinRadius lists assets with a position inside the radius, nearest

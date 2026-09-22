@@ -9,6 +9,7 @@ import {
 } from 'react'
 
 import { realtimeUrl, type RealtimeEnvelope } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
 import { applyRealtimeEvent } from '@/realtime/handlers'
 
 export type RealtimeStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
@@ -69,6 +70,26 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       socket.onopen = () => {
         attempt = 0
         setStatus('connected')
+        // The stream has no replay cursor. Refresh active operational views
+        // after every reconnect so changes that happened while disconnected
+        // are reconciled from the API snapshot.
+        const client = queryClientRef.current
+        for (const queryKey of [
+          queryKeys.sources.all,
+          queryKeys.observations.all,
+          queryKeys.assets.all,
+          queryKeys.tracks.all,
+          queryKeys.geofences.all,
+          queryKeys.alerts.all,
+          queryKeys.incidents.all,
+          queryKeys.missions.all,
+          queryKeys.commands.all,
+          queryKeys.assessments.all,
+          queryKeys.audit.all,
+          queryKeys.scenarios.all,
+        ]) {
+          void client.invalidateQueries({ queryKey })
+        }
       }
 
       socket.onmessage = (message) => {

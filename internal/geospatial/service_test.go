@@ -4,7 +4,9 @@ import (
 	"context"
 	"io"
 	"log/slog"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
@@ -23,6 +25,7 @@ type fakeRepository struct {
 	containingErr   error
 	containingCalls int
 	states          map[string]bool
+	trackLastSeen   map[string]time.Time
 	statesErr       error
 	setStateCalls   []setStateCall
 	setStateErr     error
@@ -69,6 +72,38 @@ func (f *fakeRepository) SetState(_ context.Context, geofenceID, trackID string,
 
 func (f *fakeRepository) StatesForTrack(context.Context, string) (map[string]bool, error) {
 	return f.states, f.statesErr
+}
+
+func (f *fakeRepository) ReconcileStates(_ context.Context, trackID string, containingIDs []string, scopePrefix string, observedAt time.Time) ([]StateTransition, error) {
+	if f.statesErr != nil {
+		return nil, f.statesErr
+	}
+	if latest, ok := f.trackLastSeen[trackID]; ok && !observedAt.IsZero() && observedAt.Before(latest) {
+		return nil, nil
+	}
+	containing := make(map[string]struct{}, len(containingIDs))
+	transitions := make([]StateTransition, 0)
+	for _, id := range containingIDs {
+		containing[id] = struct{}{}
+		wasInside := f.states[id]
+		f.setStateCalls = append(f.setStateCalls, setStateCall{geofenceID: id, trackID: trackID, inside: true})
+		if !wasInside {
+			f.states[id] = true
+			transitions = append(transitions, StateTransition{GeofenceID: id, Inside: true})
+		}
+	}
+	for id, inside := range f.states {
+		if !inside || (scopePrefix != "" && !strings.HasPrefix(id, scopePrefix)) {
+			continue
+		}
+		if _, ok := containing[id]; ok {
+			continue
+		}
+		f.states[id] = false
+		f.setStateCalls = append(f.setStateCalls, setStateCall{geofenceID: id, trackID: trackID, inside: false})
+		transitions = append(transitions, StateTransition{GeofenceID: id, Inside: false})
+	}
+	return transitions, nil
 }
 
 func (f *fakeRepository) AssetsWithinRadius(context.Context, geo.Point, float64, int) ([]AssetDistance, error) {
@@ -193,6 +228,31 @@ func TestHandleTrackUpdatedIgnoresPersistedOutsideState(t *testing.T) {
 	}
 	if len(recorder.breaches) != 0 || len(recorder.exits) != 0 {
 		t.Fatal("expected no events for an outside state")
+	}
+}
+
+func TestHandleTrackUpdatedIgnoresOlderTrackEvent(t *testing.T) {
+	geofence := Geofence{ID: "geo_1", Name: "Restricted Zone", Type: TypeRestricted, Severity: SeverityHigh}
+	latest := time.Date(2026, 3, 1, 10, 5, 0, 0, time.UTC)
+	repo := &fakeRepository{
+		containing:    []Geofence{geofence},
+		states:        map[string]bool{},
+		trackLastSeen: map[string]time.Time{"trk_1": latest},
+	}
+	svc, recorder := newTestService(repo)
+	position := geo.Point{Lat: 10, Lng: 20}
+
+	svc.HandleTrackUpdated(context.Background(), events.TrackUpdated{
+		TrackID:    "trk_1",
+		Position:   &position,
+		ObservedAt: latest.Add(-time.Second),
+	})
+
+	if len(recorder.breaches) != 0 || len(recorder.exits) != 0 {
+		t.Fatalf("older track event emitted transitions: breaches=%d exits=%d", len(recorder.breaches), len(recorder.exits))
+	}
+	if len(repo.setStateCalls) != 0 {
+		t.Fatalf("older track event changed geofence state: %+v", repo.setStateCalls)
 	}
 }
 

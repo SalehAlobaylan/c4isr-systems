@@ -26,6 +26,7 @@ SET status = @status,
     resolved_at = CASE WHEN @status::text = 'RESOLVED' THEN now() ELSE resolved_at END,
     closed_at = CASE WHEN @status::text = 'CLOSED' THEN now() ELSE closed_at END
 WHERE id = @id
+  AND status = @expected_status
 RETURNING *;
 
 -- name: UpdateIncident :one

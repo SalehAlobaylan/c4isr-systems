@@ -3,7 +3,14 @@
 // lifecycle: ACTIVE -> ACKNOWLEDGED -> RESOLVED.
 package alerts
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+// ErrDuplicateGeofenceBreach is returned when the database uniqueness guard
+// observes that an unresolved breach alert already exists for the pair.
+var ErrDuplicateGeofenceBreach = errors.New("duplicate unresolved geofence breach alert")
 
 // State is the lifecycle state of an alert.
 type State string

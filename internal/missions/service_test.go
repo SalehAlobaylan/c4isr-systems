@@ -50,10 +50,13 @@ func (f *fakeRepo) List(_ context.Context, status string, limit, offset int) ([]
 	return out, len(out), nil
 }
 
-func (f *fakeRepo) UpdateStatus(ctx context.Context, id string, status Status) (Mission, error) {
+func (f *fakeRepo) UpdateStatus(ctx context.Context, id string, status, expected Status) (Mission, error) {
 	mission, err := f.Get(ctx, id)
 	if err != nil {
 		return Mission{}, err
+	}
+	if mission.Status != expected {
+		return Mission{}, apperr.Conflict("mission status changed concurrently")
 	}
 	mission.Status = status
 	f.missions[id] = mission
@@ -82,9 +85,12 @@ func (f *fakeRepo) ListTasks(_ context.Context, missionID string) ([]Task, error
 	return out, nil
 }
 
-func (f *fakeRepo) UpdateTaskStatus(_ context.Context, taskID string, status TaskStatus) (Task, error) {
+func (f *fakeRepo) UpdateTaskStatus(_ context.Context, missionID, taskID string, status TaskStatus) (Task, error) {
 	task, ok := f.tasks[taskID]
 	if !ok {
+		return Task{}, apperr.NotFound("mission task", taskID)
+	}
+	if task.MissionID != missionID {
 		return Task{}, apperr.NotFound("mission task", taskID)
 	}
 	task.Status = status
@@ -154,5 +160,28 @@ func TestUpdateTaskStatusRejectsInvalidStatus(t *testing.T) {
 	}
 	if _, err := svc.UpdateTaskStatus(context.Background(), mission.ID, "tsk_1", TaskStatus("BOGUS"), "op_1"); !apperr.Is(err, apperr.CodeValidation) {
 		t.Fatalf("err = %v, want validation error", err)
+	}
+}
+
+func TestUpdateTaskStatusScopesTaskToParentMission(t *testing.T) {
+	repo := newFakeRepo()
+	svc := NewService(repo, fakeRegistry{known: map[string]bool{}}, testBus())
+	first, err := svc.Create(context.Background(), CreateInput{Name: "First"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := svc.Create(context.Background(), CreateInput{Name: "Second"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	task, err := repo.CreateTask(context.Background(), Task{ID: "tsk-2", MissionID: second.ID, Type: "recon", Status: TaskPending})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.UpdateTaskStatus(context.Background(), first.ID, task.ID, TaskActive, "op-1"); !apperr.Is(err, apperr.CodeNotFound) {
+		t.Fatalf("err = %v, want not found for a task owned by another mission", err)
+	}
+	if repo.tasks[task.ID].Status != TaskPending {
+		t.Fatalf("task status = %s, want unchanged", repo.tasks[task.ID].Status)
 	}
 }

@@ -1626,15 +1626,6 @@ export interface components {
                 "application/json": components["schemas"]["Error"];
             };
         };
-        /** @description Dependency unavailable */
-        ServiceUnavailable: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Error"];
-            };
-        };
         /** @description Source */
         Source: {
             headers: {
@@ -2127,7 +2118,15 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
-            503: components["responses"]["ServiceUnavailable"];
+            /** @description Database unavailable; the service returns its degraded health payload. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Health"];
+                };
+            };
         };
     };
     getMetrics: {

@@ -9,10 +9,12 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
 )
 
 // Open creates a pgx pool and verifies connectivity.
-func Open(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
+func Open(ctx context.Context, databaseURL string, metrics ...*observability.Metrics) (*pgxpool.Pool, error) {
 	cfg, err := pgxpool.ParseConfig(databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("parse database url: %w", err)
@@ -21,6 +23,9 @@ func Open(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
 	cfg.MinConns = 1
 	cfg.MaxConnLifetime = time.Hour
 	cfg.MaxConnIdleTime = 15 * time.Minute
+	if len(metrics) > 0 && metrics[0] != nil {
+		cfg.ConnConfig.Tracer = observability.NewDatabaseTracer(metrics[0])
+	}
 
 	pool, err := pgxpool.NewWithConfig(ctx, cfg)
 	if err != nil {

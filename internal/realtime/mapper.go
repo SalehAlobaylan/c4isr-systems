@@ -32,8 +32,17 @@ func MapEnvelope(ev events.Event) Envelope {
 			"observedAt":    e.ObservedAt,
 			"receivedAt":    e.ReceivedAt,
 			"trackHint":     e.TrackHint,
+			"duplicate":     e.Duplicate,
+			"retry":         e.Retry,
 		}
 		addPoint(env.Data, e.Position)
+	case events.ObservationRejected:
+		env.Data = map[string]any{
+			"observationId": e.ObservationID,
+			"sourceId":      e.SourceID,
+			"trackHint":     e.TrackHint,
+			"reason":        e.Reason,
+		}
 
 	case events.AssetCreated:
 		env.Data = map[string]any{"assetId": e.AssetID, "name": e.Name, "type": e.Type}

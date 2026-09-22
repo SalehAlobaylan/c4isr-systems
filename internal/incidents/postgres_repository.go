@@ -3,6 +3,7 @@ package incidents
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 )
@@ -38,6 +40,62 @@ func (r *PostgresRepository) Create(ctx context.Context, incident Incident) (Inc
 		return Incident{}, err
 	}
 	return toDomain(row), nil
+}
+
+// CreateWithRelations opens an incident and attaches all supplied evidence in
+// one transaction. A bad relation rolls back the incident row as well as any
+// relations inserted before it.
+func (r *PostgresRepository) CreateWithRelations(ctx context.Context, incident Incident, relations RelationIDs) (Incident, error) {
+	var created Incident
+	err := platformdb.WithTx(ctx, r.pool, func(tx pgx.Tx) error {
+		q := dbgen.New(tx)
+		row, err := q.CreateIncident(ctx, dbgen.CreateIncidentParams{
+			ID:               incident.ID,
+			Title:            incident.Title,
+			Description:      incident.Description,
+			Priority:         string(incident.Priority),
+			Status:           string(incident.Status),
+			AssignedOperator: pgconv.TextPtr(incident.AssignedOperator),
+		})
+		if err != nil {
+			return err
+		}
+		created = toDomain(row)
+
+		for _, id := range relations.AlertIDs {
+			if err := q.AddIncidentAlert(ctx, dbgen.AddIncidentAlertParams{IncidentID: created.ID, AlertID: strings.TrimSpace(id)}); err != nil {
+				return relationError(err, "alert", id)
+			}
+			if err := q.SetAlertIncident(ctx, dbgen.SetAlertIncidentParams{IncidentID: pgconv.TextPtr(created.ID), ID: strings.TrimSpace(id)}); err != nil {
+				return relationError(err, "alert", id)
+			}
+		}
+		for _, id := range relations.TrackIDs {
+			if err := q.AddIncidentTrack(ctx, dbgen.AddIncidentTrackParams{IncidentID: created.ID, TrackID: strings.TrimSpace(id)}); err != nil {
+				return relationError(err, "track", id)
+			}
+		}
+		for _, id := range relations.AssetIDs {
+			if err := q.AddIncidentAsset(ctx, dbgen.AddIncidentAssetParams{IncidentID: created.ID, AssetID: strings.TrimSpace(id)}); err != nil {
+				return relationError(err, "asset", id)
+			}
+		}
+		for _, id := range relations.ObservationIDs {
+			if err := q.AddIncidentObservation(ctx, dbgen.AddIncidentObservationParams{IncidentID: created.ID, ObservationID: strings.TrimSpace(id)}); err != nil {
+				return relationError(err, "observation", id)
+			}
+		}
+		for _, id := range relations.AssessmentIDs {
+			if err := q.AddIncidentAssessment(ctx, dbgen.AddIncidentAssessmentParams{IncidentID: created.ID, AssessmentID: strings.TrimSpace(id)}); err != nil {
+				return relationError(err, "assessment", id)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return Incident{}, err
+	}
+	return created, nil
 }
 
 // Get loads an incident by id.
@@ -138,14 +196,18 @@ func (r *PostgresRepository) List(ctx context.Context, status string, limit, off
 }
 
 // UpdateStatus changes incident lifecycle status.
-func (r *PostgresRepository) UpdateStatus(ctx context.Context, id string, status Status) (Incident, error) {
+func (r *PostgresRepository) UpdateStatus(ctx context.Context, id string, status, expected Status) (Incident, error) {
 	row, err := dbgen.New(r.pool).UpdateIncidentStatus(ctx, dbgen.UpdateIncidentStatusParams{
-		ID:     id,
-		Status: string(status),
+		ID:             id,
+		Status:         string(status),
+		ExpectedStatus: string(expected),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return Incident{}, apperr.NotFound("incident", id)
+			if _, getErr := r.Get(ctx, id); getErr != nil {
+				return Incident{}, getErr
+			}
+			return Incident{}, apperr.Conflict("incident status changed concurrently")
 		}
 		return Incident{}, err
 	}

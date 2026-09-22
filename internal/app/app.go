@@ -42,20 +42,26 @@ const DefaultOperator = "operator-01"
 
 // App is the assembled server.
 type App struct {
-	config    config.Config
-	logger    *slog.Logger
-	pool      *pgxpool.Pool
-	handler   http.Handler
-	scenarios *scenarios.Service
+	config             config.Config
+	logger             *slog.Logger
+	pool               *pgxpool.Pool
+	handler            http.Handler
+	scenarios          *scenarios.Service
+	staleMonitorCancel context.CancelFunc
+	staleMonitorDone   <-chan struct{}
 }
 
 // New opens the database, verifies migrations, wires every module, and builds
 // the HTTP router.
 func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, error) {
+	if logger == nil {
+		logger = slog.Default()
+	}
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
-	pool, err := db.Open(ctx, cfg.DatabaseURL)
+	metrics := observability.New()
+	pool, err := db.Open(ctx, cfg.DatabaseURL, metrics)
 	if err != nil {
 		return nil, err
 	}
@@ -71,10 +77,10 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 	}
 
 	bus := events.NewDispatcher(logger)
-	metrics := observability.New()
 	for _, topic := range events.AllTopics() {
-		bus.Subscribe(topic, func(_ context.Context, ev events.Event) {
-			metrics.ObserveEvent(ev.Topic())
+		bus.Subscribe(topic, func(eventCtx context.Context, ev events.Event) {
+			metrics.ObserveDomainEvent(ev)
+			logDomainEvent(logger, eventCtx, ev)
 		})
 	}
 
@@ -108,6 +114,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 	trackSvc := tracks.NewService(tracks.NewPostgresRepository(pool), observationSvc, bus)
 	classificationSvc := classifications.NewService(classifications.NewPostgresRepository(pool), bus)
 	geofenceSvc := geospatial.NewService(geospatial.NewPostgresRepository(pool), bus)
+	geofenceSvc.SetObserver(metrics)
 	alertSvc := alerts.NewService(alerts.NewPostgresRepository(pool), bus)
 	incidentSvc := incidents.NewService(incidents.NewPostgresRepository(pool), bus)
 	missionSvc := missions.NewService(missions.NewPostgresRepository(pool), assetSvc, bus)
@@ -116,7 +123,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 
 	// Realtime is registered after domain subscribers so notifications carry
 	// the state changes their handlers produced.
-	hub := realtime.NewHub(logger, bus)
+	hub := realtime.NewHub(logger, bus, metrics)
 
 	scenarioSvc := scenarios.NewService(
 		scenarios.NewPostgresRepository(pool),
@@ -155,14 +162,17 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		scenarios:       scenarios.NewHandler(scenarioSvc),
 		hub:             hub,
 	})
+	staleMonitorCancel, staleMonitorDone := startStaleMonitor(telemetrySvc, metrics, cfg.TelemetryStaleAfter, logger)
 
 	poolClosed = true
 	return &App{
-		config:    cfg,
-		logger:    logger,
-		pool:      pool,
-		handler:   router,
-		scenarios: scenarioSvc,
+		config:             cfg,
+		logger:             logger,
+		pool:               pool,
+		handler:            router,
+		scenarios:          scenarioSvc,
+		staleMonitorCancel: staleMonitorCancel,
+		staleMonitorDone:   staleMonitorDone,
 	}, nil
 }
 
@@ -171,6 +181,19 @@ func (a *App) Handler() http.Handler { return a.handler }
 
 // Close releases the connection pool.
 func (a *App) Close() {
+	if a.staleMonitorCancel != nil {
+		a.staleMonitorCancel()
+		if a.staleMonitorDone != nil {
+			select {
+			case <-a.staleMonitorDone:
+			case <-time.After(5 * time.Second):
+				if a.logger != nil {
+					a.logger.Warn("stale telemetry monitor did not stop before timeout")
+				}
+			}
+		}
+		a.staleMonitorCancel = nil
+	}
 	if a.scenarios != nil {
 		// Drain scenario engines before closing the pool. The scenario service
 		// bounds its terminal persistence operations; using a cancelable
@@ -183,6 +206,41 @@ func (a *App) Close() {
 	if a.pool != nil {
 		a.pool.Close()
 	}
+}
+
+func startStaleMonitor(service *telemetry.Service, observer telemetry.StaleEntityObserver, staleAfter time.Duration, logger *slog.Logger) (context.CancelFunc, <-chan struct{}) {
+	if staleAfter <= 0 {
+		staleAfter = 5 * time.Minute
+	}
+	interval := time.Minute
+	if staleAfter < interval {
+		interval = staleAfter
+	}
+	if interval < time.Second {
+		interval = time.Second
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		reconcile := func() {
+			if err := service.ReconcileStale(ctx, time.Now().UTC().Add(-staleAfter), observer); err != nil && ctx.Err() == nil && logger != nil {
+				logger.Error("reconcile stale telemetry", "error", err)
+			}
+		}
+		reconcile()
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				reconcile()
+			}
+		}
+	}()
+	return cancel, done
 }
 
 type moduleHandlers struct {

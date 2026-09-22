@@ -184,7 +184,7 @@ SET state = $1,
     completed_at = CASE WHEN $1::text = 'COMPLETED' AND completed_at IS NULL THEN now() ELSE completed_at END,
     failure_reason = CASE WHEN $1::text IN ('REJECTED', 'FAILED', 'TIMED_OUT')
                           THEN $2 ELSE failure_reason END
-WHERE id = $3
+WHERE id = $3 AND state = $4
 RETURNING id, asset_id, mission_id, incident_id, type, payload, state, created_by, correlation_id, created_at, updated_at, queued_at, sent_at, acknowledged_at, completed_at, failure_reason
 `
 
@@ -192,10 +192,16 @@ type TransitionCommandParams struct {
 	State         string
 	FailureReason *string
 	ID            string
+	FromState     string
 }
 
 func (q *Queries) TransitionCommand(ctx context.Context, arg TransitionCommandParams) (Command, error) {
-	row := q.db.QueryRow(ctx, transitionCommand, arg.State, arg.FailureReason, arg.ID)
+	row := q.db.QueryRow(ctx, transitionCommand,
+		arg.State,
+		arg.FailureReason,
+		arg.ID,
+		arg.FromState,
+	)
 	var i Command
 	err := row.Scan(
 		&i.ID,

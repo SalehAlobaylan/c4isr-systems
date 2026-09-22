@@ -120,7 +120,7 @@ func (s *Service) UpdateStatus(ctx context.Context, id string, status Status, ac
 	if !canTransition(current.Status, status) {
 		return Mission{}, invalidTransition(current.Status, status)
 	}
-	updated, err := s.repo.UpdateStatus(ctx, id, status)
+	updated, err := s.repo.UpdateStatus(ctx, id, status, current.Status)
 	if err != nil {
 		return Mission{}, err
 	}
@@ -202,7 +202,7 @@ func (s *Service) UpdateTaskStatus(ctx context.Context, missionID, taskID string
 	if err != nil {
 		return Task{}, err
 	}
-	task, err := s.repo.UpdateTaskStatus(ctx, taskID, status)
+	task, err := s.repo.UpdateTaskStatus(ctx, missionID, taskID, status)
 	if err != nil {
 		return Task{}, err
 	}

@@ -72,3 +72,83 @@ groups:
         annotations:
           summary: Elevated C4ISR authentication failures
           description: More than twenty bearer-token authentication failures occurred in ten minutes.
+
+      - alert: C4ISRObservationRejectionRate
+        expr: |
+          sum(rate(c4isr_observations_rejected_total{job="c4isr-api"}[5m]))
+          /
+          clamp_min(
+            sum(rate(c4isr_observations_received_total{job="c4isr-api"}[5m]))
+            + sum(rate(c4isr_observations_rejected_total{job="c4isr-api"}[5m])),
+            1
+          )
+          > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          service: c4isr-api
+          component: ingestion
+          runbook: docs/operations.md#observation-rejection-rate
+        annotations:
+          summary: Observation rejection rate is above 5 percent
+          description: Validation or source-registry failures are rejecting more than 5 percent of observations for ten minutes.
+
+      - alert: C4ISRStaleEntities
+        expr: c4isr_stale_entities{job="c4isr-api"} > 0
+        for: 15m
+        labels:
+          severity: warning
+          service: c4isr-api
+          component: telemetry
+          runbook: docs/operations.md#stale-entities
+        annotations:
+          summary: One or more assets have stale telemetry
+          description: At least one asset has not received current telemetry for fifteen minutes.
+
+      - alert: C4ISRCommandAcknowledgmentLatency
+        expr: |
+          sum(rate(c4isr_command_acknowledgment_duration_seconds_sum{job="c4isr-api"}[5m]))
+          /
+          clamp_min(sum(rate(c4isr_command_acknowledgment_duration_seconds_count{job="c4isr-api"}[5m])), 1)
+          > 10
+        for: 10m
+        labels:
+          severity: warning
+          service: c4isr-api
+          component: command
+          runbook: docs/operations.md#command-acknowledgment-latency
+        annotations:
+          summary: Command acknowledgment latency is above ten seconds
+          description: The average command acknowledgment latency has exceeded ten seconds for ten minutes.
+
+      - alert: C4ISRDatabaseQueryLatency
+        expr: |
+          sum(rate(c4isr_database_query_duration_seconds_sum{job="c4isr-api"}[5m]))
+          /
+          clamp_min(sum(rate(c4isr_database_query_duration_seconds_count{job="c4isr-api"}[5m])), 1)
+          > 1
+        for: 10m
+        labels:
+          severity: warning
+          service: c4isr-api
+          component: database
+          runbook: docs/operations.md#database-query-latency
+        annotations:
+          summary: Database query latency is above one second
+          description: The average instrumented database query duration has exceeded one second for ten minutes.
+
+      - alert: C4ISRWebSocketPublishLatency
+        expr: |
+          sum(rate(c4isr_websocket_publish_duration_seconds_sum{job="c4isr-api"}[5m]))
+          /
+          clamp_min(sum(rate(c4isr_websocket_publish_duration_seconds_count{job="c4isr-api"}[5m])), 1)
+          > 1
+        for: 10m
+        labels:
+          severity: warning
+          service: c4isr-api
+          component: realtime
+          runbook: docs/operations.md#websocket-publish-latency
+        annotations:
+          summary: WebSocket publish latency is above one second
+          description: Realtime event writes are taking more than one second on average for ten minutes.

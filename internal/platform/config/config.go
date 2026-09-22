@@ -5,17 +5,19 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 // Config is the runtime configuration of the C4ISR server.
 type Config struct {
-	HTTPAddr       string
-	DatabaseURL    string
-	LogLevel       string
-	LogFormat      string
-	ScenariosDir   string
-	AllowedOrigins []string
-	Version        string
+	HTTPAddr            string
+	DatabaseURL         string
+	LogLevel            string
+	LogFormat           string
+	ScenariosDir        string
+	AllowedOrigins      []string
+	Version             string
+	TelemetryStaleAfter time.Duration
 	// Environment controls safety-sensitive configuration defaults. It is
 	// intentionally explicit so production cannot accidentally inherit local
 	// development credentials.
@@ -39,16 +41,23 @@ func Load() (Config, error) {
 		defaultLogFormat = "text"
 	}
 	cfg := Config{
-		HTTPAddr:     envOr("C4ISR_HTTP_ADDR", ":8080"),
-		DatabaseURL:  "",
-		LogLevel:     envOr("C4ISR_LOG_LEVEL", "info"),
-		LogFormat:    envOr("C4ISR_LOG_FORMAT", defaultLogFormat),
-		ScenariosDir: envOr("C4ISR_SCENARIOS_DIR", "./scenarios"),
-		Environment:  environment,
-		Version:      envOr("C4ISR_VERSION", "dev"),
-		AuthRequired: true,
+		HTTPAddr:            envOr("C4ISR_HTTP_ADDR", ":8080"),
+		DatabaseURL:         "",
+		LogLevel:            envOr("C4ISR_LOG_LEVEL", "info"),
+		LogFormat:           envOr("C4ISR_LOG_FORMAT", defaultLogFormat),
+		ScenariosDir:        envOr("C4ISR_SCENARIOS_DIR", "./scenarios"),
+		Environment:         environment,
+		Version:             envOr("C4ISR_VERSION", "dev"),
+		TelemetryStaleAfter: 5 * time.Minute,
+		AuthRequired:        true,
 	}
 	var err error
+	if raw := os.Getenv("C4ISR_TELEMETRY_STALE_AFTER"); raw != "" {
+		cfg.TelemetryStaleAfter, err = time.ParseDuration(strings.TrimSpace(raw))
+		if err != nil || cfg.TelemetryStaleAfter <= 0 {
+			return Config{}, fmt.Errorf("C4ISR_TELEMETRY_STALE_AFTER must be a positive duration")
+		}
+	}
 	if cfg.DatabaseURL, err = secretEnv("C4ISR_DATABASE_URL"); err != nil {
 		return Config{}, err
 	}

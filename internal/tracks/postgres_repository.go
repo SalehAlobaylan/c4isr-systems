@@ -6,11 +6,13 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 )
@@ -36,6 +38,10 @@ func (r *PostgresRepository) Create(ctx context.Context, track Track) (Track, er
 		Metadata:    pgconv.JSONB(track.Metadata),
 	})
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "tracks_external_ref_key" {
+			return Track{}, ErrDuplicateExternalRef
+		}
 		return Track{}, err
 	}
 	return toDomain(row), nil
@@ -77,6 +83,20 @@ func (r *PostgresRepository) FindByExternalRef(ctx context.Context, ref string) 
 	return fromFindRow(row), nil
 }
 
+// FindByObservationID resolves the track that already owns an observation.
+// Retry events use this durable evidence link so an unhinted observation is
+// replayed into its original track instead of creating a second track.
+func (r *PostgresRepository) FindByObservationID(ctx context.Context, observationID string) (Track, error) {
+	row, err := dbgen.New(r.pool).FindTrackByObservationID(ctx, observationID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Track{}, apperr.NotFound("track for observation", observationID)
+		}
+		return Track{}, err
+	}
+	return fromObservationRow(row), nil
+}
+
 // List returns tracks ordered by last seen descending with a total count.
 func (r *PostgresRepository) List(ctx context.Context, limit, offset int) ([]Track, int, error) {
 	q := dbgen.New(r.pool)
@@ -96,6 +116,72 @@ func (r *PostgresRepository) List(ctx context.Context, limit, offset int) ([]Tra
 		out = append(out, fromListRow(row))
 	}
 	return out, int(total), nil
+}
+
+// ApplyObservation advances the track watermark and state in one conditional
+// database operation. The row-level update lock makes out-of-order concurrent
+// observations deterministic: only the newest timestamp (or first projection)
+// can win.
+func (r *PostgresRepository) ApplyObservation(ctx context.Context, update StateUpdate, observedAt, expectedLastSeenAt time.Time) (bool, error) {
+	params := dbgen.ApplyTrackObservationParams{
+		TrackID:            update.TrackID,
+		ObservedAt:         pgconv.TS(observedAt),
+		ExpectedLastSeenAt: pgconv.TS(expectedLastSeenAt),
+		Speed:              update.Speed,
+		Heading:            update.Heading,
+	}
+	if update.Position != nil {
+		params.HasPosition = true
+		params.Lat = update.Position.Lat
+		params.Lng = update.Position.Lng
+	}
+	return dbgen.New(r.pool).ApplyTrackObservation(ctx, params)
+}
+
+// ApplyObservationWithHistory commits a projection, its history point, and
+// the observation process marker in one transaction. The caller only publishes
+// a track update after this transaction succeeds.
+func (r *PostgresRepository) ApplyObservationWithHistory(ctx context.Context, update StateUpdate, observedAt, expectedLastSeenAt time.Time, history *HistoryPoint, observationID string) (bool, error) {
+	var applied bool
+	err := platformdb.WithTx(ctx, r.pool, func(tx pgx.Tx) error {
+		q := dbgen.New(tx)
+		params := dbgen.ApplyTrackObservationParams{
+			TrackID:            update.TrackID,
+			ObservedAt:         pgconv.TS(observedAt),
+			ExpectedLastSeenAt: pgconv.TS(expectedLastSeenAt),
+			Speed:              update.Speed,
+			Heading:            update.Heading,
+		}
+		if update.Position != nil {
+			params.HasPosition = true
+			params.Lat = update.Position.Lat
+			params.Lng = update.Position.Lng
+		}
+		var err error
+		applied, err = q.ApplyTrackObservation(ctx, params)
+		if err != nil || !applied {
+			return err
+		}
+		if history != nil {
+			historyParams := dbgen.CreateTrackHistoryEntryParams{
+				ID:         history.ID,
+				TrackID:    history.TrackID,
+				ObservedAt: pgconv.TS(history.ObservedAt),
+				Speed:      history.Speed,
+				Heading:    history.Heading,
+			}
+			if history.Position != nil {
+				historyParams.HasPosition = true
+				historyParams.Lat = history.Position.Lat
+				historyParams.Lng = history.Position.Lng
+			}
+			if err := q.CreateTrackHistoryEntry(ctx, historyParams); err != nil {
+				return err
+			}
+		}
+		return q.MarkObservationProcessed(ctx, observationID)
+	})
+	return applied, err
 }
 
 // Touch advances the last-seen watermark without regressing it.
@@ -255,6 +341,26 @@ func fromGetRow(row dbgen.GetTrackDetailRow) Track {
 }
 
 func fromFindRow(row dbgen.FindTrackByExternalRefRow) Track {
+	return fromDetailRow(trackDetailRow{
+		ID:             row.ID,
+		ExternalRef:    row.ExternalRef,
+		Status:         row.Status,
+		FirstSeenAt:    row.FirstSeenAt,
+		LastSeenAt:     row.LastSeenAt,
+		Metadata:       row.Metadata,
+		CreatedAt:      row.CreatedAt,
+		UpdatedAt:      row.UpdatedAt,
+		ClosedAt:       row.ClosedAt,
+		Speed:          row.Speed,
+		Heading:        row.Heading,
+		StateUpdatedAt: row.StateUpdatedAt,
+		HasPosition:    row.HasPosition,
+		Lat:            row.Lat,
+		Lng:            row.Lng,
+	})
+}
+
+func fromObservationRow(row dbgen.FindTrackByObservationIDRow) Track {
 	return fromDetailRow(trackDetailRow{
 		ID:             row.ID,
 		ExternalRef:    row.ExternalRef,

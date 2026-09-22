@@ -5,7 +5,9 @@
  * derived from internal/*\/http.go. Timestamps are RFC3339 strings.
  */
 
-import type { components, operations } from '@/lib/openapi.generated'
+import createClient from 'openapi-fetch'
+
+import type { components, operations, paths } from '@/lib/openapi.generated'
 
 // The REST client functions below are the ergonomic application layer over
 // the generated OpenAPI contract. Keeping the generated file separate means
@@ -86,6 +88,7 @@ export type CreateClassificationInput = NonNullable<
   operations['createClassification']['requestBody']
 >['content']['application/json']
 export type CreateObservationInput = components['requestBodies']['ObservationInput']['content']['application/json']
+export type UpdateAssetStatusInput = operations['updateAssetStatus']['requestBody']['content']['application/json']
 export type StartScenarioInput = NonNullable<
   operations['startScenario']['requestBody']
 >['content']['application/json']
@@ -121,35 +124,49 @@ const runtimeConfig = typeof window === 'undefined' ? {} : (window.__C4ISR_CONFI
 // UI image. Vite values remain available for local development and tests.
 export const API_TOKEN = (runtimeConfig.apiToken ?? import.meta.env.VITE_API_TOKEN ?? '').trim()
 
-const API_BASE = (runtimeConfig.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? '/api/v1').replace(/\/+$/, '')
+const configuredApiBase = runtimeConfig.apiBaseUrl ?? import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
+const API_BASE = configuredApiBase.trim().replace(/\/+$/, '') || '/api/v1'
 export const MAP_STYLE_URL = (runtimeConfig.mapStyleUrl ?? import.meta.env.VITE_MAP_STYLE_URL ?? '').trim()
 
-type QueryValue = string | number | boolean | null | undefined
-
-type QueryParams = Record<string, QueryValue> | object
-
-function buildUrl(path: string, params?: QueryParams): string {
-  const url = new URL(`${API_BASE}${path}`, window.location.origin)
-  if (params) {
-    for (const [key, value] of Object.entries(params as Record<string, unknown>)) {
-      if (value === undefined || value === null || value === '') continue
-      url.searchParams.set(key, String(value))
-    }
-  }
-  return url.toString()
+function apiClientBaseUrl(baseUrl: string): string {
+  const origin = typeof window === 'undefined' ? 'http://localhost' : window.location.origin
+  const resolved = new URL(baseUrl, origin)
+  const pathname = resolved.pathname.replace(/\/+$/, '')
+  const apiPath = '/api/v1'
+  const prefix = pathname.endsWith(apiPath)
+    ? pathname.slice(0, -apiPath.length)
+    : pathname
+  return `${resolved.origin}${prefix}`
 }
 
-async function parseError(response: Response): Promise<ApiError> {
+export const apiClient = createClient<paths>({
+  // Generated OpenAPI paths already include /api/v1. Keep any configured
+  // gateway prefix in the base URL, while avoiding a duplicated /api/v1.
+  baseUrl: apiClientBaseUrl(API_BASE),
+  headers: {
+    Accept: 'application/json',
+    ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
+  },
+})
+
+function errorEnvelope(value: unknown): ErrorEnvelope | undefined {
+  if (!value || typeof value !== 'object') return undefined
+  const error = (value as { error?: unknown }).error
+  if (!error || typeof error !== 'object') return undefined
+  const code = (error as { code?: unknown }).code
+  const message = (error as { message?: unknown }).message
+  if (typeof code !== 'string' || typeof message !== 'string') return undefined
+  return { error: { code, message } }
+}
+
+async function parseError(response: Response, payload?: unknown): Promise<ApiError> {
   let code = 'http_error'
   let message = `Request failed with status ${response.status}`
-  try {
-    const body = (await response.json()) as Partial<ErrorEnvelope>
-    if (body.error) {
-      code = body.error.code ?? code
-      message = body.error.message ?? message
-    }
-  } catch {
-    // Non-JSON error body; keep the generic message.
+  const body = errorEnvelope(payload) ?? (await response.clone().json().catch(() => undefined))
+  const parsed = errorEnvelope(body)
+  if (parsed) {
+    code = parsed.error.code
+    message = parsed.error.message
   }
   if (response.status === 401) {
     message = 'Authentication failed. Configure the operator UI API token.'
@@ -159,160 +176,182 @@ async function parseError(response: Response): Promise<ApiError> {
   return new ApiError(response.status, code, message)
 }
 
-interface RequestOptions {
-  params?: QueryParams
-  body?: unknown
-  signal?: AbortSignal
+async function unwrap<T>(result: Promise<{
+  data?: T
+  error?: unknown
+  response: Response
+}>): Promise<T> {
+  const resolved = await result
+  if (!resolved.response.ok) throw await parseError(resolved.response, resolved.error)
+  return resolved.data as T
 }
-
-async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
-  const response = await fetch(buildUrl(path, options.params), {
-    method,
-    headers: {
-      Accept: 'application/json',
-      ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
-      ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
-    },
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-    signal: options.signal,
-  })
-
-  if (!response.ok) throw await parseError(response)
-  if (response.status === 204) return undefined as T
-  return (await response.json()) as T
-}
-
-const get = <T>(path: string, params?: QueryParams, signal?: AbortSignal) =>
-  request<T>('GET', path, { params, signal })
-
-const post = <T>(path: string, body?: unknown, params?: QueryParams) =>
-  request<T>('POST', path, { body, params })
 
 /* ------------------------------------------------------------------ */
 /* Endpoints                                                           */
 /* ------------------------------------------------------------------ */
 
 export async function fetchHealth(signal?: AbortSignal): Promise<Health> {
-  const response = await fetch('/health', {
-    headers: { Accept: 'application/json' },
-    signal,
-  })
-  if (!response.ok) throw await parseError(response)
-  return (await response.json()) as Health
+  return unwrap(apiClient.GET('/health', signal ? { signal } : undefined))
 }
-
-const segment = (value: string) => encodeURIComponent(value)
 
 export const api = {
   /* identity */
-  getCurrentOperator: () => get<CurrentOperatorResponse>('/auth/me'),
+  getCurrentOperator: () => unwrap(apiClient.GET('/api/v1/auth/me')),
 
   /* sources */
   listSources: (params?: { limit?: number; offset?: number }) =>
-    get<SourceList>('/sources', params),
+    unwrap(apiClient.GET('/api/v1/sources', { params: { query: params } })),
 
   /* assets */
-  listAssets: (params?: AssetFilters) => get<AssetList>('/assets', params),
-  getAsset: (id: string) => get<Asset>(`/assets/${segment(id)}`),
-  updateAssetStatus: (id: string, status: string) =>
-    post<Asset>(`/assets/${segment(id)}/status`, { status }),
+  listAssets: (params?: AssetFilters) =>
+    unwrap(apiClient.GET('/api/v1/assets', { params: { query: params } })),
+  getAsset: (id: string) =>
+    unwrap(apiClient.GET('/api/v1/assets/{id}', { params: { path: { id } } })),
+  updateAssetStatus: (id: string, status: UpdateAssetStatusInput['status']) =>
+    unwrap(apiClient.POST('/api/v1/assets/{id}/status', { params: { path: { id } }, body: { status } })),
   listAssetTelemetry: (id: string, params?: { limit?: number; offset?: number }) =>
-    get<TelemetryList>(`/assets/${segment(id)}/telemetry`, params),
+    unwrap(
+      apiClient.GET('/api/v1/assets/{id}/telemetry', {
+        params: { path: { id }, query: params },
+      }),
+    ),
 
   /* tracks */
-  listTracks: (params?: TrackFilters) => get<TrackList>('/tracks', params),
-  getTrack: (id: string) => get<Track>(`/tracks/${segment(id)}`),
+  listTracks: (params?: TrackFilters) =>
+    unwrap(apiClient.GET('/api/v1/tracks', { params: { query: params } })),
+  getTrack: (id: string) =>
+    unwrap(apiClient.GET('/api/v1/tracks/{id}', { params: { path: { id } } })),
   getTrackHistory: (id: string, params?: { limit?: number }) =>
-    get<TrackHistoryList>(`/tracks/${segment(id)}/history`, params),
+    unwrap(
+      apiClient.GET('/api/v1/tracks/{id}/history', {
+        params: { path: { id }, query: params },
+      }),
+    ),
   listTrackClassifications: (id: string, params?: { limit?: number; offset?: number }) =>
-    get<ClassificationList>(`/tracks/${segment(id)}/classifications`, params),
+    unwrap(
+      apiClient.GET('/api/v1/tracks/{id}/classifications', {
+        params: { path: { id }, query: params },
+      }),
+    ),
 
   /* classifications */
   createClassification: (input: CreateClassificationInput) =>
-    post<Classification>('/classifications', input),
+    unwrap(apiClient.POST('/api/v1/classifications', { body: input })),
 
   /* observations */
-  listObservations: (params?: ObservationFilters) => get<ObservationList>('/observations', params),
-  getObservation: (id: string) => get<Observation>(`/observations/${segment(id)}`),
-  createObservation: (input: CreateObservationInput) => post<Observation>('/observations', input),
+  listObservations: (params?: ObservationFilters) =>
+    unwrap(apiClient.GET('/api/v1/observations', { params: { query: params } })),
+  getObservation: (id: string) =>
+    unwrap(apiClient.GET('/api/v1/observations/{id}', { params: { path: { id } } })),
+  createObservation: (input: CreateObservationInput) =>
+    unwrap(apiClient.POST('/api/v1/observations', { body: input })),
 
   /* geofences */
   listGeofences: (params?: { limit?: number; offset?: number }) =>
-    get<GeofenceList>('/geofences', params),
+    unwrap(apiClient.GET('/api/v1/geofences', { params: { query: params } })),
 
   /* alerts */
-  listAlerts: (params?: AlertFilters) => get<AlertList>('/alerts', params),
-  getAlert: (id: string) => get<Alert>(`/alerts/${segment(id)}`),
-  acknowledgeAlert: (id: string) => post<Alert>(`/alerts/${segment(id)}/acknowledge`),
-  resolveAlert: (id: string) => post<Alert>(`/alerts/${segment(id)}/resolve`),
+  listAlerts: (params?: AlertFilters) =>
+    unwrap(apiClient.GET('/api/v1/alerts', { params: { query: params } })),
+  getAlert: (id: string) =>
+    unwrap(apiClient.GET('/api/v1/alerts/{id}', { params: { path: { id } } })),
+  acknowledgeAlert: (id: string) =>
+    unwrap(apiClient.POST('/api/v1/alerts/{id}/acknowledge', { params: { path: { id } } })),
+  resolveAlert: (id: string) =>
+    unwrap(apiClient.POST('/api/v1/alerts/{id}/resolve', { params: { path: { id } } })),
 
   /* incidents */
-  listIncidents: (params?: IncidentFilters) => get<IncidentList>('/incidents', params),
-  getIncident: (id: string) => get<IncidentDetail>(`/incidents/${segment(id)}`),
-  createIncident: (input: CreateIncidentInput) => post<Incident>('/incidents', input),
+  listIncidents: (params?: IncidentFilters) =>
+    unwrap(apiClient.GET('/api/v1/incidents', { params: { query: params } })),
+  getIncident: (id: string) =>
+    unwrap(apiClient.GET('/api/v1/incidents/{id}', { params: { path: { id } } })),
+  createIncident: (input: CreateIncidentInput) =>
+    unwrap(apiClient.POST('/api/v1/incidents', { body: input })),
   updateIncidentStatus: (id: string, status: string) =>
-    post<Incident>(`/incidents/${segment(id)}/status`, { status }),
+    unwrap(apiClient.POST('/api/v1/incidents/{id}/status', { params: { path: { id } }, body: { status } })),
   attachIncidentRelation: (id: string, kind: string, relationId: string) =>
-    post<Incident>(`/incidents/${segment(id)}/relations`, { kind, id: relationId }),
+    unwrap(
+      apiClient.POST('/api/v1/incidents/{id}/relations', {
+        params: { path: { id } },
+        body: { kind, id: relationId },
+      }),
+    ),
 
   /* missions */
-  listMissions: (params?: MissionFilters) => get<MissionList>('/missions', params),
-  getMission: (id: string) => get<Mission>(`/missions/${segment(id)}`),
-  createMission: (input: CreateMissionInput) => post<Mission>('/missions', input),
+  listMissions: (params?: MissionFilters) =>
+    unwrap(apiClient.GET('/api/v1/missions', { params: { query: params } })),
+  getMission: (id: string) =>
+    unwrap(apiClient.GET('/api/v1/missions/{id}', { params: { path: { id } } })),
+  createMission: (input: CreateMissionInput) =>
+    unwrap(apiClient.POST('/api/v1/missions', { body: input })),
   updateMissionStatus: (id: string, status: string) =>
-    post<Mission>(`/missions/${segment(id)}/status`, { status }),
+    unwrap(apiClient.POST('/api/v1/missions/{id}/status', { params: { path: { id } }, body: { status } })),
   assignMissionAsset: (id: string, assetId: string) =>
-    post<Mission>(`/missions/${segment(id)}/assets`, { assetId }),
+    unwrap(apiClient.POST('/api/v1/missions/{id}/assets', { params: { path: { id } }, body: { assetId } })),
 
   /* commands */
-  listCommands: (params?: CommandFilters) => get<CommandList>('/commands', params),
-  getCommand: (id: string) => get<Command>(`/commands/${segment(id)}`),
-  issueCommand: (input: IssueCommandInput) => post<Command>('/commands', input),
+  listCommands: (params?: CommandFilters) =>
+    unwrap(apiClient.GET('/api/v1/commands', { params: { query: params } })),
+  getCommand: (id: string) =>
+    unwrap(apiClient.GET('/api/v1/commands/{id}', { params: { path: { id } } })),
+  issueCommand: (input: IssueCommandInput) =>
+    unwrap(apiClient.POST('/api/v1/commands', { body: input })),
   transitionCommand: (id: string, state: string, reason?: string) =>
-    post<Command>(`/commands/${segment(id)}/transition`, { state, reason: reason ?? '' }),
+    unwrap(
+      apiClient.POST('/api/v1/commands/{id}/transition', {
+        params: { path: { id } },
+        body: { state, reason: reason ?? '' },
+      }),
+    ),
 
   /* assessments */
   listAssessments: (params?: AssessmentFilters) =>
-    get<AssessmentList>('/assessments', params),
+    unwrap(apiClient.GET('/api/v1/assessments', { params: { query: params } })),
   createAssessment: (input: components['requestBodies']['Assessment']['content']['application/json']) =>
-    post<Assessment>('/assessments', input),
+    unwrap(apiClient.POST('/api/v1/assessments', { body: input })),
 
   /* audit */
-  listAudit: (params?: AuditFilters) => get<AuditList>('/audit', params),
+  listAudit: (params?: AuditFilters) =>
+    unwrap(apiClient.GET('/api/v1/audit', { params: { query: params } })),
 
   /* operators */
   listOperators: (params?: { limit?: number; offset?: number }) =>
-    get<OperatorList>('/operators', params),
+    unwrap(apiClient.GET('/api/v1/operators', { params: { query: params } })),
 
   /* scenarios */
-  listScenarios: () => get<ScenarioSummaryList>('/scenarios'),
-  getScenario: (name: string) => get<Scenario>(`/scenarios/${segment(name)}`),
+  listScenarios: () => unwrap(apiClient.GET('/api/v1/scenarios')),
+  getScenario: (name: string) =>
+    unwrap(apiClient.GET('/api/v1/scenarios/{name}', { params: { path: { name } } })),
   startScenario: (name: string, input: StartScenarioInput) =>
-    post<ScenarioRun>(`/scenarios/definitions/${segment(name)}/start`, input),
+    unwrap(apiClient.POST('/api/v1/scenarios/definitions/{name}/start', { params: { path: { name } }, body: input })),
   listScenarioRuns: (params?: { limit?: number; offset?: number }) =>
-    get<ScenarioRunList>('/scenarios/runs', params),
-  getScenarioRun: (id: string) => get<ScenarioRun>(`/scenarios/runs/${segment(id)}`),
+    unwrap(apiClient.GET('/api/v1/scenarios/runs', { params: { query: params } })),
+  getScenarioRun: (id: string) =>
+    unwrap(apiClient.GET('/api/v1/scenarios/runs/{id}', { params: { path: { id } } })),
   listScenarioRunEvents: (id: string) =>
-    get<ScenarioEventList>(`/scenarios/runs/${segment(id)}/events`),
-  pauseScenarioRun: (id: string) => post<ScenarioRun>(`/scenarios/runs/${segment(id)}/pause`),
-  resumeScenarioRun: (id: string) => post<ScenarioRun>(`/scenarios/runs/${segment(id)}/resume`),
-  stopScenarioRun: (id: string) => post<ScenarioRun>(`/scenarios/runs/${segment(id)}/stop`),
-  restartScenarioRun: (id: string) => post<ScenarioRun>(`/scenarios/runs/${segment(id)}/restart`),
+    unwrap(apiClient.GET('/api/v1/scenarios/runs/{id}/events', { params: { path: { id } } })),
+  pauseScenarioRun: (id: string) =>
+    unwrap(apiClient.POST('/api/v1/scenarios/runs/{id}/pause', { params: { path: { id } } })),
+  resumeScenarioRun: (id: string) =>
+    unwrap(apiClient.POST('/api/v1/scenarios/runs/{id}/resume', { params: { path: { id } } })),
+  stopScenarioRun: (id: string) =>
+    unwrap(apiClient.POST('/api/v1/scenarios/runs/{id}/stop', { params: { path: { id } } })),
+  restartScenarioRun: (id: string) =>
+    unwrap(apiClient.POST('/api/v1/scenarios/runs/{id}/restart', { params: { path: { id } } })),
   setScenarioRunSpeed: (id: string, speed: number) =>
-    post<ScenarioRun>(`/scenarios/runs/${segment(id)}/speed`, { speed }),
+    unwrap(apiClient.POST('/api/v1/scenarios/runs/{id}/speed', { params: { path: { id } }, body: { speed } })),
 }
 
 export function realtimeUrl(): string {
-  const base = API_BASE
-  if (base && /^https?:\/\//.test(base)) {
-    const url = new URL(base)
+  // Reuse the configured API path so a gateway prefix such as
+  // /proxy/api/v1 also routes the WebSocket upgrade to the backend.
+  const url = new URL(API_BASE, window.location.origin)
+  url.pathname = `${url.pathname.replace(/\/+$/, '')}/realtime`
+  if (/^https?:\/\//.test(API_BASE)) {
     url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
-    url.pathname = `${url.pathname.replace(/\/+$/, '')}/realtime`
-    if (API_TOKEN) url.searchParams.set('access_token', API_TOKEN)
-    return url.toString()
+  } else {
+    url.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   }
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const url = new URL(`${protocol}//${window.location.host}/api/v1/realtime`)
   if (API_TOKEN) url.searchParams.set('access_token', API_TOKEN)
   return url.toString()
 }

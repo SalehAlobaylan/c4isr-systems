@@ -151,6 +151,7 @@ Copy `.env.example` to `.env` for reference; the Taskfile exports `C4ISR_DATABAS
 | `C4ISR_LOG_LEVEL` | `info` | `debug`, `info`, `warn`, `error` |
 | `C4ISR_LOG_FORMAT` | `json` outside development/test | `text` or `json`; staging/production require `json` |
 | `C4ISR_SCENARIOS_DIR` | `./scenarios` | Scenario YAML directory |
+| `C4ISR_TELEMETRY_STALE_AFTER` | `5m` | Mark an asset stale after this long without accepted telemetry |
 | `C4ISR_ALLOWED_ORIGINS` | empty | Comma-separated CORS origins |
 | `C4ISR_ENV` | `production` | `development`, `test`, `staging`, or `production` |
 | `C4ISR_AUTH_REQUIRED` | `true` | Keep bearer authentication enabled outside local test harnesses |

@@ -312,6 +312,34 @@ func (q *Queries) ListAssetsWithState(ctx context.Context, arg ListAssetsWithSta
 	return items, nil
 }
 
+const listStaleAssetIDs = `-- name: ListStaleAssetIDs :many
+SELECT a.id AS asset_id
+FROM assets AS a
+LEFT JOIN asset_state AS s ON s.asset_id = a.id
+WHERE a.created_at < $1
+  AND (s.last_seen_at IS NULL OR s.last_seen_at < $1)
+`
+
+func (q *Queries) ListStaleAssetIDs(ctx context.Context, cutoff pgtype.Timestamptz) ([]string, error) {
+	rows, err := q.db.Query(ctx, listStaleAssetIDs, cutoff)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []string{}
+	for rows.Next() {
+		var asset_id string
+		if err := rows.Scan(&asset_id); err != nil {
+			return nil, err
+		}
+		items = append(items, asset_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateAssetStatus = `-- name: UpdateAssetStatus :one
 UPDATE assets
 SET status = $1, updated_at = now()
@@ -340,7 +368,8 @@ func (q *Queries) UpdateAssetStatus(ctx context.Context, arg UpdateAssetStatusPa
 	return i, err
 }
 
-const upsertAssetState = `-- name: UpsertAssetState :exec
+const upsertAssetState = `-- name: UpsertAssetState :one
+WITH applied AS (
 INSERT INTO asset_state (
     asset_id, position, speed, heading, health, connection_state, last_seen_at, updated_at
 ) VALUES (
@@ -358,22 +387,37 @@ ON CONFLICT (asset_id) DO UPDATE SET
     connection_state = COALESCE(EXCLUDED.connection_state, asset_state.connection_state),
     last_seen_at = EXCLUDED.last_seen_at,
     updated_at = now()
+WHERE (
+    (
+        $10::timestamptz IS NULL
+        AND asset_state.last_seen_at IS NULL
+    )
+    OR asset_state.last_seen_at = $10::timestamptz
+)
+AND (
+    asset_state.last_seen_at IS NULL
+    OR asset_state.last_seen_at < EXCLUDED.last_seen_at
+)
+RETURNING asset_id
+)
+SELECT EXISTS (SELECT 1 FROM applied)::boolean AS applied
 `
 
 type UpsertAssetStateParams struct {
-	AssetID         string
-	HasPosition     bool
-	Lng             float64
-	Lat             float64
-	Speed           *float64
-	Heading         *float64
-	Health          *string
-	ConnectionState string
-	ObservedAt      pgtype.Timestamptz
+	AssetID            string
+	HasPosition        bool
+	Lng                float64
+	Lat                float64
+	Speed              *float64
+	Heading            *float64
+	Health             *string
+	ConnectionState    string
+	ObservedAt         pgtype.Timestamptz
+	ExpectedLastSeenAt pgtype.Timestamptz
 }
 
-func (q *Queries) UpsertAssetState(ctx context.Context, arg UpsertAssetStateParams) error {
-	_, err := q.db.Exec(ctx, upsertAssetState,
+func (q *Queries) UpsertAssetState(ctx context.Context, arg UpsertAssetStateParams) (bool, error) {
+	row := q.db.QueryRow(ctx, upsertAssetState,
 		arg.AssetID,
 		arg.HasPosition,
 		arg.Lng,
@@ -383,6 +427,9 @@ func (q *Queries) UpsertAssetState(ctx context.Context, arg UpsertAssetStatePara
 		arg.Health,
 		arg.ConnectionState,
 		arg.ObservedAt,
+		arg.ExpectedLastSeenAt,
 	)
-	return err
+	var applied bool
+	err := row.Scan(&applied)
+	return applied, err
 }

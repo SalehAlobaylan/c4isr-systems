@@ -8,6 +8,8 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // DefaultLimit and MaxLimit bound list queries.
@@ -31,15 +33,28 @@ func NewService(repo Repository, assets AssetRegistry, bus *events.Dispatcher) *
 // Issue validates, persists, and publishes a command handed to transport.
 func (s *Service) Issue(ctx context.Context, in IssueInput) (Command, error) {
 	in.Normalize()
+	spanCtx, span := observability.StartSpan(ctx, "c4isr.command.issue",
+		attribute.String("asset.id", in.AssetID),
+		attribute.String("mission.id", in.MissionID),
+		attribute.String("command.type", in.Type),
+	)
+	ctx = spanCtx
+	var spanErr error
+	defer func() { observability.EndSpan(span, spanErr) }()
+
 	if err := in.Validate(); err != nil {
+		spanErr = err
 		return Command{}, err
 	}
 	exists, err := s.assets.Exists(ctx, in.AssetID)
 	if err != nil {
+		spanErr = err
 		return Command{}, err
 	}
 	if !exists {
-		return Command{}, apperr.Validation("unknown asset: " + in.AssetID)
+		err := apperr.Validation("unknown asset: " + in.AssetID)
+		spanErr = err
+		return Command{}, err
 	}
 
 	command := Command{
@@ -55,6 +70,7 @@ func (s *Service) Issue(ctx context.Context, in IssueInput) (Command, error) {
 	}
 	created, err := s.repo.Create(ctx, command)
 	if err != nil {
+		spanErr = err
 		return Command{}, err
 	}
 	s.bus.Publish(ctx, events.CommandIssued{
@@ -71,18 +87,32 @@ func (s *Service) Issue(ctx context.Context, in IssueInput) (Command, error) {
 // Transition moves a command to a new lifecycle state and publishes
 // command.status.changed.
 func (s *Service) Transition(ctx context.Context, id string, to State, reason, actor string) (Command, error) {
+	spanCtx, span := observability.StartSpan(ctx, "c4isr.command.transition",
+		attribute.String("command.id", id),
+		attribute.String("command.state", string(to)),
+	)
+	ctx = spanCtx
+	var spanErr error
+	defer func() { observability.EndSpan(span, spanErr) }()
+
 	if !validState(to) {
-		return Command{}, apperr.Validation("command state must be one of CREATED, QUEUED, SENT, ACKNOWLEDGED, COMPLETED, REJECTED, FAILED, TIMED_OUT, CANCELLED")
+		err := apperr.Validation("command state must be one of CREATED, QUEUED, SENT, ACKNOWLEDGED, COMPLETED, REJECTED, FAILED, TIMED_OUT, CANCELLED")
+		spanErr = err
+		return Command{}, err
 	}
 	current, err := s.repo.Get(ctx, id)
 	if err != nil {
+		spanErr = err
 		return Command{}, err
 	}
 	if !CanTransition(current.State, to) {
-		return Command{}, invalidTransition(current.State, to)
+		err := invalidTransition(current.State, to)
+		spanErr = err
+		return Command{}, err
 	}
-	updated, err := s.repo.Transition(ctx, id, to, reason)
+	updated, err := s.repo.Transition(ctx, id, current.State, to, reason)
 	if err != nil {
+		spanErr = err
 		return Command{}, err
 	}
 	s.bus.Publish(ctx, events.CommandStatusChanged{

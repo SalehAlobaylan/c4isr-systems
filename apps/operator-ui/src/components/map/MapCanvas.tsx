@@ -425,8 +425,8 @@ export function MapCanvas({
   }, [ready, selected, tracks, assets])
 
   return (
-    <div className="absolute inset-0">
-      <div ref={containerRef} className="absolute inset-0" />
+    <div className="absolute inset-0" data-map-ready={ready ? 'true' : 'false'}>
+      <div ref={containerRef} className="h-full w-full" />
       {initError ? (
         <div className="absolute inset-0 flex items-center justify-center bg-bg p-6">
           <div className="max-w-md rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-center">

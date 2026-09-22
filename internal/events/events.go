@@ -22,6 +22,7 @@ const (
 	TopicSourceUpdated = "source.updated"
 
 	TopicObservationReceived = "observation.received"
+	TopicObservationRejected = "observation.rejected"
 
 	TopicAssetCreated           = "asset.created"
 	TopicAssetUpdated           = "asset.updated"
@@ -66,6 +67,7 @@ func AllTopics() []string {
 		TopicSourceCreated,
 		TopicSourceUpdated,
 		TopicObservationReceived,
+		TopicObservationRejected,
 		TopicAssetCreated,
 		TopicAssetUpdated,
 		TopicAssetPositionUpdated,
@@ -186,9 +188,25 @@ type ObservationReceived struct {
 	Position      *geo.Point
 	TrackHint     string
 	Duplicate     bool
+	// Retry replays an already stored observation whose downstream projection
+	// did not complete successfully.
+	Retry bool
 }
 
 func (ObservationReceived) Topic() string { return TopicObservationReceived }
+
+// ObservationRejected is published when an observation cannot enter the
+// evidence layer. It keeps validation and source failures observable without
+// pretending that rejected input was persisted.
+type ObservationRejected struct {
+	At            time.Time
+	ObservationID string
+	SourceID      string
+	TrackHint     string
+	Reason        string
+}
+
+func (ObservationRejected) Topic() string { return TopicObservationRejected }
 
 // ---------------------------------------------------------------------------
 // Assets and telemetry
@@ -507,6 +525,8 @@ func (e SourceCreated) OccurredAt() time.Time { return e.At }
 func (e SourceUpdated) OccurredAt() time.Time { return e.At }
 
 func (e ObservationReceived) OccurredAt() time.Time { return e.At }
+
+func (e ObservationRejected) OccurredAt() time.Time { return e.At }
 
 func (e AssetCreated) OccurredAt() time.Time { return e.At }
 

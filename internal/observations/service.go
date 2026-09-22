@@ -7,6 +7,8 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // DefaultLimit and MaxLimit bound list queries.
@@ -51,17 +53,32 @@ type IngestResult struct {
 // evidence layer.
 func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, error) {
 	in.Normalize()
+	spanCtx, span := observability.StartSpan(ctx, "c4isr.observation.ingest",
+		attribute.String("observation.id", in.ID),
+		attribute.String("source.id", in.SourceID),
+	)
+	ctx = spanCtx
+	var spanErr error
+	defer func() { observability.EndSpan(span, spanErr) }()
+
 	now := s.now()
 	if err := in.Validate(now); err != nil {
+		spanErr = err
+		s.publishRejected(ctx, in, err)
 		return IngestResult{}, err
 	}
 
 	exists, err := s.sources.Exists(ctx, in.SourceID)
 	if err != nil {
+		spanErr = err
+		s.publishRejected(ctx, in, err)
 		return IngestResult{}, err
 	}
 	if !exists {
-		return IngestResult{}, apperr.Validation("unknown source: " + in.SourceID)
+		err := apperr.Validation("unknown source: " + in.SourceID)
+		spanErr = err
+		s.publishRejected(ctx, in, err)
+		return IngestResult{}, err
 	}
 
 	obs := Observation{
@@ -81,10 +98,29 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 		if errors.Is(err, ErrDuplicateID) {
 			existing, getErr := s.repo.Get(ctx, in.ID)
 			if getErr != nil {
+				spanErr = getErr
 				return IngestResult{}, getErr
+			}
+			if existing.ProcessedAt == nil && s.bus != nil {
+				// The evidence insert committed before a downstream event handler
+				// failed. Replay the durable observation so projection can resume.
+				s.bus.Publish(ctx, events.ObservationReceived{
+					At:            s.now(),
+					ObservationID: existing.ID,
+					SourceID:      existing.SourceID,
+					Type:          existing.Type,
+					ObservedAt:    existing.ObservedAt,
+					ReceivedAt:    existing.ReceivedAt,
+					Position:      existing.Position,
+					TrackHint:     existing.TrackHint,
+					Duplicate:     true,
+					Retry:         true,
+				})
 			}
 			return IngestResult{Observation: existing, Duplicate: true}, nil
 		}
+		spanErr = err
+		s.publishRejected(ctx, in, err)
 		return IngestResult{}, err
 	}
 
@@ -99,6 +135,37 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 		TrackHint:     created.TrackHint,
 	})
 	return IngestResult{Observation: created}, nil
+}
+
+func (s *Service) publishRejected(ctx context.Context, in CreateInput, cause error) {
+	if s.bus == nil || cause == nil {
+		return
+	}
+	s.bus.Publish(ctx, events.ObservationRejected{
+		At:            s.now(),
+		ObservationID: in.ID,
+		SourceID:      in.SourceID,
+		TrackHint:     in.TrackHint,
+		Reason:        rejectionReason(cause),
+	})
+}
+
+// rejectionReason is an intentional public category. The original error is
+// retained in the request span/log path, while realtime and audit consumers
+// receive no SQL, driver, or filesystem details from infrastructure failures.
+func rejectionReason(cause error) string {
+	switch apperr.CodeOf(cause) {
+	case apperr.CodeBadRequest:
+		return string(apperr.CodeBadRequest)
+	case apperr.CodeValidation:
+		return string(apperr.CodeValidation)
+	case apperr.CodeNotFound:
+		return string(apperr.CodeNotFound)
+	case apperr.CodeConflict:
+		return string(apperr.CodeConflict)
+	default:
+		return string(apperr.CodeInternal)
+	}
 }
 
 // Get returns an observation by id.

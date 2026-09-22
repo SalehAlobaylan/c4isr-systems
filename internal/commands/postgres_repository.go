@@ -44,7 +44,7 @@ func (r *PostgresRepository) Create(ctx context.Context, command Command) (Comma
 	}
 	created := toDomain(row)
 	if created.State == StateSent && created.SentAt == nil {
-		return r.Transition(ctx, created.ID, StateSent, "")
+		return r.Transition(ctx, created.ID, StateSent, StateSent, "")
 	}
 	return created, nil
 }
@@ -91,15 +91,23 @@ func (r *PostgresRepository) List(ctx context.Context, filter ListFilter, limit,
 }
 
 // Transition moves a command to a new state.
-func (r *PostgresRepository) Transition(ctx context.Context, id string, state State, failureReason string) (Command, error) {
+func (r *PostgresRepository) Transition(ctx context.Context, id string, from, state State, failureReason string) (Command, error) {
 	row, err := dbgen.New(r.pool).TransitionCommand(ctx, dbgen.TransitionCommandParams{
+		FromState:     string(from),
 		ID:            id,
 		State:         string(state),
 		FailureReason: pgconv.TextPtr(failureReason),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return Command{}, apperr.NotFound("command", id)
+			// A failed compare-and-set can mean either that another writer
+			// advanced the command or that the id does not exist. Preserve the
+			// repository's not-found contract while still surfacing a race as a
+			// conflict.
+			if _, lookupErr := r.Get(ctx, id); lookupErr != nil {
+				return Command{}, lookupErr
+			}
+			return Command{}, apperr.Conflict("command state changed concurrently")
 		}
 		return Command{}, err
 	}

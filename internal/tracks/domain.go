@@ -4,10 +4,16 @@
 package tracks
 
 import (
+	"errors"
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 )
+
+// ErrDuplicateExternalRef signals that another concurrent observation won the
+// unique track-hint insert. The service resolves the durable winner and then
+// continues projecting the observation into it.
+var ErrDuplicateExternalRef = errors.New("track external reference already exists")
 
 // Status describes a track's lifecycle state.
 type Status string

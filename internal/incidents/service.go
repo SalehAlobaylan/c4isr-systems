@@ -60,35 +60,15 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Incident, error) 
 		Status:           StatusOpen,
 		AssignedOperator: in.Actor,
 	}
-	created, err := s.repo.Create(ctx, incident)
+	created, err := s.repo.CreateWithRelations(ctx, incident, RelationIDs{
+		AlertIDs:       in.AlertIDs,
+		TrackIDs:       in.TrackIDs,
+		AssetIDs:       in.AssetIDs,
+		ObservationIDs: in.ObservationIDs,
+		AssessmentIDs:  in.AssessmentIDs,
+	})
 	if err != nil {
 		return Incident{}, err
-	}
-
-	for _, id := range in.AlertIDs {
-		if err := s.repo.AttachAlert(ctx, created.ID, strings.TrimSpace(id)); err != nil {
-			return Incident{}, err
-		}
-	}
-	for _, id := range in.TrackIDs {
-		if err := s.repo.AttachTrack(ctx, created.ID, strings.TrimSpace(id)); err != nil {
-			return Incident{}, err
-		}
-	}
-	for _, id := range in.AssetIDs {
-		if err := s.repo.AttachAsset(ctx, created.ID, strings.TrimSpace(id)); err != nil {
-			return Incident{}, err
-		}
-	}
-	for _, id := range in.ObservationIDs {
-		if err := s.repo.AttachObservation(ctx, created.ID, strings.TrimSpace(id)); err != nil {
-			return Incident{}, err
-		}
-	}
-	for _, id := range in.AssessmentIDs {
-		if err := s.repo.AttachAssessment(ctx, created.ID, strings.TrimSpace(id)); err != nil {
-			return Incident{}, err
-		}
 	}
 
 	s.bus.Publish(ctx, events.IncidentCreated{
@@ -125,7 +105,7 @@ func (s *Service) UpdateStatus(ctx context.Context, id string, status Status, ac
 	if !canTransition(current.Status, status) {
 		return Incident{}, invalidTransition(current.Status, status)
 	}
-	updated, err := s.repo.UpdateStatus(ctx, id, status)
+	updated, err := s.repo.UpdateStatus(ctx, id, status, current.Status)
 	if err != nil {
 		return Incident{}, err
 	}

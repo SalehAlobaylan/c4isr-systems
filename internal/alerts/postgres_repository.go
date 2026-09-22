@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
@@ -37,6 +38,10 @@ func (r *PostgresRepository) Create(ctx context.Context, alert Alert) (Alert, er
 		IncidentID:      pgconv.TextPtr(alert.IncidentID),
 	})
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "alerts_active_geofence_track_key" {
+			return Alert{}, ErrDuplicateGeofenceBreach
+		}
 		return Alert{}, err
 	}
 	return toDomain(row), nil

@@ -28,6 +28,39 @@ func (f *fakeRepo) Create(_ context.Context, incident Incident) (Incident, error
 	return incident, nil
 }
 
+func (f *fakeRepo) CreateWithRelations(ctx context.Context, incident Incident, relations RelationIDs) (Incident, error) {
+	created, err := f.Create(ctx, incident)
+	if err != nil {
+		return Incident{}, err
+	}
+	for _, id := range relations.AlertIDs {
+		if err := f.AttachAlert(ctx, created.ID, id); err != nil {
+			return Incident{}, err
+		}
+	}
+	for _, id := range relations.TrackIDs {
+		if err := f.AttachTrack(ctx, created.ID, id); err != nil {
+			return Incident{}, err
+		}
+	}
+	for _, id := range relations.AssetIDs {
+		if err := f.AttachAsset(ctx, created.ID, id); err != nil {
+			return Incident{}, err
+		}
+	}
+	for _, id := range relations.ObservationIDs {
+		if err := f.AttachObservation(ctx, created.ID, id); err != nil {
+			return Incident{}, err
+		}
+	}
+	for _, id := range relations.AssessmentIDs {
+		if err := f.AttachAssessment(ctx, created.ID, id); err != nil {
+			return Incident{}, err
+		}
+	}
+	return created, nil
+}
+
 func (f *fakeRepo) Get(_ context.Context, id string) (Incident, error) {
 	incident, ok := f.incidents[id]
 	if !ok {
@@ -55,10 +88,13 @@ func (f *fakeRepo) List(_ context.Context, status string, limit, offset int) ([]
 	return out, len(out), nil
 }
 
-func (f *fakeRepo) UpdateStatus(ctx context.Context, id string, status Status) (Incident, error) {
+func (f *fakeRepo) UpdateStatus(ctx context.Context, id string, status, expected Status) (Incident, error) {
 	incident, err := f.Get(ctx, id)
 	if err != nil {
 		return Incident{}, err
+	}
+	if incident.Status != expected {
+		return Incident{}, apperr.Conflict("incident status changed concurrently")
 	}
 	incident.Status = status
 	f.incidents[id] = incident

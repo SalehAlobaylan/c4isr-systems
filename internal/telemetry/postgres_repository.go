@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
@@ -89,14 +91,19 @@ func (r *PostgresRepository) StateSnapshot(ctx context.Context, assetID string) 
 }
 
 // ApplyState writes a state projection update for an asset.
-func (r *PostgresRepository) ApplyState(ctx context.Context, update StateUpdate) error {
+func (r *PostgresRepository) ApplyState(ctx context.Context, update StateUpdate, expectedLastSeenAt *time.Time) (bool, error) {
+	expected := pgtype.Timestamptz{}
+	if expectedLastSeenAt != nil {
+		expected = pgconv.TS(*expectedLastSeenAt)
+	}
 	params := dbgen.UpsertAssetStateParams{
-		AssetID:         update.AssetID,
-		Speed:           update.Speed,
-		Heading:         update.Heading,
-		Health:          pgconv.TextPtr(update.Health),
-		ConnectionState: update.ConnectionState,
-		ObservedAt:      pgconv.TS(update.ObservedAt),
+		AssetID:            update.AssetID,
+		Speed:              update.Speed,
+		Heading:            update.Heading,
+		Health:             pgconv.TextPtr(update.Health),
+		ConnectionState:    update.ConnectionState,
+		ObservedAt:         pgconv.TS(update.ObservedAt),
+		ExpectedLastSeenAt: expected,
 	}
 	if update.Position != nil {
 		params.HasPosition = true
@@ -104,6 +111,17 @@ func (r *PostgresRepository) ApplyState(ctx context.Context, update StateUpdate)
 		params.Lng = update.Position.Lng
 	}
 	return dbgen.New(r.pool).UpsertAssetState(ctx, params)
+}
+
+// ListStaleAssetIDs returns assets whose latest accepted telemetry is older
+// than cutoff. The monitor uses this query so an asset can become stale even
+// when its producer has stopped sending samples.
+func (r *PostgresRepository) ListStaleAssetIDs(ctx context.Context, cutoff time.Time) ([]string, error) {
+	rows, err := dbgen.New(r.pool).ListStaleAssetIDs(ctx, pgconv.TS(cutoff))
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
 }
 
 // ListByAsset returns telemetry for an asset newest first with a total count.

@@ -11,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 )
 
 // Metrics is an in-process metrics registry. The first milestone deliberately
@@ -26,13 +28,54 @@ type Metrics struct {
 	requestNanos atomic.Uint64
 	requestTotal atomic.Uint64
 	databaseUp   atomic.Int64 // -1 means no health probe has completed yet.
+
+	observationsReceived atomic.Uint64
+	observationsRejected atomic.Uint64
+	telemetryReceived    atomic.Uint64
+	alertsGenerated      atomic.Uint64
+	staleEntities        atomic.Int64
+	staleMu              sync.Mutex
+	staleAssets          map[string]struct{}
+	commandIssuedMu      sync.Mutex
+	commandIssuedAt      map[string]time.Time // command id -> issue time
+	latencies            map[string]*latencyMetric
 }
 
 type counter struct{ value atomic.Uint64 }
 
+type latencyMetric struct {
+	nanos atomic.Uint64
+	count atomic.Uint64
+}
+
+const (
+	latencyObservationIngest = "observation_ingest"
+	latencyTelemetryIngest   = "telemetry_ingest"
+	latencyTrackUpdate       = "track_update"
+	latencyGeofence          = "geofence_evaluation"
+	latencyWebSocket         = "websocket_publish"
+	latencyCommandAck        = "command_acknowledgment"
+	latencyDatabase          = "database_query"
+	commandIssuedAtMax       = 4096
+	commandIssuedAtTTL       = 24 * time.Hour
+)
+
 // New creates a metrics registry.
 func New() *Metrics {
-	m := &Metrics{startedAt: time.Now().UTC()}
+	m := &Metrics{
+		startedAt:       time.Now().UTC(),
+		staleAssets:     make(map[string]struct{}),
+		commandIssuedAt: make(map[string]time.Time),
+		latencies: map[string]*latencyMetric{
+			latencyObservationIngest: {},
+			latencyTelemetryIngest:   {},
+			latencyTrackUpdate:       {},
+			latencyGeofence:          {},
+			latencyWebSocket:         {},
+			latencyCommandAck:        {},
+			latencyDatabase:          {},
+		},
+	}
 	m.databaseUp.Store(-1)
 	return m
 }
@@ -67,10 +110,16 @@ func boundedMethod(method string) string {
 }
 
 // ObserveEvent records a published domain event and useful aggregate counters.
+// It remains topic-only for callers that do not need event-specific latency
+// and state observations.
 func (m *Metrics) ObserveEvent(topic string) {
 	if m == nil {
 		return
 	}
+	m.observeTopic(topic)
+}
+
+func (m *Metrics) observeTopic(topic string) {
 	inc(&m.eventCount, topic)
 	switch topic {
 	case "observation.received":
@@ -82,6 +131,170 @@ func (m *Metrics) ObserveEvent(topic string) {
 	case "command.status.changed":
 		inc(&m.valueCount, "command_transitions_total")
 	}
+}
+
+// ObserveDomainEvent records counters and the dimensions that require the
+// concrete event payload, such as stale-entity state and command latency.
+func (m *Metrics) ObserveDomainEvent(ev events.Event) {
+	if m == nil || ev == nil {
+		return
+	}
+	m.observeTopic(ev.Topic())
+	switch e := ev.(type) {
+	case events.ObservationReceived:
+		m.observationsReceived.Add(1)
+		m.ObserveLatency(latencyObservationIngest, e.At.Sub(e.ReceivedAt))
+	case events.ObservationRejected:
+		m.observationsRejected.Add(1)
+	case events.TelemetryReceived:
+		m.telemetryReceived.Add(1)
+		m.ObserveLatency(latencyTelemetryIngest, e.At.Sub(e.ObservedAt))
+		// A stale sample is an out-of-order record, not evidence that the asset
+		// has gone silent. Silence is reconciled from asset_state by the periodic
+		// telemetry monitor; accepted newer samples clear that status here.
+		if !e.Stale {
+			m.ObserveStaleEntity(e.AssetID, false)
+		}
+	case events.TrackUpdated:
+		m.ObserveLatency(latencyTrackUpdate, e.At.Sub(e.ObservedAt))
+	case events.AlertCreated:
+		m.alertsGenerated.Add(1)
+	case events.CommandIssued:
+		if e.CommandID != "" {
+			m.rememberCommandIssued(e.CommandID, e.At)
+		}
+	case events.CommandStatusChanged:
+		if e.State == "ACKNOWLEDGED" {
+			if issuedAt, ok := m.lookupCommandIssued(e.CommandID, e.At); ok {
+				m.ObserveLatency(latencyCommandAck, e.At.Sub(issuedAt))
+			}
+		}
+		if e.State == "COMPLETED" || e.State == "REJECTED" || e.State == "FAILED" || e.State == "TIMED_OUT" || e.State == "CANCELLED" {
+			m.forgetCommandIssued(e.CommandID)
+		}
+	}
+}
+
+func (m *Metrics) rememberCommandIssued(commandID string, issuedAt time.Time) {
+	m.commandIssuedMu.Lock()
+	defer m.commandIssuedMu.Unlock()
+	if m.commandIssuedAt == nil {
+		m.commandIssuedAt = make(map[string]time.Time)
+	}
+	m.pruneCommandIssuedLocked(issuedAt)
+	if _, exists := m.commandIssuedAt[commandID]; !exists && len(m.commandIssuedAt) >= commandIssuedAtMax {
+		var oldestID string
+		var oldestAt time.Time
+		for id, at := range m.commandIssuedAt {
+			if oldestID == "" || at.Before(oldestAt) {
+				oldestID, oldestAt = id, at
+			}
+		}
+		if oldestID != "" {
+			delete(m.commandIssuedAt, oldestID)
+		}
+	}
+	m.commandIssuedAt[commandID] = issuedAt
+}
+
+func (m *Metrics) lookupCommandIssued(commandID string, reference time.Time) (time.Time, bool) {
+	m.commandIssuedMu.Lock()
+	defer m.commandIssuedMu.Unlock()
+	m.pruneCommandIssuedLocked(reference)
+	issuedAt, ok := m.commandIssuedAt[commandID]
+	return issuedAt, ok
+}
+
+func (m *Metrics) forgetCommandIssued(commandID string) {
+	m.commandIssuedMu.Lock()
+	delete(m.commandIssuedAt, commandID)
+	m.commandIssuedMu.Unlock()
+}
+
+func (m *Metrics) pruneCommandIssuedLocked(reference time.Time) {
+	if reference.IsZero() {
+		return
+	}
+	for commandID, issuedAt := range m.commandIssuedAt {
+		if !reference.Before(issuedAt) && reference.Sub(issuedAt) > commandIssuedAtTTL {
+			delete(m.commandIssuedAt, commandID)
+		}
+	}
+}
+
+// ObserveLatency records a low-cardinality duration aggregate. Unknown names
+// are ignored so callers cannot create unbounded metric families.
+func (m *Metrics) ObserveLatency(name string, duration time.Duration) {
+	if m == nil || duration < 0 {
+		return
+	}
+	metric := m.latencies[name]
+	if metric == nil {
+		return
+	}
+	metric.nanos.Add(uint64(duration.Nanoseconds()))
+	metric.count.Add(1)
+}
+
+// ObserveGeofenceEvaluation records the time spent applying spatial rules.
+func (m *Metrics) ObserveGeofenceEvaluation(duration time.Duration) {
+	m.ObserveLatency(latencyGeofence, duration)
+}
+
+// ObserveWebSocketPublish records the time spent writing one event to a
+// connected WebSocket client.
+func (m *Metrics) ObserveWebSocketPublish(duration time.Duration) {
+	m.ObserveLatency(latencyWebSocket, duration)
+}
+
+// ObserveDatabaseQuery records one PostgreSQL query or command duration.
+func (m *Metrics) ObserveDatabaseQuery(duration time.Duration) {
+	m.ObserveLatency(latencyDatabase, duration)
+}
+
+// ObserveStaleEntity maintains a bounded gauge of assets whose latest
+// telemetry is stale. Asset identifiers are kept only in an internal set; no
+// identifier is exposed as a metric label.
+func (m *Metrics) ObserveStaleEntity(assetID string, stale bool) {
+	if m == nil || strings.TrimSpace(assetID) == "" {
+		return
+	}
+	assetID = strings.TrimSpace(assetID)
+	m.staleMu.Lock()
+	defer m.staleMu.Unlock()
+	if m.staleAssets == nil {
+		m.staleAssets = make(map[string]struct{})
+	}
+	if stale {
+		if _, loaded := m.staleAssets[assetID]; !loaded {
+			m.staleAssets[assetID] = struct{}{}
+			m.staleEntities.Add(1)
+		}
+		return
+	}
+	if _, loaded := m.staleAssets[assetID]; loaded {
+		delete(m.staleAssets, assetID)
+		m.staleEntities.Add(-1)
+	}
+}
+
+// ReplaceStaleEntities replaces the stale set from a database reconciliation.
+// It also removes assets that recovered without producing a telemetry event,
+// while the mutex keeps a scrape and a live telemetry update consistent.
+func (m *Metrics) ReplaceStaleEntities(assetIDs []string) {
+	if m == nil {
+		return
+	}
+	next := make(map[string]struct{}, len(assetIDs))
+	for _, assetID := range assetIDs {
+		if assetID = strings.TrimSpace(assetID); assetID != "" {
+			next[assetID] = struct{}{}
+		}
+	}
+	m.staleMu.Lock()
+	m.staleAssets = next
+	m.staleEntities.Store(int64(len(next)))
+	m.staleMu.Unlock()
 }
 
 // ObserveAuthFailure increments the authentication failure counter.
@@ -143,6 +356,22 @@ func (m *Metrics) Handler() http.HandlerFunc {
 			return []string{key}
 		})
 
+		writeSimpleCounter(w, "c4isr_observations_received_total", "Accepted observations.", m.observationsReceived.Load())
+		writeSimpleCounter(w, "c4isr_observations_rejected_total", "Rejected observations.", m.observationsRejected.Load())
+		writeSimpleCounter(w, "c4isr_telemetry_received_total", "Accepted telemetry samples.", m.telemetryReceived.Load())
+		writeSimpleCounter(w, "c4isr_alerts_generated_total", "Generated alerts.", m.alertsGenerated.Load())
+		_, _ = fmt.Fprint(w, "# HELP c4isr_stale_entities Current number of assets with stale telemetry.\n")
+		_, _ = fmt.Fprint(w, "# TYPE c4isr_stale_entities gauge\n")
+		_, _ = fmt.Fprintf(w, "c4isr_stale_entities %d\n", maxInt64(m.staleEntities.Load(), 0))
+
+		writeLatency(w, "c4isr_observation_ingest_duration_seconds", "Observation ingest latency.", m.latencies[latencyObservationIngest])
+		writeLatency(w, "c4isr_telemetry_ingest_duration_seconds", "Telemetry ingest latency.", m.latencies[latencyTelemetryIngest])
+		writeLatency(w, "c4isr_track_update_duration_seconds", "Track update latency.", m.latencies[latencyTrackUpdate])
+		writeLatency(w, "c4isr_geofence_evaluation_duration_seconds", "Geofence evaluation duration.", m.latencies[latencyGeofence])
+		writeLatency(w, "c4isr_websocket_publish_duration_seconds", "WebSocket publish duration.", m.latencies[latencyWebSocket])
+		writeLatency(w, "c4isr_command_acknowledgment_duration_seconds", "Command acknowledgment latency.", m.latencies[latencyCommandAck])
+		writeLatency(w, "c4isr_database_query_duration_seconds", "Database query duration.", m.latencies[latencyDatabase])
+
 		_, _ = fmt.Fprint(w, "# HELP c4isr_http_request_duration_seconds_sum Sum of completed request durations.\n")
 		_, _ = fmt.Fprint(w, "# TYPE c4isr_http_request_duration_seconds_sum counter\n")
 		_, _ = fmt.Fprintf(w, "c4isr_http_request_duration_seconds_sum %.9f\n", float64(m.requestNanos.Load())/float64(time.Second))
@@ -154,10 +383,17 @@ func (m *Metrics) Handler() http.HandlerFunc {
 
 func boundedRoute(path string) string {
 	path = strings.TrimSpace(path)
+	if queryIndex := strings.IndexByte(path, '?'); queryIndex >= 0 {
+		path = path[:queryIndex]
+	}
+	path = strings.TrimSpace(path)
 	if path == "/health" || path == "/metrics" {
 		return path
 	}
 	if path == "unmatched" {
+		return path
+	}
+	if path == "/api/v1/auth/me" {
 		return path
 	}
 	if !strings.HasPrefix(path, "/api/v1/") {
@@ -167,11 +403,87 @@ func boundedRoute(path string) string {
 	if len(parts) == 0 || !knownMetricRoot(parts[0]) {
 		return "unmatched"
 	}
-	// The composed HTTP middleware passes chi's already-bounded route template
-	// here. Direct callers do not have that routing context, so even a string
-	// containing braces must collapse to a known root rather than becoming an
-	// attacker-controlled metric label.
-	return "/api/v1/" + parts[0]
+	root := parts[0]
+	if len(parts) == 1 {
+		return "/api/v1/" + root
+	}
+
+	// Route templates retain useful endpoint shape while replacing every
+	// resource identity with a fixed placeholder. This supports both chi's
+	// already-templated route and direct callers that provide a concrete id.
+	if root == "geospatial" {
+		if len(parts) == 2 && (parts[1] == "geofences-containing" || parts[1] == "assets-within" || parts[1] == "nearest-assets") {
+			return "/api/v1/" + root + "/" + parts[1]
+		}
+		return "unmatched"
+	}
+	if root == "realtime" {
+		return "unmatched"
+	}
+	if root == "scenarios" {
+		return boundedScenarioRoute(parts)
+	}
+	if len(parts) == 2 {
+		return "/api/v1/" + root + "/{id}"
+	}
+	if len(parts) == 3 && boundedResourceAction(root, parts[2]) {
+		return "/api/v1/" + root + "/{id}/" + parts[2]
+	}
+	if root == "missions" && len(parts) == 4 && parts[2] == "tasks" {
+		return "/api/v1/missions/{id}/tasks/{taskId}"
+	}
+	if root == "missions" && len(parts) == 5 && parts[2] == "tasks" && parts[4] == "status" {
+		return "/api/v1/missions/{id}/tasks/{taskId}/status"
+	}
+	return "unmatched"
+}
+
+func boundedScenarioRoute(parts []string) string {
+	if len(parts) == 2 {
+		if parts[1] == "runs" {
+			return "/api/v1/scenarios/runs"
+		}
+		return "/api/v1/scenarios/{name}"
+	}
+	if len(parts) == 3 && parts[1] == "runs" {
+		if parts[2] == "" {
+			return "unmatched"
+		}
+		return "/api/v1/scenarios/runs/{id}"
+	}
+	if len(parts) == 4 && parts[1] == "runs" {
+		switch parts[3] {
+		case "events", "pause", "resume", "stop", "restart", "speed":
+			return "/api/v1/scenarios/runs/{id}/" + parts[3]
+		}
+	}
+	if len(parts) == 4 && parts[1] == "definitions" && parts[3] == "start" {
+		return "/api/v1/scenarios/definitions/{name}/start"
+	}
+	return "unmatched"
+}
+
+func boundedResourceAction(root, action string) bool {
+	switch root {
+	case "sources":
+		return action == "status"
+	case "assets":
+		return action == "status" || action == "telemetry"
+	case "tracks":
+		return action == "history" || action == "classifications"
+	case "geofences":
+		return action == "active"
+	case "alerts":
+		return action == "acknowledge" || action == "resolve"
+	case "incidents":
+		return action == "status" || action == "relations"
+	case "missions":
+		return action == "status" || action == "assets" || action == "tasks"
+	case "commands":
+		return action == "transition"
+	default:
+		return false
+	}
 }
 
 func knownMetricRoot(root string) bool {
@@ -229,6 +541,18 @@ func formatLabels(names, values []string) string {
 		parts = append(parts, fmt.Sprintf(`%s="%s"`, names[i], strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", `\n`).Replace(values[i])))
 	}
 	return strings.Join(parts, ",")
+}
+
+func writeSimpleCounter(w http.ResponseWriter, metric, help string, value uint64) {
+	_, _ = fmt.Fprintf(w, "# HELP %s %s\n# TYPE %s counter\n%s %d\n", metric, help, metric, metric, value)
+}
+
+func writeLatency(w http.ResponseWriter, metric, help string, value *latencyMetric) {
+	if value == nil {
+		return
+	}
+	_, _ = fmt.Fprintf(w, "# HELP %s Sum and count of %s\n# TYPE %s summary\n", metric, help, metric)
+	_, _ = fmt.Fprintf(w, "%s_sum %.9f\n%s_count %d\n", metric, float64(value.nanos.Load())/float64(time.Second), metric, value.count.Load())
 }
 
 func maxInt(value, fallback int) int {

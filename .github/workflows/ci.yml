@@ -31,7 +31,7 @@ jobs:
       - run: go test ./...
       - run: go vet ./...
       - run: test -z "$(gofmt -l apps internal)"
-      - run: go test -race ./internal/platform/httpx ./internal/platform/observability ./internal/scenarios
+      - run: go test -race ./internal/platform/httpx ./internal/platform/observability ./internal/scenarios ./internal/telemetry ./internal/tracks ./internal/geospatial ./internal/alerts ./internal/incidents ./internal/missions ./internal/commands
       - run: pnpm --dir apps/operator-ui build
       - run: pnpm --dir apps/operator-ui contracts:generate
       - run: git diff --exit-code -- apps/operator-ui/src/lib/openapi.generated.ts
