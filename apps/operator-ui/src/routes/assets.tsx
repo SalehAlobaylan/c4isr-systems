@@ -125,7 +125,7 @@ export function AssetsPage() {
         {assetsQuery.isError ? (
           <ErrorState error={assetsQuery.error} onRetry={() => void assetsQuery.refetch()} />
         ) : (
-          <div className="overflow-hidden rounded-lg border border-edge bg-panel">
+          <div className="overflow-x-auto">
             <DataTable
               columns={columns}
               data={assets}

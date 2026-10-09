@@ -15,26 +15,30 @@ import { useRealtime, type RealtimeStatus } from '@/realtime/RealtimeProvider'
 import { toast } from '@/stores/toasts'
 
 const PRIMARY_VIEWS = [
-  { index: 1, to: '/map', label: 'Picture' },
-  { index: 2, to: '/alerts', label: 'Alerts' },
-  { index: 3, to: '/incidents', label: 'Incidents' },
-  { index: 4, to: '/timeline', label: 'Audit' },
-  { index: 5, to: '/assets', label: 'Assets' },
+  { index: 1, to: '/board', label: 'Board' },
+  { index: 2, to: '/map', label: 'Picture' },
+  { index: 3, to: '/alerts', label: 'Alerts' },
+  { index: 4, to: '/incidents', label: 'Incidents' },
+  { index: 5, to: '/timeline', label: 'Audit' },
 ] as const
 
 const SECONDARY_VIEWS = [
+  { to: '/assets', label: 'Assets' },
   { to: '/tracks', label: 'Tracks' },
   { to: '/scenarios', label: 'Scenarios' },
 ] as const
 
 const HELP_KEYS: Array<[string, string]> = [
-  ['1', 'Picture view'],
-  ['2', 'Alerts view'],
-  ['3', 'Incidents view'],
-  ['4', 'Audit view'],
-  ['5', 'Assets view'],
+  ['1', 'Board view'],
+  ['2', 'Picture view'],
+  ['3', 'Alerts view'],
+  ['4', 'Incidents view'],
+  ['5', 'Audit view'],
   ['Space', 'Pause or resume the active scenario run'],
   ['R', 'Replay — restart the active run with the same seed'],
+  ['[', 'Collapse the picture detail rail'],
+  [']', 'Expand the picture detail rail'],
+  ['L', 'Toggle the map layer control'],
   ['?', 'Close this panel · Esc also closes'],
 ]
 

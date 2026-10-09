@@ -19,7 +19,7 @@ export function Tooltip({ content, children, side = 'top', className }: TooltipP
           <BaseTooltip.Positioner side={side} sideOffset={6} className="z-[80]">
             <BaseTooltip.Popup
               className={cn(
-                'max-w-xs rounded-md border border-edge-strong bg-panel-raised px-2.5 py-1.5 text-xs text-ink shadow-xl',
+                'max-w-xs rounded-[2px] border border-edge-strong bg-panel-raised px-2.5 py-1.5 text-xs text-ink shadow-xl',
                 'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0',
                 className,
               )}

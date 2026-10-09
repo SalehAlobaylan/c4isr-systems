@@ -317,7 +317,7 @@ export function ScenariosPage() {
               {(scenariosQuery.data?.items ?? []).map((scenario) => (
                 <div
                   key={scenario.name}
-                  className="flex flex-col gap-3 rounded-lg border border-edge bg-panel p-4"
+                  className="flex flex-col gap-3 rounded-[2px] border border-edge bg-panel p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -349,7 +349,7 @@ export function ScenariosPage() {
                 ? Array.from({ length: 3 }).map((_, index) => (
                     <div
                       key={index}
-                      className="h-40 animate-pulse rounded-lg border border-edge bg-panel"
+                      className="h-40 animate-pulse rounded-[2px] border border-edge bg-panel"
                     />
                   ))
                 : null}
@@ -362,7 +362,7 @@ export function ScenariosPage() {
           {runsQuery.isError ? (
             <ErrorState error={runsQuery.error} onRetry={() => void runsQuery.refetch()} />
           ) : (
-            <div className="overflow-hidden rounded-lg border border-edge bg-panel">
+            <div className="overflow-x-auto">
               <DataTable
                 columns={columns}
                 data={runs}
@@ -386,7 +386,7 @@ export function ScenariosPage() {
             >
               Event history · {inspectedRun.scenarioName}
             </SectionTitle>
-            <div className="rounded-lg border border-edge bg-panel p-4">
+            <div className="rounded-[2px] border border-edge bg-panel p-4">
               <div className="mb-4 grid grid-cols-1 gap-2 text-xs text-ink-muted md:grid-cols-3">
                 <span className="font-mono">run {inspectedRun.id}</span>
                 <span className="font-mono">namespace {inspectedRun.resourceNamespace}</span>

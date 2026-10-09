@@ -7,11 +7,11 @@ export function TableWrapper({ className, ...props }: HTMLAttributes<HTMLDivElem
 }
 
 export function Table({ className, ...props }: TableHTMLAttributes<HTMLTableElement>) {
-  return <table className={cn('w-full caption-bottom border-collapse text-sm', className)} {...props} />
+  return <table className={cn('w-full caption-bottom border-collapse text-[12px]', className)} {...props} />
 }
 
 export function TableHeader({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn('[&_tr]:border-b [&_tr]:border-edge', className)} {...props} />
+  return <thead className={cn('[&_tr]:border-b [&_tr]:border-[color:var(--line-2)]', className)} {...props} />
 }
 
 export function TableBody({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
@@ -19,13 +19,16 @@ export function TableBody({ className, ...props }: HTMLAttributes<HTMLTableSecti
 }
 
 export function TableFooter({ className, ...props }: HTMLAttributes<HTMLTableSectionElement>) {
-  return <tfoot className={cn('border-t border-edge bg-panel-raised/50', className)} {...props} />
+  return <tfoot className={cn('border-t border-[color:var(--line)]', className)} {...props} />
 }
 
 export function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
   return (
     <tr
-      className={cn('border-b border-edge transition-colors hover:bg-panel-raised/60', className)}
+      className={cn(
+        'border-b border-[color:var(--line)] transition-colors hover:bg-[color:var(--surface-2)]',
+        className,
+      )}
       {...props}
     />
   )
@@ -35,7 +38,8 @@ export function TableHead({ className, ...props }: ThHTMLAttributes<HTMLTableCel
   return (
     <th
       className={cn(
-        'h-9 px-3 text-left align-middle text-[11px] font-semibold tracking-wider text-ink-faint uppercase whitespace-nowrap',
+        'h-9 px-3 text-left align-middle text-[9px] font-bold tracking-[.14em] whitespace-nowrap uppercase',
+        'text-[color:var(--faint)]',
         className,
       )}
       {...props}
@@ -44,9 +48,14 @@ export function TableHead({ className, ...props }: ThHTMLAttributes<HTMLTableCel
 }
 
 export function TableCell({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn('px-3 py-2 align-middle whitespace-nowrap', className)} {...props} />
+  return <td className={cn('px-3 py-2.5 align-middle text-[12px] whitespace-nowrap', className)} {...props} />
 }
 
 export function TableCaption({ className, ...props }: HTMLAttributes<HTMLTableCaptionElement>) {
-  return <caption className={cn('mt-3 text-xs text-ink-muted', className)} {...props} />
+  return (
+    <caption
+      className={cn('mt-3 text-[10px] tracking-[.13em] text-[color:var(--faint)] uppercase', className)}
+      {...props}
+    />
+  )
 }

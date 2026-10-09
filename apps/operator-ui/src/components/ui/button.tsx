@@ -14,23 +14,24 @@ export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon' | 'icon-sm'
 
 const variantClasses: Record<ButtonVariant, string> = {
   default:
-    'border border-accent/40 bg-accent/10 text-accent hover:border-accent/60 hover:bg-accent/20',
+    'border border-[color:var(--line-2)] bg-[rgba(252,255,255,.07)] text-ink hover:bg-[rgba(252,255,255,.16)]',
   secondary:
-    'border border-edge-strong bg-panel-raised text-ink hover:border-edge-strong hover:bg-panel-hover',
-  outline: 'border border-edge-strong bg-transparent text-ink hover:bg-panel-raised',
-  ghost: 'border border-transparent bg-transparent text-ink-muted hover:bg-panel-raised hover:text-ink',
+    'border border-[color:var(--line-2)] bg-transparent text-ink hover:bg-[rgba(252,255,255,.12)]',
+  outline:
+    'border border-[color:var(--line-2)] bg-transparent text-ink hover:bg-[rgba(252,255,255,.12)]',
+  ghost: 'border border-transparent bg-transparent text-ink-muted hover:text-ink hover:bg-[rgba(252,255,255,.07)]',
   destructive:
-    'border border-red-500/40 bg-red-500/10 text-red-300 hover:border-red-500/60 hover:bg-red-500/20',
+    'border border-[color:var(--st-crit)] bg-transparent text-[color:var(--st-crit)] hover:bg-[rgba(184,58,31,.16)]',
   success:
-    'border border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:border-emerald-500/60 hover:bg-emerald-500/20',
+    'border border-[color:var(--line-2)] bg-[rgba(252,255,255,.07)] text-ink hover:bg-[rgba(252,255,255,.16)]',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'h-7 gap-1.5 px-2.5 text-xs',
-  md: 'h-8 gap-2 px-3 text-sm',
-  lg: 'h-10 gap-2 px-4 text-sm',
-  icon: 'size-8',
-  'icon-sm': 'size-7',
+  sm: 'h-8 gap-1.5 px-3 text-[10px]',
+  md: 'h-9 gap-2 px-4 text-[10px]',
+  lg: 'h-10 gap-2 px-5 text-[11px]',
+  icon: 'size-9',
+  'icon-sm': 'size-8',
 }
 
 export interface ButtonVariantOptions {
@@ -42,7 +43,9 @@ export interface ButtonVariantOptions {
 export function buttonClasses(options: ButtonVariantOptions = {}): string {
   const { variant = 'default', size = 'md', className } = options
   return cn(
-    'inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-md font-medium transition-colors outline-none select-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:pointer-events-none disabled:opacity-50',
+    'inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-[2px] font-bold uppercase tracking-[.12em] transition-colors outline-none select-none',
+    'focus-visible:shadow-[0_0_0_2px_var(--accent-on),0_0_0_3px_var(--bg)]',
+    'disabled:pointer-events-none disabled:opacity-42',
     variantClasses[variant],
     sizeClasses[size],
     className,

@@ -22,57 +22,32 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 
 const RIYADH_CENTER: [number, number] = [46.676, 24.712]
 
-const severityColor: ExpressionSpecification = [
-  'match',
-  ['get', 'severity'],
-  'critical',
-  '#fb7185',
-  'high',
-  '#f87171',
-  'medium',
-  '#fbbf24',
-  'low',
-  '#22d3ee',
-  '#94a3b8',
-]
+/** Operational state colours are read from the design tokens, never re-declared. */
+function palette() {
+  const style = getComputedStyle(document.documentElement)
+  const token = (name: string, fallback: string) => style.getPropertyValue(name).trim() || fallback
+  return {
+    bg: token('--bg', '#161a26'),
+    fg: token('--fg', '#fcffff'),
+    fg2: token('--fg-2', '#dfe4ec'),
+    ok: token('--st-ok', '#0e5d5a'),
+    track: token('--st-track', '#273c6b'),
+    warn: token('--st-warn', '#913214'),
+    unknown: token('--st-unknown', '#3d215b'),
+    crit: token('--st-crit', '#b83a1f'),
+  }
+}
 
-const trackColor: ExpressionSpecification = [
-  'match',
-  ['get', 'status'],
-  'active',
-  '#f87171',
-  'lost',
-  '#fb923c',
-  'closed',
-  '#64748b',
-  '#94a3b8',
-]
+const LAYER_GROUPS = {
+  geofences: ['geofence-fill', 'geofence-outline'],
+  tracks: ['track-circle', 'track-selected-ring'],
+  assets: ['asset-circle', 'asset-selected-ring'],
+  history: ['track-history-line'],
+} as const
 
-const trackRadius: ExpressionSpecification = [
-  'interpolate',
-  ['linear'],
-  ['coalesce', ['get', 'speed'], 0],
-  0,
-  5.5,
-  25,
-  10,
-]
+export type MapLayerKey = keyof typeof LAYER_GROUPS
 
-const assetColor: ExpressionSpecification = [
-  'match',
-  ['get', 'status'],
-  'available',
-  '#4f8ef7',
-  'assigned',
-  '#22d3ee',
-  'unavailable',
-  '#fb923c',
-  'offline',
-  '#64748b',
-  'maintenance',
-  '#fbbf24',
-  '#94a3b8',
-]
+export type MapLayers = Partial<Record<MapLayerKey, boolean>>
 
 function rasterStyle(): StyleSpecification {
   return {
@@ -109,6 +84,60 @@ function rasterStyle(): StyleSpecification {
 }
 
 function addOperationalLayers(map: maplibregl.Map) {
+  const c = palette()
+
+  const severityColor: ExpressionSpecification = [
+    'match',
+    ['get', 'severity'],
+    'critical',
+    c.crit,
+    'high',
+    c.crit,
+    'medium',
+    c.warn,
+    'low',
+    c.unknown,
+    c.unknown,
+  ]
+
+  const trackColor: ExpressionSpecification = [
+    'match',
+    ['get', 'status'],
+    'active',
+    c.track,
+    'lost',
+    c.warn,
+    'closed',
+    c.unknown,
+    c.unknown,
+  ]
+
+  const assetColor: ExpressionSpecification = [
+    'match',
+    ['get', 'status'],
+    'available',
+    c.ok,
+    'assigned',
+    c.track,
+    'maintenance',
+    c.warn,
+    'unavailable',
+    c.warn,
+    'offline',
+    c.unknown,
+    c.unknown,
+  ]
+
+  const trackRadius: ExpressionSpecification = [
+    'interpolate',
+    ['linear'],
+    ['coalesce', ['get', 'speed'], 0],
+    0,
+    5.5,
+    25,
+    10,
+  ]
+
   map.addSource('geofences', { type: 'geojson', data: EMPTY_FEATURE_COLLECTION })
   map.addLayer({
     id: 'geofence-fill',
@@ -116,7 +145,7 @@ function addOperationalLayers(map: maplibregl.Map) {
     source: 'geofences',
     paint: {
       'fill-color': severityColor,
-      'fill-opacity': ['case', ['boolean', ['get', 'active'], true], 0.12, 0.03],
+      'fill-opacity': ['case', ['boolean', ['get', 'active'], true], 0.28, 0.08],
     },
   })
   map.addLayer({
@@ -126,7 +155,8 @@ function addOperationalLayers(map: maplibregl.Map) {
     paint: {
       'line-color': severityColor,
       'line-width': 1.5,
-      'line-opacity': ['case', ['boolean', ['get', 'active'], true], 0.85, 0.3],
+      'line-opacity': ['case', ['boolean', ['get', 'active'], true], 0.9, 0.35],
+      'line-dasharray': [3, 2],
     },
   })
 
@@ -137,9 +167,9 @@ function addOperationalLayers(map: maplibregl.Map) {
     source: 'track-history',
     layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
-      'line-color': '#22d3ee',
+      'line-color': c.fg2,
       'line-width': 2,
-      'line-opacity': 0.7,
+      'line-opacity': 0.75,
       'line-dasharray': [2, 1.5],
     },
   })
@@ -153,7 +183,7 @@ function addOperationalLayers(map: maplibregl.Map) {
     paint: {
       'circle-radius': 13,
       'circle-color': 'rgba(0,0,0,0)',
-      'circle-stroke-color': '#22d3ee',
+      'circle-stroke-color': c.fg,
       'circle-stroke-width': 2,
     },
   })
@@ -164,7 +194,7 @@ function addOperationalLayers(map: maplibregl.Map) {
     paint: {
       'circle-color': trackColor,
       'circle-radius': trackRadius,
-      'circle-stroke-color': '#0b0f14',
+      'circle-stroke-color': c.bg,
       'circle-stroke-width': 1.5,
       'circle-opacity': 0.95,
     },
@@ -179,7 +209,7 @@ function addOperationalLayers(map: maplibregl.Map) {
     paint: {
       'circle-radius': 13,
       'circle-color': 'rgba(0,0,0,0)',
-      'circle-stroke-color': '#22d3ee',
+      'circle-stroke-color': c.fg,
       'circle-stroke-width': 2,
     },
   })
@@ -190,7 +220,7 @@ function addOperationalLayers(map: maplibregl.Map) {
     paint: {
       'circle-color': assetColor,
       'circle-radius': 6.5,
-      'circle-stroke-color': '#0b0f14',
+      'circle-stroke-color': c.bg,
       'circle-stroke-width': 1.5,
       'circle-opacity': 0.95,
     },
@@ -203,7 +233,7 @@ function addOperationalLayers(map: maplibregl.Map) {
     source: 'measure',
     filter: ['==', ['geometry-type'], 'LineString'],
     paint: {
-      'line-color': '#fbbf24',
+      'line-color': c.warn,
       'line-width': 1.5,
       'line-dasharray': [2, 1.5],
     },
@@ -215,8 +245,8 @@ function addOperationalLayers(map: maplibregl.Map) {
     filter: ['==', ['geometry-type'], 'Point'],
     paint: {
       'circle-radius': 4,
-      'circle-color': '#fbbf24',
-      'circle-stroke-color': '#0b0f14',
+      'circle-color': c.warn,
+      'circle-stroke-color': c.bg,
       'circle-stroke-width': 1,
     },
   })
@@ -234,6 +264,7 @@ export interface MapCanvasProps {
   selected: Selection | null
   mode: MapMode
   measurePoints: Array<{ lng: number; lat: number }>
+  layers?: MapLayers
   onSelect: (selection: Selection | null) => void
   onMeasurePoint: (point: { lng: number; lat: number }) => void
 }
@@ -246,6 +277,7 @@ export function MapCanvas({
   selected,
   mode,
   measurePoints,
+  layers,
   onSelect,
   onMeasurePoint,
 }: MapCanvasProps) {
@@ -405,6 +437,17 @@ export function MapCanvas({
     })
   }, [ready, measurePoints])
 
+  useEffect(() => {
+    const map = mapRef.current
+    if (!ready || !map || !layers) return
+    for (const [key, ids] of Object.entries(LAYER_GROUPS)) {
+      const visibility = layers[key as MapLayerKey] === false ? 'none' : 'visible'
+      for (const id of ids) {
+        if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visibility)
+      }
+    }
+  }, [ready, layers])
+
   const lastCenteredRef = useRef<string | null>(null)
   useEffect(() => {
     const map = mapRef.current
@@ -429,7 +472,7 @@ export function MapCanvas({
       <div ref={containerRef} className="h-full w-full" />
       {initError ? (
         <div className="absolute inset-0 flex items-center justify-center bg-bg p-6">
-          <div className="max-w-md rounded-lg border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-center">
+          <div className="max-w-md rounded-[2px] border border-amber-500/40 bg-amber-500/5 px-4 py-3 text-center">
             <p className="text-sm font-medium text-amber-300">Map rendering unavailable</p>
             <p className="mt-1 text-xs text-amber-200/70">{initError}</p>
           </div>

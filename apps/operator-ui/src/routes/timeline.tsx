@@ -156,7 +156,7 @@ export function TimelinePage() {
         {auditQuery.isError ? (
           <ErrorState error={auditQuery.error} onRetry={() => void auditQuery.refetch()} />
         ) : (
-          <div className="overflow-hidden rounded-lg border border-edge bg-panel">
+          <div className="overflow-x-auto">
             <DataTable
               columns={columns}
               data={entries}

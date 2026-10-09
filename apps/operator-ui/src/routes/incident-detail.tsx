@@ -190,7 +190,7 @@ export function IncidentDetailPage() {
 
               <section className="flex flex-col gap-2">
                 <SectionTitle>Description</SectionTitle>
-                <p className="rounded-lg border border-edge bg-panel px-4 py-3 text-sm whitespace-pre-wrap text-ink-muted">
+                <p className="rounded-[2px] border border-edge bg-panel px-4 py-3 text-sm whitespace-pre-wrap text-ink-muted">
                   {incident.description || 'No description recorded.'}
                 </p>
               </section>
@@ -248,7 +248,7 @@ export function IncidentDetailPage() {
                     {incident.alerts.map((alert) => (
                       <li
                         key={alert.id}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-edge bg-panel px-4 py-2.5"
+                        className="flex items-center justify-between gap-3 rounded-[2px] border border-edge bg-panel px-4 py-2.5"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-xs text-ink">{alert.title}</p>
@@ -275,7 +275,7 @@ export function IncidentDetailPage() {
                     {incident.tracks.map((track) => (
                       <li
                         key={track.id}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-edge bg-panel px-4 py-2.5"
+                        className="flex items-center justify-between gap-3 rounded-[2px] border border-edge bg-panel px-4 py-2.5"
                       >
                         <div className="min-w-0">
                           <p className="font-mono text-xs text-ink">
@@ -308,7 +308,7 @@ export function IncidentDetailPage() {
                     {incident.assets.map((asset) => (
                       <li
                         key={asset.id}
-                        className="flex items-center justify-between gap-3 rounded-lg border border-edge bg-panel px-4 py-2.5"
+                        className="flex items-center justify-between gap-3 rounded-[2px] border border-edge bg-panel px-4 py-2.5"
                       >
                         <div className="min-w-0">
                           <p className="text-xs text-ink">{asset.name}</p>
@@ -366,7 +366,7 @@ export function IncidentDetailPage() {
                     {incident.assessments.map((assessment) => (
                       <li
                         key={assessment.id}
-                        className="rounded-lg border border-edge bg-panel px-4 py-2.5"
+                        className="rounded-[2px] border border-edge bg-panel px-4 py-2.5"
                       >
                         <p className="text-xs text-ink">{assessment.conclusion}</p>
                         <p className="mt-0.5 font-mono text-[10px] text-ink-faint">
@@ -399,7 +399,7 @@ export function IncidentDetailPage() {
               {auditQuery.isError ? (
                 <ErrorState error={auditQuery.error} onRetry={() => void auditQuery.refetch()} />
               ) : (
-                <div className="overflow-hidden rounded-lg border border-edge bg-panel">
+                <div className="overflow-x-auto">
                   <DataTable
                     columns={auditColumns}
                     data={auditQuery.data?.items ?? []}

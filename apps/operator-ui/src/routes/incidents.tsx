@@ -140,7 +140,7 @@ export function IncidentsPage() {
         {incidentsQuery.isError ? (
           <ErrorState error={incidentsQuery.error} onRetry={() => void incidentsQuery.refetch()} />
         ) : (
-          <div className="overflow-hidden rounded-lg border border-edge bg-panel">
+          <div className="overflow-x-auto">
             <DataTable
               columns={columns}
               data={incidentsQuery.data?.items ?? []}

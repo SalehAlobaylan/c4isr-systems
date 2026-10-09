@@ -235,7 +235,7 @@ export function AlertsPage() {
                   })
                 }}
               >
-                Create incident
+                New incident
               </Button>
             </div>
           )
@@ -289,7 +289,7 @@ export function AlertsPage() {
         {alertsQuery.isError ? (
           <ErrorState error={alertsQuery.error} onRetry={() => void alertsQuery.refetch()} />
         ) : (
-          <div className="overflow-hidden rounded-lg border border-edge bg-panel">
+          <div className="overflow-x-auto">
             <DataTable
               columns={columns}
               data={alertsQuery.data?.items ?? []}

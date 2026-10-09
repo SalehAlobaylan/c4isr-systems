@@ -31,7 +31,7 @@ export function ToastViewport() {
           key={toast.id}
           role="status"
           className={cn(
-            'toast-enter pointer-events-auto flex items-start gap-3 rounded-lg border px-3 py-2.5 shadow-2xl backdrop-blur',
+            'toast-enter pointer-events-auto flex items-start gap-3 rounded-[2px] border px-3 py-2.5 shadow-2xl backdrop-blur',
             variantClasses[toast.variant],
           )}
         >

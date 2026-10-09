@@ -1,10 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { StateBadge } from '@/components/shared/badges'
-import { DetailList, ErrorState, SectionTitle } from '@/components/shared/states'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
+import { ErrorState } from '@/components/shared/states'
 import { api } from '@/lib/api'
 import {
   formatConfidence,
@@ -59,101 +55,64 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
   }
 
   if (!track) {
-    return (
-      <div className="flex flex-col gap-3 p-4">
-        <Skeleton className="h-4 w-2/3" />
-        <Skeleton className="h-3 w-1/2" />
-        <Skeleton className="h-24 w-full" />
-      </div>
-    )
+    return <PanelSkeleton />
   }
 
-  const scenarioRunId =
-    typeof track.metadata?.scenarioRunId === 'string' ? track.metadata.scenarioRunId : undefined
-  const resourceNamespace =
-    typeof track.metadata?.resourceNamespace === 'string'
-      ? track.metadata.resourceNamespace
-      : undefined
-  const sourceId = typeof track.metadata?.sourceId === 'string' ? track.metadata.sourceId : undefined
-
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <StateBadge value={track.status} />
-        <span className="font-mono text-[10px] text-ink-faint">{track.id}</span>
-      </div>
-
-      <DetailList
-        columns={2}
-        items={[
-          { label: 'External ref', value: track.externalRef || '—', mono: true },
-          { label: 'Observations', value: String(track.observationCount) },
-          { label: 'Position', value: formatCoord(track.position), mono: true },
-          { label: 'Speed', value: formatSpeed(track.speed) },
-          { label: 'Heading', value: formatHeading(track.heading) },
-          { label: 'Last seen', value: formatTimestamp(track.lastSeenAt) },
-          { label: 'First seen', value: formatTimestamp(track.firstSeenAt) },
-          { label: 'Updated', value: formatRelative(track.updatedAt) },
-        ]}
-      />
-
-      <section className="flex flex-col gap-2">
-        <SectionTitle>Provenance</SectionTitle>
-        <DetailList
-          columns={1}
-          items={[
-            { label: 'Source', value: sourceId || '—', mono: true },
-            { label: 'Scenario run', value: scenarioRunId || 'External / operator', mono: true },
-            ...(resourceNamespace
-              ? [{ label: 'Resource namespace', value: resourceNamespace, mono: true }]
-              : []),
-          ]}
-        />
+    <>
+      <section className="aegis-panel">
+        <h2>Track state</h2>
+        <p className="sub">Fused from observations · provenance preserved</p>
+        <dl className="aegis-kv">
+          <dt>Status</dt>
+          <dd className="word">{track.status}</dd>
+          <dt>External ref</dt>
+          <dd>{track.externalRef || '—'}</dd>
+          <dt>Observations</dt>
+          <dd>{track.observationCount}</dd>
+          <dt>Position</dt>
+          <dd>{formatCoord(track.position)}</dd>
+          <dt>Speed</dt>
+          <dd>{formatSpeed(track.speed)}</dd>
+          <dt>Heading</dt>
+          <dd>{formatHeading(track.heading)}</dd>
+          <dt>First seen</dt>
+          <dd>{formatTimestamp(track.firstSeenAt)}</dd>
+          <dt>Last seen</dt>
+          <dd>{formatTimestamp(track.lastSeenAt)}</dd>
+        </dl>
+        <button
+          type="button"
+          className="aegis-btn mt-4"
+          aria-pressed={showHistory}
+          onClick={toggleHistory}
+        >
+          {showHistory ? 'Hide history polyline' : 'Show history polyline'}
+        </button>
       </section>
 
-      <Button
-        variant={showHistory ? 'default' : 'outline'}
-        size="sm"
-        onClick={toggleHistory}
-        className="self-start"
-      >
-        {showHistory ? 'Hide history polyline' : 'Show history polyline'}
-      </Button>
-
-      <Separator />
-
-      <section className="flex flex-col gap-2">
-        <SectionTitle>Classification</SectionTitle>
+      <section className="aegis-panel">
+        <h2>Classification confidence</h2>
+        <p className="sub">Interpretation stays separate from evidence</p>
         {classificationsQuery.isLoading ? (
-          <Skeleton className="h-10 w-full" />
+          <PanelSkeleton rows={2} />
         ) : (classificationsQuery.data?.items.length ?? 0) === 0 ? (
-          <p className="text-xs text-ink-faint">No classifications recorded.</p>
+          <p className="aegis-empty">No classifications recorded.</p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="m-0 flex list-none flex-col gap-3 p-0">
             {classificationsQuery.data?.items.map((classification) => (
-              <li
-                key={classification.id}
-                className="rounded-md border border-edge bg-panel-raised/50 px-3 py-2"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium text-ink">{classification.label}</span>
-                  <span className="font-mono text-[11px] text-accent">
-                    {formatConfidence(classification.confidence)}
+              <li key={classification.id}>
+                <div className="flex items-center gap-3">
+                  <span className="cap" style={{ minWidth: 132 }}>
+                    {classification.label}
                   </span>
-                </div>
-                <div className="mt-1 flex items-center gap-2">
-                  <div className="h-1 flex-1 overflow-hidden rounded bg-edge">
-                    <div
-                      className="h-full bg-accent"
-                      style={{ width: `${Math.round((classification.confidence ?? 0) * 100)}%` }}
-                    />
+                  <div className="aegis-confbar" style={{ flex: 1 }}>
+                    <span style={{ width: `${Math.round((classification.confidence ?? 0) * 100)}%` }} />
                   </div>
-                  <span className="font-mono text-[10px] text-ink-faint">
-                    {classification.method}
-                  </span>
+                  <span className="mono text-[10px] faint">{formatConfidence(classification.confidence)}</span>
                 </div>
-                <p className="mt-1 text-[10px] text-ink-faint">
-                  {classification.sourceReference || classification.createdBy} ·{' '}
+                <p className="mono mt-1 mb-0 text-[10px] faint">
+                  {classification.method} · {classification.sourceReference || classification.createdBy} ·{' '}
                   {formatTimestamp(classification.createdAt)}
                 </p>
               </li>
@@ -162,74 +121,56 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
         )}
       </section>
 
-      <Separator />
-
-      <section className="flex flex-col gap-2">
-        <SectionTitle>Evidence ({observationsQuery.data?.total ?? 0})</SectionTitle>
+      <section className="aegis-panel">
+        <h2>Supporting observations ({observationsQuery.data?.total ?? 0})</h2>
+        <p className="sub">Evidence before interpretation</p>
         {observationsQuery.isLoading ? (
-          <Skeleton className="h-10 w-full" />
+          <PanelSkeleton rows={2} />
         ) : (observationsQuery.data?.items.length ?? 0) === 0 ? (
-          <p className="text-xs text-ink-faint">No observations linked to this track.</p>
+          <p className="aegis-empty">No observations linked to this track.</p>
         ) : (
-          <div className="overflow-hidden rounded-md border border-edge">
-            <table className="w-full text-left">
-              <thead className="bg-panel-raised/60">
-                <tr className="text-[10px] tracking-wider text-ink-faint uppercase">
-                  <th className="px-2 py-1.5 font-medium">Observed</th>
-                  <th className="px-2 py-1.5 font-medium">Source</th>
-                  <th className="px-2 py-1.5 font-medium">Position</th>
-                </tr>
-              </thead>
-              <tbody>
-                {observationsQuery.data?.items.map((observation) => (
-                  <tr key={observation.id} className="border-t border-edge/70">
-                    <td className="px-2 py-1.5 font-mono text-[10px] text-ink-muted">
-                      {formatTimestamp(observation.observedAt)}
-                    </td>
-                    <td className="px-2 py-1.5 font-mono text-[10px] text-ink-muted">
-                      {observation.sourceId}
-                    </td>
-                    <td className="px-2 py-1.5 font-mono text-[10px] text-ink-faint">
-                      {formatCoord(observation.position)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      <Separator />
-
-      <section className="flex flex-col gap-2">
-        <SectionTitle>Related alerts ({alertsQuery.data?.total ?? 0})</SectionTitle>
-        {(alertsQuery.data?.items.length ?? 0) === 0 ? (
-          <p className="text-xs text-ink-faint">No alerts reference this track.</p>
-        ) : (
-          <ul className="flex flex-col gap-1.5">
-            {alertsQuery.data?.items.map((alert) => (
-              <li key={alert.id} className="flex items-center justify-between gap-2">
-                <span className="truncate text-xs text-ink-muted">{alert.title}</span>
-                <StateBadge value={alert.severity} />
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {observationsQuery.data?.items.map((observation) => (
+              <li className="flex items-center justify-between gap-3 border-b border-[color:var(--line)] py-2 last:border-b-0" key={observation.id}>
+                <span className="mono text-[10px] muted">{formatTimestamp(observation.observedAt)}</span>
+                <span className="text-[10px] tracking-[.12em] uppercase muted">
+                  {observation.sourceId.split('__').pop()}
+                </span>
+                <span className="mono text-[10px] faint">{formatCoord(observation.position)}</span>
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      <Separator />
-
-      <section className="flex flex-col gap-2">
-        <SectionTitle>Assessments ({assessmentsQuery.data?.total ?? 0})</SectionTitle>
-        {(assessmentsQuery.data?.items.length ?? 0) === 0 ? (
-          <p className="text-xs text-ink-faint">No assessments for this track.</p>
+      <section className="aegis-panel">
+        <h2>Related alerts ({alertsQuery.data?.total ?? 0})</h2>
+        <p className="sub">Alerting stays auditable</p>
+        {(alertsQuery.data?.items.length ?? 0) === 0 ? (
+          <p className="aegis-empty">No alerts reference this track.</p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {alertsQuery.data?.items.map((alert) => (
+              <li key={alert.id} className="flex items-center justify-between gap-2">
+                <span className="truncate text-[12px] tracking-[.03em]">{alert.title}</span>
+                <span className="aegis-sev">{alert.severity}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="aegis-panel">
+        <h2>Assessments ({assessmentsQuery.data?.total ?? 0})</h2>
+        <p className="sub">Human or machine judgement, with confidence</p>
+        {(assessmentsQuery.data?.items.length ?? 0) === 0 ? (
+          <p className="aegis-empty">No assessments for this track.</p>
+        ) : (
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {assessmentsQuery.data?.items.map((assessment) => (
-              <li key={assessment.id} className="rounded-md border border-edge px-3 py-2">
-                <p className="text-xs text-ink">{assessment.conclusion}</p>
-                <p className="mt-0.5 font-mono text-[10px] text-ink-faint">
+              <li key={assessment.id}>
+                <p className="m-0 text-[12px] tracking-[.03em]">{assessment.conclusion}</p>
+                <p className="mono mt-1 mb-0 text-[10px] faint">
                   {assessment.method} · {formatConfidence(assessment.confidence)} ·{' '}
                   {formatTimestamp(assessment.createdAt)}
                 </p>
@@ -238,6 +179,24 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
           </ul>
         )}
       </section>
+
+      <p className="mono m-0 px-4 py-3 text-[9px] faint">
+        Updated {formatRelative(track.updatedAt)}
+      </p>
+    </>
+  )
+}
+
+function PanelSkeleton({ rows = 1 }: { rows?: number }) {
+  return (
+    <div className="flex flex-col gap-2" aria-hidden="true">
+      {Array.from({ length: rows }, (_, index) => (
+        <span
+          key={index}
+          className="block h-3 w-full rounded"
+          style={{ background: 'var(--surface-2)' }}
+        />
+      ))}
     </div>
   )
 }

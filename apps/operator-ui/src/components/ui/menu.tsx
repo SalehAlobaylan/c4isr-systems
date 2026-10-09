@@ -22,7 +22,7 @@ export function Menu({ trigger, items, align = 'end' }: MenuProps) {
       <BaseMenu.Trigger render={trigger as ReactElement<Record<string, unknown>>} />
       <BaseMenu.Portal>
         <BaseMenu.Positioner align={align} sideOffset={6} className="z-[70]">
-          <BaseMenu.Popup className="min-w-48 rounded-md border border-edge-strong bg-panel py-1 shadow-2xl outline-none">
+          <BaseMenu.Popup className="min-w-48 rounded-[2px] border border-edge-strong bg-panel py-1 shadow-2xl outline-none">
             {items.map((item) => (
               <BaseMenu.Item
                 key={item.label}

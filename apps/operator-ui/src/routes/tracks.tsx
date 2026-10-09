@@ -120,7 +120,7 @@ export function TracksPage() {
         {tracksQuery.isError ? (
           <ErrorState error={tracksQuery.error} onRetry={() => void tracksQuery.refetch()} />
         ) : (
-          <div className="overflow-hidden rounded-lg border border-edge bg-panel">
+          <div className="overflow-x-auto">
             <DataTable
               columns={columns}
               data={tracks}

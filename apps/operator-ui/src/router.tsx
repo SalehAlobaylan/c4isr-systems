@@ -3,6 +3,7 @@ import { createRootRoute, createRoute, createRouter, redirect } from '@tanstack/
 import { AppShell } from '@/components/layout/AppShell'
 import { AlertsPage } from '@/routes/alerts'
 import { AssetsPage } from '@/routes/assets'
+import { BoardPage } from '@/routes/board'
 import { IncidentDetailPage } from '@/routes/incident-detail'
 import { IncidentsPage } from '@/routes/incidents'
 import { MapPage } from '@/routes/map'
@@ -18,6 +19,12 @@ const indexRoute = createRoute({
   beforeLoad: () => {
     throw redirect({ to: '/map' })
   },
+})
+
+const boardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/board',
+  component: BoardPage,
 })
 
 const mapRoute = createRoute({
@@ -111,6 +118,7 @@ const scenariosRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  boardRoute,
   mapRoute,
   tracksRoute,
   assetsRoute,
