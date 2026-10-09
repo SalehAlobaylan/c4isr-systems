@@ -268,7 +268,7 @@ export function TopBar() {
           <BaseDialog.Backdrop className="aegis-sheet-backdrop" />
           <BaseDialog.Popup className="aegis-sheet">
             <div className="aegis-sheet-h">
-              <BaseDialog.Title className="aegis-sheet-title">Controls &amp; shortcuts</BaseDialog.Title>
+              <BaseDialog.Title>Controls &amp; shortcuts</BaseDialog.Title>
               <span className="spacer" />
               <BaseDialog.Close className="aegis-iconbtn">Close</BaseDialog.Close>
             </div>

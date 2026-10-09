@@ -67,7 +67,9 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
           <dt>Status</dt>
           <dd className="word">{track.status}</dd>
           <dt>External ref</dt>
-          <dd>{track.externalRef || '—'}</dd>
+          <dd title={track.externalRef || undefined}>
+            {(track.externalRef ?? '').split('__').filter(Boolean).pop() || '—'}
+          </dd>
           <dt>Observations</dt>
           <dd>{track.observationCount}</dd>
           <dt>Position</dt>

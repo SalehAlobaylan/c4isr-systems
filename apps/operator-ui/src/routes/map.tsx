@@ -3,6 +3,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -91,12 +92,15 @@ export function MapPage() {
   const [hidden, setHidden] = useState<Partial<Record<MapLayerKey | 'legend', boolean>>>({})
   const [dragging, setDragging] = useState(false)
 
-  const hiddenLayers: Partial<Record<MapLayerKey, boolean>> = {
-    tracks: hidden.tracks,
-    assets: hidden.assets,
-    geofences: hidden.geofences,
-    history: hidden.history,
-  }
+  const layerVisibility = useMemo(
+    () => ({
+      tracks: hidden.tracks,
+      assets: hidden.assets,
+      geofences: hidden.geofences,
+      history: hidden.history,
+    }),
+    [hidden.assets, hidden.geofences, hidden.history, hidden.tracks],
+  )
 
   const geofencesQuery = useQuery({
     queryKey: queryKeys.geofences.list(),
@@ -144,8 +148,16 @@ export function MapPage() {
       if (event.metaKey || event.ctrlKey || event.altKey) return
       const target = event.target as HTMLElement | null
       const tag = target?.tagName.toLowerCase() ?? ''
-      if (tag === 'input' || tag === 'select' || tag === 'textarea' || target?.isContentEditable)
+      if (
+        tag === 'input' ||
+        tag === 'select' ||
+        tag === 'textarea' ||
+        target?.isContentEditable ||
+        target?.closest('dialog, [role="dialog"]') ||
+        document.querySelector('[role="dialog"][aria-modal="true"]')
+      ) {
         return
+      }
       if (event.key === 'Escape') {
         clearDrawing()
         return
@@ -252,7 +264,7 @@ export function MapPage() {
             selected={selection}
             mode={mapMode}
             measurePoints={drawPoints}
-            layers={hiddenLayers}
+            layers={layerVisibility}
             onSelect={handleSelect}
             onMeasurePoint={addDrawPoint}
           />
@@ -272,17 +284,43 @@ export function MapPage() {
               <span className="mono faint text-[9px]">{entityCount} ENTITIES</span>
               <span className="mono faint text-[9px]">{selectionLabel}</span>
               <span className="aegis-mbhint">Click plot or card to inspect · drag to pan · wheel to zoom</span>
-              <button
-                type="button"
-                className="aegis-iconbtn"
-                aria-expanded={layersOpen}
-                aria-controls="layer-pop"
-                aria-haspopup="true"
-                onClick={() => toggle('layersOpen')}
-                title="Choose which map layers are drawn (L)"
-              >
-                Layers
-              </button>
+              <div className="aegis-popwrap">
+                <button
+                  type="button"
+                  className="aegis-iconbtn"
+                  aria-expanded={layersOpen}
+                  aria-controls="layer-pop"
+                  aria-haspopup="true"
+                  onClick={() => toggle('layersOpen')}
+                  title="Choose which map layers are drawn (L)"
+                >
+                  Layers
+                </button>
+
+                {layersOpen ? (
+                  <div className="aegis-pop" id="layer-pop" aria-label="Map layers">
+                    <p className="ph">Map layers</p>
+                    {LAYER_LABELS.map(({ key, label }) => (
+                      <label className="aegis-sw" key={key}>
+                        <input
+                          type="checkbox"
+                          checked={hidden[key] !== true}
+                          onChange={(event) => setHidden((state) => ({ ...state, [key]: !event.target.checked }))}
+                        />
+                        <span>{label}</span>
+                      </label>
+                    ))}
+                    <label className="aegis-sw">
+                      <input
+                        type="checkbox"
+                        checked={hidden.legend !== true}
+                        onChange={(event) => setHidden((state) => ({ ...state, legend: !event.target.checked }))}
+                      />
+                      <span>Legend</span>
+                    </label>
+                  </div>
+                ) : null}
+              </div>
             </div>
 
             {overlayOpen ? (
@@ -379,32 +417,7 @@ export function MapPage() {
               </div>
             ) : null}
 
-            {layersOpen ? (
-              <div className="aegis-pop" id="layer-pop" aria-label="Map layers">
-                <p className="ph">Map layers</p>
-                {LAYER_LABELS.map(({ key, label }) => (
-                  <label className="aegis-sw" key={key}>
-                    <input
-                      type="checkbox"
-                      checked={hiddenLayers[key] !== true}
-                      onChange={(event) =>
-                        setHidden((state) => ({ ...state, [key]: !event.target.checked }))
-                      }
-                    />
-                    <span>{label}</span>
-                  </label>
-                ))}
-                <label className="aegis-sw">
-                  <input
-                    type="checkbox"
-                    checked={hidden.legend !== true}
-                    onChange={(event) => setHidden((state) => ({ ...state, legend: !event.target.checked }))}
-                  />
-                  <span>Legend</span>
-                </label>
-              </div>
-            ) : null}
-          </div>
+            </div>
 
           {hidden.legend !== true ? (
             <div className="aegis-maplegend" aria-label="Map legend">

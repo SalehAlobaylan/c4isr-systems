@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useState } from 'react'
 
 import { ErrorState } from '@/components/shared/states'
 import { api, type Asset, type Track } from '@/lib/api'
@@ -10,9 +11,11 @@ import '@/components/board/board.css'
 
 const TRACK_FILTERS = { limit: 500 }
 const ASSET_FILTERS = { limit: 500 }
-const OBSERVATION_FILTERS = { limit: 500 }
+const OBSERVATION_FILTERS = { limit: 2000 }
 const ALERT_FILTERS = { limit: 500 }
 const SOURCE_FILTERS = { limit: 100 }
+
+const EMPTY: never[] = []
 
 const TRACK_STATE: Record<string, string> = {
   active: 'track',
@@ -63,6 +66,19 @@ function shortRef(value: string | undefined | null, fallbackId: string): string 
   return (tail ?? raw).toUpperCase()
 }
 
+/** Scenario runs namespace their entities, so the run id disambiguates repeats. */
+function runToken(id: string): string {
+  const namespace = id.includes('__') ? id.split('__')[0] : ''
+  return namespace ? namespace.slice(0, 11) : ''
+}
+
+/** Appends the run token only when a label would otherwise repeat on the board. */
+function disambiguate(labels: Map<string, number>, label: string, subtitle: string, id: string): string {
+  if ((labels.get(label) ?? 0) < 2) return subtitle
+  const token = runToken(id)
+  return token ? `${subtitle} · ${token}` : subtitle
+}
+
 function trackSeverity(status: string): Column['statusSeverity'] {
   if (status === 'active') return undefined
   if (status === 'lost') return 'warn'
@@ -74,6 +90,31 @@ export function BoardPage() {
   const setDensity = useLayoutStore((state) => state.setDensity)
   const chipsOpen = useLayoutStore((state) => state.chipsOpen)
   const toggle = useLayoutStore((state) => state.toggle)
+  const [selectedSources, setSelectedSources] = useState<string[]>([])
+  const [hiddenAssets, setHiddenAssets] = useState<string[]>([])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      const target = event.target as HTMLElement | null
+      const tag = target?.tagName.toLowerCase() ?? ''
+      if (
+        tag === 'input' ||
+        tag === 'select' ||
+        tag === 'textarea' ||
+        target?.isContentEditable ||
+        target?.closest('dialog, [role="dialog"]')
+      ) {
+        return
+      }
+      if (event.key.toLowerCase() === 'd') {
+        event.preventDefault()
+        setDensity(useLayoutStore.getState().density === 'compact' ? 'comfortable' : 'compact')
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [setDensity])
 
   const tracksQuery = useQuery({
     queryKey: queryKeys.tracks.list(TRACK_FILTERS),
@@ -96,33 +137,63 @@ export function BoardPage() {
     queryFn: () => api.listSources(SOURCE_FILTERS),
   })
 
-  const tracks = tracksQuery.data?.items ?? []
-  const assets = assetsQuery.data?.items ?? []
-  const observations = observationsQuery.data?.items ?? []
-  const alerts = alertsQuery.data?.items ?? []
-  const sources = sourcesQuery.data?.items ?? []
+  const tracks = tracksQuery.data?.items ?? EMPTY
+  const assets = assetsQuery.data?.items ?? EMPTY
+  const observations = observationsQuery.data?.items ?? EMPTY
+  const alerts = alertsQuery.data?.items ?? EMPTY
+  const sources = sourcesQuery.data?.items ?? EMPTY
 
-  const observationsByTrack = new Map<string, Set<string>>()
-  for (const observation of observations) {
-    const hint = observation.trackHint
-    if (!hint) continue
-    const set = observationsByTrack.get(hint) ?? new Set<string>()
-    set.add(observation.sourceId)
-    observationsByTrack.set(hint, set)
-  }
+  const { observationsByTrack, alertsByTrack, alertsByAsset } = useMemo(() => {
+    const byTrack = new Map<string, Set<string>>()
+    for (const observation of observations) {
+      const hint = observation.trackHint
+      if (!hint) continue
+      const set = byTrack.get(hint) ?? new Set<string>()
+      set.add(observation.sourceId)
+      byTrack.set(hint, set)
+    }
 
-  const alertsByTrack = new Map<string, number>()
-  const alertsByAsset = new Map<string, number>()
-  for (const alert of alerts) {
-    if (alert.trackId) alertsByTrack.set(alert.trackId, (alertsByTrack.get(alert.trackId) ?? 0) + 1)
-    if (alert.assetId) alertsByAsset.set(alert.assetId, (alertsByAsset.get(alert.assetId) ?? 0) + 1)
-  }
+    const alertByTrack = new Map<string, number>()
+    const alertByAsset = new Map<string, number>()
+    for (const alert of alerts) {
+      if (alert.trackId) alertByTrack.set(alert.trackId, (alertByTrack.get(alert.trackId) ?? 0) + 1)
+      if (alert.assetId) alertByAsset.set(alert.assetId, (alertByAsset.get(alert.assetId) ?? 0) + 1)
+    }
 
-  const columns: Column[] = [
-    ...tracks.map((track) => {
-      const trackSources = observationsByTrack.get(track.externalRef)?.size ?? 0
-      const alertCount = alertsByTrack.get(track.id) ?? 0
-      return {
+    return { observationsByTrack: byTrack, alertsByTrack: alertByTrack, alertsByAsset: alertByAsset }
+  }, [observations, alerts])
+
+  const columns: Column[] = useMemo(() => {
+    const assetColumns = assets
+      .filter((asset) => !hiddenAssets.includes(asset.id))
+      .map((asset) => ({
+        key: `asset:${asset.id}`,
+        kind: 'asset' as const,
+        id: asset.id,
+        label: asset.name || truncateId(asset.id, 10),
+        subtitle: asset.type || 'Asset',
+        state: asset.health === 'critical' ? 'crit' : (ASSET_STATE[asset.status] ?? 'unknown'),
+        status: asset.status,
+        statusSeverity:
+          asset.health === 'critical'
+            ? ('crit' as const)
+            : asset.status === 'available'
+              ? undefined
+              : ('warn' as const),
+        act: formatRelative(asset.lastSeenAt),
+        asset,
+        observations: 0,
+        sources: 0,
+        alerts: alertsByAsset.get(asset.id) ?? 0,
+      }))
+
+    const trackColumns = tracks
+      .filter((track) => {
+        if (selectedSources.length === 0) return true
+        const observed = observationsByTrack.get(track.externalRef)
+        return observed ? selectedSources.some((sourceId) => observed.has(sourceId)) : false
+      })
+      .map((track) => ({
         key: `track:${track.id}`,
         kind: 'track' as const,
         id: track.id,
@@ -134,27 +205,23 @@ export function BoardPage() {
         act: formatRelative(track.lastSeenAt),
         track,
         observations: track.observationCount,
-        sources: trackSources,
-        alerts: alertCount,
-      }
-    }),
-    ...assets.map((asset) => ({
-      key: `asset:${asset.id}`,
-      kind: 'asset' as const,
-      id: asset.id,
-      label: asset.name || truncateId(asset.id, 10),
-      subtitle: asset.type || 'Asset',
-      state: asset.health === 'critical' ? 'crit' : (ASSET_STATE[asset.status] ?? 'unknown'),
-      status: asset.status,
-      statusSeverity:
-        asset.health === 'critical' ? ('crit' as const) : asset.status === 'available' ? undefined : ('warn' as const),
-      act: formatRelative(asset.lastSeenAt),
-      asset,
-      observations: 0,
-      sources: 0,
-      alerts: alertsByAsset.get(asset.id) ?? 0,
-    })),
-  ]
+        sources: observationsByTrack.get(track.externalRef)?.size ?? 0,
+        alerts: alertsByTrack.get(track.id) ?? 0,
+      }))
+
+    const all: Column[] = [...trackColumns, ...assetColumns]
+    const labelCounts = new Map<string, number>()
+    for (const column of all) labelCounts.set(column.label, (labelCounts.get(column.label) ?? 0) + 1)
+    return all.map((column) => ({
+      ...column,
+      subtitle: disambiguate(
+        labelCounts,
+        column.label,
+        column.subtitle,
+        column.track?.externalRef ?? column.id,
+      ),
+    }))
+  }, [tracks, assets, observationsByTrack, alertsByTrack, alertsByAsset, selectedSources, hiddenAssets])
 
   const metrics: Metric[] = [
     { key: 'status', label: 'Status', value: (column) => ({ text: column.status, kind: 'word', sev: column.statusSeverity }) },
@@ -228,21 +295,63 @@ export function BoardPage() {
           </button>
           <p className="mono faint m-0 mt-1 text-[9px]">
             {assets.length} ASSETS · {sources.length} SOURCES
+            {selectedSources.length > 0 || hiddenAssets.length > 0 ? ' · FILTERED' : ''}
           </p>
         </div>
 
         {chipsOpen ? (
           <div className="aegis-chips-wrap" id="pane-chips">
-            <div className="aegis-chips" role="group" aria-label="Filter by entity">
-              {sources.map((source) => (
-                <span key={source.id} className="aegis-chip">
-                  <span className="n">{source.name}</span>
-                  <span className="t">{source.type}</span>
-                </span>
-              ))}
-              {sources.length === 0 && assets.length === 0 ? (
-                <p className="aegis-empty m-0">No sources reported yet.</p>
-              ) : null}
+            <div className="aegis-chips" role="group" aria-label="Filter tracks by reporting source">
+              <span className="cap faint self-center pr-1">Sources</span>
+              {sources.map((source) => {
+                const active = selectedSources.includes(source.id)
+                return (
+                  <button
+                    key={source.id}
+                    type="button"
+                    className="aegis-chip"
+                    aria-pressed={active}
+                    onClick={() =>
+                      setSelectedSources((current) =>
+                        active ? current.filter((id) => id !== source.id) : [...current, source.id],
+                      )
+                    }
+                    title={`Show tracks observed by ${source.name}`}
+                  >
+                    <span className="n">{source.name}</span>
+                    <span className="t">{runToken(source.id) || source.type}</span>
+                  </button>
+                )
+              })}
+              {sources.length === 0 ? <p className="aegis-empty m-0">No sources reported yet.</p> : null}
+            </div>
+            <div className="aegis-chips" role="group" aria-label="Show or hide asset columns">
+              <span className="cap faint self-center pr-1">Assets</span>
+              {assets.map((asset) => {
+                const hiddenColumn = hiddenAssets.includes(asset.id)
+                return (
+                  <button
+                    key={asset.id}
+                    type="button"
+                    className="aegis-chip"
+                    aria-pressed={!hiddenColumn}
+                    onClick={() =>
+                      setHiddenAssets((current) =>
+                        hiddenColumn
+                          ? current.filter((id) => id !== asset.id)
+                          : [...current, asset.id],
+                      )
+                    }
+                    title={`${hiddenColumn ? 'Show' : 'Hide'} ${asset.name}`}
+                  >
+                    <span className="n">{asset.name || truncateId(asset.id, 10)}</span>
+                    <span className="t">
+                      {runToken(asset.id) ? `${runToken(asset.id)} · ` : ''}
+                      {asset.status}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </div>
         ) : null}

@@ -105,12 +105,9 @@
   padding: 7px 11px;
   border-bottom: 1px solid var(--line);
 }
-.aegis-rlabel {
-  font-size: var(--t-2xs);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--muted);
+/* the layer popover hangs from its own control, not the board */
+.aegis-popwrap {
+  position: relative;
 }
 .aegis-mbhint {
   margin-left: auto;

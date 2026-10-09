@@ -168,7 +168,7 @@ export function ScenarioBar() {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  })
+  }, [activeRun, replayMutation])
 
   const startPauseResume = () => {
     if (!activeRun) return
