@@ -271,6 +271,18 @@ async function mockOperationalWorkflow(page: Page): Promise<void> {
       await json(route, staleTrack)
       return
     }
+    // The stale track's sub-resources must be served too. Selecting it fetches
+    // its classifications, observations, alerts and assessments; leaving them
+    // unhandled would fall through to the catch-all below and answer with an
+    // object that is not a list, which is not a shape the API can return.
+    if (path === `/api/v1/tracks/${staleTrack.id}/classifications` && method === 'GET') {
+      await json(route, list([]))
+      return
+    }
+    if (path === `/api/v1/tracks/${staleTrack.id}/history` && method === 'GET') {
+      await json(route, list([]))
+      return
+    }
     if (path === '/api/v1/assets' && method === 'GET') {
       await json(route, list([asset]))
       return
@@ -428,7 +440,11 @@ async function mockOperationalWorkflow(page: Page): Promise<void> {
       return
     }
 
-    await json(route, {})
+    // An unhandled route answers 501 rather than an empty object. The API always
+// returns a list for a collection, so an empty object is a shape the client
+// cannot receive: it surfaces much later as an unrelated-looking crash deep in
+// a component. Failing here names the route instead.
+await json(route, { error: { code: 'not_mocked', message: `no mock for ${method} ${path}` } }, 501)
   })
 }
 
@@ -444,10 +460,16 @@ test('the operator can scrub back to a past picture and is never misled about it
   const timeline = page.getByLabel('Picture timeline position')
   await expect(timeline).toBeEnabled()
 
-  // Scrub back to just after the quiet track's last observation but before the
-  // alert was raised.
-  await timeline.fill(new Date('2026-09-20T11:50:00Z').toISOString())
-  await timeline.dispatchEvent('change')
+  // The control is a range input in epoch milliseconds, so the value must be a
+  // number. The bounds are read from the element rather than hardcoded: this
+  // previously aimed at an instant outside the recorded window entirely, and a
+  // hardcoded timestamp cannot warn you when the fixture moves.
+  const min = Number(await timeline.getAttribute('min'))
+  const max = Number(await timeline.getAttribute('max'))
+  expect(max).toBeGreaterThan(min)
+  // One minute past the window opened. The alert in this fixture was raised
+  // later in the window, so at this instant it must not exist yet.
+  await timeline.fill(String(min + 60_000))
 
   await expect(page.getByTestId('scrub-mode')).toHaveText('Replay')
   // The replay banner is the point of the whole control: an operator must never
@@ -480,11 +502,19 @@ test('an operator can state an assessment and have it kept with its evidence', a
 
   // The new assessment is attributed to the operator who wrote it, and the
   // conclusion they typed is what the interface shows back.
+  //
+  // Scoped to the operations rail rather than matched globally: the conclusion
+  // also appears in a transient confirmation toast, so an unscoped match hits
+  // two elements. The rail is the durable record, which is what this asserts.
   await expect(dialog).toBeHidden()
-  await expect(
-    page.getByText('Consistent with a friendly patrol on the same route.', { exact: true }),
-  ).toBeVisible()
-  await expect(page.getByText('OPERATOR', { exact: true }).first()).toBeVisible()
+  const rail = page.getByRole('complementary', { name: 'Operations rail' })
+  const recorded = rail.getByText('Consistent with a friendly patrol on the same route.', {
+    exact: true,
+  })
+  await expect(recorded).toBeVisible()
+  // The method, confidence and timestamp share one metadata line, so this
+  // matches the attribution within that line rather than an exact node.
+  await expect(rail.getByText('OPERATOR', { exact: false }).first()).toBeVisible()
 })
 
 test('the picture qualifies information that is no longer current', async ({ page }, testInfo) => {
@@ -509,9 +539,12 @@ test('the picture qualifies information that is no longer current', async ({ pag
   await page.goto('/map?selected=track%3Atrk-demo')
   await expect(page.getByText('Position may no longer be accurate.', { exact: false })).toHaveCount(0)
 
-  // The list view carries the same classification.
+  // The list view carries the same classification. The badge renders its label
+  // and age adjacently ("STALE20 Sept, ..."), so this matches within the
+  // track's own row rather than asserting an exact text node.
   await page.goto('/tracks')
-  await expect(page.getByText('STALE', { exact: true }).first()).toBeVisible()
+  const quietRow = page.getByRole('row', { name: /trk-quiet/ })
+  await expect(quietRow).toContainText('STALE')
 })
 
 test('an operator can see an event footprint on the map', async ({ page }, testInfo) => {
@@ -528,9 +561,17 @@ test('an operator can see an event footprint on the map', async ({ page }, testI
   await expect(areaLegend).toContainText('Hazard area (1)')
 
   // The layer is operator-controllable: a footprint can cover a whole city and
-  // an operator may need it out of the way to see what is underneath.
+  // an operator may need it out of the way to see what is underneath. The
+  // controls live behind the Layers popover, so it has to be opened first.
+  await page.getByRole('button', { name: 'Layers', exact: true }).click()
   const toggle = page.getByRole('checkbox', { name: 'Event areas' })
   await expect(toggle).toBeChecked()
+
+  // Turning it off must actually remove the footprint's legend entry, so an
+  // operator can tell the layer is off rather than assuming there is nothing
+  // to see.
+  await toggle.uncheck()
+  await expect(areaLegend).toHaveCount(0)
 })
 
 test('operator can follow evidence to outcome and inspect it on the map', async ({ page }, testInfo) => {
@@ -542,18 +583,42 @@ test('operator can follow evidence to outcome and inspect it on the map', async 
   await expect(canvas).toBeVisible()
   await expect(page.locator('[data-map-ready="true"]')).toBeVisible()
   await page.getByRole('button', { name: 'Measure', exact: true }).click()
-  await expect(page.getByText('Click the map to set the start point.', { exact: true })).toBeVisible()
+  await expect(page.getByText('Click the plot to set the start point.', { exact: true })).toBeVisible()
+
+  // The board overlay floats over the upper half of the plot, so a mid-canvas
+  // click lands on the overlay rather than the map. Collapsing the board is how
+  // an operator reads the plot, and it makes the click target deterministic
+  // instead of depending on how tall the entity list happens to render.
+  await page.getByRole('button', { name: /Board · live plot/ }).click()
+
   const box = await canvas.boundingBox()
   if (!box) throw new Error('map canvas did not expose a bounding box')
   await canvas.click({ position: { x: box.width * 0.35, y: box.height * 0.45 } })
   await canvas.click({ position: { x: box.width * 0.55, y: box.height * 0.55 } })
-  await expect(page.getByText('Measurement complete. Click to start over.', { exact: true })).toBeVisible()
+  // Matched without exact punctuation: the product's wording uses an em dash and
+  // has changed once, which is why this assertion sat stale for so long.
+  await expect(page.getByText('Measurement complete', { exact: false })).toBeVisible()
 
+  // Restore the board. Overlay visibility is persisted to local storage, so
+  // leaving it collapsed would hide the provenance panel asserted below even
+  // across a full page navigation.
+  await page.getByRole('button', { name: /Board · live plot/ }).click()
+
+  // The track panel states that provenance is preserved, counts the evidence
+  // behind the track, and keeps the classifier's confidence separate from it.
+  // These assert the panel's actual wording: it renders headings such as
+  // "Supporting observations (1)", not "Provenance" or "Evidence (n)", and it
+  // does not surface the scenario run id at all - that is shown on the alert,
+  // asserted below, which is where an operator traces provenance.
   await page.goto('/map?selected=track%3Atrk-demo')
-  await expect(page.getByText('Provenance', { exact: true })).toBeVisible()
-  await expect(page.getByText('scn_run_demo', { exact: true })).toBeVisible()
-  await expect(page.getByText('Evidence (1)', { exact: true })).toBeVisible()
-  await expect(page.getByText('91%', { exact: true })).toBeVisible()
+  await expect(page.getByText('provenance preserved', { exact: false })).toBeVisible()
+  await expect(page.getByText('Supporting observations (1)', { exact: true })).toBeVisible()
+  // The classification confidence the classifier recorded reaches the operator
+  // rather than being recomputed in the browser. The label and the confidence
+  // are separate elements flanking a bar, so the row is scoped by its label
+  // and the confidence asserted inside it.
+  const classification = page.getByRole('listitem').filter({ hasText: 'vehicle' })
+  await expect(classification.getByText('91%', { exact: true })).toBeVisible()
 
   await page.goto('/alerts')
   await expect(page.getByText(baseAlert.title, { exact: true })).toBeVisible()
@@ -561,7 +626,9 @@ test('operator can follow evidence to outcome and inspect it on the map', async 
   await page.getByRole('button', { name: 'Ack', exact: true }).click()
   await expect(page.getByText('ACKNOWLEDGED', { exact: true })).toBeVisible()
 
-  await page.getByRole('button', { name: 'Create incident', exact: true }).click()
+  // The alerts page opens the incident dialog with "New incident"; "Create
+  // incident" is the dialog's own submit button.
+  await page.getByRole('button', { name: 'New incident', exact: true }).click()
   const incidentDialog = page.getByRole('dialog')
   await incidentDialog.getByLabel('Title').fill('Unknown vehicle in restricted zone')
   await incidentDialog.getByLabel('Description').fill('Review synthetic evidence before dispatch.')

@@ -398,7 +398,7 @@ export function ScenariosPage() {
                 <ErrorState error={eventsQuery.error} onRetry={() => void eventsQuery.refetch()} />
               ) : eventsQuery.isLoading ? (
                 <div className="h-32 animate-pulse rounded border border-edge bg-panel-raised" />
-              ) : eventsQuery.data?.items.length ? (
+              ) : eventsQuery.data?.items?.length ? (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[620px] text-left text-xs">
                     <thead className="border-b border-edge text-[10px] tracking-widest text-ink-faint uppercase">

@@ -609,10 +609,13 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
                 ) : null}
               </div>
 
-              {/* Area kinds only appear once something has been reported. An
-                  empty legend of hazard classes on a quiet day reads as a
-                  warning that something is missing. */}
-              {legendAreaKinds.length > 0 ? (
+              {/* Area kinds only appear once something has been reported, and only while
+                  the layer is drawn. A legend entry for a hidden layer tells the
+                  operator about a hazard they cannot see on the map, which is
+                  worse than saying nothing. An empty legend of hazard classes on
+                  a quiet day likewise reads as a warning that something is
+                  missing. */}
+              {legendAreaKinds.length > 0 && hidden.areas !== true ? (
                 <div className="aegis-maplegend" aria-label="Event area legend">
                   <span className="cap">Event areas</span>
                   {legendAreaKinds.map((entry) => (

@@ -145,7 +145,7 @@ export function AssetDetailPanel({ assetId }: { assetId: string }) {
         <p className="sub">Latest samples first</p>
         {telemetryQuery.isLoading ? (
           <span className="block h-3 w-2/3 rounded" style={{ background: 'var(--surface-2)' }} />
-        ) : (telemetryQuery.data?.items.length ?? 0) === 0 ? (
+        ) : (telemetryQuery.data?.items?.length ?? 0) === 0 ? (
           <p className="aegis-empty">No telemetry samples received.</p>
         ) : (
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
@@ -173,7 +173,7 @@ export function AssetDetailPanel({ assetId }: { assetId: string }) {
       <section className="aegis-panel">
         <h2>Recent commands ({commandsQuery.data?.total ?? 0})</h2>
         <p className="sub">Human decision stays central</p>
-        {(commandsQuery.data?.items.length ?? 0) === 0 ? (
+        {(commandsQuery.data?.items?.length ?? 0) === 0 ? (
           <p className="aegis-empty">No commands issued to this asset.</p>
         ) : (
           <ul className="m-0 flex list-none flex-col gap-2 p-0">

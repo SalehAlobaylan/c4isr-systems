@@ -159,7 +159,7 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
         <p className="sub">Interpretation stays separate from evidence</p>
         {classificationsQuery.isLoading ? (
           <PanelSkeleton rows={2} />
-        ) : (classificationsQuery.data?.items.length ?? 0) === 0 ? (
+        ) : (classificationsQuery.data?.items?.length ?? 0) === 0 ? (
           <p className="aegis-empty">No classifications recorded.</p>
         ) : (
           <ul className="m-0 flex list-none flex-col gap-3 p-0">
@@ -189,7 +189,7 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
         <p className="sub">Evidence before interpretation</p>
         {observationsQuery.isLoading ? (
           <PanelSkeleton rows={2} />
-        ) : (observationsQuery.data?.items.length ?? 0) === 0 ? (
+        ) : (observationsQuery.data?.items?.length ?? 0) === 0 ? (
           <p className="aegis-empty">No observations linked to this track.</p>
         ) : (
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
@@ -209,7 +209,7 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
       <section className="aegis-panel">
         <h2>Related alerts ({alertsQuery.data?.total ?? 0})</h2>
         <p className="sub">Alerting stays auditable</p>
-        {(alertsQuery.data?.items.length ?? 0) === 0 ? (
+        {(alertsQuery.data?.items?.length ?? 0) === 0 ? (
           <p className="aegis-empty">No alerts reference this track.</p>
         ) : (
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
@@ -250,7 +250,7 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
             Assessments are not shown while replaying. They are recorded against what the system
             knows now, which would misdescribe the moment on screen.
           </p>
-        ) : (assessmentsQuery.data?.items.length ?? 0) === 0 ? (
+        ) : (assessmentsQuery.data?.items?.length ?? 0) === 0 ? (
           <p className="aegis-empty">
             No assessments for this track. An assessment records your conclusion about what this
             track is, separately from the observations that support it.

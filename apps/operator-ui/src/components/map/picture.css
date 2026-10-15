@@ -73,7 +73,11 @@
   left: 50%;
   top: 14px;
   transform: translateX(-50%);
-  z-index: 4;
+  /* Above the map board, which shares this top offset and would otherwise
+     cover the controls. This matters more than it looks: the occluded control
+     was "Return to live", so the one action that gets an operator out of a
+     replayed picture was the one they could not click. */
+  z-index: 6;
   width: min(560px, calc(100% - 32px));
   padding: 8px 12px 9px;
   background: rgba(0, 0, 0, 0.72);
