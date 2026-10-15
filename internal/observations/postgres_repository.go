@@ -2,6 +2,7 @@ package observations
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -49,6 +50,12 @@ func (r *PostgresRepository) Create(ctx context.Context, obs Observation) (Obser
 	if len(obs.Quality) > 0 {
 		params.Quality = pgconv.JSONB(obs.Quality)
 	}
+	if obs.Area != nil {
+		params.HasArea = true
+		params.AreaGeojson = obs.Area.GeoJSON()
+		kind := string(obs.Area.Kind)
+		params.AreaKind = &kind
+	}
 
 	row, err := dbgen.New(r.pool).CreateObservation(ctx, params)
 	if err != nil {
@@ -75,7 +82,8 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Observation, e
 	return fromGetRow(row), nil
 }
 
-// List returns observations newest first, optionally filtered by track.
+// List returns observations newest first, optionally filtered by track or by
+// area.
 func (r *PostgresRepository) List(ctx context.Context, filter ListFilter, limit, offset int) ([]Observation, int, error) {
 	q := dbgen.New(r.pool)
 	params := dbgen.ListObservationsParams{LimitCount: int32(limit), OffsetCount: int32(offset)}
@@ -96,6 +104,27 @@ func (r *PostgresRepository) List(ctx context.Context, filter ListFilter, limit,
 		out := make([]Observation, 0, len(rows))
 		for _, row := range rows {
 			out = append(out, fromListByTrackRow(row))
+		}
+		return out, int(total), nil
+	}
+
+	if filter.AreaOnly {
+		kind := string(filter.AreaKind)
+		rows, err := q.ListAreaObservations(ctx, dbgen.ListAreaObservationsParams{
+			AreaKind:    kind,
+			LimitCount:  params.LimitCount,
+			OffsetCount: params.OffsetCount,
+		})
+		if err != nil {
+			return nil, 0, err
+		}
+		total, err := q.CountAreaObservations(ctx, kind)
+		if err != nil {
+			return nil, 0, err
+		}
+		out := make([]Observation, 0, len(rows))
+		for _, row := range rows {
+			out = append(out, fromListAreaRow(row))
 		}
 		return out, int(total), nil
 	}
@@ -133,9 +162,12 @@ type observationRow struct {
 	Quality         []byte
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
+	AreaKind        *string
 	HasPosition     bool
 	Lat             float64
 	Lng             float64
+	HasArea         bool
+	AreaGeojson     string
 }
 
 func toDomain(row dbgen.CreateObservationRow) Observation {
@@ -154,6 +186,12 @@ func fromListByTrackRow(row dbgen.ListObservationsByTrackRow) Observation {
 	return fromRow(observationRow(row))
 }
 
+// fromListAreaRow maps the area listing, whose column set deliberately matches
+// the standard observation shape so one mapper serves every read.
+func fromListAreaRow(row dbgen.ListAreaObservationsRow) Observation {
+	return fromRow(observationRow(row))
+}
+
 func fromRow(row observationRow) Observation {
 	var position *geo.Point
 	if row.HasPosition {
@@ -167,11 +205,67 @@ func fromRow(row observationRow) Observation {
 		ReceivedAt:  pgconv.Time(row.ReceivedAt),
 		ProcessedAt: pgconv.TimePtr(row.ProcessedAt),
 		Position:    position,
+		Area:        areaFromRow(row),
 		Payload:     pgconv.Map(row.Payload),
 		Quality:     pgconv.Map(row.Quality),
 		TrackHint:   pgconv.Deref(row.TrackHint),
 		CreatedAt:   pgconv.Time(row.CreatedAt),
 	}
+}
+
+// areaFromRow rebuilds the footprint from the stored GeoJSON.
+//
+// The polygon is parsed back from GeoJSON rather than reconstructed from the
+// original input ring so that what the domain holds is what PostGIS actually
+// stored. A round trip through the database is the only way to guarantee the
+// interface renders the committed geometry rather than the requested one.
+func areaFromRow(row observationRow) *Area {
+	if !row.HasArea {
+		return nil
+	}
+	ring, ok := geoRingFromGeoJSON(row.AreaGeojson)
+	if !ok {
+		// The row claims an area but the geometry could not be read. Returning
+		// nil would silently downgrade evidence that exists, so the caller sees
+		// a point-less observation rather than a fabricated footprint. The
+		// database constraint makes this unreachable in practice.
+		return nil
+	}
+	return &Area{Kind: AreaKind(pgconv.Deref(row.AreaKind)), Polygon: ring}
+}
+
+// geoRingFromGeoJSON extracts the exterior ring of a GeoJSON Polygon.
+func geoRingFromGeoJSON(raw string) ([]geo.Point, bool) {
+	var parsed struct {
+		Type        string        `json:"type"`
+		Coordinates [][][]float64 `json:"coordinates"`
+	}
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		return nil, false
+	}
+	if parsed.Type != "Polygon" || len(parsed.Coordinates) == 0 {
+		return nil, false
+	}
+	ring := parsed.Coordinates[0]
+	points := make([]geo.Point, 0, len(ring))
+	for _, pair := range ring {
+		if len(pair) < 2 {
+			return nil, false
+		}
+		points = append(points, geo.Point{Lat: pair[1], Lng: pair[0]})
+	}
+	// GeoJSON closes the ring by repeating the first vertex; the domain keeps
+	// it open so a producer-supplied ring round-trips unchanged.
+	if len(points) >= 2 {
+		first, last := points[0], points[len(points)-1]
+		if first == last {
+			points = points[:len(points)-1]
+		}
+	}
+	if len(points) < 3 {
+		return nil, false
+	}
+	return points, true
 }
 
 func tsOrNull(t *time.Time) pgtype.Timestamptz {

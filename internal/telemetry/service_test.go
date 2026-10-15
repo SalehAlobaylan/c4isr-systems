@@ -8,21 +8,25 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 )
 
 type fakeRepository struct {
-	created      []Sample
-	createErr    error
-	snapshot     StateSnapshot
-	snapshots    []StateSnapshot
-	snapshotErr  error
-	applied      []StateUpdate
-	expected     []*time.Time
-	applyResults []bool
-	applyResult  *bool
-	applyErr     error
-	staleIDs     []string
+	created          []Sample
+	createErr        error
+	snapshot         StateSnapshot
+	snapshots        []StateSnapshot
+	snapshotErr      error
+	applied          []StateUpdate
+	expected         []*time.Time
+	applyResults     []bool
+	applyResult      *bool
+	applyErr         error
+	freshnessSignals []FreshnessSignal
+	// trackFreshnessSignals mirrors freshnessSignals for tracks.
+	trackFreshnessSignals []TrackFreshnessSignal
+	trackFreshnessErr     error
 }
 
 func (f *fakeRepository) Create(_ context.Context, sample Sample) (Sample, error) {
@@ -68,8 +72,12 @@ func (f *fakeRepository) ApplyState(_ context.Context, update StateUpdate, expec
 	return true, nil
 }
 
-func (f *fakeRepository) ListStaleAssetIDs(context.Context, time.Time) ([]string, error) {
-	return f.staleIDs, nil
+func (f *fakeRepository) ListTrackFreshnessSignals(context.Context) ([]TrackFreshnessSignal, error) {
+	return f.trackFreshnessSignals, f.trackFreshnessErr
+}
+
+func (f *fakeRepository) ListFreshnessSignals(context.Context) ([]FreshnessSignal, error) {
+	return f.freshnessSignals, nil
 }
 
 func (f *fakeRepository) ListByAsset(_ context.Context, _ string, _, _ int) ([]Sample, int, error) {
@@ -101,6 +109,10 @@ func (l *eventLog) count(topic string) int {
 		}
 	}
 	return n
+}
+
+func (l *eventLog) reset() {
+	l.events = nil
 }
 
 func newTestService(repo Repository, registry AssetRegistry) (*Service, *eventLog) {
@@ -358,22 +370,332 @@ func TestIngestRetriesKinematicsFromTheWinningPredecessor(t *testing.T) {
 	}
 }
 
-func TestReconcileStaleDelegatesToObserver(t *testing.T) {
-	repo := &fakeRepository{staleIDs: []string{"ast_1", "ast_2"}}
-	svc, _ := newTestService(repo, fakeRegistry{exists: true})
-	observer := &staleObserver{}
-	if err := svc.ReconcileStale(context.Background(), time.Now().UTC(), observer); err != nil {
-		t.Fatalf("ReconcileStale() error = %v", err)
-	}
-	if len(observer.stale) != 2 || observer.stale[0] != "ast_1" || observer.stale[1] != "ast_2" {
-		t.Fatalf("stale assets = %v, want [ast_1 ast_2]", observer.stale)
-	}
-}
-
 type staleObserver struct{ stale []string }
+
+// contains reports whether the gauge currently holds an entity.
+func (o *staleObserver) contains(id string) bool {
+	for _, held := range o.stale {
+		if held == id {
+			return true
+		}
+	}
+	return false
+}
 
 func (o *staleObserver) ObserveStaleEntity(assetID string, stale bool) {
 	if stale {
 		o.stale = append(o.stale, assetID)
+	}
+}
+
+// transitionObserver records every gauge update, including recovery, so a test
+// can assert on the full sequence rather than only the stale entries.
+type transitionObserver struct {
+	calls []string
+}
+
+func (o *transitionObserver) ObserveStaleEntity(assetID string, stale bool) {
+	state := "live"
+	if stale {
+		state = "stale"
+	}
+	o.calls = append(o.calls, assetID+":"+state)
+}
+
+func monitorTestPolicy() freshness.Policy {
+	return freshness.Policy{
+		DelayedAfter:     time.Minute,
+		StaleAfter:       5 * time.Minute,
+		UnavailableAfter: 30 * time.Minute,
+	}
+}
+
+func newTestMonitor(t *testing.T, repo *fakeRepository, observer FreshnessObserver, now time.Time) (*FreshnessMonitor, *eventLog) {
+	t.Helper()
+	log := &eventLog{}
+	bus := events.NewDispatcher(slog.New(slog.DiscardHandler))
+	bus.Subscribe(events.TopicEntityFreshnessChanged, log.record)
+	monitor := NewFreshnessMonitor(repo, bus, observer, monitorTestPolicy())
+	monitor.now = func() time.Time { return now }
+	return monitor, log
+}
+
+func freshnessEvents(log *eventLog) []events.EntityFreshnessChanged {
+	var out []events.EntityFreshnessChanged
+	for _, ev := range log.events {
+		if changed, ok := ev.(events.EntityFreshnessChanged); ok {
+			out = append(out, changed)
+		}
+	}
+	return out
+}
+
+func TestFreshnessMonitorPublishesFirstClassification(t *testing.T) {
+	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
+	fresh := now.Add(-20 * time.Second)
+	quiet := now.Add(-12 * time.Minute)
+	repo := &fakeRepository{freshnessSignals: []FreshnessSignal{
+		{AssetID: "ast_fresh", Status: "available", ConnectionState: "connected", LastSeenAt: &fresh},
+		{AssetID: "ast_quiet", Status: "available", ConnectionState: "connected", LastSeenAt: &quiet},
+	}}
+
+	monitor, log := newTestMonitor(t, repo, &staleObserver{}, now)
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	byID := map[string]events.EntityFreshnessChanged{}
+	for _, ev := range freshnessEvents(log) {
+		byID[ev.EntityID] = ev
+	}
+	if got := byID["ast_fresh"].Freshness; got != string(freshness.StateLive) {
+		t.Errorf("ast_fresh freshness = %q, want live", got)
+	}
+	if got := byID["ast_quiet"].Freshness; got != string(freshness.StateStale) {
+		t.Errorf("ast_quiet freshness = %q, want stale", got)
+	}
+}
+
+func TestFreshnessMonitorReportsOnlyTransitions(t *testing.T) {
+	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
+	fresh := now.Add(-20 * time.Second)
+	signals := []FreshnessSignal{
+		{AssetID: "ast_1", Status: "available", ConnectionState: "connected", LastSeenAt: &fresh},
+		{AssetID: "ast_2", Status: "available", ConnectionState: "connected", LastSeenAt: &fresh},
+	}
+	repo := &fakeRepository{freshnessSignals: signals}
+	monitor, log := newTestMonitor(t, repo, &staleObserver{}, now)
+
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("first Reconcile() error = %v", err)
+	}
+	first := len(freshnessEvents(log))
+	if first != 2 {
+		t.Fatalf("first tick published %d events, want 2", first)
+	}
+
+	log.reset()
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("second Reconcile() error = %v", err)
+	}
+	if got := len(freshnessEvents(log)); got != 0 {
+		t.Fatalf("unchanged tick published %d events, want 0", got)
+	}
+}
+
+func TestFreshnessMonitorPublishesRecovery(t *testing.T) {
+	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
+	quiet := now.Add(-12 * time.Minute)
+	fresh := now.Add(-10 * time.Second)
+	signals := []FreshnessSignal{
+		{AssetID: "ast_1", Status: "available", ConnectionState: "connected", LastSeenAt: &quiet},
+	}
+	repo := &fakeRepository{freshnessSignals: signals}
+	monitor, log := newTestMonitor(t, repo, &staleObserver{}, now)
+
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("first Reconcile() error = %v", err)
+	}
+	if got := freshnessEvents(log)[0].Freshness; got != string(freshness.StateStale) {
+		t.Fatalf("first tick freshness = %q, want stale", got)
+	}
+
+	// The asset resumes reporting. The previous stale-only query could not
+	// observe this, which is why the monitor reads every asset each tick.
+	repo.freshnessSignals = []FreshnessSignal{
+		{AssetID: "ast_1", Status: "available", ConnectionState: "connected", LastSeenAt: &fresh},
+	}
+	log.reset()
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("second Reconcile() error = %v", err)
+	}
+
+	events := freshnessEvents(log)
+	if len(events) != 1 {
+		t.Fatalf("recovery published %d events, want 1", len(events))
+	}
+	if events[0].Freshness != string(freshness.StateLive) || events[0].Previous != string(freshness.StateStale) {
+		t.Fatalf("recovery event = %+v, want stale -> live", events[0])
+	}
+}
+
+// A track that has gone quiet is the case an operator most needs to be told
+// about, and it is the primary thing on a C4ISR picture. Counting only assets
+// would leave a silent contact invisible to the only freshness metric.
+func TestFreshnessMonitorClassifiesTracks(t *testing.T) {
+	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
+	repo := &fakeRepository{
+		trackFreshnessSignals: []TrackFreshnessSignal{
+			{TrackID: "trk_fresh", Status: "active", LastSeenAt: now.Add(-10 * time.Second)},
+			{TrackID: "trk_quiet", Status: "active", LastSeenAt: now.Add(-12 * time.Minute)},
+			{TrackID: "trk_lost", Status: "lost", LastSeenAt: now.Add(-5 * time.Second)},
+			{TrackID: "trk_slow", Status: "active", LastSeenAt: now.Add(-2 * time.Minute)},
+		},
+	}
+	observer := &staleObserver{}
+	monitor, log := newTestMonitor(t, repo, observer, now)
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	byID := map[string]events.EntityFreshnessChanged{}
+	for _, ev := range freshnessEvents(log) {
+		byID[ev.EntityID] = ev
+	}
+
+	// A track that declared itself lost is unavailable, not merely stale: we
+	// know contact was lost rather than inferring it from quietness.
+	if got := byID["trk_lost"].Freshness; got != string(freshness.StateUnavailable) {
+		t.Errorf("trk_lost freshness = %q, want unavailable", got)
+	}
+	if got := byID["trk_lost"].EntityType; got != EntityTypeTrack {
+		t.Errorf("trk_lost entity type = %q, want track", got)
+	}
+	if got := byID["trk_quiet"].Freshness; got != string(freshness.StateStale) {
+		t.Errorf("trk_quiet freshness = %q, want stale", got)
+	}
+	if got := byID["trk_fresh"].Freshness; got != string(freshness.StateLive) {
+		t.Errorf("trk_fresh freshness = %q, want live", got)
+	}
+	// Delayed is still within a plausible window, so it must not reach the
+	// gauge. Counting it would page an operator about a contact that is fine.
+	if got := byID["trk_slow"].Freshness; got != string(freshness.StateDelayed) {
+		t.Errorf("trk_slow freshness = %q, want delayed", got)
+	}
+
+	for _, id := range []string{"trk_quiet", "trk_lost"} {
+		if !observer.contains("track:" + id) {
+			t.Errorf("gauge does not contain track:%s, stale set = %v", id, observer.stale)
+		}
+	}
+	for _, id := range []string{"trk_fresh", "trk_slow"} {
+		if observer.contains("track:" + id) {
+			t.Errorf("gauge contains track:%s but it is trustworthy", id)
+		}
+	}
+}
+
+// An asset and a track that share an id must not collapse into one another in
+// the gauge. Ids are normally prefixed apart, but a deployment that does not
+// prefix them would otherwise silently lose whichever entity was seen second.
+func TestFreshnessMonitorSeparatesAssetAndTrackWithTheSameID(t *testing.T) {
+	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
+	fresh := now.Add(-10 * time.Second)
+	repo := &fakeRepository{
+		freshnessSignals: []FreshnessSignal{
+			{AssetID: "shared", Status: "available", ConnectionState: "connected", LastSeenAt: &fresh},
+		},
+		trackFreshnessSignals: []TrackFreshnessSignal{
+			{TrackID: "shared", Status: "active", LastSeenAt: now.Add(-12 * time.Minute)},
+		},
+	}
+	observer := &staleObserver{}
+	monitor, _ := newTestMonitor(t, repo, observer, now)
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	if observer.contains("asset:shared") {
+		t.Error("a live asset was counted in the stale gauge")
+	}
+	if !observer.contains("track:shared") {
+		t.Errorf("a stale track sharing an id with a live asset was not counted; stale set = %v", observer.stale)
+	}
+	if got := len(observer.stale); got != 1 {
+		t.Fatalf("stale gauge holds %d entities, want exactly the stale track", got)
+	}
+}
+
+// A restart empties the gauge and the monitor's memory of previous states. If
+// the first tick after a restart did not report every entity, the gauge would
+// read zero on a picture full of silent contacts until each one happened to
+// transition - which is the failure the bulk-set reconciler used to paper over
+// and which removing it must not reintroduce.
+func TestFreshnessMonitorRebuildsTheGaugeAfterRestart(t *testing.T) {
+	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
+	repo := &fakeRepository{
+		freshnessSignals: []FreshnessSignal{
+			{AssetID: "ast_quiet", Status: "available", ConnectionState: "connected",
+				LastSeenAt: ptr(now.Add(-12 * time.Minute))},
+		},
+		trackFreshnessSignals: []TrackFreshnessSignal{
+			{TrackID: "trk_quiet", Status: "active", LastSeenAt: now.Add(-12 * time.Minute)},
+		},
+	}
+
+	// A fresh monitor is exactly the post-restart condition: no memory, no
+	// accumulated gauge, first tick is the only chance to report.
+	observer := &staleObserver{}
+	monitor, _ := newTestMonitor(t, repo, observer, now)
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	if got := len(observer.stale); got != 2 {
+		t.Fatalf("first tick after a restart rebuilt a gauge of %d, want 2; stale set = %v",
+			got, observer.stale)
+	}
+}
+
+func ptr(t time.Time) *time.Time { return &t }
+
+func TestFreshnessMonitorClearsGaugeForRemovedAsset(t *testing.T) {
+	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
+	quiet := now.Add(-40 * time.Minute)
+	repo := &fakeRepository{freshnessSignals: []FreshnessSignal{
+		{AssetID: "ast_gone", Status: "available", ConnectionState: "connected", LastSeenAt: &quiet},
+	}}
+	observer := &staleObserver{}
+	monitor, _ := newTestMonitor(t, repo, observer, now)
+
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("first Reconcile() error = %v", err)
+	}
+	if len(observer.stale) != 1 {
+		t.Fatalf("stale gauge = %v, want one asset", observer.stale)
+	}
+
+	repo.freshnessSignals = nil
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("second Reconcile() error = %v", err)
+	}
+	if got := monitor.Snapshot(); len(got) != 0 {
+		t.Fatalf("snapshot after removal = %v, want empty", got)
+	}
+}
+
+func TestFreshnessMonitorHandlesDeclaredLossWithoutAge(t *testing.T) {
+	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
+	fresh := now.Add(-5 * time.Second)
+	repo := &fakeRepository{freshnessSignals: []FreshnessSignal{
+		{AssetID: "ast_1", Status: "available", ConnectionState: "connected", LastSeenAt: &fresh},
+	}}
+	observer := &transitionObserver{}
+	monitor, log := newTestMonitor(t, repo, observer, now)
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+
+	repo.freshnessSignals = []FreshnessSignal{
+		{AssetID: "ast_1", Status: "offline", ConnectionState: "connected", LastSeenAt: &fresh},
+	}
+	if err := monitor.Reconcile(context.Background()); err != nil {
+		t.Fatalf("Reconcile() error = %v", err)
+	}
+	transitions := freshnessEvents(log)
+	last := transitions[len(transitions)-1]
+	if last.Freshness != string(freshness.StateUnavailable) {
+		t.Fatalf("declared offline freshness = %q, want unavailable", last.Freshness)
+	}
+	// Keys are type-namespaced so an asset and a track sharing an id cannot
+	// collapse into one another in the gauge.
+	want := []string{"asset:ast_1:live", "asset:ast_1:stale"}
+	if len(observer.calls) != len(want) {
+		t.Fatalf("gauge updates = %v, want %v", observer.calls, want)
+	}
+	for i := range want {
+		if observer.calls[i] != want[i] {
+			t.Fatalf("gauge updates = %v, want %v", observer.calls, want)
+		}
 	}
 }

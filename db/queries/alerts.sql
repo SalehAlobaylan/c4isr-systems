@@ -51,5 +51,19 @@ WHERE geofence_id = @geofence_id AND track_id = @track_id AND state <> 'RESOLVED
 ORDER BY created_at DESC
 LIMIT 1;
 
+-- name: FindUnresolvedAlertForObservationGeofence :one
+-- Area alerts have no track: their evidence is the observation that reported
+-- the footprint. The observation id lives in source_reference, which is where
+-- provenance for this alert type is recorded. The ::text casts are explicit so
+-- the comparison is a plain string match rather than a jsonb equality, which
+-- would need the parameter typed as jsonb and would not use the index.
+SELECT * FROM alerts
+WHERE type = 'geofence.area.overlap'
+  AND geofence_id = @geofence_id
+  AND source_reference->>'observationId'::text = @observation_id::text
+  AND state <> 'RESOLVED'
+ORDER BY created_at DESC
+LIMIT 1;
+
 -- name: ListAlertsByIncident :many
 SELECT * FROM alerts WHERE incident_id = @incident_id ORDER BY created_at DESC;

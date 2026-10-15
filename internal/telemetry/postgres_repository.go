@@ -113,15 +113,46 @@ func (r *PostgresRepository) ApplyState(ctx context.Context, update StateUpdate,
 	return dbgen.New(r.pool).UpsertAssetState(ctx, params)
 }
 
-// ListStaleAssetIDs returns assets whose latest accepted telemetry is older
-// than cutoff. The monitor uses this query so an asset can become stale even
-// when its producer has stopped sending samples.
-func (r *PostgresRepository) ListStaleAssetIDs(ctx context.Context, cutoff time.Time) ([]string, error) {
-	rows, err := dbgen.New(r.pool).ListStaleAssetIDs(ctx, pgconv.TS(cutoff))
+// ListFreshnessSignals returns every asset's declared and observed freshness
+// inputs. Reading all assets is deliberate: the monitor must also notice an
+// asset recovering, which a stale-only query can never report.
+func (r *PostgresRepository) ListFreshnessSignals(ctx context.Context) ([]FreshnessSignal, error) {
+	rows, err := dbgen.New(r.pool).ListAssetFreshnessSignals(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return rows, nil
+	signals := make([]FreshnessSignal, 0, len(rows))
+	for _, row := range rows {
+		var lastSeenAt *time.Time
+		if row.LastSeenAt.Valid {
+			value := pgconv.Time(row.LastSeenAt)
+			lastSeenAt = &value
+		}
+		signals = append(signals, FreshnessSignal{
+			AssetID:         row.AssetID,
+			Status:          row.Status,
+			ConnectionState: pgconv.Deref(row.ConnectionState),
+			LastSeenAt:      lastSeenAt,
+		})
+	}
+	return signals, nil
+}
+
+// ListTrackFreshnessSignals returns every track's status and last-seen time.
+func (r *PostgresRepository) ListTrackFreshnessSignals(ctx context.Context) ([]TrackFreshnessSignal, error) {
+	rows, err := dbgen.New(r.pool).ListTrackFreshnessSignals(ctx)
+	if err != nil {
+		return nil, err
+	}
+	signals := make([]TrackFreshnessSignal, 0, len(rows))
+	for _, row := range rows {
+		signals = append(signals, TrackFreshnessSignal{
+			TrackID:    row.TrackID,
+			Status:     row.Status,
+			LastSeenAt: pgconv.Time(row.LastSeenAt),
+		})
+	}
+	return signals, nil
 }
 
 // ListByAsset returns telemetry for an asset newest first with a total count.

@@ -13,9 +13,17 @@ import {
 
 import { AssetDetailPanel } from '@/components/map/AssetDetailPanel'
 import { MapCanvas, type MapLayerKey } from '@/components/map/MapCanvas'
+import { AREA_KIND_COLORS, AREA_KIND_LABELS } from '@/components/map/geojson'
 import { TrackDetailPanel } from '@/components/map/TrackDetailPanel'
+import { Scrubber } from '@/components/map/Scrubber'
 import { ErrorState } from '@/components/shared/states'
-import { api } from '@/lib/api'
+import { api, type Asset, type PictureAsset, type PictureTrack, type Track } from '@/lib/api'
+import {
+  FRESHNESS_COLORS,
+  FRESHNESS_LABELS,
+  countFreshness,
+  countUntrustworthy,
+} from '@/lib/freshness'
 import {
   formatCoord,
   formatDistanceMeters,
@@ -27,6 +35,7 @@ import {
 import { haversineMeters } from '@/lib/geo'
 import { queryKeys } from '@/lib/queryKeys'
 import { useLayoutStore } from '@/stores/layout'
+import { selectReplayAt, useScrubStore } from '@/stores/scrub'
 import { formatSelection, parseSelection, useUiStore, type Selection } from '@/stores/ui'
 
 import '@/components/map/picture.css'
@@ -34,6 +43,10 @@ import '@/components/map/picture.css'
 const TRACK_FILTERS = { limit: 500 }
 const ASSET_FILTERS = { limit: 500 }
 const COUNT_FILTERS = { limit: 1 }
+
+// Bounded: a hazard footprint can cover a whole map, and an unbounded list of
+// them would be a rendering problem rather than a situational-awareness one.
+const AREA_FILTERS = { area: true, limit: 200 }
 const COMMAND_FILTERS = { limit: 200 }
 const OPEN_ALERTS = { state: 'ACTIVE', limit: 1 }
 
@@ -41,6 +54,10 @@ const LAYER_LABELS: Array<{ key: MapLayerKey; label: string }> = [
   { key: 'tracks', label: 'Tracks' },
   { key: 'assets', label: 'Assets' },
   { key: 'geofences', label: 'Restricted zones' },
+  // Listed after the zones because an area is only meaningful relative to them:
+  // an empty map with footprints and nothing to compare them against reads as
+  // nothing happening.
+  { key: 'areas', label: 'Event areas' },
   { key: 'history', label: 'Movement trails' },
 ]
 
@@ -66,6 +83,53 @@ function shortRef(value: string | undefined | null, fallbackId: string): string 
   if (!raw) return truncateId(fallbackId, 10)
   const tail = raw.split('__').filter(Boolean).pop()
   return (tail ?? raw).toUpperCase()
+}
+
+/**
+ * A reconstructed track is projected onto the same shape the map already
+ * renders, so there is one rendering path rather than a live one and a replay
+ * one that could drift apart. Freshness comes from the server, computed against
+ * the replayed instant, and is passed straight through.
+ */
+function toLiveTrack(track: PictureTrack): Track {
+  return {
+    id: track.id,
+    externalRef: track.externalRef,
+    status: track.status,
+    position: track.position ?? null,
+    speed: track.speed ?? null,
+    heading: track.heading ?? null,
+    firstSeenAt: track.firstSeenAt,
+    lastSeenAt: track.lastSeenAt,
+    createdAt: track.firstSeenAt,
+    updatedAt: track.observedAt,
+    closedAt: null,
+    observationCount: 0,
+    metadata: {},
+    freshness: track.freshness,
+    freshnessLabel: track.freshnessLabel,
+  } as Track
+}
+
+function toLiveAsset(asset: PictureAsset): Asset {
+  return {
+    id: asset.id,
+    name: asset.name,
+    type: asset.type,
+    status: asset.status,
+    capabilities: [],
+    metadata: {},
+    position: asset.position ?? null,
+    speed: asset.speed ?? null,
+    heading: asset.heading ?? null,
+    health: asset.health,
+    connectionState: asset.connectionState,
+    lastSeenAt: asset.observedAt,
+    createdAt: asset.observedAt,
+    updatedAt: asset.observedAt,
+    freshness: asset.freshness,
+    freshnessLabel: asset.freshnessLabel,
+  } as Asset
 }
 
 export function MapPage() {
@@ -97,9 +161,10 @@ export function MapPage() {
       tracks: hidden.tracks,
       assets: hidden.assets,
       geofences: hidden.geofences,
+      areas: hidden.areas,
       history: hidden.history,
     }),
-    [hidden.assets, hidden.geofences, hidden.history, hidden.tracks],
+    [hidden.areas, hidden.assets, hidden.geofences, hidden.history, hidden.tracks],
   )
 
   const geofencesQuery = useQuery({
@@ -121,6 +186,14 @@ export function MapPage() {
   const alertsQuery = useQuery({
     queryKey: queryKeys.alerts.list(OPEN_ALERTS),
     queryFn: () => api.listAlerts(OPEN_ALERTS),
+  })
+  // Area footprints are fetched with a dedicated filter rather than by paging
+  // the general observation list and filtering here: point observations outnumber
+  // areas by orders of magnitude, so the newest 200 observations on a live
+  // system would be almost entirely radar pings with no hazards among them.
+  const areasQuery = useQuery({
+    queryKey: queryKeys.observations.list(AREA_FILTERS),
+    queryFn: () => api.listObservations(AREA_FILTERS),
   })
   const commandsQuery = useQuery({
     queryKey: queryKeys.commands.list(COMMAND_FILTERS),
@@ -187,9 +260,31 @@ export function MapPage() {
     [navigate],
   )
 
-  const tracks = tracksQuery.data?.items ?? []
-  const assets = assetsQuery.data?.items ?? []
-  const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === selection.id) : undefined
+  // Live and replayed pictures are rendered from different sources, and the
+// difference is not cosmetic: a replay must come from recorded evidence, not
+// from the current-state projections that have already moved on.
+const replayAt = useScrubStore(selectReplayAt)
+const pictureQuery = useQuery({
+  queryKey: ['picture', replayAt ?? 'live'],
+  queryFn: () =>
+    replayAt ? api.getPicture({ at: replayAt }) : api.getPicture({ live: true }),
+  // While scrubbed, the picture is frozen. Refetching on an interval would
+  // silently walk the operator forward through time.
+  refetchInterval: replayAt ? false : 10_000,
+  enabled: Boolean(replayAt),
+})
+
+const isReplaying = Boolean(replayAt)
+
+const tracks = isReplaying
+  ? (pictureQuery.data?.tracks ?? []).map(toLiveTrack)
+  : (tracksQuery.data?.items ?? [])
+const assets = isReplaying
+  ? (pictureQuery.data?.assets ?? []).map(toLiveAsset)
+  : (assetsQuery.data?.items ?? [])
+const pictureGeofences = isReplaying ? (pictureQuery.data?.geofences ?? []) : undefined
+
+const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === selection.id) : undefined
   const selectedAsset = selection?.kind === 'asset' ? assets.find((a) => a.id === selection.id) : undefined
 
   const measureDistance =
@@ -203,6 +298,28 @@ export function MapPage() {
   const activeTracks = tracks.filter((track) => track.status === 'active').length
   const commands = commandsQuery.data?.items ?? []
   const acknowledged = commands.filter((command) => ACKNOWLEDGED.has(command.state)).length
+
+  const pictureFreshness = useMemo(
+    () => [...tracks.map((track) => track.freshness), ...assets.map((asset) => asset.freshness)],
+    [tracks, assets],
+  )
+  const legendFreshness = useMemo(() => countFreshness(pictureFreshness), [pictureFreshness])
+
+  // Count footprints by phenomenon class so the legend reflects what is actually
+  // on the map, in severity order rather than whatever the API happened to
+  // return first.
+  const legendAreaKinds = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const observation of areasQuery.data?.items ?? []) {
+      const kind = observation.area?.kind
+      if (!kind) continue
+      counts.set(kind, (counts.get(kind) ?? 0) + 1)
+    }
+    return [...counts.entries()]
+      .map(([kind, count]) => ({ kind, count }))
+      .sort((a, b) => (AREA_KIND_COLORS[a.kind] > AREA_KIND_COLORS[b.kind] ? -1 : 1))
+  }, [areasQuery.data])
+  const staleCount = useMemo(() => countUntrustworthy(pictureFreshness), [pictureFreshness])
 
   const resizerRef = useRef<HTMLDivElement | null>(null)
   const onResizeStart = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -256,8 +373,35 @@ export function MapPage() {
             </div>
           ) : null}
 
+          <Scrubber />
+
+          {isReplaying ? (
+            // A replayed picture must never be mistaken for a live one. The
+            // banner is explicit because every number behind it describes a
+            // past moment.
+            <div
+              className="absolute left-1/2 top-[76px] z-[4] -translate-x-1/2 border border-[color:var(--st-warn)] bg-black/80 px-3 py-1.5 text-center"
+              role="status"
+              data-testid="replay-banner"
+            >
+              <p className="m-0 text-[10px] tracking-[.14em] text-[color:var(--st-warn)] uppercase">
+                Replaying recorded evidence · realtime updates are not applied
+              </p>
+            </div>
+          ) : null}
+
+          {pictureQuery.isError && isReplaying ? (
+            <div
+              className="absolute inset-0 z-20 flex items-center justify-center p-6"
+              style={{ background: 'rgba(22, 26, 38, 0.86)' }}
+            >
+              <ErrorState error={pictureQuery.error} onRetry={() => void pictureQuery.refetch()} />
+            </div>
+          ) : null}
+
           <MapCanvas
-            geofences={geofencesQuery.data?.items ?? []}
+            geofences={pictureGeofences ?? geofencesQuery.data?.items ?? []}
+            areas={areasQuery.data?.items ?? []}
             tracks={tracks}
             assets={assets}
             history={showTrackHistory ? (historyQuery.data?.items ?? []) : []}
@@ -279,7 +423,7 @@ export function MapPage() {
                 onClick={() => toggle('overlayOpen')}
                 title="Collapse the board overlay to read the plot (\\)"
               >
-                Board · live plot
+                Board · {isReplaying ? 'replayed plot' : 'live plot'}
               </button>
               <span className="mono faint text-[9px]">{entityCount} ENTITIES</span>
               <span className="mono faint text-[9px]">{selectionLabel}</span>
@@ -420,24 +564,71 @@ export function MapPage() {
             </div>
 
           {hidden.legend !== true ? (
-            <div className="aegis-maplegend" aria-label="Map legend">
-              <span>
-                <i style={{ background: 'var(--st-ok)' }} />
-                Asset
-              </span>
-              <span>
-                <i style={{ background: 'var(--st-track)' }} />
-                Track
-              </span>
-              <span>
-                <i style={{ background: 'var(--st-warn)' }} />
-                Track lost
-              </span>
-              <span>
-                <i style={{ background: 'transparent', border: '1px dashed var(--st-crit)' }} />
-                Restricted
-              </span>
-            </div>
+            <>
+              <div className="aegis-maplegend" aria-label="Map legend">
+                <span>
+                  <i style={{ background: 'var(--st-ok)' }} />
+                  Asset
+                </span>
+                <span>
+                  <i style={{ background: 'var(--st-track)' }} />
+                  Track
+                </span>
+                <span>
+                  <i style={{ background: 'var(--st-warn)' }} />
+                  Track lost
+                </span>
+                <span>
+                  <i style={{ background: 'transparent', border: '1px dashed var(--st-crit)' }} />
+                  Restricted
+                </span>
+              </div>
+
+              {/* Freshness is drawn as a ring around the marker, so the legend
+                  shows a ringed dot rather than a filled one. Live entities
+                  carry no ring, which is why it appears only when trust is in
+                  question. */}
+              <div className="aegis-maplegend" aria-label="Freshness legend">
+                <span className="cap">Freshness</span>
+                {legendFreshness.map((entry) => (
+                  <span key={entry.state}>
+                    <i
+                      style={{
+                        background: 'transparent',
+                        boxShadow: `inset 0 0 0 2px ${FRESHNESS_COLORS[entry.state]}`,
+                        opacity: entry.state === 'live' ? 0.4 : 1,
+                      }}
+                    />
+                    {FRESHNESS_LABELS[entry.state]} ({entry.count})
+                  </span>
+                ))}
+                {staleCount > 0 ? (
+                  <span className="ml-2 text-[color:var(--st-warn)]">
+                    {staleCount} not current
+                  </span>
+                ) : null}
+              </div>
+
+              {/* Area kinds only appear once something has been reported. An
+                  empty legend of hazard classes on a quiet day reads as a
+                  warning that something is missing. */}
+              {legendAreaKinds.length > 0 ? (
+                <div className="aegis-maplegend" aria-label="Event area legend">
+                  <span className="cap">Event areas</span>
+                  {legendAreaKinds.map((entry) => (
+                    <span key={entry.kind}>
+                      <i
+                        style={{
+                          background: 'transparent',
+                          border: `1px dashed ${AREA_KIND_COLORS[entry.kind] ?? '#3d215b'}`,
+                        }}
+                      />
+                      {AREA_KIND_LABELS[entry.kind] ?? entry.kind} ({entry.count})
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+            </>
           ) : null}
 
           <div className="aegis-maptools">

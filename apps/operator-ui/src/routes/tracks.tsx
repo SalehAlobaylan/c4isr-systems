@@ -5,10 +5,11 @@ import { useMemo } from 'react'
 
 import { Page } from '@/components/layout/Page'
 import { DataTable } from '@/components/shared/data-table'
-import { StateBadge } from '@/components/shared/badges'
+import { FreshnessBadge, StateBadge } from '@/components/shared/badges'
 import { ErrorState } from '@/components/shared/states'
 import { Select } from '@/components/ui/select'
 import { api, type Track } from '@/lib/api'
+import { isActionable } from '@/lib/freshness'
 import { formatCoord, formatRelative, formatSpeed, formatTimestamp } from '@/lib/format'
 import { queryKeys } from '@/lib/queryKeys'
 
@@ -60,11 +61,25 @@ export function TracksPage() {
         cell: ({ row }) => <StateBadge value={row.original.status} />,
       },
       {
+        id: 'freshness',
+        header: 'Freshness',
+        accessorFn: (track) => track.freshness ?? 'unknown',
+        cell: ({ row }) => (
+          <FreshnessBadge
+            freshness={row.original.freshness}
+            lastSeenAt={row.original.lastSeenAt}
+          />
+        ),
+      },
+      {
         id: 'position',
         header: 'Position',
         enableSorting: false,
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-ink-muted">
+          <span
+            className="font-mono text-xs text-ink-muted"
+            title={isActionable(row.original.freshness) ? undefined : 'Last known position'}
+          >
             {formatCoord(row.original.position)}
           </span>
         ),

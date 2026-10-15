@@ -11,4 +11,7 @@ type Repository interface {
 	Resolve(ctx context.Context, id, operator string) (Alert, error)
 	SetIncident(ctx context.Context, alertID, incidentID string) error
 	FindUnresolvedForGeofenceTrack(ctx context.Context, geofenceID, trackID string) (*Alert, error)
+	// FindUnresolvedForObservationGeofence returns the newest unresolved area
+	// overlap alert for an observation and zone pair, or nil.
+	FindUnresolvedForObservationGeofence(ctx context.Context, observationID, geofenceID string) (*Alert, error)
 }

@@ -4,7 +4,76 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 )
+
+func TestFreshnessPolicyFromConfiguration(t *testing.T) {
+	defaults := freshness.DefaultPolicy()
+
+	// A zero-value config (an in-process harness that declared no thresholds)
+	// must produce the documented bands, not an unreachable state.
+	zero := Config{}.FreshnessPolicy()
+	if zero != defaults.Normalized() {
+		t.Fatalf("zero config policy = %+v, want %+v", zero, defaults.Normalized())
+	}
+
+	// Misordered thresholds are repaired here so every consumer, and every
+	// operator reading the config, sees the same effective bands.
+	repaired := Config{
+		FreshnessDelayedAfter:     10 * time.Minute,
+		TelemetryStaleAfter:       5 * time.Minute,
+		FreshnessUnavailableAfter: time.Minute,
+	}.FreshnessPolicy()
+	if repaired.DelayedAfter >= repaired.StaleAfter {
+		t.Errorf("delayed %v must be below stale %v", repaired.DelayedAfter, repaired.StaleAfter)
+	}
+	if repaired.UnavailableAfter <= repaired.StaleAfter {
+		t.Errorf("unavailable %v must exceed stale %v", repaired.UnavailableAfter, repaired.StaleAfter)
+	}
+}
+
+func TestFreshnessDurationsMustBePositive(t *testing.T) {
+	t.Setenv("C4ISR_DATABASE_URL", "postgres://c4isr:c4isr@localhost:5433/c4isr?sslmode=disable")
+	t.Setenv("C4ISR_ENV", "development")
+
+	for _, key := range []string{"C4ISR_FRESHNESS_DELAYED_AFTER", "C4ISR_FRESHNESS_UNAVAILABLE_AFTER", "C4ISR_TELEMETRY_STALE_AFTER"} {
+		t.Run(key, func(t *testing.T) {
+			t.Setenv(key, "not-a-duration")
+			if _, err := Load(); err == nil {
+				t.Fatalf("%s=not-a-duration should fail", key)
+			}
+			t.Setenv(key, "-1m")
+			if _, err := Load(); err == nil {
+				t.Fatalf("%s=-1m should fail", key)
+			}
+		})
+	}
+}
+
+func TestFreshnessDurationsAreRead(t *testing.T) {
+	t.Setenv("C4ISR_DATABASE_URL", "postgres://c4isr:c4isr@localhost:5433/c4isr?sslmode=disable")
+	t.Setenv("C4ISR_ENV", "development")
+	t.Setenv("C4ISR_FRESHNESS_DELAYED_AFTER", "30s")
+	t.Setenv("C4ISR_TELEMETRY_STALE_AFTER", "90s")
+	t.Setenv("C4ISR_FRESHNESS_UNAVAILABLE_AFTER", "10m")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	policy := cfg.FreshnessPolicy()
+	if policy.DelayedAfter != 30*time.Second {
+		t.Errorf("delayed = %v, want 30s", policy.DelayedAfter)
+	}
+	if policy.StaleAfter != 90*time.Second {
+		t.Errorf("stale = %v, want 90s", policy.StaleAfter)
+	}
+	if policy.UnavailableAfter != 10*time.Minute {
+		t.Errorf("unavailable = %v, want 10m", policy.UnavailableAfter)
+	}
+}
 
 func TestParseAuthTokens(t *testing.T) {
 	got, err := parseAuthTokens("operator-01=one, supervisor-01=two")

@@ -11,6 +11,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countAreaObservations = `-- name: CountAreaObservations :one
+SELECT count(*)
+FROM observations
+WHERE area IS NOT NULL
+  AND ($1::text = '' OR area_kind = $1::text)
+`
+
+func (q *Queries) CountAreaObservations(ctx context.Context, areaKind string) (int64, error) {
+	row := q.db.QueryRow(ctx, countAreaObservations, areaKind)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const countObservations = `-- name: CountObservations :one
 SELECT count(*) FROM observations
 `
@@ -38,20 +52,26 @@ func (q *Queries) CountObservationsByTrack(ctx context.Context, trackID string) 
 const createObservation = `-- name: CreateObservation :one
 INSERT INTO observations (
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    position, payload, quality, track_hint
+    position, payload, quality, track_hint, area, area_kind
 ) VALUES (
     $1, $2, $3, $4, $5, $6,
     CASE WHEN $7::boolean
          THEN ST_SetSRID(ST_MakePoint($8::float8, $9::float8), 4326)::geography
          ELSE NULL END,
-    $10, $11, $12
+    $10, $11, $12,
+    CASE WHEN $13::boolean
+         THEN ST_SetSRID(ST_GeomFromGeoJSON($14::text), 4326)::geography
+         ELSE NULL END,
+    $15
 )
 RETURNING
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    payload, quality, track_hint, created_at,
+    payload, quality, track_hint, created_at, area_kind,
     (position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
-    COALESCE(ST_X(position::geometry), 0)::float8 AS lng
+    COALESCE(ST_X(position::geometry), 0)::float8 AS lng,
+    (area IS NOT NULL)::boolean AS has_area,
+    CAST(COALESCE(ST_AsGeoJSON(area::geometry)::text, '') AS text) AS area_geojson
 `
 
 type CreateObservationParams struct {
@@ -67,6 +87,9 @@ type CreateObservationParams struct {
 	Payload         []byte
 	Quality         []byte
 	TrackHint       *string
+	HasArea         bool
+	AreaGeojson     string
+	AreaKind        *string
 }
 
 type CreateObservationRow struct {
@@ -80,11 +103,18 @@ type CreateObservationRow struct {
 	Quality         []byte
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
+	AreaKind        *string
 	HasPosition     bool
 	Lat             float64
 	Lng             float64
+	HasArea         bool
+	AreaGeojson     string
 }
 
+// The area columns are coalesced to an empty string rather than left NULL:
+// sqlc maps a nullable text column to a Go pointer, but an observation that is
+// not an area has no geometry to return, and scanning a NULL into a plain string
+// fails at runtime. The empty string is already the "no area" value.
 func (q *Queries) CreateObservation(ctx context.Context, arg CreateObservationParams) (CreateObservationRow, error) {
 	row := q.db.QueryRow(ctx, createObservation,
 		arg.ID,
@@ -99,6 +129,9 @@ func (q *Queries) CreateObservation(ctx context.Context, arg CreateObservationPa
 		arg.Payload,
 		arg.Quality,
 		arg.TrackHint,
+		arg.HasArea,
+		arg.AreaGeojson,
+		arg.AreaKind,
 	)
 	var i CreateObservationRow
 	err := row.Scan(
@@ -112,20 +145,83 @@ func (q *Queries) CreateObservation(ctx context.Context, arg CreateObservationPa
 		&i.Quality,
 		&i.TrackHint,
 		&i.CreatedAt,
+		&i.AreaKind,
 		&i.HasPosition,
 		&i.Lat,
 		&i.Lng,
+		&i.HasArea,
+		&i.AreaGeojson,
 	)
 	return i, err
+}
+
+const geofencesIntersectingArea = `-- name: GeofencesIntersectingArea :many
+SELECT
+    id, name, type, severity,
+    ST_Area(ST_Intersection(
+        geometry::geography,
+        ST_GeomFromGeoJSON($1::text)::geography
+    ))::float8 AS overlap_m2
+FROM geofences
+WHERE active = true
+  AND ST_Intersects(geometry, ST_GeomFromGeoJSON($1::text))
+ORDER BY overlap_m2 DESC
+`
+
+type GeofencesIntersectingAreaRow struct {
+	ID        string
+	Name      string
+	Type      string
+	Severity  string
+	OverlapM2 float64
+}
+
+// Which active zones a footprint overlaps.
+//
+// ST_Intersects, not ST_Contains: a hazard zone may only partially overlap a
+// restricted geofence and that is still an operational fact. ST_Contains would
+// silently drop a wildfire burning across the boundary.
+//
+// The overlap area is returned so a rule can distinguish a graze from a
+// headline event instead of treating both identically.
+//
+// The footprint is parsed with ST_GeomFromGeoJSON rather than cast directly:
+// a text -> geography cast goes through the WKT parser, which rejects GeoJSON.
+func (q *Queries) GeofencesIntersectingArea(ctx context.Context, areaGeojson string) ([]GeofencesIntersectingAreaRow, error) {
+	rows, err := q.db.Query(ctx, geofencesIntersectingArea, areaGeojson)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GeofencesIntersectingAreaRow{}
+	for rows.Next() {
+		var i GeofencesIntersectingAreaRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Type,
+			&i.Severity,
+			&i.OverlapM2,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getObservation = `-- name: GetObservation :one
 SELECT
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    payload, quality, track_hint, created_at,
+    payload, quality, track_hint, created_at, area_kind,
     (position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
-    COALESCE(ST_X(position::geometry), 0)::float8 AS lng
+    COALESCE(ST_X(position::geometry), 0)::float8 AS lng,
+    (area IS NOT NULL)::boolean AS has_area,
+    CAST(COALESCE(ST_AsGeoJSON(area::geometry)::text, '') AS text) AS area_geojson
 FROM observations
 WHERE id = $1
 `
@@ -141,9 +237,12 @@ type GetObservationRow struct {
 	Quality         []byte
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
+	AreaKind        *string
 	HasPosition     bool
 	Lat             float64
 	Lng             float64
+	HasArea         bool
+	AreaGeojson     string
 }
 
 func (q *Queries) GetObservation(ctx context.Context, id string) (GetObservationRow, error) {
@@ -160,20 +259,110 @@ func (q *Queries) GetObservation(ctx context.Context, id string) (GetObservation
 		&i.Quality,
 		&i.TrackHint,
 		&i.CreatedAt,
+		&i.AreaKind,
 		&i.HasPosition,
 		&i.Lat,
 		&i.Lng,
+		&i.HasArea,
+		&i.AreaGeojson,
 	)
 	return i, err
+}
+
+const listAreaObservations = `-- name: ListAreaObservations :many
+SELECT
+    id, source_id, observation_type, observed_at, received_at, processed_at,
+    payload, quality, track_hint, created_at, area_kind,
+    (position IS NOT NULL)::boolean AS has_position,
+    COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
+    COALESCE(ST_X(position::geometry), 0)::float8 AS lng,
+    (area IS NOT NULL)::boolean AS has_area,
+    CAST(COALESCE(ST_AsGeoJSON(area::geometry)::text, '') AS text) AS area_geojson
+FROM observations
+WHERE area IS NOT NULL
+  AND ($1::text = '' OR area_kind = $1::text)
+ORDER BY observed_at DESC, id DESC
+LIMIT $3 OFFSET $2
+`
+
+type ListAreaObservationsParams struct {
+	AreaKind    string
+	OffsetCount int32
+	LimitCount  int32
+}
+
+type ListAreaObservationsRow struct {
+	ID              string
+	SourceID        string
+	ObservationType string
+	ObservedAt      pgtype.Timestamptz
+	ReceivedAt      pgtype.Timestamptz
+	ProcessedAt     pgtype.Timestamptz
+	Payload         []byte
+	Quality         []byte
+	TrackHint       *string
+	CreatedAt       pgtype.Timestamptz
+	AreaKind        *string
+	HasPosition     bool
+	Lat             float64
+	Lng             float64
+	HasArea         bool
+	AreaGeojson     string
+}
+
+// Recent area observations of one kind, newest first. Used by the operator's
+// situational-awareness view.
+//
+// The column list matches the standard observation read shape so the repository
+// reuses one row mapper. The filter has to live here rather than in the
+// browser: point observations outnumber areas by orders of magnitude on a real
+// feed, so "newest N observations" would be almost entirely radar pings.
+func (q *Queries) ListAreaObservations(ctx context.Context, arg ListAreaObservationsParams) ([]ListAreaObservationsRow, error) {
+	rows, err := q.db.Query(ctx, listAreaObservations, arg.AreaKind, arg.OffsetCount, arg.LimitCount)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAreaObservationsRow{}
+	for rows.Next() {
+		var i ListAreaObservationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.SourceID,
+			&i.ObservationType,
+			&i.ObservedAt,
+			&i.ReceivedAt,
+			&i.ProcessedAt,
+			&i.Payload,
+			&i.Quality,
+			&i.TrackHint,
+			&i.CreatedAt,
+			&i.AreaKind,
+			&i.HasPosition,
+			&i.Lat,
+			&i.Lng,
+			&i.HasArea,
+			&i.AreaGeojson,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listObservations = `-- name: ListObservations :many
 SELECT
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    payload, quality, track_hint, created_at,
+    payload, quality, track_hint, created_at, area_kind,
     (position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
-    COALESCE(ST_X(position::geometry), 0)::float8 AS lng
+    COALESCE(ST_X(position::geometry), 0)::float8 AS lng,
+    (area IS NOT NULL)::boolean AS has_area,
+    CAST(COALESCE(ST_AsGeoJSON(area::geometry)::text, '') AS text) AS area_geojson
 FROM observations
 ORDER BY observed_at DESC, id DESC
 LIMIT $2 OFFSET $1
@@ -195,9 +384,12 @@ type ListObservationsRow struct {
 	Quality         []byte
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
+	AreaKind        *string
 	HasPosition     bool
 	Lat             float64
 	Lng             float64
+	HasArea         bool
+	AreaGeojson     string
 }
 
 func (q *Queries) ListObservations(ctx context.Context, arg ListObservationsParams) ([]ListObservationsRow, error) {
@@ -220,9 +412,12 @@ func (q *Queries) ListObservations(ctx context.Context, arg ListObservationsPara
 			&i.Quality,
 			&i.TrackHint,
 			&i.CreatedAt,
+			&i.AreaKind,
 			&i.HasPosition,
 			&i.Lat,
 			&i.Lng,
+			&i.HasArea,
+			&i.AreaGeojson,
 		); err != nil {
 			return nil, err
 		}
@@ -237,10 +432,12 @@ func (q *Queries) ListObservations(ctx context.Context, arg ListObservationsPara
 const listObservationsByTrack = `-- name: ListObservationsByTrack :many
 SELECT
     o.id, o.source_id, o.observation_type, o.observed_at, o.received_at, o.processed_at,
-    o.payload, o.quality, o.track_hint, o.created_at,
+    o.payload, o.quality, o.track_hint, o.created_at, o.area_kind,
     (o.position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(o.position::geometry), 0)::float8 AS lat,
-    COALESCE(ST_X(o.position::geometry), 0)::float8 AS lng
+    COALESCE(ST_X(o.position::geometry), 0)::float8 AS lng,
+    (o.area IS NOT NULL)::boolean AS has_area,
+    CAST(COALESCE(ST_AsGeoJSON(o.area::geometry)::text, '') AS text) AS area_geojson
 FROM observations o
 JOIN track_observations t ON t.observation_id = o.id
 WHERE t.track_id = $1
@@ -265,9 +462,12 @@ type ListObservationsByTrackRow struct {
 	Quality         []byte
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
+	AreaKind        *string
 	HasPosition     bool
 	Lat             float64
 	Lng             float64
+	HasArea         bool
+	AreaGeojson     string
 }
 
 func (q *Queries) ListObservationsByTrack(ctx context.Context, arg ListObservationsByTrackParams) ([]ListObservationsByTrackRow, error) {
@@ -290,9 +490,12 @@ func (q *Queries) ListObservationsByTrack(ctx context.Context, arg ListObservati
 			&i.Quality,
 			&i.TrackHint,
 			&i.CreatedAt,
+			&i.AreaKind,
 			&i.HasPosition,
 			&i.Lat,
 			&i.Lng,
+			&i.HasArea,
+			&i.AreaGeojson,
 		); err != nil {
 			return nil, err
 		}

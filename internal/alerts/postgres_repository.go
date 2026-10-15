@@ -39,8 +39,13 @@ func (r *PostgresRepository) Create(ctx context.Context, alert Alert) (Alert, er
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "alerts_active_geofence_track_key" {
-			return Alert{}, ErrDuplicateGeofenceBreach
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			switch pgErr.ConstraintName {
+			case "alerts_active_geofence_track_key":
+				return Alert{}, ErrDuplicateGeofenceBreach
+			case "alerts_active_area_overlap_key":
+				return Alert{}, ErrDuplicateAreaOverlap
+			}
 		}
 		return Alert{}, err
 	}
@@ -137,6 +142,24 @@ func (r *PostgresRepository) FindUnresolvedForGeofenceTrack(ctx context.Context,
 		GeofenceID: pgconv.TextPtr(geofenceID),
 		TrackID:    pgconv.TextPtr(trackID),
 	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	alert := toDomain(row)
+	return &alert, nil
+}
+
+// FindUnresolvedForObservationGeofence returns the newest unresolved area
+// overlap alert for an observation and zone pair, or nil when none exists.
+func (r *PostgresRepository) FindUnresolvedForObservationGeofence(ctx context.Context, observationID, geofenceID string) (*Alert, error) {
+	row, err := dbgen.New(r.pool).FindUnresolvedAlertForObservationGeofence(ctx,
+		dbgen.FindUnresolvedAlertForObservationGeofenceParams{
+			GeofenceID:    pgconv.TextPtr(geofenceID),
+			ObservationID: observationID,
+		})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil

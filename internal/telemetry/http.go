@@ -7,18 +7,32 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
 )
 
 // Handler exposes telemetry over HTTP.
 type Handler struct {
-	svc *Service
+	svc     *Service
+	fresh   freshness.Policy
+	nowFunc func() time.Time
 }
 
 // NewHandler builds an HTTP transport for the telemetry service.
 func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+	return NewHandlerWithFreshness(svc, freshness.DefaultPolicy())
+}
+
+// NewHandlerWithFreshness builds a telemetry transport that classifies each
+// sample's age. History rows previously reported a hardcoded "not stale", which
+// meant a month-old sample looked identical to the current one.
+func NewHandlerWithFreshness(svc *Service, policy freshness.Policy) *Handler {
+	return &Handler{
+		svc:     svc,
+		fresh:   policy.Normalized(),
+		nowFunc: func() time.Time { return time.Now().UTC() },
+	}
 }
 
 // Mount registers telemetry routes on the router.
@@ -56,6 +70,8 @@ type sampleResponse struct {
 	ConnectionState string         `json:"connectionState,omitempty"`
 	Payload         map[string]any `json:"payload,omitempty"`
 	Stale           bool           `json:"stale,omitempty"`
+	Freshness       string         `json:"freshness,omitempty"`
+	FreshnessLabel  string         `json:"freshnessLabel,omitempty"`
 	Duplicate       bool           `json:"duplicate,omitempty"`
 }
 
@@ -94,7 +110,7 @@ func (h *Handler) ingest(w http.ResponseWriter, r *http.Request) {
 		httpx.JSON(w, http.StatusOK, sampleResponse{Duplicate: true})
 		return
 	}
-	httpx.JSON(w, http.StatusCreated, toResponse(result.Sample, result.Stale))
+	httpx.JSON(w, http.StatusCreated, h.toResponse(result.Sample, result.Stale))
 }
 
 func (h *Handler) listByAsset(w http.ResponseWriter, r *http.Request) {
@@ -111,12 +127,20 @@ func (h *Handler) listByAsset(w http.ResponseWriter, r *http.Request) {
 		Total: total,
 	}
 	for _, item := range items {
-		resp.Items = append(resp.Items, toResponse(item, false))
+		resp.Items = append(resp.Items, h.toResponse(item, false))
 	}
 	httpx.JSON(w, http.StatusOK, resp)
 }
 
-func toResponse(sample Sample, stale bool) sampleResponse {
+// toResponse maps one sample, deriving how old the information is rather than
+// assuming every stored row is current. rejectedStale carries the ingestion
+// decision - a sample discarded because a newer one already superseded it -
+// which is a different fact from the age of a sample that was accepted.
+func (h *Handler) toResponse(sample Sample, rejectedStale bool) sampleResponse {
+	state := h.fresh.ForAsset(freshness.AssetSignal{
+		LastSeenAt:      &sample.ObservedAt,
+		ConnectionState: sample.ConnectionState,
+	}, h.nowFunc())
 	return sampleResponse{
 		ID:              sample.ID,
 		MessageID:       sample.MessageID,
@@ -130,6 +154,8 @@ func toResponse(sample Sample, stale bool) sampleResponse {
 		Health:          sample.Health,
 		ConnectionState: sample.ConnectionState,
 		Payload:         sample.Payload,
-		Stale:           stale,
+		Stale:           rejectedStale || !state.Trustworthy(),
+		Freshness:       string(state),
+		FreshnessLabel:  state.Label(),
 	}
 }

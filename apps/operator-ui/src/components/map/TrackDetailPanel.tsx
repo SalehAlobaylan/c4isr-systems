@@ -1,7 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 
 import { ErrorState } from '@/components/shared/states'
-import { api } from '@/lib/api'
+import { FreshnessBadge } from '@/components/shared/badges'
+import { AssessmentFormDialog } from '@/features/incidents/AssessmentFormDialog'
+import { api, type Track } from '@/lib/api'
+import { freshnessWarning, isActionable } from '@/lib/freshness'
 import {
   formatConfidence,
   formatCoord,
@@ -11,42 +15,83 @@ import {
   formatTimestamp,
 } from '@/lib/format'
 import { queryKeys } from '@/lib/queryKeys'
+import { selectReplayAt, useScrubStore } from '@/stores/scrub'
 import { useUiStore } from '@/stores/ui'
 
 export function TrackDetailPanel({ trackId }: { trackId: string }) {
   const showHistory = useUiStore((state) => state.showTrackHistory)
   const toggleHistory = useUiStore((state) => state.toggleTrackHistory)
+  const [assessmentOpen, setAssessmentOpen] = useState(false)
+
+  // While the operator is scrubbed back in time, the panel must describe that
+  // moment. Fetching the current track here would put a present-day position
+  // next to a replayed map marker.
+  const replayAt = useScrubStore(selectReplayAt)
+  const replayQuery = useQuery({
+    queryKey: ['picture', replayAt ?? 'live'],
+    queryFn: () =>
+      replayAt ? api.getPicture({ at: replayAt }) : api.getPicture({ live: true }),
+    enabled: Boolean(replayAt),
+  })
+  const replayedTrack = replayAt ? replayQuery.data?.tracks.find((t) => t.id === trackId) : undefined
 
   const trackQuery = useQuery({
     queryKey: queryKeys.tracks.detail(trackId),
     queryFn: () => api.getTrack(trackId),
-    enabled: Boolean(trackId),
+    enabled: Boolean(trackId) && !replayAt,
     refetchInterval: 15_000,
   })
+  // Evidence and judgement panels are suppressed during replay. They describe
+  // present-day records: an observation logged after the replayed instant would
+  // not have existed yet, and an assessment written later could not have
+  // informed a decision the operator is reviewing as though it was made then.
+  const evidenceEnabled = Boolean(trackId) && !replayAt
   const classificationsQuery = useQuery({
     queryKey: queryKeys.tracks.classifications(trackId),
     queryFn: () => api.listTrackClassifications(trackId, { limit: 20 }),
-    enabled: Boolean(trackId),
+    enabled: evidenceEnabled,
   })
   const observationsQuery = useQuery({
     queryKey: queryKeys.observations.list({ track_id: trackId, limit: 20 }),
     queryFn: () => api.listObservations({ track_id: trackId, limit: 20 }),
-    enabled: Boolean(trackId),
+    enabled: evidenceEnabled,
   })
   const alertsQuery = useQuery({
     queryKey: queryKeys.alerts.list({ track_id: trackId, limit: 10 }),
     queryFn: () => api.listAlerts({ track_id: trackId, limit: 10 }),
-    enabled: Boolean(trackId),
+    enabled: evidenceEnabled,
   })
   const assessmentsQuery = useQuery({
     queryKey: queryKeys.assessments.list({ subject_type: 'track', subject_id: trackId }),
     queryFn: () => api.listAssessments({ subject_type: 'track', subject_id: trackId, limit: 10 }),
-    enabled: Boolean(trackId),
+    enabled: evidenceEnabled,
   })
 
-  const track = trackQuery.data
+  // A replayed track is projected onto the same shape the panel already renders.
+  // Observation counts are absent from a reconstruction because counting
+  // present-day evidence beside a past position would be misleading.
+  const replayed: Track | undefined = replayedTrack
+    ? {
+        id: replayedTrack.id,
+        externalRef: replayedTrack.externalRef,
+        status: replayedTrack.status,
+        position: replayedTrack.position ?? null,
+        speed: replayedTrack.speed ?? null,
+        heading: replayedTrack.heading ?? null,
+        firstSeenAt: replayedTrack.firstSeenAt,
+        lastSeenAt: replayedTrack.lastSeenAt,
+        createdAt: replayedTrack.firstSeenAt,
+        updatedAt: replayedTrack.observedAt,
+        closedAt: null,
+        observationCount: 0,
+        metadata: {},
+        freshness: replayedTrack.freshness,
+        freshnessLabel: replayedTrack.freshnessLabel,
+      } as Track
+    : undefined
+  const track = replayed ?? trackQuery.data
 
-  if (trackQuery.isError) {
+  if (trackQuery.isError && !replayed) {
     return (
       <div className="p-4">
         <ErrorState error={trackQuery.error} onRetry={() => void trackQuery.refetch()} />
@@ -63,9 +108,18 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
       <section className="aegis-panel">
         <h2>Track state</h2>
         <p className="sub">Fused from observations · provenance preserved</p>
+        {!isActionable(track.freshness) ? (
+          <p className="mt-2 border-l-2 border-[color:var(--st-warn)] bg-[color:var(--st-warn)]/10 px-2 py-1.5 text-[11px] leading-snug text-[color:var(--st-warn)]">
+            {freshnessWarning(track.freshness, track.lastSeenAt)}
+          </p>
+        ) : null}
         <dl className="aegis-kv">
           <dt>Status</dt>
           <dd className="word">{track.status}</dd>
+          <dt>Freshness</dt>
+          <dd>
+            <FreshnessBadge freshness={track.freshness} lastSeenAt={track.lastSeenAt} />
+          </dd>
           <dt>External ref</dt>
           <dd title={track.externalRef || undefined}>
             {(track.externalRef ?? '').split('__').filter(Boolean).pop() || '—'}
@@ -73,7 +127,14 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
           <dt>Observations</dt>
           <dd>{track.observationCount}</dd>
           <dt>Position</dt>
-          <dd>{formatCoord(track.position)}</dd>
+          <dd>
+            {formatCoord(track.position)}
+            {!isActionable(track.freshness) ? (
+              <span className="ml-1 text-[10px] uppercase text-[color:var(--faint)]">
+                last known
+              </span>
+            ) : null}
+          </dd>
           <dt>Speed</dt>
           <dd>{formatSpeed(track.speed)}</dd>
           <dt>Heading</dt>
@@ -163,10 +224,37 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
       </section>
 
       <section className="aegis-panel">
-        <h2>Assessments ({assessmentsQuery.data?.total ?? 0})</h2>
-        <p className="sub">Human or machine judgement, with confidence</p>
-        {(assessmentsQuery.data?.items.length ?? 0) === 0 ? (
-          <p className="aegis-empty">No assessments for this track.</p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h2>Assessments ({assessmentsQuery.data?.total ?? 0})</h2>
+            <p className="sub">Human or machine judgement, with confidence</p>
+          </div>
+          <button
+            type="button"
+            className="aegis-btn shrink-0"
+            onClick={() => setAssessmentOpen(true)}
+            // Recording a judgement about a reconstructed past moment would
+            // attach present-day reasoning to a historical picture.
+            disabled={Boolean(replayAt)}
+            title={
+              replayAt
+                ? 'Return to the live picture to record an assessment'
+                : 'State what you conclude about this track, and what it rests on'
+            }
+          >
+            Record
+          </button>
+        </div>
+        {replayAt ? (
+          <p className="aegis-empty">
+            Assessments are not shown while replaying. They are recorded against what the system
+            knows now, which would misdescribe the moment on screen.
+          </p>
+        ) : (assessmentsQuery.data?.items.length ?? 0) === 0 ? (
+          <p className="aegis-empty">
+            No assessments for this track. An assessment records your conclusion about what this
+            track is, separately from the observations that support it.
+          </p>
         ) : (
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {assessmentsQuery.data?.items.map((assessment) => (
@@ -185,6 +273,13 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
       <p className="mono m-0 px-4 py-3 text-[9px] faint">
         Updated {formatRelative(track.updatedAt)}
       </p>
+
+      <AssessmentFormDialog
+        open={assessmentOpen}
+        onOpenChange={setAssessmentOpen}
+        subjectType="track"
+        subjectId={trackId}
+      />
     </>
   )
 }

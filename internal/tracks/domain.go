@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 )
 
@@ -43,6 +44,11 @@ type Track struct {
 	ClosedAt         *time.Time
 	ObservationCount int
 	SourceIDs        []string
+	// Freshness is the server's classification of how current this track's
+	// last known position is. It is derived on read from last_seen_at, so
+	// a track that stopped reporting ages visibly instead of continuing to
+	// render as if it were live.
+	Freshness freshness.State
 }
 
 // HistoryPoint is one projected track state sample used for replay and path

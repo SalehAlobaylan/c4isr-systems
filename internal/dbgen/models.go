@@ -233,6 +233,8 @@ type Observation struct {
 	Quality         []byte
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
+	Area            interface{}
+	AreaKind        *string
 }
 
 type Operator struct {

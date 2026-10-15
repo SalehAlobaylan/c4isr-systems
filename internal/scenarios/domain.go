@@ -43,6 +43,11 @@ const (
 	ActionAssetStatus  = "asset_status"
 	ActionIncident     = "incident"
 	ActionIssueCommand = "issue_command"
+	// ActionArea emits an event with extent - a wildfire, an earthquake, a
+	// weather cell. It is deliberately not an observation with a position: an
+	// area has a footprint, and forcing it through the track pipeline is exactly
+	// the modelling failure this action exists to exercise.
+	ActionArea = "area"
 )
 
 // Defaults for scenario timing.
@@ -126,6 +131,13 @@ type EventSpec struct {
 	StaleFor   string         `yaml:"stale_for" json:"staleFor"`
 	Fault      string         `yaml:"fault" json:"fault"`
 
+	// Area fields describe a footprint rather than a point. AreaKind is the
+	// phenomenon class and Polygon is the ring; a scenario may repeat the same
+	// area over time to model a hazard that persists, which is how a real
+	// public feed behaves.
+	AreaKind string     `yaml:"area_kind" json:"areaKind"`
+	Polygon  []Position `yaml:"polygon" json:"polygon"`
+
 	// Assessment fields support deterministic analytical history. Each action
 	// appends a new assessment, so a later conclusion is a revision rather than
 	// an in-place mutation of prior evidence.
@@ -168,6 +180,21 @@ type Position struct {
 
 // Point converts to the platform geometry type.
 func (p Position) Point() geo.Point { return geo.Point{Lat: p.Lat, Lng: p.Lng} }
+
+// Valid reports whether the coordinate is a finite WGS84 position.
+func (p Position) Valid() bool { return p.Point().Valid() }
+
+// validAreaKind reports whether a scenario area declares a phenomenon class the
+// platform knows how to route. The vocabulary is deliberately closed and must
+// match the observation module's: a scenario that invents a kind would produce
+// an area the alert rules silently ignore.
+func validAreaKind(kind string) bool {
+	switch strings.ToLower(strings.TrimSpace(kind)) {
+	case "hazard", "weather", "environmental", "infrastructure", "crowd":
+		return true
+	}
+	return false
+}
 
 // Run is the persisted control-plane state of a scenario execution.
 type Run struct {
@@ -498,6 +525,22 @@ func (s *Scenario) Validate() error {
 			default:
 				return apperr.Validation(fmt.Sprintf("event %d asset status must be available, assigned, unavailable, offline, or maintenance", i))
 			}
+		case ActionArea:
+			if !sourceIDs[ev.Source] {
+				return apperr.Validation(fmt.Sprintf("event %d references unknown source %q", i, ev.Source))
+			}
+			if !validAreaKind(ev.AreaKind) {
+				return apperr.Validation(fmt.Sprintf("event %d area_kind must be one of hazard, weather, environmental, infrastructure, crowd", i))
+			}
+			if len(ev.Polygon) < 3 {
+				return apperr.Validation(fmt.Sprintf("event %d area requires a polygon of at least 3 points", i))
+			}
+			for _, vertex := range ev.Polygon {
+				if !vertex.Valid() {
+					return apperr.Validation(fmt.Sprintf("event %d area polygon contains an invalid coordinate", i))
+				}
+			}
+
 		case ActionIncident:
 			incidentRefPresent := strings.TrimSpace(ev.IncidentRef) != ""
 			incidentTitlePresent := strings.TrimSpace(ev.IncidentTitle) != ""

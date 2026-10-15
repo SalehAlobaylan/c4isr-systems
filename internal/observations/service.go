@@ -88,6 +88,7 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 		ObservedAt: in.ObservedAt,
 		ReceivedAt: in.ReceivedAt,
 		Position:   in.Position,
+		Area:       in.Area,
 		Payload:    in.Payload,
 		Quality:    in.Quality,
 		TrackHint:  in.TrackHint,
@@ -104,18 +105,7 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 			if existing.ProcessedAt == nil && s.bus != nil {
 				// The evidence insert committed before a downstream event handler
 				// failed. Replay the durable observation so projection can resume.
-				s.bus.Publish(ctx, events.ObservationReceived{
-					At:            s.now(),
-					ObservationID: existing.ID,
-					SourceID:      existing.SourceID,
-					Type:          existing.Type,
-					ObservedAt:    existing.ObservedAt,
-					ReceivedAt:    existing.ReceivedAt,
-					Position:      existing.Position,
-					TrackHint:     existing.TrackHint,
-					Duplicate:     true,
-					Retry:         true,
-				})
+				s.bus.Publish(ctx, observationEvent(existing, true, true))
 			}
 			return IngestResult{Observation: existing, Duplicate: true}, nil
 		}
@@ -124,17 +114,36 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 		return IngestResult{}, err
 	}
 
-	s.bus.Publish(ctx, events.ObservationReceived{
-		At:            now,
-		ObservationID: created.ID,
-		SourceID:      created.SourceID,
-		Type:          created.Type,
-		ObservedAt:    created.ObservedAt,
-		ReceivedAt:    created.ReceivedAt,
-		Position:      created.Position,
-		TrackHint:     created.TrackHint,
-	})
+	s.bus.Publish(ctx, observationEvent(created, false, false))
 	return IngestResult{Observation: created}, nil
+}
+
+// observationEvent projects a stored observation onto the integration event.
+//
+// The area fields travel with the event so the area rule can evaluate a
+// footprint without re-reading the row. An area observation carries no
+// position and no track hint: those belong to the track pipeline, which must
+// never see an area.
+func observationEvent(obs Observation, duplicate, retry bool) events.ObservationReceived {
+	ev := events.ObservationReceived{
+		At:            obs.ReceivedAt,
+		ObservationID: obs.ID,
+		SourceID:      obs.SourceID,
+		Type:          obs.Type,
+		ObservedAt:    obs.ObservedAt,
+		ReceivedAt:    obs.ReceivedAt,
+		Position:      obs.Position,
+		TrackHint:     obs.TrackHint,
+		Duplicate:     duplicate,
+		Retry:         retry,
+	}
+	if obs.Area != nil {
+		ev.AreaGeoJSON = obs.Area.GeoJSON()
+		ev.AreaKind = string(obs.Area.Kind)
+		ev.AreaMeters2 = obs.Area.AreaMeters2()
+		ev.AreaCenter = obs.Area.Centroid()
+	}
+	return ev
 }
 
 func (s *Service) publishRejected(ctx context.Context, in CreateInput, cause error) {

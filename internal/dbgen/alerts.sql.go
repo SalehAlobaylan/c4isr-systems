@@ -181,6 +181,51 @@ func (q *Queries) FindUnresolvedAlertForGeofenceTrack(ctx context.Context, arg F
 	return i, err
 }
 
+const findUnresolvedAlertForObservationGeofence = `-- name: FindUnresolvedAlertForObservationGeofence :one
+SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by FROM alerts
+WHERE type = 'geofence.area.overlap'
+  AND geofence_id = $1
+  AND source_reference->>'observationId'::text = $2::text
+  AND state <> 'RESOLVED'
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+type FindUnresolvedAlertForObservationGeofenceParams struct {
+	GeofenceID    *string
+	ObservationID string
+}
+
+// Area alerts have no track: their evidence is the observation that reported
+// the footprint. The observation id lives in source_reference, which is where
+// provenance for this alert type is recorded. The ::text casts are explicit so
+// the comparison is a plain string match rather than a jsonb equality, which
+// would need the parameter typed as jsonb and would not use the index.
+func (q *Queries) FindUnresolvedAlertForObservationGeofence(ctx context.Context, arg FindUnresolvedAlertForObservationGeofenceParams) (Alert, error) {
+	row := q.db.QueryRow(ctx, findUnresolvedAlertForObservationGeofence, arg.GeofenceID, arg.ObservationID)
+	var i Alert
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Severity,
+		&i.State,
+		&i.Title,
+		&i.Message,
+		&i.SourceReference,
+		&i.TrackID,
+		&i.AssetID,
+		&i.GeofenceID,
+		&i.IncidentID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.AcknowledgedAt,
+		&i.AcknowledgedBy,
+		&i.ResolvedAt,
+		&i.ResolvedBy,
+	)
+	return i, err
+}
+
 const getAlert = `-- name: GetAlert :one
 SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by FROM alerts WHERE id = $1
 `

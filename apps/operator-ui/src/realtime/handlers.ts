@@ -8,7 +8,16 @@ import { toast } from '@/stores/toasts'
  * Maps realtime envelopes onto TanStack Query cache invalidations and toasts.
  * No second state model is created: websocket events only refresh server state.
  */
-export function applyRealtimeEvent(queryClient: QueryClient, envelope: RealtimeEnvelope): void {
+export function applyRealtimeEvent(
+  queryClient: QueryClient,
+  envelope: RealtimeEnvelope,
+  // While an operator is scrubbed back in time, the picture on screen is a
+  // reconstruction of recorded evidence. Applying present-day events to it
+  // would splice two moments together into a picture that never existed, so
+  // the event is dropped rather than partially applied.
+  suspended = false,
+): void {
+  if (suspended) return
   const data = envelope.data ?? {}
 
   const invalidate = (queryKey: readonly unknown[]) => {
@@ -53,6 +62,17 @@ export function applyRealtimeEvent(queryClient: QueryClient, envelope: RealtimeE
       break
     }
 
+    // Freshness is re-derived on every read, so a transition means the cached
+    // copy is now describing the past. The list is invalidated rather than the
+    // single entity because the map renders every marker at once, and a stale
+    // marker elsewhere on the picture matters just as much.
+    case 'entity.freshness.changed': {
+      invalidate(queryKeys.assets.all)
+      const entityId = text('entityId')
+      if (entityId) invalidate(queryKeys.assets.detail(entityId))
+      break
+    }
+
     case 'track.created':
     case 'track.updated':
     case 'track.closed': {
@@ -83,12 +103,13 @@ export function applyRealtimeEvent(queryClient: QueryClient, envelope: RealtimeE
     case 'alert.created': {
       invalidate(queryKeys.alerts.all)
       const severity = text('severity') ?? 'medium'
-      const trackId = text('trackId')
+      // The title is now written in operator language server-side. Appending a
+      // raw track id here would reintroduce the identifier this work removed:
+      // the toast is the first thing an operator reads, so it has to read like
+      // the alert centre does.
       toast({
         title: text('title') ?? 'New alert',
-        description: [text('type'), severity, trackId ? `track ${trackId}` : undefined]
-          .filter(Boolean)
-          .join(' · '),
+        description: [text('type'), severity].filter(Boolean).join(' · '),
         variant: severity === 'critical' || severity === 'high' ? 'error' : 'warning',
         durationMs: 10_000,
       })

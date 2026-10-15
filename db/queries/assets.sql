@@ -78,6 +78,19 @@ LEFT JOIN asset_state AS s ON s.asset_id = a.id
 WHERE a.created_at < @cutoff
   AND (s.last_seen_at IS NULL OR s.last_seen_at < @cutoff);
 
+-- name: ListAssetFreshnessSignals :many
+-- The freshness monitor reads every asset's declared and observed signals so
+-- it can classify each one and publish only genuine transitions, including an
+-- asset recovering contact after having gone stale.
+SELECT
+    a.id AS asset_id,
+    a.status,
+    s.connection_state,
+    s.last_seen_at
+FROM assets a
+LEFT JOIN asset_state s ON s.asset_id = a.id
+ORDER BY a.id;
+
 -- name: ListAssetsWithState :many
 SELECT
     a.id, a.name, a.type, a.status, a.capabilities, a.metadata, a.created_at, a.updated_at,

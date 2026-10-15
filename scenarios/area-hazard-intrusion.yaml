@@ -1,0 +1,136 @@
+# Area hazard exercise.
+#
+# Demonstrates the event/area ingestion path: a wildfire grows across a
+# restricted zone and a weather cell passes over an airfield. Neither is a
+# tracked object, so neither produces a track, and both raise alerts directly
+# from their footprint.
+#
+# The point of this scenario is what does NOT happen: no "track" for the fire,
+# no velocity invented from how it moved between reports, and no alert for the
+# weather cell while it is still outside the zone.
+
+scenario: area-hazard-intrusion
+description: >
+  A wildfire footprint expands across a restricted zone and a weather cell drifts
+  over an airfield. Both are area observations: they are never correlated into
+  tracks, and both raise alerts directly when their footprints overlap a zone.
+  Deterministic for replay: fixed seed, fixed event order, no wall-clock
+  dependent decisions.
+seed: 2211
+playback_speed: 1
+
+sources:
+  - id: fire-monitor
+    name: Fire Monitor
+    type: external
+  - id: weather-service
+    name: Weather Service
+    type: external
+
+geofences:
+  - id: restricted-zone-a
+    name: Restricted Zone A
+    type: restricted
+    severity: high
+    polygon:
+      - { lat: 24.7200, lng: 46.6740 }
+      - { lat: 24.7200, lng: 46.6800 }
+      - { lat: 24.7160, lng: 46.6800 }
+      - { lat: 24.7160, lng: 46.6740 }
+
+  - id: airfield
+    name: King Khalid Airfield
+    type: protected
+    severity: critical
+    polygon:
+      - { lat: 24.7400, lng: 46.6600 }
+      - { lat: 24.7400, lng: 46.6800 }
+      - { lat: 24.7300, lng: 46.6800 }
+      - { lat: 24.7300, lng: 46.6600 }
+
+events:
+  # The fire starts well outside the zone and grows east into it. Each report is
+  # a distinct observation of the same footprint, the way a public feed
+  # re-reports a persistent hazard. De-duplication has to work across them, or
+  # the alert centre fills with repeats of the same fire.
+  - after: 5s
+    action: area
+    source: fire-monitor
+    area_kind: hazard
+    type: hazard.wildfire
+    interval: 20s
+    until: 65s
+    jitter_m: 5
+    polygon:
+      - { lat: 24.7250, lng: 46.6650 }
+      - { lat: 24.7250, lng: 46.6690 }
+      - { lat: 24.7200, lng: 46.6690 }
+      - { lat: 24.7200, lng: 46.6650 }
+    payload:
+      detection: MODIS
+      brightness_kelvin: 412.7
+
+  # A second, larger footprint for the same fire once it has spread into the
+  # zone. This is the report that raises the alert.
+  - after: 45s
+    action: area
+    source: fire-monitor
+    area_kind: hazard
+    type: hazard.wildfire
+    jitter_m: 5
+    polygon:
+      - { lat: 24.7250, lng: 46.6700 }
+      - { lat: 24.7250, lng: 46.6790 }
+      - { lat: 24.7180, lng: 46.6790 }
+      - { lat: 24.7180, lng: 46.6700 }
+    payload:
+      detection: VIIRS
+      brightness_kelvin: 468.2
+
+  # A weather cell sitting north-east of the airfield. It overlaps nothing yet,
+  # so it must produce no alert - an area that raises attention for no reason
+  # teaches the operator to ignore it.
+  - after: 10s
+    action: area
+    source: weather-service
+    area_kind: weather
+    type: weather.severe_cell
+    jitter_m: 0
+    polygon:
+      - { lat: 24.7500, lng: 46.6900 }
+      - { lat: 24.7500, lng: 46.7000 }
+      - { lat: 24.7450, lng: 46.7000 }
+      - { lat: 24.7450, lng: 46.6900 }
+    payload:
+      reflectivity_dbz: 58
+      motion: 'east'
+
+  # An infrastructure disruption footprint that lands inside the airfield. It
+  # raises a critical alert and links to the observation that reported it.
+  - after: 30s
+    action: area
+    source: weather-service
+    area_kind: infrastructure
+    type: infrastructure.damage
+    jitter_m: 0
+    polygon:
+      - { lat: 24.7380, lng: 46.6700 }
+      - { lat: 24.7380, lng: 46.6760 }
+      - { lat: 24.7330, lng: 46.6760 }
+      - { lat: 24.7330, lng: 46.6700 }
+    payload:
+      assessment: partial_runway_closure
+
+  # An operator assessment about the fire, recorded as an assessment rather
+  # than folded into the observation. References are logical ids; the engine
+  # qualifies them into the run's namespace.
+  - after: 55s
+    action: assessment
+    subject_type: source
+    subject_id: fire-monitor
+    assessment_type: reliability
+    method: RULE
+    conclusion: Fire Monitor is reporting this perimeter consistently across five consecutive passes.
+    confidence: 0.88
+    evidence:
+      - { type: source, id: fire-monitor }

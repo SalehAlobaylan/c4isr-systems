@@ -62,6 +62,13 @@ func MapEnvelope(ev events.Event) Envelope {
 			"connectionState": e.ConnectionState,
 			"health":          e.Health,
 		}
+	case events.EntityFreshnessChanged:
+		env.Data = map[string]any{
+			"entityId":   e.EntityID,
+			"entityType": e.EntityType,
+			"freshness":  e.Freshness,
+			"previous":   e.Previous,
+		}
 	case events.TelemetryReceived:
 		env.Data = map[string]any{
 			"telemetryId": e.TelemetryID,

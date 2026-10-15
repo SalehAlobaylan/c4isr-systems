@@ -20,14 +20,17 @@ type fakeRepository struct {
 	createErr     error
 	unresolved    *Alert
 	unresolvedErr error
-	listResult    []Alert
-	listTotal     int
-	listErr       error
-	listFilter    ListFilter
-	listLimit     int
-	listOffset    int
-	incidentSet   [2]string
-	incidentErr   error
+	// areaUnresolved is the existing unresolved area-overlap alert, if any.
+	areaUnresolved    *Alert
+	areaUnresolvedErr error
+	listResult        []Alert
+	listTotal         int
+	listErr           error
+	listFilter        ListFilter
+	listLimit         int
+	listOffset        int
+	incidentSet       [2]string
+	incidentErr       error
 }
 
 func (f *fakeRepository) Create(_ context.Context, alert Alert) (Alert, error) {
@@ -98,6 +101,21 @@ func (f *fakeRepository) FindUnresolvedForGeofenceTrack(context.Context, string,
 	return f.unresolved, f.unresolvedErr
 }
 
+func (f *fakeRepository) FindUnresolvedForObservationGeofence(_ context.Context, observationID, geofenceID string) (*Alert, error) {
+	if f.areaUnresolved == nil {
+		return nil, f.areaUnresolvedErr
+	}
+	// The repository answers per pair, so a fake keyed on the pair can prove the
+	// service asked about the right evidence rather than about the track path.
+	if ref, _ := f.areaUnresolved.SourceReference["observationId"].(string); ref != observationID {
+		return nil, nil
+	}
+	if f.areaUnresolved.GeofenceID != geofenceID {
+		return nil, nil
+	}
+	return f.areaUnresolved, nil
+}
+
 type alertRecorder struct {
 	created      []events.AlertCreated
 	acknowledged []events.AlertAcknowledged
@@ -151,10 +169,12 @@ func TestHandleGeofenceBreachedCreatesAlert(t *testing.T) {
 	if alert.TrackID != "trk_1" || alert.GeofenceID != "geo_1" {
 		t.Fatalf("unexpected alert references: %+v", alert)
 	}
-	if alert.Title != "Track trk_1 entered No-Fly Zone" {
+	// Without a classification the subject is stated honestly rather than
+	// guessed, and the track identifier never reaches operator-facing text.
+	if alert.Title != "Suspected unidentified contact entered No-Fly Zone" {
 		t.Fatalf("unexpected title: %q", alert.Title)
 	}
-	if alert.Message != "Track trk_1 entered exclusion geofence No-Fly Zone" {
+	if alert.Message != "Suspected unidentified contact entered the exclusion geofence No-Fly Zone" {
 		t.Fatalf("unexpected message: %q", alert.Message)
 	}
 	if alert.SourceReference["rule"] != "geofence.breach" || alert.SourceReference["geofenceId"] != "geo_1" ||

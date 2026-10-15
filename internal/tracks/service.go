@@ -8,6 +8,7 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
@@ -35,15 +36,25 @@ type Service struct {
 	processor ObservationProcessor
 	bus       *events.Dispatcher
 	now       func() time.Time
+	fresh     freshness.Policy
 }
 
 // NewService wires a track service and subscribes it to observation events.
 func NewService(repo Repository, processor ObservationProcessor, bus *events.Dispatcher) *Service {
+	return NewServiceWithFreshness(repo, processor, bus, freshness.DefaultPolicy())
+}
+
+// NewServiceWithFreshness wires a track service that classifies how current
+// each track's last known position is. Tracks are the primary thing an
+// operator judges trust by, so this is evaluated on the server rather than
+// reconstructed in the browser.
+func NewServiceWithFreshness(repo Repository, processor ObservationProcessor, bus *events.Dispatcher, policy freshness.Policy) *Service {
 	s := &Service{
 		repo:      repo,
 		processor: processor,
 		bus:       bus,
 		now:       func() time.Time { return time.Now().UTC() },
+		fresh:     policy.Normalized(),
 	}
 	bus.Subscribe(events.TopicObservationReceived, func(ctx context.Context, ev events.Event) {
 		if received, ok := ev.(events.ObservationReceived); ok {
@@ -57,6 +68,14 @@ func NewService(repo Repository, processor ObservationProcessor, bus *events.Dis
 // exported so tests and scenario tooling can drive correlation directly.
 func (s *Service) HandleObservationReceived(ctx context.Context, ev events.ObservationReceived) {
 	if ev.Duplicate && !ev.Retry {
+		return
+	}
+	// An area observation describes a footprint at an instant, not something that
+	// moved. Correlating it would invent a track for a wildfire complete with a
+	// speed derived from how the fire moved between reports - a number with no
+	// physical meaning that would then drive geofence containment and alerting.
+	// Area observations are routed to spatial rules instead.
+	if ev.AreaGeoJSON != "" {
 		return
 	}
 	spanCtx, span := observability.StartSpan(ctx, "c4isr.track.update",
@@ -188,20 +207,50 @@ func (s *Service) HandleObservationReceived(ctx context.Context, ev events.Obser
 	})
 }
 
+// classify stamps the freshness state derived from the track's own last-seen
+// time. It never touches the database, so freshness can never be persisted out
+// of step with the evidence behind it.
+func (s *Service) classify(track Track) Track {
+	track.Freshness = s.fresh.ForTrack(freshness.TrackSignal{
+		LastSeenAt: track.LastSeenAt,
+		Status:     string(track.Status),
+	}, s.now())
+	return track
+}
+
 // Get returns a track by id.
 func (s *Service) Get(ctx context.Context, id string) (Track, error) {
-	return s.repo.Get(ctx, id)
+	track, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return Track{}, err
+	}
+	return s.classify(track), nil
 }
 
 // FindByExternalRef resolves a scenario/operator supplied track reference to
 // the internal track identity.
 func (s *Service) FindByExternalRef(ctx context.Context, ref string) (Track, error) {
-	return s.repo.FindByExternalRef(ctx, ref)
+	track, err := s.repo.FindByExternalRef(ctx, ref)
+	if err != nil {
+		return Track{}, err
+	}
+	return s.classify(track), nil
 }
 
 // List returns tracks newest-seen first.
 func (s *Service) List(ctx context.Context, limit, offset int) ([]Track, int, error) {
-	return s.repo.List(ctx, clampLimit(limit), max(offset, 0))
+	items, total, err := s.repo.List(ctx, clampLimit(limit), max(offset, 0))
+	if err != nil {
+		return nil, 0, err
+	}
+	now := s.now()
+	for i := range items {
+		items[i].Freshness = s.fresh.ForTrack(freshness.TrackSignal{
+			LastSeenAt: items[i].LastSeenAt,
+			Status:     string(items[i].Status),
+		}, now)
+	}
+	return items, total, nil
 }
 
 // History returns a track's state history oldest first.

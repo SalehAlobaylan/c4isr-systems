@@ -41,6 +41,8 @@ func TestPolicyFailsClosedAndRespectsPathSegments(t *testing.T) {
 		{http.MethodGet, "/api/v1/geospatial/not-a-query"},
 		{http.MethodGet, "/api/v1/classifications"},
 		{http.MethodPost, "/api/v1/scenarios/runs/run-1/not-a-control"},
+		{http.MethodGet, "/api/v1/picture/not-a-query"},
+		{http.MethodPost, "/api/v1/picture"},
 	} {
 		if policy := PolicyFor(tt.method, tt.path); policy.Known {
 			t.Errorf("PolicyFor(%s, %s) = %#v, want unknown", tt.method, tt.path, policy)
@@ -51,6 +53,16 @@ func TestPolicyFailsClosedAndRespectsPathSegments(t *testing.T) {
 	}
 	if policy := PolicyFor(http.MethodGet, "/api/v1/realtime"); !policy.Known || policy.Permission != "operational.read" {
 		t.Fatalf("realtime policy = %#v", policy)
+	}
+	// Replay must not be a privilege: it reads recorded evidence that an
+	// operator with operational.read can already see live.
+	for _, path := range []string{"/api/v1/picture", "/api/v1/picture/window"} {
+		if policy := PolicyFor(http.MethodGet, path); !policy.Known || policy.Permission != "operational.read" {
+			t.Errorf("PolicyFor(GET, %s) = %#v, want operational.read", path, policy)
+		}
+	}
+	if !Allows("operator", "operational.read") {
+		t.Error("operator should be able to replay a recorded picture")
 	}
 	if policy := PolicyFor(http.MethodPost, "/api/v1/realtime"); policy.Known {
 		t.Fatalf("POST realtime must be unknown: %#v", policy)

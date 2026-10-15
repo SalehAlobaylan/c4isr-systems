@@ -166,6 +166,31 @@ func (r *PostgresRepository) ReconcileStates(ctx context.Context, trackID string
 	return transitions, nil
 }
 
+// IntersectingArea lists active geofences the footprint overlaps.
+//
+// ST_Intersects rather than ST_Contains: a wildfire burning across a boundary
+// is an operational fact even though the geofence does not contain it.
+func (r *PostgresRepository) IntersectingArea(ctx context.Context, area AreaOverlap) ([]Geofence, error) {
+	rows, err := dbgen.New(r.pool).GeofencesIntersectingArea(ctx, area.GeoJSON)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Geofence, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, Geofence{
+			ID:       row.ID,
+			Name:     row.Name,
+			Type:     Type(row.Type),
+			Severity: Severity(row.Severity),
+			Active:   true,
+			// Overlap is preserved in metadata rather than added as a field so
+			// the domain type stays identical to a point-derived geofence.
+			Metadata: map[string]any{"overlapM2": row.OverlapM2},
+		})
+	}
+	return out, nil
+}
+
 // AssetsWithinRadius lists assets with a position inside the radius, nearest
 // first.
 func (r *PostgresRepository) AssetsWithinRadius(ctx context.Context, center geo.Point, radiusM float64, limit int) ([]AssetDistance, error) {

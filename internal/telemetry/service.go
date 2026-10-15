@@ -24,19 +24,6 @@ type AssetRegistry interface {
 	Exists(ctx context.Context, id string) (bool, error)
 }
 
-// StaleEntityObserver receives the current stale status of an asset. It is
-// intentionally small so the telemetry service does not depend on a metrics
-// implementation.
-type StaleEntityObserver interface {
-	ObserveStaleEntity(assetID string, stale bool)
-}
-
-// StaleEntityReconciler can replace the whole stale set in one operation,
-// allowing observers to clear assets that recovered without a new event.
-type StaleEntityReconciler interface {
-	ReplaceStaleEntities(assetIDs []string)
-}
-
 // Service implements telemetry ingestion and retrieval.
 type Service struct {
 	repo   Repository
@@ -192,26 +179,6 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 		Duplicate:   false,
 	})
 	return result, nil
-}
-
-// ReconcileStale marks every asset older than cutoff as stale for the
-// operational metrics surface. It is safe to call periodically.
-func (s *Service) ReconcileStale(ctx context.Context, cutoff time.Time, observer StaleEntityObserver) error {
-	if observer == nil {
-		return nil
-	}
-	assetIDs, err := s.repo.ListStaleAssetIDs(ctx, cutoff)
-	if err != nil {
-		return err
-	}
-	if reconciler, ok := observer.(StaleEntityReconciler); ok {
-		reconciler.ReplaceStaleEntities(assetIDs)
-		return nil
-	}
-	for _, assetID := range assetIDs {
-		observer.ObserveStaleEntity(assetID, true)
-	}
-	return nil
 }
 
 // ListByAsset returns telemetry for an asset newest first.

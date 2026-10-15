@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
 )
@@ -38,6 +39,11 @@ type Asset struct {
 	Health          string
 	ConnectionState string
 	LastSeenAt      *time.Time
+	// Freshness is the server's classification of how current this asset's
+	// reported state is. It is computed on every read from the configured
+	// policy rather than stored, so it can never disagree with the age of
+	// the telemetry behind it.
+	Freshness freshness.State
 }
 
 // CreateInput is the application input for registering an asset.

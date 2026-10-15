@@ -3,6 +3,13 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { ErrorState } from '@/components/shared/states'
 import { api, type Asset, type Track } from '@/lib/api'
+import {
+  FRESHNESS_LABELS,
+  freshnessWarning,
+  isActionable,
+  toFreshness,
+  type Freshness,
+} from '@/lib/freshness'
 import { formatCoord, formatHeading, formatRelative, truncateId } from '@/lib/format'
 import { queryKeys } from '@/lib/queryKeys'
 import { useLayoutStore } from '@/stores/layout'
@@ -64,6 +71,10 @@ function shortRef(value: string | undefined | null, fallbackId: string): string 
   if (!raw) return truncateId(fallbackId, 10)
   const tail = raw.split('__').filter(Boolean).pop()
   return (tail ?? raw).toUpperCase()
+}
+
+function columnFreshness(column: Column): Freshness {
+  return toFreshness(column.track?.freshness ?? column.asset?.freshness)
 }
 
 /** Scenario runs namespace their entities, so the run id disambiguates repeats. */
@@ -224,6 +235,25 @@ export function BoardPage() {
   }, [tracks, assets, observationsByTrack, alertsByTrack, alertsByAsset, selectedSources, hiddenAssets])
 
   const metrics: Metric[] = [
+    {
+      key: 'freshness',
+      label: 'Fresh',
+      // Administrative status answers "is it fit to task"; freshness answers
+      // "is what I am looking at still true". An available asset that stopped
+      // reporting is the exact case the board previously showed as healthy.
+      value: (column) => {
+        const state = columnFreshness(column)
+        return {
+          text: FRESHNESS_LABELS[state].toUpperCase(),
+          kind: 'word',
+          sev: isActionable(state)
+            ? undefined
+            : state === 'unavailable' || state === 'stale'
+              ? ('crit' as const)
+              : ('warn' as const),
+        }
+      },
+    },
     { key: 'status', label: 'Status', value: (column) => ({ text: column.status, kind: 'word', sev: column.statusSeverity }) },
     {
       key: 'speed',
@@ -398,8 +428,21 @@ export function BoardPage() {
                   <span className="rlabel">Entities</span>
                 </th>
                 {columns.map((column) => (
-                  <th className="aegis-ent ent-col" data-state={column.state} key={column.key} scope="col">
-                    <button type="button" title={`Inspect ${column.label} on the map`}>
+                  <th
+                    className="aegis-ent ent-col"
+                    data-state={column.state}
+                    data-freshness={columnFreshness(column)}
+                    key={column.key}
+                    scope="col"
+                  >
+                    <button
+                      type="button"
+                      title={
+                        isActionable(columnFreshness(column))
+                          ? `Inspect ${column.label} on the map`
+                          : `Inspect ${column.label} on the map — ${freshnessWarning(columnFreshness(column), column.track?.lastSeenAt ?? column.asset?.lastSeenAt)}`
+                      }
+                    >
                       <span className="inner">
                         <span className="id">{column.label}</span>
                         <span className="ty">{column.subtitle}</span>

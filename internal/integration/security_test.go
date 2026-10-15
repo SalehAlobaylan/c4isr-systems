@@ -52,6 +52,19 @@ func TestComposedPublicEndpointsAndAuthenticationBoundary(t *testing.T) {
 	if unauthenticated.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("unauthenticated request status = %d, want 401", unauthenticated.StatusCode)
 	}
+
+	// Replay reads recorded evidence, so it sits behind the same
+	// authentication boundary as the live picture rather than being a way in.
+	for _, path := range []string{"/api/v1/picture?live=true", "/api/v1/picture/window"} {
+		response, err := client.Get(h.server.URL + path)
+		if err != nil {
+			t.Fatalf("GET %s: %v", path, err)
+		}
+		response.Body.Close()
+		if response.StatusCode != http.StatusUnauthorized {
+			t.Errorf("GET %s status = %d, want 401", path, response.StatusCode)
+		}
+	}
 }
 
 func TestComposedHealthReportsUnavailableDatabase(t *testing.T) {

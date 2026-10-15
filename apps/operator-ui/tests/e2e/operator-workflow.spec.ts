@@ -14,11 +14,25 @@ const track = {
   lastSeenAt: now,
   firstSeenAt: now,
   updatedAt: now,
+  freshness: 'live',
+  freshnessLabel: 'Live',
   metadata: {
     sourceId: 'scn_run_demo__source__radar-01',
     scenarioRunId: 'scn_run_demo',
     resourceNamespace: 'scn_run_demo__',
   },
+}
+
+/** A track whose feed went quiet: the case the picture must not hide. */
+const staleTrack = {
+  ...track,
+  id: 'trk-quiet',
+  externalRef: 'quiet-01',
+  position: { lat: 24.7, lng: 46.69 },
+  speed: 0,
+  lastSeenAt: '2026-09-20T11:20:00Z',
+  freshness: 'stale',
+  freshnessLabel: 'Stale',
 }
 
 const asset = {
@@ -34,6 +48,8 @@ const asset = {
   health: 'nominal',
   connectionState: 'connected',
   lastSeenAt: now,
+  freshness: 'live',
+  freshnessLabel: 'Live',
   createdAt: now,
   updatedAt: now,
 }
@@ -65,6 +81,25 @@ const observation = {
   trackHint: 'scn_run_demo__track__patrol-01',
   createdAt: now,
   processedAt: now,
+}
+
+// An area observation: a wildfire footprint that straddles a restricted zone.
+// It has no position and no track hint, because it is never correlated.
+const areaObservation = {
+  id: 'scn_run_demo__observation__obs-fire-01',
+  sourceId: 'scn_run_demo__source__fire-monitor',
+  type: 'hazard.wildfire',
+  observedAt: now,
+  receivedAt: now,
+  area: {
+    kind: 'hazard',
+    geojson:
+      '{"type":"Polygon","coordinates":[[[46.664,24.718],[46.664,24.730],[46.682,24.730],[46.682,24.718],[46.664,24.718]]]}',
+    center: { lat: 24.724, lng: 46.673 },
+    areaM2: 3_800_000,
+  },
+  payload: { detection: 'VIIRS' },
+  createdAt: now,
 }
 
 const baseAlert = {
@@ -110,14 +145,89 @@ async function mockOperationalWorkflow(page: Page): Promise<void> {
   let incident: Record<string, any> | null = null
   let mission: Record<string, any> | null = null
   let command: Record<string, any> | null = null
+  let assessments: Array<Record<string, any>> = [
+    {
+      id: 'assessment-1',
+      subjectType: 'track',
+      subjectId: track.id,
+      type: 'identification',
+      conclusion: 'Likely patrol vehicle',
+      method: 'OPERATOR',
+      confidence: 0.8,
+      createdBy: 'operator-01',
+      createdAt: now,
+      evidence: [],
+    },
+  ]
 
   await page.route('**/health', (route) =>
     json(route, { status: 'ok', database: 'up', time: now }),
   )
+  const windowStart = new Date('2026-09-20T11:55:00Z')
+  const windowEnd = new Date('2026-09-20T12:05:00Z')
+
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request()
     const method = request.method()
     const path = new URL(request.url()).pathname
+    const query = new URL(request.url()).searchParams
+
+    if (path === '/api/v1/picture/window') {
+      await json(route, { earliest: windowStart.toISOString(), latest: windowEnd.toISOString() })
+      return
+    }
+    if (path === '/api/v1/picture') {
+      // The reconstructed picture is served from recorded evidence: entities
+      // that had been observed by the requested instant, and no later.
+      const at = query.get('at') ? new Date(query.get('at')!) : windowEnd
+      const cutoff = at.getTime()
+      const isLive = query.get('live') === 'true' || !query.get('at')
+      const observedAt = (iso: string) => new Date(iso).getTime() <= cutoff
+      const freshAt = (iso: string) => {
+        const ageSeconds = (cutoff - new Date(iso).getTime()) / 1000
+        if (ageSeconds < 60) return { freshness: 'live', freshnessLabel: 'Live' }
+        if (ageSeconds < 300) return { freshness: 'delayed', freshnessLabel: 'Delayed' }
+        return { freshness: 'stale', freshnessLabel: 'Stale' }
+      }
+
+      await json(route, {
+        at: at.toISOString(),
+        live: isLive,
+        tracks: [track, staleTrack]
+          .filter((t) => observedAt(t.lastSeenAt))
+          .map((t) => ({
+            id: t.id,
+            externalRef: t.externalRef,
+            status: t.status,
+            position: t.position,
+            speed: t.speed,
+            heading: t.heading,
+            observedAt: t.lastSeenAt,
+            firstSeenAt: t.firstSeenAt,
+            lastSeenAt: t.lastSeenAt,
+            ...freshAt(t.lastSeenAt),
+          })),
+        assets: [asset].filter((a) => observedAt(a.lastSeenAt)).map((a) => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          status: a.status,
+          position: a.position,
+          speed: a.speed,
+          heading: a.heading,
+          observedAt: a.lastSeenAt,
+          connectionState: a.connectionState,
+          health: a.health,
+          ...freshAt(a.lastSeenAt),
+        })),
+        // An alert only exists in a replay once it has actually been raised.
+        alerts: new Date(baseAlert.createdAt).getTime() <= cutoff ? [baseAlert] : [],
+        geofences: [geofence],
+        window: { earliest: windowStart.toISOString(), latest: windowEnd.toISOString() },
+        truncatedAlerts: false,
+      })
+      return
+    }
 
     if (path === '/api/v1/auth/me') {
       await json(route, {
@@ -139,7 +249,7 @@ async function mockOperationalWorkflow(page: Page): Promise<void> {
       return
     }
     if (path === '/api/v1/tracks' && method === 'GET') {
-      await json(route, list([track]))
+      await json(route, list([track, staleTrack]))
       return
     }
     if (path === `/api/v1/tracks/${track.id}` && method === 'GET') {
@@ -157,6 +267,10 @@ async function mockOperationalWorkflow(page: Page): Promise<void> {
       await json(route, list([{ id: 'classification-1', label: 'vehicle', confidence: 0.91, method: 'radar', sourceReference: 'radar-01', createdBy: 'system', createdAt: now }]))
       return
     }
+    if (path === `/api/v1/tracks/${staleTrack.id}` && method === 'GET') {
+      await json(route, staleTrack)
+      return
+    }
     if (path === '/api/v1/assets' && method === 'GET') {
       await json(route, list([asset]))
       return
@@ -170,6 +284,14 @@ async function mockOperationalWorkflow(page: Page): Promise<void> {
       return
     }
     if (path === `/api/v1/observations` && method === 'GET') {
+      // The map asks for areas with a dedicated filter rather than paging the
+      // general list, so the mock has to honour it or the area layer would be
+      // fed point observations.
+      const url = new URL(route.request().url())
+      if (url.searchParams.get('area') === 'true') {
+        await json(route, list([areaObservation]))
+        return
+      }
       await json(route, list([observation]))
       return
     }
@@ -188,7 +310,33 @@ async function mockOperationalWorkflow(page: Page): Promise<void> {
       return
     }
     if (path === '/api/v1/assessments' && method === 'GET') {
-      await json(route, list([{ id: 'assessment-1', subjectType: 'track', subjectId: track.id, type: 'identification', conclusion: 'Likely patrol vehicle', method: 'analyst', confidence: 0.8, createdBy: 'operator-01', createdAt: now, evidence: [] }]))
+      await json(route, list(assessments))
+      return
+    }
+    if (path === '/api/v1/assessments' && method === 'POST') {
+      const body = request.postDataJSON() as {
+        subjectType: string
+        subjectId: string
+        type: string
+        conclusion: string
+        method?: string
+        confidence?: number
+        evidence?: Array<{ type: string; id: string }>
+      }
+      const created = {
+        id: `assessment-${assessments.length + 1}`,
+        subjectType: body.subjectType,
+        subjectId: body.subjectId,
+        type: body.type,
+        conclusion: body.conclusion,
+        method: body.method ?? 'OPERATOR',
+        confidence: body.confidence ?? null,
+        createdBy: 'operator-01',
+        createdAt: now,
+        evidence: body.evidence ?? [],
+      }
+      assessments = [...assessments, created]
+      await json(route, created, 201)
       return
     }
     if (path === '/api/v1/incidents' && method === 'GET') {
@@ -283,6 +431,107 @@ async function mockOperationalWorkflow(page: Page): Promise<void> {
     await json(route, {})
   })
 }
+
+test('the operator can scrub back to a past picture and is never misled about it', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'no-token', 'Runs once against the mocked no-token build')
+  await mockOperationalWorkflow(page)
+
+  await page.goto('/map')
+  await expect(page.getByTestId('scrub-mode')).toHaveText('Live')
+
+  const timeline = page.getByLabel('Picture timeline position')
+  await expect(timeline).toBeEnabled()
+
+  // Scrub back to just after the quiet track's last observation but before the
+  // alert was raised.
+  await timeline.fill(new Date('2026-09-20T11:50:00Z').toISOString())
+  await timeline.dispatchEvent('change')
+
+  await expect(page.getByTestId('scrub-mode')).toHaveText('Replay')
+  // The replay banner is the point of the whole control: an operator must never
+  // act on a past picture believing it is the present.
+  await expect(page.getByTestId('replay-banner')).toBeVisible()
+  await expect(page.getByTestId('replay-banner')).toContainText('realtime updates are not applied')
+
+  // The alert had not been raised yet at that instant, so it must be absent.
+  await expect(page.getByText(baseAlert.title, { exact: true })).toHaveCount(0)
+
+  // Returning to live restores the present picture.
+  await page.getByRole('button', { name: 'Return to live', exact: true }).click()
+  await expect(page.getByTestId('scrub-mode')).toHaveText('Live')
+  await expect(page.getByTestId('replay-banner')).toHaveCount(0)
+})
+
+test('an operator can state an assessment and have it kept with its evidence', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'no-token', 'Runs once against the mocked no-token build')
+  await mockOperationalWorkflow(page)
+
+  await page.goto('/map?selected=track%3Atrk-demo')
+  await page.getByRole('button', { name: 'Record', exact: true }).click()
+
+  const dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Conclusion').fill('Consistent with a friendly patrol on the same route.')
+  await dialog.getByLabel('Confidence').fill('0.7')
+  await dialog.getByRole('button', { name: 'Record assessment', exact: true }).click()
+
+  // The new assessment is attributed to the operator who wrote it, and the
+  // conclusion they typed is what the interface shows back.
+  await expect(dialog).toBeHidden()
+  await expect(
+    page.getByText('Consistent with a friendly patrol on the same route.', { exact: true }),
+  ).toBeVisible()
+  await expect(page.getByText('OPERATOR', { exact: true }).first()).toBeVisible()
+})
+
+test('the picture qualifies information that is no longer current', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'no-token', 'Runs once against the mocked no-token build')
+  await mockOperationalWorkflow(page)
+
+  await page.goto('/map')
+  await expect(page.locator('[data-map-ready="true"]')).toBeVisible()
+
+  // The legend counts what is on the picture and flags what is not current.
+  const freshnessLegend = page.getByLabel('Freshness legend')
+  await expect(freshnessLegend).toBeVisible()
+  await expect(freshnessLegend).toContainText('Stale (1)')
+  await expect(freshnessLegend).toContainText('1 not current')
+
+  // A track whose feed went quiet must not read like a current one.
+  await page.goto('/map?selected=track%3Atrk-quiet')
+  await expect(page.getByText('Position may no longer be accurate.', { exact: false })).toBeVisible()
+  await expect(page.getByText('last known', { exact: true }).first()).toBeVisible()
+
+  // A live track shows the server's verdict without a caveat.
+  await page.goto('/map?selected=track%3Atrk-demo')
+  await expect(page.getByText('Position may no longer be accurate.', { exact: false })).toHaveCount(0)
+
+  // The list view carries the same classification.
+  await page.goto('/tracks')
+  await expect(page.getByText('STALE', { exact: true }).first()).toBeVisible()
+})
+
+test('an operator can see an event footprint on the map', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'no-token', 'Runs once against the mocked no-token build')
+  await mockOperationalWorkflow(page)
+
+  await page.goto('/map')
+  await expect(page.locator('[data-map-ready="true"]')).toBeVisible()
+
+  // The legend names the phenomenon class and counts it, so the footprint is
+  // identified rather than being an unexplained shape on the map.
+  const areaLegend = page.getByLabel('Event area legend')
+  await expect(areaLegend).toBeVisible()
+  await expect(areaLegend).toContainText('Hazard area (1)')
+
+  // The layer is operator-controllable: a footprint can cover a whole city and
+  // an operator may need it out of the way to see what is underneath.
+  const toggle = page.getByRole('checkbox', { name: 'Event areas' })
+  await expect(toggle).toBeChecked()
+})
 
 test('operator can follow evidence to outcome and inspect it on the map', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'no-token', 'Runs once against the mocked no-token build')

@@ -4,11 +4,12 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo } from 'react'
 
 import { Page } from '@/components/layout/Page'
-import { StateBadge } from '@/components/shared/badges'
+import { FreshnessBadge, StateBadge } from '@/components/shared/badges'
 import { DataTable } from '@/components/shared/data-table'
 import { ErrorState } from '@/components/shared/states'
 import { Select } from '@/components/ui/select'
 import { api, type Asset } from '@/lib/api'
+import { isActionable } from '@/lib/freshness'
 import { formatCoord, formatRelative, formatTimestamp } from '@/lib/format'
 import { queryKeys } from '@/lib/queryKeys'
 
@@ -72,6 +73,17 @@ export function AssetsPage() {
         cell: ({ row }) => <StateBadge value={row.original.connectionState || 'unknown'} />,
       },
       {
+        id: 'freshness',
+        header: 'Freshness',
+        accessorFn: (asset) => asset.freshness ?? 'unknown',
+        cell: ({ row }) => (
+          <FreshnessBadge
+            freshness={row.original.freshness}
+            lastSeenAt={row.original.lastSeenAt}
+          />
+        ),
+      },
+      {
         id: 'health',
         header: 'Health',
         cell: ({ row }) => (
@@ -83,7 +95,13 @@ export function AssetsPage() {
         header: 'Position',
         enableSorting: false,
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-ink-muted">
+          <span
+            className="font-mono text-xs text-ink-muted"
+            // A position from a stale feed is still the last known position,
+            // but presenting it identically to a current one invites acting on
+            // where something was rather than where it is.
+            title={isActionable(row.original.freshness) ? undefined : 'Last known position'}
+          >
             {formatCoord(row.original.position)}
           </span>
         ),

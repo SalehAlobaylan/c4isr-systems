@@ -114,7 +114,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List observations */
+        /**
+         * List observations
+         * @description Newest first. Pass `area=true` to return only area observations (hazard footprints, weather cells), optionally narrowed to one kind. The filter is applied in the database: point observations outnumber areas by orders of magnitude on a real feed, so filtering in the client would return mostly radar pings and miss every hazard.
+         */
         get: operations["listObservations"];
         put?: never;
         /** Ingest observation */
@@ -1000,6 +1003,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/picture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reconstructed picture at an instant
+         * @description Reconstruct the operational picture at a point in time. Omit `at` (or pass `live=true`) for the present moment. An instant outside the recorded evidence window is clamped to the nearest real one and the resolved instant is reported in `at`, so the caller can always tell which moment it received.
+         */
+        get: operations["getPicture"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/picture/window": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Replay window
+         * @description The span of recorded evidence a scrubber can traverse.
+         */
+        get: operations["getPictureWindow"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/realtime": {
         parameters: {
             query?: never;
@@ -1047,6 +1090,28 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
         };
+        /**
+         * @description Phenomenon class for an area observation, so alert rules can select the areas they care about without parsing free-form payload keys.
+         * @enum {string}
+         */
+        AreaKind: "hazard" | "weather" | "environmental" | "infrastructure" | "crowd";
+        /** @description A footprint describing an event with extent - a wildfire, an earthquake, a weather cell - rather than a moving object. Area observations are never correlated into a track; they raise alerts directly. */
+        ObservationArea: {
+            kind: components["schemas"]["AreaKind"];
+            /** @description GeoJSON Polygon with a closed ring in [lng, lat] order. */
+            geojson: string;
+            /** @description Footprint centroid. Display and anchoring only; containment is decided by PostGIS. */
+            center: components["schemas"]["Point"];
+            /** @description Approximate footprint area in square metres. */
+            areaM2: number;
+            /** @description Bounding box, so a large footprint can be framed without walking the GeoJSON. */
+            bounds?: {
+                minLat?: number;
+                minLng?: number;
+                maxLat?: number;
+                maxLng?: number;
+            };
+        };
         Observation: {
             id: string;
             sourceId: string;
@@ -1058,6 +1123,7 @@ export interface components {
             /** Format: date-time */
             processedAt?: string;
             position?: components["schemas"]["Point"];
+            area?: components["schemas"]["ObservationArea"];
             payload: {
                 [key: string]: unknown;
             };
@@ -1068,6 +1134,76 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             duplicate?: boolean;
+        };
+        /** @description A track as it stood at the requested instant. */
+        PictureTrack: {
+            id: string;
+            externalRef: string;
+            status: string;
+            position: components["schemas"]["Point"] | null;
+            speed: number | null;
+            heading: number | null;
+            /** Format: date-time */
+            observedAt: string;
+            /** Format: date-time */
+            firstSeenAt: string;
+            /** Format: date-time */
+            lastSeenAt: string;
+            freshness: components["schemas"]["Freshness"];
+            freshnessLabel: string;
+        };
+        /** @description A controlled asset as it stood at the requested instant. */
+        PictureAsset: {
+            id: string;
+            name: string;
+            type: string;
+            status: string;
+            position: components["schemas"]["Point"] | null;
+            speed: number | null;
+            heading: number | null;
+            /** Format: date-time */
+            observedAt: string;
+            connectionState: string;
+            health: string;
+            freshness: components["schemas"]["Freshness"];
+            freshnessLabel: string;
+        };
+        /** @description An alert that had already been raised at the requested instant. */
+        PictureAlert: {
+            id: string;
+            type: string;
+            severity: string;
+            state: string;
+            title: string;
+            message: string;
+            trackId: string;
+            assetId: string;
+            geofenceId: string;
+            /** Format: date-time */
+            createdAt: string;
+            sourceReference?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description The span of recorded evidence a scrubber can traverse. */
+        PictureWindow: {
+            /** Format: date-time */
+            earliest: string;
+            /** Format: date-time */
+            latest: string;
+        };
+        /** @description The operational picture reconstructed at a point in time from recorded evidence. Freshness is derived against the requested instant rather than the wall clock, so a replay never splices two moments together. */
+        Picture: {
+            /** Format: date-time */
+            at: string;
+            /** @description True when this is the present moment rather than a replay. */
+            live: boolean;
+            tracks: components["schemas"]["PictureTrack"][];
+            assets: components["schemas"]["PictureAsset"][];
+            alerts: components["schemas"]["PictureAlert"][];
+            geofences: components["schemas"]["Geofence"][];
+            window: components["schemas"]["PictureWindow"];
+            truncatedAlerts: boolean;
         };
         Asset: {
             id: string;
@@ -1085,11 +1221,18 @@ export interface components {
             connectionState: string;
             /** Format: date-time */
             lastSeenAt: string | null;
+            freshness: components["schemas"]["Freshness"];
+            freshnessLabel: string;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
         };
+        /**
+         * @description Server-side classification of how current an entity's information is. live and delayed are actionable; stale, unavailable, and unknown are not and must be visible to the operator before the picture is acted on.
+         * @enum {string}
+         */
+        Freshness: "live" | "delayed" | "stale" | "unavailable" | "unknown";
         Telemetry: {
             id?: string;
             messageId?: string;
@@ -1108,6 +1251,8 @@ export interface components {
                 [key: string]: unknown;
             };
             stale?: boolean;
+            freshness?: components["schemas"]["Freshness"];
+            freshnessLabel?: string;
             duplicate?: boolean;
         };
         Track: {
@@ -1131,6 +1276,8 @@ export interface components {
             /** Format: date-time */
             closedAt: string | null;
             observationCount: number;
+            freshness: components["schemas"]["Freshness"];
+            freshnessLabel: string;
         };
         TrackHistoryPoint: {
             id: string;
@@ -1977,6 +2124,11 @@ export interface components {
                     /** Format: date-time */
                     receivedAt?: string;
                     position?: components["schemas"]["Point"];
+                    /** @description Reports an event with extent rather than a moving object. An area observation is never correlated into a track; it is evaluated against geofences directly. `area` and `position` are mutually exclusive, and `area` may not carry a trackHint. */
+                    area?: {
+                        kind: components["schemas"]["AreaKind"];
+                        polygon: components["schemas"]["Point"][];
+                    };
                     payload?: {
                         [key: string]: unknown;
                     };
@@ -2252,6 +2404,10 @@ export interface operations {
         parameters: {
             query?: {
                 track_id?: components["parameters"]["TrackId"];
+                /** @description Return only observations carrying a footprint. */
+                area?: boolean;
+                /** @description Restrict to one phenomenon kind. Requires `area=true`. An unrecognised kind is a 400, not an empty result. */
+                area_kind?: components["schemas"]["AreaKind"];
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
@@ -2262,6 +2418,7 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["ObservationList"];
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
         };
@@ -3428,6 +3585,61 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    getPicture: {
+        parameters: {
+            query?: {
+                /** @description RFC3339 instant to reconstruct. */
+                at?: string;
+                /** @description Return the present moment explicitly. */
+                live?: boolean;
+                /** @description Restrict to a scenario resource namespace prefix. */
+                scope?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reconstructed picture */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Picture"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getPictureWindow: {
+        parameters: {
+            query?: {
+                scope?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Evidence window */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PictureWindow"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     realtime: {

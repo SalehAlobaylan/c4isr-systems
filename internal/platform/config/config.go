@@ -6,18 +6,29 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 )
 
 // Config is the runtime configuration of the C4ISR server.
 type Config struct {
-	HTTPAddr            string
-	DatabaseURL         string
-	LogLevel            string
-	LogFormat           string
-	ScenariosDir        string
-	AllowedOrigins      []string
-	Version             string
+	HTTPAddr       string
+	DatabaseURL    string
+	LogLevel       string
+	LogFormat      string
+	ScenariosDir   string
+	AllowedOrigins []string
+	Version        string
+	// TelemetryStaleAfter is the age at which an entity stops being
+	// considered current. It retains its original name because it was the
+	// first freshness threshold configured; it is now the middle band of
+	// the freshness policy.
 	TelemetryStaleAfter time.Duration
+	// FreshnessDelayedAfter is the age at which an entity starts being
+	// flagged as aging. FreshnessUnavailableAfter is the age at which
+	// contact is treated as lost even if no link-down signal arrived.
+	FreshnessDelayedAfter     time.Duration
+	FreshnessUnavailableAfter time.Duration
 	// Environment controls safety-sensitive configuration defaults. It is
 	// intentionally explicit so production cannot accidentally inherit local
 	// development credentials.
@@ -30,6 +41,17 @@ type Config struct {
 	// configuration-only for the first RBAC milestone; an external IdP can be
 	// introduced later without changing domain services.
 	AuthTokens map[string]string
+}
+
+// FreshnessPolicy projects the configured thresholds onto the freshness
+// classification the API and the interface share. The server is the only place
+// these thresholds are evaluated; the browser renders the resulting state.
+func (cfg Config) FreshnessPolicy() freshness.Policy {
+	return freshness.Policy{
+		DelayedAfter:     cfg.FreshnessDelayedAfter,
+		StaleAfter:       cfg.TelemetryStaleAfter,
+		UnavailableAfter: cfg.FreshnessUnavailableAfter,
+	}.Normalized()
 }
 
 // Load reads configuration from the process environment and applies
@@ -51,6 +73,7 @@ func Load() (Config, error) {
 		TelemetryStaleAfter: 5 * time.Minute,
 		AuthRequired:        true,
 	}
+	defaults := freshness.DefaultPolicy()
 	var err error
 	if raw := os.Getenv("C4ISR_TELEMETRY_STALE_AFTER"); raw != "" {
 		cfg.TelemetryStaleAfter, err = time.ParseDuration(strings.TrimSpace(raw))
@@ -58,6 +81,20 @@ func Load() (Config, error) {
 			return Config{}, fmt.Errorf("C4ISR_TELEMETRY_STALE_AFTER must be a positive duration")
 		}
 	}
+	cfg.FreshnessDelayedAfter, err = durationEnv("C4ISR_FRESHNESS_DELAYED_AFTER", defaults.DelayedAfter)
+	if err != nil {
+		return Config{}, err
+	}
+	cfg.FreshnessUnavailableAfter, err = durationEnv("C4ISR_FRESHNESS_UNAVAILABLE_AFTER", defaults.UnavailableAfter)
+	if err != nil {
+		return Config{}, err
+	}
+	// Repairing the ordering here means every consumer of the config, and
+	// every operator reading it, sees the same effective bands.
+	policy := cfg.FreshnessPolicy()
+	cfg.FreshnessDelayedAfter = policy.DelayedAfter
+	cfg.TelemetryStaleAfter = policy.StaleAfter
+	cfg.FreshnessUnavailableAfter = policy.UnavailableAfter
 	if cfg.DatabaseURL, err = secretEnv("C4ISR_DATABASE_URL"); err != nil {
 		return Config{}, err
 	}
@@ -146,6 +183,20 @@ func envOr(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// durationEnv parses a positive duration from the environment, falling back to
+// a caller-supplied default when the variable is absent.
+func durationEnv(key string, fallback time.Duration) (time.Duration, error) {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback, nil
+	}
+	parsed, err := time.ParseDuration(raw)
+	if err != nil || parsed <= 0 {
+		return 0, fmt.Errorf("%s must be a positive duration", key)
+	}
+	return parsed, nil
 }
 
 // secretEnv reads a value from KEY or KEY_FILE. File-backed configuration is

@@ -76,6 +76,10 @@ Today, feeding them in means forcing ill-fitting data through a track-centric pi
 
 Closing this requires an explicit **event/area ingestion path** that raises alerts directly, without pretending to be a tracked object.
 
+**Closed.** An observation may carry an `area` (`kind` + polygon) instead of a `position`. It stays an observation — same table, same sources, same provenance — so the Source/Observation spine is not split into two parallel worlds. Area observations are evaluated against geofences with `ST_Intersects` and raise `geofence.area.overlap` alerts linked to the reporting observation; the track pipeline returns immediately for them. See README § *Events and areas*, and `scenarios/area-hazard-intrusion.yaml`.
+
+The remaining judgement call is alert policy rather than a gap: a footprint that only grazes a boundary still alerts, and whether a real deployment wants that threshold is an operator decision the kind and overlap area are recorded to support.
+
 ---
 
 ## 4. Blockers to address before real ingestion

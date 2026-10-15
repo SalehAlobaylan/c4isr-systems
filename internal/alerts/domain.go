@@ -12,6 +12,11 @@ import (
 // observes that an unresolved breach alert already exists for the pair.
 var ErrDuplicateGeofenceBreach = errors.New("duplicate unresolved geofence breach alert")
 
+// ErrDuplicateAreaOverlap is returned when the database uniqueness guard
+// observes that an unresolved area overlap alert already exists for the
+// observation and geofence pair.
+var ErrDuplicateAreaOverlap = errors.New("duplicate unresolved area overlap alert")
+
 // State is the lifecycle state of an alert.
 type State string
 

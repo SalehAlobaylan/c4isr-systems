@@ -260,6 +260,13 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 			if len(segments) == 1 || len(segments) == 2 {
 				return RoutePolicy{Known: true, Permission: "operators.read"}
 			}
+		case "picture":
+			// Replay is a read of recorded evidence, never a new fact. It
+			// carries the same permission as the live picture so scrubbing
+			// cannot reveal anything an operator could not already see.
+			if validPictureGetPath(segments) {
+				return RoutePolicy{Known: true, Permission: "operational.read"}
+			}
 		case "scenarios":
 			if validScenarioGetPath(segments) {
 				return RoutePolicy{Known: true, Permission: "scenarios.read"}
@@ -406,6 +413,15 @@ func validScenarioPostPath(segments []string) bool {
 func validGeospatialGetPath(segments []string) bool {
 	return len(segments) == 2 && (segments[1] == "geofences-containing" ||
 		segments[1] == "assets-within" || segments[1] == "nearest-assets")
+}
+
+// validPictureGetPath accepts the snapshot itself and the scrubber's window.
+// Both are read-only reconstructions of recorded evidence.
+func validPictureGetPath(segments []string) bool {
+	if len(segments) == 1 {
+		return true
+	}
+	return len(segments) == 2 && segments[1] == "window"
 }
 
 func resourcePermission(path, action string) string {

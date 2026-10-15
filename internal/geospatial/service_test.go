@@ -32,6 +32,9 @@ type fakeRepository struct {
 	createErr       error
 	getResult       Geofence
 	getErr          error
+	// intersecting is what the area-overlap query returns.
+	intersecting    []Geofence
+	intersectingErr error
 }
 
 func (f *fakeRepository) Create(_ context.Context, geofence Geofence) (Geofence, error) {
@@ -104,6 +107,10 @@ func (f *fakeRepository) ReconcileStates(_ context.Context, trackID string, cont
 		transitions = append(transitions, StateTransition{GeofenceID: id, Inside: false})
 	}
 	return transitions, nil
+}
+
+func (f *fakeRepository) IntersectingArea(context.Context, AreaOverlap) ([]Geofence, error) {
+	return f.intersecting, f.intersectingErr
 }
 
 func (f *fakeRepository) AssetsWithinRadius(context.Context, geo.Point, float64, int) ([]AssetDistance, error) {

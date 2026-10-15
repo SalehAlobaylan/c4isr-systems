@@ -226,6 +226,23 @@ func (h *harness) ingestObservation(trackHint string, lat, lng float64, observed
 	return out
 }
 
+// startScenario starts a scenario run and waits for the engine to accept it.
+// Scenario runs own a fresh resource namespace, so evidence from different runs
+// never mixes.
+func (h *harness) startScenario(t *testing.T, name string) map[string]any {
+	t.Helper()
+	var out map[string]any
+	status := h.do(http.MethodPost, "/api/v1/scenarios/definitions/"+name+"/start",
+		map[string]any{"speed": 4}, &out)
+	if status != http.StatusCreated && status != http.StatusOK {
+		t.Fatalf("start scenario %s: status %d (%v)", name, status, out)
+	}
+	if out == nil || out["id"] == nil {
+		t.Fatalf("scenario start returned no run id: %v", out)
+	}
+	return out
+}
+
 func waitFor(t *testing.T, timeout time.Duration, interval time.Duration, description string, fn func() bool) {
 	t.Helper()
 	deadline := time.Now().Add(timeout)

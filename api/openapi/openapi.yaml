@@ -30,6 +30,7 @@ tags:
   - { name: assessments, description: 'Analytical assessments and evidence.' }
   - { name: audit, description: 'Immutable operational history.' }
   - { name: scenarios, description: 'Deterministic scenario replay control.' }
+  - { name: picture, description: 'Reconstruction of the operational picture at a point in time.' }
 paths:
   /health:
     get:
@@ -120,11 +121,19 @@ paths:
       tags: [observations]
       operationId: listObservations
       summary: List observations
+      description: >-
+        Newest first. Pass `area=true` to return only area observations
+        (hazard footprints, weather cells), optionally narrowed to one kind.
+        The filter is applied in the database: point observations outnumber
+        areas by orders of magnitude on a real feed, so filtering in the client
+        would return mostly radar pings and miss every hazard.
       parameters:
         - { $ref: '#/components/parameters/TrackId' }
+        - { name: area, in: query, required: false, description: Return only observations carrying a footprint., schema: { type: boolean } }
+        - { name: area_kind, in: query, required: false, description: 'Restrict to one phenomenon kind. Requires `area=true`. An unrecognised kind is a 400, not an empty result.', schema: { $ref: '#/components/schemas/AreaKind' } }
         - { $ref: '#/components/parameters/Limit' }
         - { $ref: '#/components/parameters/Offset' }
-      responses: { '200': { $ref: '#/components/responses/ObservationList' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+      responses: { '200': { $ref: '#/components/responses/ObservationList' }, '400': { $ref: '#/components/responses/BadRequest' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
     post:
       tags: [observations]
       operationId: ingestObservation
@@ -655,6 +664,34 @@ paths:
       summary: Restart scenario run
       parameters: [{ $ref: '#/components/parameters/Id' }]
       responses: { '201': { $ref: '#/components/responses/ScenarioRun' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' }, '409': { $ref: '#/components/responses/Conflict' } }
+  /api/v1/picture:
+    get:
+      tags: [picture]
+      security: [{ BearerAuth: [] }]
+      description: >-
+        Reconstruct the operational picture at a point in time. Omit `at` (or
+        pass `live=true`) for the present moment. An instant outside the
+        recorded evidence window is clamped to the nearest real one and the
+        resolved instant is reported in `at`, so the caller can always tell
+        which moment it received.
+      operationId: getPicture
+      summary: Reconstructed picture at an instant
+      parameters:
+        - { name: at, in: query, required: false, description: RFC3339 instant to reconstruct., schema: { type: string, format: date-time } }
+        - { name: live, in: query, required: false, description: Return the present moment explicitly., schema: { type: boolean } }
+        - { name: scope, in: query, required: false, description: Restrict to a scenario resource namespace prefix., schema: { type: string } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 5000 } }
+      responses: { '200': { description: Reconstructed picture, content: { application/json: { schema: { $ref: '#/components/schemas/Picture' } } } }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' } }
+  /api/v1/picture/window:
+    get:
+      tags: [picture]
+      security: [{ BearerAuth: [] }]
+      description: The span of recorded evidence a scrubber can traverse.
+      operationId: getPictureWindow
+      summary: Replay window
+      parameters:
+        - { name: scope, in: query, required: false, schema: { type: string } }
+      responses: { '200': { description: Evidence window, content: { application/json: { schema: { $ref: '#/components/schemas/PictureWindow' } } } }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
   /api/v1/realtime:
     get:
       tags: [system]
@@ -705,6 +742,17 @@ components:
               observedAt: { type: string, format: date-time }
               receivedAt: { type: string, format: date-time }
               position: { $ref: '#/components/schemas/Point' }
+              area:
+                type: object
+                description: >-
+                  Reports an event with extent rather than a moving object. An
+                  area observation is never correlated into a track; it is
+                  evaluated against geofences directly. `area` and `position`
+                  are mutually exclusive, and `area` may not carry a trackHint.
+                required: [kind, polygon]
+                properties:
+                  kind: { $ref: '#/components/schemas/AreaKind' }
+                  polygon: { type: array, minItems: 3, items: { $ref: '#/components/schemas/Point' } }
               payload: { type: object, additionalProperties: true }
               quality: { type: object, additionalProperties: true }
               trackHint: { type: string }
@@ -788,21 +836,86 @@ components:
       type: object
       required: [id, name, type, status, metadata, createdAt, updatedAt]
       properties: { id: { type: string }, name: { type: string }, type: { type: string }, status: { type: string }, metadata: { type: object, additionalProperties: true }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } }
+    AreaKind:
+      type: string
+      description: >-
+        Phenomenon class for an area observation, so alert rules can select the
+        areas they care about without parsing free-form payload keys.
+      enum: [hazard, weather, environmental, infrastructure, crowd]
+    ObservationArea:
+      type: object
+      description: >-
+        A footprint describing an event with extent - a wildfire, an earthquake,
+        a weather cell - rather than a moving object. Area observations are never
+        correlated into a track; they raise alerts directly.
+      required: [kind, geojson, center, areaM2]
+      properties:
+        kind: { $ref: '#/components/schemas/AreaKind' }
+        geojson: { type: string, description: 'GeoJSON Polygon with a closed ring in [lng, lat] order.' }
+        center: { $ref: '#/components/schemas/Point', description: 'Footprint centroid. Display and anchoring only; containment is decided by PostGIS.' }
+        areaM2: { type: number, description: Approximate footprint area in square metres. }
+        bounds:
+          type: object
+          description: Bounding box, so a large footprint can be framed without walking the GeoJSON.
+          properties: { minLat: { type: number }, minLng: { type: number }, maxLat: { type: number }, maxLng: { type: number } }
     Observation:
       type: object
       required: [id, sourceId, type, observedAt, receivedAt, payload, createdAt]
-      properties: { id: { type: string }, sourceId: { type: string }, type: { type: string }, observedAt: { type: string, format: date-time }, receivedAt: { type: string, format: date-time }, processedAt: { type: string, format: date-time }, position: { $ref: '#/components/schemas/Point' }, payload: { type: object, additionalProperties: true }, quality: { type: object, additionalProperties: true }, trackHint: { type: string }, createdAt: { type: string, format: date-time }, duplicate: { type: boolean } }
+      properties: { id: { type: string }, sourceId: { type: string }, type: { type: string }, observedAt: { type: string, format: date-time }, receivedAt: { type: string, format: date-time }, processedAt: { type: string, format: date-time }, position: { $ref: '#/components/schemas/Point' }, area: { $ref: '#/components/schemas/ObservationArea' }, payload: { type: object, additionalProperties: true }, quality: { type: object, additionalProperties: true }, trackHint: { type: string }, createdAt: { type: string, format: date-time }, duplicate: { type: boolean } }
+    PictureTrack:
+      type: object
+      description: A track as it stood at the requested instant.
+      required: [id, externalRef, status, position, speed, heading, observedAt, firstSeenAt, lastSeenAt, freshness, freshnessLabel]
+      properties: { id: { type: string }, externalRef: { type: string }, status: { type: string }, position: { oneOf: [{ $ref: '#/components/schemas/Point' }, { type: 'null' }] }, speed: { type: [number, 'null'] }, heading: { type: [number, 'null'] }, observedAt: { type: string, format: date-time }, firstSeenAt: { type: string, format: date-time }, lastSeenAt: { type: string, format: date-time }, freshness: { $ref: '#/components/schemas/Freshness' }, freshnessLabel: { type: string } }
+    PictureAsset:
+      type: object
+      description: A controlled asset as it stood at the requested instant.
+      required: [id, name, type, status, position, speed, heading, observedAt, connectionState, health, freshness, freshnessLabel]
+      properties: { id: { type: string }, name: { type: string }, type: { type: string }, status: { type: string }, position: { oneOf: [{ $ref: '#/components/schemas/Point' }, { type: 'null' }] }, speed: { type: [number, 'null'] }, heading: { type: [number, 'null'] }, observedAt: { type: string, format: date-time }, connectionState: { type: string }, health: { type: string }, freshness: { $ref: '#/components/schemas/Freshness' }, freshnessLabel: { type: string } }
+    PictureAlert:
+      type: object
+      description: An alert that had already been raised at the requested instant.
+      required: [id, type, severity, state, title, message, trackId, assetId, geofenceId, createdAt]
+      properties: { id: { type: string }, type: { type: string }, severity: { type: string }, state: { type: string }, title: { type: string }, message: { type: string }, trackId: { type: string }, assetId: { type: string }, geofenceId: { type: string }, createdAt: { type: string, format: date-time }, sourceReference: { type: object, additionalProperties: true } }
+    PictureWindow:
+      type: object
+      description: The span of recorded evidence a scrubber can traverse.
+      required: [earliest, latest]
+      properties: { earliest: { type: string, format: date-time }, latest: { type: string, format: date-time } }
+    Picture:
+      type: object
+      description: >-
+        The operational picture reconstructed at a point in time from recorded
+        evidence. Freshness is derived against the requested instant rather than
+        the wall clock, so a replay never splices two moments together.
+      required: [at, live, tracks, assets, alerts, geofences, window, truncatedAlerts]
+      properties:
+        at: { type: string, format: date-time }
+        live: { type: boolean, description: True when this is the present moment rather than a replay. }
+        tracks: { type: array, items: { $ref: '#/components/schemas/PictureTrack' } }
+        assets: { type: array, items: { $ref: '#/components/schemas/PictureAsset' } }
+        alerts: { type: array, items: { $ref: '#/components/schemas/PictureAlert' } }
+        geofences: { type: array, items: { $ref: '#/components/schemas/Geofence' } }
+        window: { $ref: '#/components/schemas/PictureWindow' }
+        truncatedAlerts: { type: boolean }
     Asset:
       type: object
-      required: [id, name, type, status, capabilities, metadata, speed, heading, health, connectionState, lastSeenAt, createdAt, updatedAt]
-      properties: { id: { type: string }, name: { type: string }, type: { type: string }, status: { type: string }, capabilities: { type: array, items: { type: string } }, metadata: { type: object, additionalProperties: true }, position: { $ref: '#/components/schemas/Point' }, speed: { type: [number, 'null'] }, heading: { type: [number, 'null'] }, health: { type: string }, connectionState: { type: string }, lastSeenAt: { type: [string, 'null'], format: date-time }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } }
+      required: [id, name, type, status, capabilities, metadata, speed, heading, health, connectionState, lastSeenAt, createdAt, updatedAt, freshness, freshnessLabel]
+      properties: { id: { type: string }, name: { type: string }, type: { type: string }, status: { type: string }, capabilities: { type: array, items: { type: string } }, metadata: { type: object, additionalProperties: true }, position: { $ref: '#/components/schemas/Point' }, speed: { type: [number, 'null'] }, heading: { type: [number, 'null'] }, health: { type: string }, connectionState: { type: string }, lastSeenAt: { type: [string, 'null'], format: date-time }, freshness: { $ref: '#/components/schemas/Freshness' }, freshnessLabel: { type: string }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } }
+    Freshness:
+      type: string
+      description: >-
+        Server-side classification of how current an entity's information is.
+        live and delayed are actionable; stale, unavailable, and unknown are not
+        and must be visible to the operator before the picture is acted on.
+      enum: [live, delayed, stale, unavailable, unknown]
     Telemetry:
       type: object
-      properties: { id: { type: string }, messageId: { type: string }, assetId: { type: string }, sourceId: { type: string }, observedAt: { type: string, format: date-time }, receivedAt: { type: string, format: date-time }, position: { $ref: '#/components/schemas/Point' }, speed: { type: number }, heading: { type: number }, health: { type: string }, connectionState: { type: string }, payload: { type: object, additionalProperties: true }, stale: { type: boolean }, duplicate: { type: boolean } }
+      properties: { id: { type: string }, messageId: { type: string }, assetId: { type: string }, sourceId: { type: string }, observedAt: { type: string, format: date-time }, receivedAt: { type: string, format: date-time }, position: { $ref: '#/components/schemas/Point' }, speed: { type: number }, heading: { type: number }, health: { type: string }, connectionState: { type: string }, payload: { type: object, additionalProperties: true }, stale: { type: boolean }, freshness: { $ref: '#/components/schemas/Freshness' }, freshnessLabel: { type: string }, duplicate: { type: boolean } }
     Track:
       type: object
-      required: [id, externalRef, status, firstSeenAt, lastSeenAt, position, speed, heading, metadata, createdAt, updatedAt, closedAt, observationCount]
-      properties: { id: { type: string }, externalRef: { type: string }, status: { type: string }, position: { oneOf: [{ $ref: '#/components/schemas/Point' }, { type: 'null' }] }, speed: { type: [number, 'null'] }, heading: { type: [number, 'null'] }, firstSeenAt: { type: string, format: date-time }, lastSeenAt: { type: string, format: date-time }, metadata: { type: object, additionalProperties: true }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time }, closedAt: { type: [string, 'null'], format: date-time }, observationCount: { type: integer } }
+      required: [id, externalRef, status, firstSeenAt, lastSeenAt, position, speed, heading, metadata, createdAt, updatedAt, closedAt, observationCount, freshness, freshnessLabel]
+      properties: { id: { type: string }, externalRef: { type: string }, status: { type: string }, position: { oneOf: [{ $ref: '#/components/schemas/Point' }, { type: 'null' }] }, speed: { type: [number, 'null'] }, heading: { type: [number, 'null'] }, firstSeenAt: { type: string, format: date-time }, lastSeenAt: { type: string, format: date-time }, metadata: { type: object, additionalProperties: true }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time }, closedAt: { type: [string, 'null'], format: date-time }, observationCount: { type: integer }, freshness: { $ref: '#/components/schemas/Freshness' }, freshnessLabel: { type: string } }
     TrackHistoryPoint:
       type: object
       required: [id, observedAt, position, speed, heading]

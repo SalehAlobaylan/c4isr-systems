@@ -30,6 +30,18 @@ const (
 	TopicAssetConnectionChanged = "asset.connection.changed"
 	TopicTelemetryReceived      = "telemetry.received"
 
+	// TopicEntityFreshnessChanged reports a change in how current an
+	// entity's information is. Freshness is otherwise derived per read, so
+	// without this a client holding a rendered picture would keep showing a
+	// silent asset as live until some unrelated event caused a refetch.
+	TopicEntityFreshnessChanged = "entity.freshness.changed"
+
+	// TopicAreaGeofenceOverlapped reports an area observation overlapping a
+	// geofence. Area events raise attention directly instead of being
+	// correlated into a track, because they describe a footprint at an instant
+	// rather than something that moved.
+	TopicAreaGeofenceOverlapped = "area.geofence.overlapped"
+
 	TopicTrackCreated = "track.created"
 	TopicTrackUpdated = "track.updated"
 	TopicTrackClosed  = "track.closed"
@@ -73,6 +85,8 @@ func AllTopics() []string {
 		TopicAssetPositionUpdated,
 		TopicAssetConnectionChanged,
 		TopicTelemetryReceived,
+		TopicEntityFreshnessChanged,
+		TopicAreaGeofenceOverlapped,
 		TopicTrackCreated,
 		TopicTrackUpdated,
 		TopicTrackClosed,
@@ -187,7 +201,14 @@ type ObservationReceived struct {
 	ReceivedAt    time.Time
 	Position      *geo.Point
 	TrackHint     string
-	Duplicate     bool
+	// AreaGeoJSON and AreaKind are set for area observations. They are empty
+	// for point observations, which is how a subscriber distinguishes the two
+	// without a second topic.
+	AreaGeoJSON string
+	AreaKind    string
+	AreaMeters2 float64
+	AreaCenter  geo.Point
+	Duplicate   bool
 	// Retry replays an already stored observation whose downstream projection
 	// did not complete successfully.
 	Retry bool
@@ -266,6 +287,42 @@ type TelemetryReceived struct {
 }
 
 func (TelemetryReceived) Topic() string { return TopicTelemetryReceived }
+
+// EntityFreshnessChanged is published when an entity crosses a freshness
+// boundary: aging into delayed or stale, losing contact, or recovering. The
+// previous state is included so a client can render the transition rather than
+// silently repainting.
+type EntityFreshnessChanged struct {
+	At         time.Time
+	EntityType string
+	EntityID   string
+	Freshness  string
+	Previous   string
+}
+
+func (EntityFreshnessChanged) Topic() string { return TopicEntityFreshnessChanged }
+
+// AreaGeofenceOverlapped is published when an area observation's footprint
+// overlaps an active geofence.
+//
+// The subject is the observation, not a track, because an area has no track.
+// Keeping the observation id on the event is what preserves the evidence link
+// from the alert back to the source that reported it.
+type AreaGeofenceOverlapped struct {
+	At            time.Time
+	ObservationID string
+	SourceID      string
+	AreaKind      string
+	GeofenceID    string
+	GeofenceName  string
+	GeofenceType  string
+	Severity      string
+	OverlapM2     float64
+	AreaM2        float64
+	Center        geo.Point
+}
+
+func (AreaGeofenceOverlapped) Topic() string { return TopicAreaGeofenceOverlapped }
 
 // ---------------------------------------------------------------------------
 // Tracks
@@ -537,6 +594,10 @@ func (e AssetPositionUpdated) OccurredAt() time.Time { return e.At }
 func (e AssetConnectionChanged) OccurredAt() time.Time { return e.At }
 
 func (e TelemetryReceived) OccurredAt() time.Time { return e.At }
+
+func (e EntityFreshnessChanged) OccurredAt() time.Time { return e.At }
+
+func (e AreaGeofenceOverlapped) OccurredAt() time.Time { return e.At }
 
 func (e TrackCreated) OccurredAt() time.Time { return e.At }
 

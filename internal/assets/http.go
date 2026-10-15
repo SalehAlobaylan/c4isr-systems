@@ -57,6 +57,8 @@ type assetResponse struct {
 	Health          string         `json:"health"`
 	ConnectionState string         `json:"connectionState"`
 	LastSeenAt      *time.Time     `json:"lastSeenAt"`
+	Freshness       string         `json:"freshness"`
+	FreshnessLabel  string         `json:"freshnessLabel"`
 	CreatedAt       time.Time      `json:"createdAt"`
 	UpdatedAt       time.Time      `json:"updatedAt"`
 }
@@ -147,6 +149,8 @@ func toResponse(a Asset) assetResponse {
 		Health:          a.Health,
 		ConnectionState: a.ConnectionState,
 		LastSeenAt:      a.LastSeenAt,
+		Freshness:       string(a.Freshness),
+		FreshnessLabel:  a.Freshness.Label(),
 		CreatedAt:       a.CreatedAt,
 		UpdatedAt:       a.UpdatedAt,
 	}

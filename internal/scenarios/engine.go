@@ -145,9 +145,12 @@ type engine struct {
 	finished   bool
 	reserved   int
 
-	seq               map[string]int
-	nextSeq           int
-	observationIDs    map[string]string
+	seq            map[string]int
+	nextSeq        int
+	observationIDs map[string]string
+	// areaSeq sequences repeated reports of the same hazard so each is a
+	// distinct observation while remaining reproducible.
+	areaSeq           map[string]int
 	classificationIDs map[string]string
 	pendingCommands   map[string]struct{}
 	lastProgress      time.Time
@@ -180,6 +183,7 @@ func newEngine(runID string, scope RunScope, sc *Scenario, seed int64, speed flo
 		incidentRefs:      map[string]string{},
 		eventStates:       map[int]EventInspection{},
 		observationIDs:    map[string]string{},
+		areaSeq:           map[string]int{},
 		classificationIDs: map[string]string{},
 		pendingCommands:   map[string]struct{}{},
 		speed:             speed,
@@ -529,6 +533,45 @@ func (e *engine) build() error {
 				return e.emitCommand(ctx, evCopy)
 			}); err != nil {
 				return err
+			}
+
+		case ActionArea:
+			startMs, _ := ParseDurationMs(ev.After)
+			intervalMs, _ := ParseDurationMs(ev.Interval)
+			untilMs, _ := ParseDurationMs(ev.Until)
+
+			lastMs := startMs
+			if intervalMs > 0 {
+				if untilMs == 0 {
+					var ok bool
+					untilMs, ok = addMilliseconds(startMs, defaultObserveUntilMs)
+					if !ok {
+						return apperr.Validation("area timeline is too large")
+					}
+				}
+				lastMs = untilMs
+			}
+			// A persistent hazard repeats its footprint on an interval, the way a
+			// public feed re-reports the same fire. Each report is a distinct
+			// observation, so alert de-duplication has to work across them.
+			emit := startMs
+			for emit <= lastMs {
+				eventSeq := e.areaSeq[ev.AreaKind+":"+ev.Source]
+				evCopy := ev
+				if _, err := add(emit, "area."+ev.AreaKind, func(ctx context.Context) error {
+					return e.emitArea(ctx, evCopy, eventSeq)
+				}); err != nil {
+					return err
+				}
+				e.areaSeq[ev.AreaKind+":"+ev.Source] = eventSeq + 1
+				if intervalMs <= 0 {
+					break
+				}
+				next, ok := addMilliseconds(emit, intervalMs)
+				if !ok {
+					return apperr.Validation("area timeline is too large")
+				}
+				emit = next
 			}
 		}
 	}
@@ -1164,6 +1207,50 @@ func (e *engine) emitClassification(ctx context.Context, ev EventSpec) error {
 		e.classificationIDs[ev.Track] = created.ID
 		e.mu.Unlock()
 	}
+	return err
+}
+
+// emitArea ingests an event with extent.
+//
+// The footprint is jittered with the same seeded RNG the rest of the engine
+// uses, so an area scenario replays identically - the determinism guarantee
+// has to cover hazard data too, not just tracks.
+func (e *engine) emitArea(ctx context.Context, ev EventSpec, seqNo int) error {
+	if e.deps.Observations == nil {
+		return apperr.Internal(fmt.Errorf("scenario area dependency is not configured"))
+	}
+	ring := make([]geo.Point, 0, len(ev.Polygon))
+	for _, vertex := range ev.Polygon {
+		ring = append(ring, e.jitter(geo.Point{Lat: vertex.Lat, Lng: vertex.Lng}, ev.JitterM))
+	}
+	area := observations.Area{
+		Kind:    observations.AreaKind(ev.AreaKind),
+		Polygon: ring,
+	}
+
+	observedAt := time.Now().UTC()
+	if staleMs, _ := ParseDurationMs(ev.StaleFor); staleMs > 0 {
+		observedAt = observedAt.Add(-time.Duration(staleMs) * time.Millisecond)
+	}
+
+	payload := map[string]any{
+		"scenario":          e.sc.Name,
+		"scenarioRunId":     e.scope.RunID,
+		"resourceNamespace": e.scope.ResourceNamespace,
+	}
+	for key, value := range ev.Payload {
+		payload[key] = value
+	}
+
+	_, err := e.deps.Observations.Ingest(ctx, observations.CreateInput{
+		ID:         e.scope.Observation(fmt.Sprintf("%s__%s__%d", ev.AreaKind, ev.Source, seqNo)),
+		SourceID:   e.scope.Source(ev.Source),
+		Type:       firstNonEmpty(ev.Type, "area."+ev.AreaKind),
+		ObservedAt: observedAt,
+		Area:       &area,
+		Payload:    payload,
+		Quality:    ev.Quality,
+	})
 	return err
 }
 

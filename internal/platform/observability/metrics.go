@@ -241,6 +241,20 @@ func (m *Metrics) ObserveGeofenceEvaluation(duration time.Duration) {
 	m.ObserveLatency(latencyGeofence, duration)
 }
 
+// ObserveAreaEvaluationFailure records a footprint whose spatial evaluation
+// could not complete.
+//
+// This exists because the failure mode of an alert path is silence, not an
+// error. A broken containment query leaves the operator with no alert and no
+// visible reason, which is indistinguishable from "nothing is happening" until
+// someone goes looking. A counter turns that silence into something that pages.
+func (m *Metrics) ObserveAreaEvaluationFailure() {
+	if m == nil {
+		return
+	}
+	inc(&m.valueCount, "area_evaluation_failures_total")
+}
+
 // ObserveWebSocketPublish records the time spent writing one event to a
 // connected WebSocket client.
 func (m *Metrics) ObserveWebSocketPublish(duration time.Duration) {
@@ -252,49 +266,36 @@ func (m *Metrics) ObserveDatabaseQuery(duration time.Duration) {
 	m.ObserveLatency(latencyDatabase, duration)
 }
 
-// ObserveStaleEntity maintains a bounded gauge of assets whose latest
-// telemetry is stale. Asset identifiers are kept only in an internal set; no
+// ObserveStaleEntity maintains a bounded gauge of entities whose last known
+// state is not trustworthy. It covers assets and tracks, because a contact that
+// has gone quiet and a platform that has gone quiet are the same operational
+// failure to the operator holding the picture.
+//
+// entityID is expected to be type-namespaced by the caller ("asset:..." /
+// "track:...") so two entities that happen to share an id cannot cancel each
+// other out of the set. Identifiers are kept only in an internal set; no
 // identifier is exposed as a metric label.
-func (m *Metrics) ObserveStaleEntity(assetID string, stale bool) {
-	if m == nil || strings.TrimSpace(assetID) == "" {
+func (m *Metrics) ObserveStaleEntity(entityID string, stale bool) {
+	if m == nil || strings.TrimSpace(entityID) == "" {
 		return
 	}
-	assetID = strings.TrimSpace(assetID)
+	entityID = strings.TrimSpace(entityID)
 	m.staleMu.Lock()
 	defer m.staleMu.Unlock()
 	if m.staleAssets == nil {
 		m.staleAssets = make(map[string]struct{})
 	}
 	if stale {
-		if _, loaded := m.staleAssets[assetID]; !loaded {
-			m.staleAssets[assetID] = struct{}{}
+		if _, loaded := m.staleAssets[entityID]; !loaded {
+			m.staleAssets[entityID] = struct{}{}
 			m.staleEntities.Add(1)
 		}
 		return
 	}
-	if _, loaded := m.staleAssets[assetID]; loaded {
-		delete(m.staleAssets, assetID)
+	if _, loaded := m.staleAssets[entityID]; loaded {
+		delete(m.staleAssets, entityID)
 		m.staleEntities.Add(-1)
 	}
-}
-
-// ReplaceStaleEntities replaces the stale set from a database reconciliation.
-// It also removes assets that recovered without producing a telemetry event,
-// while the mutex keeps a scrape and a live telemetry update consistent.
-func (m *Metrics) ReplaceStaleEntities(assetIDs []string) {
-	if m == nil {
-		return
-	}
-	next := make(map[string]struct{}, len(assetIDs))
-	for _, assetID := range assetIDs {
-		if assetID = strings.TrimSpace(assetID); assetID != "" {
-			next[assetID] = struct{}{}
-		}
-	}
-	m.staleMu.Lock()
-	m.staleAssets = next
-	m.staleEntities.Store(int64(len(next)))
-	m.staleMu.Unlock()
 }
 
 // ObserveAuthFailure increments the authentication failure counter.
@@ -360,7 +361,7 @@ func (m *Metrics) Handler() http.HandlerFunc {
 		writeSimpleCounter(w, "c4isr_observations_rejected_total", "Rejected observations.", m.observationsRejected.Load())
 		writeSimpleCounter(w, "c4isr_telemetry_received_total", "Accepted telemetry samples.", m.telemetryReceived.Load())
 		writeSimpleCounter(w, "c4isr_alerts_generated_total", "Generated alerts.", m.alertsGenerated.Load())
-		_, _ = fmt.Fprint(w, "# HELP c4isr_stale_entities Current number of assets with stale telemetry.\n")
+		_, _ = fmt.Fprint(w, "# HELP c4isr_stale_entities Entities (assets and tracks) whose last known state is not trustworthy - stale, unavailable, or never reported. Delayed is excluded: it is still within a plausible window.\n")
 		_, _ = fmt.Fprint(w, "# TYPE c4isr_stale_entities gauge\n")
 		_, _ = fmt.Fprintf(w, "c4isr_stale_entities %d\n", maxInt64(m.staleEntities.Load(), 0))
 

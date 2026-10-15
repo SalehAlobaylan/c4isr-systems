@@ -198,6 +198,52 @@ func (q *Queries) GetAssetState(ctx context.Context, assetID string) (GetAssetSt
 	return i, err
 }
 
+const listAssetFreshnessSignals = `-- name: ListAssetFreshnessSignals :many
+SELECT
+    a.id AS asset_id,
+    a.status,
+    s.connection_state,
+    s.last_seen_at
+FROM assets a
+LEFT JOIN asset_state s ON s.asset_id = a.id
+ORDER BY a.id
+`
+
+type ListAssetFreshnessSignalsRow struct {
+	AssetID         string
+	Status          string
+	ConnectionState *string
+	LastSeenAt      pgtype.Timestamptz
+}
+
+// The freshness monitor reads every asset's declared and observed signals so
+// it can classify each one and publish only genuine transitions, including an
+// asset recovering contact after having gone stale.
+func (q *Queries) ListAssetFreshnessSignals(ctx context.Context) ([]ListAssetFreshnessSignalsRow, error) {
+	rows, err := q.db.Query(ctx, listAssetFreshnessSignals)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAssetFreshnessSignalsRow{}
+	for rows.Next() {
+		var i ListAssetFreshnessSignalsRow
+		if err := rows.Scan(
+			&i.AssetID,
+			&i.Status,
+			&i.ConnectionState,
+			&i.LastSeenAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listAssets = `-- name: ListAssets :many
 SELECT id, name, type, status, capabilities, metadata, created_at, updated_at FROM assets
 ORDER BY created_at DESC

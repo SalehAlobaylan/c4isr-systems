@@ -33,6 +33,21 @@ LIMIT @limit_count OFFSET @offset_count;
 -- name: CountTracks :one
 SELECT count(*) FROM tracks;
 
+-- name: ListTrackFreshnessSignals :many
+-- The freshness monitor reads every track's status and last-seen time.
+--
+-- Tracks are included because they are the primary thing on a C4ISR picture:
+-- an alert that only counts controlled assets would miss a contact that has
+-- gone quiet, which is the case an operator most needs to be told about. The
+-- query reads all tracks, not just stale ones, for the same reason the asset
+-- query does - the monitor must also notice a track recovering.
+SELECT
+    id AS track_id,
+    status,
+    last_seen_at
+FROM tracks
+ORDER BY id;
+
 -- name: FindTrackByExternalRef :one
 SELECT
     t.id, t.external_ref, t.status, t.first_seen_at, t.last_seen_at,

@@ -489,6 +489,48 @@ func (q *Queries) ListTrackDetails(ctx context.Context, arg ListTrackDetailsPara
 	return items, nil
 }
 
+const listTrackFreshnessSignals = `-- name: ListTrackFreshnessSignals :many
+SELECT
+    id AS track_id,
+    status,
+    last_seen_at
+FROM tracks
+ORDER BY id
+`
+
+type ListTrackFreshnessSignalsRow struct {
+	TrackID    string
+	Status     string
+	LastSeenAt pgtype.Timestamptz
+}
+
+// The freshness monitor reads every track's status and last-seen time.
+//
+// Tracks are included because they are the primary thing on a C4ISR picture:
+// an alert that only counts controlled assets would miss a contact that has
+// gone quiet, which is the case an operator most needs to be told about. The
+// query reads all tracks, not just stale ones, for the same reason the asset
+// query does - the monitor must also notice a track recovering.
+func (q *Queries) ListTrackFreshnessSignals(ctx context.Context) ([]ListTrackFreshnessSignalsRow, error) {
+	rows, err := q.db.Query(ctx, listTrackFreshnessSignals)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListTrackFreshnessSignalsRow{}
+	for rows.Next() {
+		var i ListTrackFreshnessSignalsRow
+		if err := rows.Scan(&i.TrackID, &i.Status, &i.LastSeenAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listTrackHistory = `-- name: ListTrackHistory :many
 SELECT
     id, observed_at, speed, heading,

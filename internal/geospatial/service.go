@@ -240,6 +240,14 @@ func (s *Service) ContainingPoint(ctx context.Context, point geo.Point) ([]Geofe
 	return s.repo.ContainingPoint(ctx, point)
 }
 
+// IntersectingArea lists active geofences a footprint overlaps.
+func (s *Service) IntersectingArea(ctx context.Context, area AreaOverlap) ([]Geofence, error) {
+	if area.GeoJSON == "" {
+		return nil, apperr.Validation("area geometry is required")
+	}
+	return s.repo.IntersectingArea(ctx, area)
+}
+
 // AssetsWithinRadius lists assets inside a radius, nearest first.
 func (s *Service) AssetsWithinRadius(ctx context.Context, center geo.Point, radiusM float64, limit int) ([]AssetDistance, error) {
 	if !center.Valid() {

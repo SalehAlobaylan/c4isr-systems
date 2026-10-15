@@ -1,4 +1,10 @@
-import { titleCase } from '@/lib/format'
+import {
+  FRESHNESS_LABELS,
+  FRESHNESS_TONES,
+  toFreshness,
+  type Freshness,
+} from '@/lib/freshness'
+import { formatRelative, titleCase } from '@/lib/format'
 import { cn } from '@/lib/utils'
 
 type Tone = 'ok' | 'track' | 'warn' | 'crit' | 'info' | 'muted'
@@ -99,4 +105,33 @@ export function ActorBadge({ value }: { value: string }) {
 
 export function KindBadge({ value }: { value: string }) {
   return <span className="aegis-src">{value}</span>
+}
+
+/**
+ * Renders the server's freshness verdict for an entity.
+ *
+ * `lastSeenAt` is shown alongside it because a bare "Stale" badge does not tell
+ * an operator whether they are looking at something four minutes old or four
+ * hours old, and that difference changes what they should do next.
+ */
+export function FreshnessBadge({
+  freshness,
+  lastSeenAt,
+  className,
+}: {
+  freshness?: Freshness | string | null
+  lastSeenAt?: string | null
+  className?: string
+}) {
+  const state = toFreshness(freshness as string | null | undefined)
+  const tone = FRESHNESS_TONES[state]
+  const age = lastSeenAt ? formatRelative(lastSeenAt) : null
+  const title = age ? `${FRESHNESS_LABELS[state]} · last seen ${age}` : FRESHNESS_LABELS[state]
+
+  return (
+    <span className={cn(toneClass(tone), 'font-mono', className)} title={title}>
+      {FRESHNESS_LABELS[state].toUpperCase()}
+      {age ? <span className="ml-1 opacity-60">{age}</span> : null}
+    </span>
+  )
 }

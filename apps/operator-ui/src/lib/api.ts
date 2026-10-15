@@ -61,6 +61,11 @@ export type ScenarioSummary = components['schemas']['ScenarioSummary']
 export type ScenarioRun = components['schemas']['ScenarioRun']
 export type ScenarioEvent = components['schemas']['ScenarioEvent']
 export type Health = components['schemas']['Health']
+export type Picture = components['schemas']['Picture']
+export type PictureTrack = components['schemas']['PictureTrack']
+export type PictureAsset = components['schemas']['PictureAsset']
+export type PictureAlert = components['schemas']['PictureAlert']
+export type PictureWindow = components['schemas']['PictureWindow']
 
 export type SourceList = components['schemas']['SourceList']
 export type ObservationList = components['schemas']['ObservationList']
@@ -309,6 +314,14 @@ export const api = {
     unwrap(apiClient.GET('/api/v1/assessments', { params: { query: params } })),
   createAssessment: (input: components['requestBodies']['Assessment']['content']['application/json']) =>
     unwrap(apiClient.POST('/api/v1/assessments', { body: input })),
+
+  /* picture (replay) */
+  // Reconstructs the picture at an instant. Omitting `at` returns the live
+  // picture, so the interface has one code path for live and replayed views.
+  getPicture: (params?: { at?: string; live?: boolean; scope?: string; limit?: number }) =>
+    unwrap(apiClient.GET('/api/v1/picture', { params: { query: params } })),
+  getPictureWindow: (params?: { scope?: string }) =>
+    unwrap(apiClient.GET('/api/v1/picture/window', { params: { query: params } })),
 
   /* audit */
   listAudit: (params?: AuditFilters) =>

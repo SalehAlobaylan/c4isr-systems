@@ -6,6 +6,7 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 )
 
 // DefaultLimit and MaxLimit bound list queries.
@@ -16,13 +17,40 @@ const (
 
 // Service implements asset registration and lookup.
 type Service struct {
-	repo Repository
-	bus  *events.Dispatcher
+	repo  Repository
+	bus   *events.Dispatcher
+	fresh freshness.Policy
+	now   func() time.Time
 }
 
 // NewService wires an asset service.
 func NewService(repo Repository, bus *events.Dispatcher) *Service {
-	return &Service{repo: repo, bus: bus}
+	return NewServiceWithFreshness(repo, bus, freshness.DefaultPolicy())
+}
+
+// NewServiceWithFreshness wires an asset service that classifies how current
+// each asset's reported state is. The policy is applied on read so every
+// consumer - API, realtime, and any future integration - receives the same
+// answer to "can I trust this position?".
+func NewServiceWithFreshness(repo Repository, bus *events.Dispatcher, policy freshness.Policy) *Service {
+	return &Service{
+		repo:  repo,
+		bus:   bus,
+		fresh: policy.Normalized(),
+		now:   func() time.Time { return time.Now().UTC() },
+	}
+}
+
+// classify stamps the freshness state derived from signals already present on
+// the asset. It never touches the database, which is why a stale asset cannot
+// be persisted as fresh or vice versa.
+func (s *Service) classify(asset Asset) Asset {
+	asset.Freshness = s.fresh.ForAsset(freshness.AssetSignal{
+		LastSeenAt:      asset.LastSeenAt,
+		ConnectionState: asset.ConnectionState,
+		Status:          string(asset.Status),
+	}, s.now())
+	return asset
 }
 
 // Create registers a new asset and publishes asset.created.
@@ -50,7 +78,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Asset, error) {
 		Name:    created.Name,
 		Type:    created.Type,
 	})
-	return created, nil
+	return s.classify(created), nil
 }
 
 // Ensure idempotently registers an asset, returning whether it was created.
@@ -62,7 +90,7 @@ func (s *Service) Ensure(ctx context.Context, in CreateInput) (Asset, bool, erro
 
 	existing, err := s.repo.Get(ctx, in.ID)
 	if err == nil {
-		return existing, false, nil
+		return s.classify(existing), false, nil
 	}
 	if !apperr.Is(err, apperr.CodeNotFound) {
 		return Asset{}, false, err
@@ -77,7 +105,11 @@ func (s *Service) Ensure(ctx context.Context, in CreateInput) (Asset, bool, erro
 
 // Get returns an asset with its current state by id.
 func (s *Service) Get(ctx context.Context, id string) (Asset, error) {
-	return s.repo.Get(ctx, id)
+	asset, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return Asset{}, err
+	}
+	return s.classify(asset), nil
 }
 
 // Exists reports whether an asset is registered. Other modules use this to
@@ -88,7 +120,19 @@ func (s *Service) Exists(ctx context.Context, id string) (bool, error) {
 
 // List returns assets with their current state.
 func (s *Service) List(ctx context.Context, limit, offset int) ([]Asset, int, error) {
-	return s.repo.List(ctx, clampLimit(limit), max(offset, 0))
+	items, total, err := s.repo.List(ctx, clampLimit(limit), max(offset, 0))
+	if err != nil {
+		return nil, 0, err
+	}
+	now := s.now()
+	for i := range items {
+		items[i].Freshness = s.fresh.ForAsset(freshness.AssetSignal{
+			LastSeenAt:      items[i].LastSeenAt,
+			ConnectionState: items[i].ConnectionState,
+			Status:          string(items[i].Status),
+		}, now)
+	}
+	return items, total, nil
 }
 
 // UpdateStatus changes availability and publishes asset.updated.
@@ -106,7 +150,7 @@ func (s *Service) UpdateStatus(ctx context.Context, id string, status Status) (A
 		AssetID: updated.ID,
 		Status:  string(updated.Status),
 	})
-	return updated, nil
+	return s.classify(updated), nil
 }
 
 func clampLimit(limit int) int {

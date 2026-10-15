@@ -55,6 +55,9 @@ CREATE UNIQUE INDEX alerts_active_geofence_track_key
     ON alerts (geofence_id, track_id)
     WHERE type = 'geofence.breach' AND state <> 'RESOLVED';
 
+-- The area-overlap concurrency guard ships in 00018, alongside the area columns
+-- it depends on.
+
 -- +goose Down
 DROP INDEX alerts_active_geofence_track_key;
 DROP INDEX tracks_initial_observation_id_key;

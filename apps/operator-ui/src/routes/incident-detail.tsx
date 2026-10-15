@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsPanel, TabsTab } from '@/components/ui/tabs'
 import { AttachRelationDialog, type RelationKind } from '@/features/incidents/AttachRelationDialog'
 import { CommandConsole } from '@/features/incidents/CommandConsole'
+import { AssessmentFormDialog } from '@/features/incidents/AssessmentFormDialog'
 import { MissionFormDialog } from '@/features/incidents/MissionFormDialog'
 import { api, type AuditEntry } from '@/lib/api'
 import {
@@ -45,6 +46,7 @@ export function IncidentDetailPage() {
   const [tab, setTab] = useState('overview')
   const [attachKind, setAttachKind] = useState<RelationKind | null>(null)
   const [missionOpen, setMissionOpen] = useState(false)
+  const [assessmentOpen, setAssessmentOpen] = useState(false)
 
   const incidentQuery = useQuery({
     queryKey: queryKeys.incidents.detail(id),
@@ -358,9 +360,18 @@ export function IncidentDetailPage() {
               </section>
 
               <section className="flex flex-col gap-3">
-                <SectionTitle>Assessments ({incident.assessments.length})</SectionTitle>
+                <div className="flex items-center justify-between gap-3">
+                  <SectionTitle>Assessments ({incident.assessments.length})</SectionTitle>
+                  <Button size="sm" onClick={() => setAssessmentOpen(true)}>
+                    <PlusIcon className="size-3.5" />
+                    Record assessment
+                  </Button>
+                </div>
                 {incident.assessments.length === 0 ? (
-                  <p className="text-xs text-ink-faint">No assessments attached.</p>
+                  <p className="text-xs text-ink-faint">
+                    No assessments attached. An assessment records what you conclude and what it
+                    rests on, separately from the observations themselves.
+                  </p>
                 ) : (
                   <ul className="flex flex-col gap-2">
                     {incident.assessments.map((assessment) => (
@@ -429,6 +440,14 @@ export function IncidentDetailPage() {
         open={missionOpen}
         onOpenChange={setMissionOpen}
         onCreated={() => setTab('operations')}
+      />
+
+<AssessmentFormDialog
+        open={assessmentOpen}
+        onOpenChange={setAssessmentOpen}
+        subjectType="incident"
+        subjectId={id}
+        incidentId={id}
       />
     </Page>
   )

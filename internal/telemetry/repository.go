@@ -15,6 +15,13 @@ type Repository interface {
 	// matches the database row. A nil expected value represents a never-seen
 	// asset and is part of the compare-and-set contract.
 	ApplyState(ctx context.Context, update StateUpdate, expectedLastSeenAt *time.Time) (bool, error)
-	ListStaleAssetIDs(ctx context.Context, cutoff time.Time) ([]string, error)
+	// ListTrackFreshnessSignals returns every track's status and last-seen
+	// time, for the same reason the asset equivalent exists: a recovery is
+	// invisible to a query that only returns entities in trouble.
+	ListTrackFreshnessSignals(ctx context.Context) ([]TrackFreshnessSignal, error)
+	// ListFreshnessSignals returns every asset's declared and observed
+	// freshness inputs so the monitor can classify each one and report only
+	// genuine transitions.
+	ListFreshnessSignals(ctx context.Context) ([]FreshnessSignal, error)
 	ListByAsset(ctx context.Context, assetID string, limit, offset int) ([]Sample, int, error)
 }

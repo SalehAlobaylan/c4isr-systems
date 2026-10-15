@@ -37,6 +37,9 @@
   z-index: 3;
   display: flex;
   gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  max-width: min(560px, calc(100% - 32px));
   font-size: var(--t-2xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -53,6 +56,108 @@
   margin-right: 6px;
   vertical-align: baseline;
 }
+/* The freshness legend stacks above the entity legend so the two read as
+   separate scales: marker colour means entity kind, ring means freshness. */
+.aegis-maplegend + .aegis-maplegend {
+  bottom: 48px;
+}
+.aegis-maplegend .cap {
+  color: var(--faint);
+  letter-spacing: 0.16em;
+}
+/* The scrubber spans the top of the picture so the moment on screen is always
+   stated. A replay control that can be scrolled out of view invites an
+   operator to act on a historical picture believing it is live. */
+.aegis-scrubber {
+  position: absolute;
+  left: 50%;
+  top: 14px;
+  transform: translateX(-50%);
+  z-index: 4;
+  width: min(560px, calc(100% - 32px));
+  padding: 8px 12px 9px;
+  background: rgba(0, 0, 0, 0.72);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  font-size: var(--t-2xs);
+  color: var(--muted);
+}
+.aegis-scrubber .head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.aegis-scrubber .head .hint {
+  margin-left: auto;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+/* Live and Replay must never look alike: an operator glancing at the corner
+   has to know instantly which moment they are acting on. */
+.aegis-scrubber .live,
+.aegis-scrubber .replay {
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 700;
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+}
+.aegis-scrubber .live {
+  color: var(--st-ok);
+}
+.aegis-scrubber .replay {
+  color: var(--st-warn);
+}
+.aegis-scrubber .when {
+  font-family: var(--font-mono);
+  font-size: var(--t-2xs);
+  color: var(--fg-2);
+}
+.aegis-scrubber .controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.aegis-scrubber .controls input[type='range'] {
+  flex: 1;
+  accent-color: var(--accent-on, var(--st-warn));
+  cursor: pointer;
+}
+.aegis-scrubber .controls button {
+  background: transparent;
+  border: 1px solid var(--line-2);
+  color: var(--fg-2);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.aegis-scrubber .controls button:hover:not(:disabled) {
+  border-color: var(--accent-on, var(--st-warn));
+  color: var(--fg);
+}
+.aegis-scrubber .controls button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.aegis-scrubber .controls button.return {
+  color: var(--st-ok);
+  border-color: var(--st-ok);
+  white-space: nowrap;
+}
+.aegis-scrubber .bounds {
+  margin: 5px 0 0;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--faint);
+  letter-spacing: 0.06em;
+}
+
 .aegis-maptools {
   position: absolute;
   right: 14px;

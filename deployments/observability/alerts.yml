@@ -102,8 +102,13 @@ groups:
           component: telemetry
           runbook: docs/operations.md#stale-entities
         annotations:
-          summary: One or more assets have stale telemetry
-          description: At least one asset has not received current telemetry for fifteen minutes.
+          summary: Entities on the picture are not trustworthy
+          description: >-
+            For fifteen minutes, at least one asset or track has had a state that
+            requires a caveat before it can be acted on: stale (no longer
+            reporting), unavailable (contact lost or administratively down), or
+            never reported. Entities in the delayed band are excluded, because
+            those are still within a plausible window.
 
       - alert: C4ISRCommandAcknowledgmentLatency
         expr: |

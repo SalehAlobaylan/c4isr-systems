@@ -7,11 +7,12 @@ import maplibregl, {
 } from 'maplibre-gl'
 import { useEffect, useRef, useState } from 'react'
 
-import { MAP_STYLE_URL, type Asset, type Geofence, type Track, type TrackHistoryPoint } from '@/lib/api'
+import { MAP_STYLE_URL, type Asset, type Geofence, type Observation, type Track, type TrackHistoryPoint } from '@/lib/api'
 import type { MapMode, Selection } from '@/stores/ui'
 
 import {
   EMPTY_FEATURE_COLLECTION,
+  areaFeatures,
   assetFeatures,
   geofenceFeatures,
   historyFeature,
@@ -35,13 +36,16 @@ function palette() {
     warn: token('--st-warn', '#913214'),
     unknown: token('--st-unknown', '#3d215b'),
     crit: token('--st-crit', '#b83a1f'),
+    faint: token('--faint', '#7c8496'),
+    muted: token('--muted', '#a7adba'),
   }
 }
 
 const LAYER_GROUPS = {
   geofences: ['geofence-fill', 'geofence-outline'],
-  tracks: ['track-circle', 'track-selected-ring'],
-  assets: ['asset-circle', 'asset-selected-ring'],
+  areas: ['area-fill', 'area-outline'],
+  tracks: ['track-circle', 'track-freshness-ring', 'track-selected-ring'],
+  assets: ['asset-circle', 'asset-freshness-ring', 'asset-selected-ring'],
   history: ['track-history-line'],
 } as const
 
@@ -138,6 +142,45 @@ function addOperationalLayers(map: maplibregl.Map) {
     10,
   ]
 
+  // Freshness is drawn as an outer ring rather than by recolouring the marker.
+  // The marker colour already carries entity meaning (asset type, track
+  // status); overloading it would destroy one of the two readings. The ring is
+  // absent for live entities, so it appears exactly when trust is in question.
+  const freshnessRingColor: ExpressionSpecification = [
+    'match',
+    ['get', 'freshness'],
+    'delayed',
+    c.warn,
+    'stale',
+    c.crit,
+    'unavailable',
+    c.faint,
+    'unknown',
+    c.muted,
+    c.ok,
+  ]
+
+  const freshnessRingOpacity: ExpressionSpecification = [
+    'match',
+    ['get', 'freshness'],
+    'live',
+    0,
+    0.9,
+  ]
+
+  // A live marker's full opacity is itself an assertion; a marker that is
+  // delayed or worse is drawn back so a glance separates "current" from
+  // "still on the map" without reading the ring.
+  const markerOpacity: ExpressionSpecification = [
+    'match',
+    ['get', 'freshness'],
+    'live',
+    0.95,
+    'delayed',
+    0.7,
+    0.4,
+  ]
+
   map.addSource('geofences', { type: 'geojson', data: EMPTY_FEATURE_COLLECTION })
   map.addLayer({
     id: 'geofence-fill',
@@ -160,6 +203,49 @@ function addOperationalLayers(map: maplibregl.Map) {
     },
   })
 
+  // Area observations are drawn beneath entities so a footprint never hides a
+  // track or asset inside it. Colour encodes the phenomenon kind, which is a
+  // separate dimension from entity type.
+  const areaColor: ExpressionSpecification = [
+    'match',
+    ['get', 'kind'],
+    'hazard',
+    '#b83a1f',
+    'weather',
+    '#913214',
+    'infrastructure',
+    '#a35a12',
+    'crowd',
+    '#273c6b',
+    'environmental',
+    '#3d215b',
+    '#3d215b',
+  ]
+
+  map.addSource('areas', { type: 'geojson', data: EMPTY_FEATURE_COLLECTION })
+  map.addLayer({
+    id: 'area-fill',
+    type: 'fill',
+    source: 'areas',
+    paint: {
+      'fill-color': areaColor,
+      // Deliberately light: a hazard footprint can cover a whole city, and an
+      // opaque fill would hide the entities the operator needs to see.
+      'fill-opacity': 0.16,
+    },
+  })
+  map.addLayer({
+    id: 'area-outline',
+    type: 'line',
+    source: 'areas',
+    paint: {
+      'line-color': areaColor,
+      'line-width': 1.5,
+      'line-opacity': 0.85,
+      'line-dasharray': [4, 2],
+    },
+  })
+
   map.addSource('track-history', { type: 'geojson', data: EMPTY_FEATURE_COLLECTION })
   map.addLayer({
     id: 'track-history-line',
@@ -175,6 +261,19 @@ function addOperationalLayers(map: maplibregl.Map) {
   })
 
   map.addSource('track-points', { type: 'geojson', data: EMPTY_FEATURE_COLLECTION })
+  map.addLayer({
+    id: 'track-freshness-ring',
+    type: 'circle',
+    source: 'track-points',
+    paint: {
+      'circle-radius': 3,
+      'circle-color': 'rgba(0,0,0,0)',
+      'circle-stroke-color': freshnessRingColor,
+      'circle-stroke-width': 2,
+      'circle-stroke-opacity': freshnessRingOpacity,
+      'circle-opacity': 0,
+    },
+  })
   map.addLayer({
     id: 'track-selected-ring',
     type: 'circle',
@@ -196,11 +295,24 @@ function addOperationalLayers(map: maplibregl.Map) {
       'circle-radius': trackRadius,
       'circle-stroke-color': c.bg,
       'circle-stroke-width': 1.5,
-      'circle-opacity': 0.95,
+      'circle-opacity': markerOpacity,
     },
   })
 
   map.addSource('asset-points', { type: 'geojson', data: EMPTY_FEATURE_COLLECTION })
+  map.addLayer({
+    id: 'asset-freshness-ring',
+    type: 'circle',
+    source: 'asset-points',
+    paint: {
+      'circle-radius': 3.5,
+      'circle-color': 'rgba(0,0,0,0)',
+      'circle-stroke-color': freshnessRingColor,
+      'circle-stroke-width': 2,
+      'circle-stroke-opacity': freshnessRingOpacity,
+      'circle-opacity': 0,
+    },
+  })
   map.addLayer({
     id: 'asset-selected-ring',
     type: 'circle',
@@ -222,7 +334,7 @@ function addOperationalLayers(map: maplibregl.Map) {
       'circle-radius': 6.5,
       'circle-stroke-color': c.bg,
       'circle-stroke-width': 1.5,
-      'circle-opacity': 0.95,
+      'circle-opacity': markerOpacity,
     },
   })
 
@@ -258,6 +370,8 @@ function source(map: maplibregl.Map, id: string): GeoJSONSource | undefined {
 
 export interface MapCanvasProps {
   geofences: Geofence[]
+  /** Area observations (hazard footprints, weather cells) rendered as fills. */
+  areas?: Observation[]
   tracks: Track[]
   assets: Asset[]
   history: TrackHistoryPoint[]
@@ -271,6 +385,7 @@ export interface MapCanvasProps {
 
 export function MapCanvas({
   geofences,
+  areas,
   tracks,
   assets,
   history,
@@ -398,6 +513,11 @@ export function MapCanvas({
     if (!ready) return
     source(mapRef.current!, 'asset-points')?.setData(assetFeatures(assets))
   }, [ready, assets])
+
+  useEffect(() => {
+    if (!ready) return
+    source(mapRef.current!, 'areas')?.setData(areaFeatures(areas ?? []))
+  }, [ready, areas])
 
   useEffect(() => {
     if (!ready) return

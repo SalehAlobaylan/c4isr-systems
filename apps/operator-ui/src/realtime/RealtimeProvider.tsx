@@ -11,6 +11,7 @@ import {
 import { realtimeUrl, type RealtimeEnvelope } from '@/lib/api'
 import { queryKeys } from '@/lib/queryKeys'
 import { applyRealtimeEvent } from '@/realtime/handlers'
+import { useScrubStore } from '@/stores/scrub'
 
 export type RealtimeStatus = 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 
@@ -40,6 +41,13 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   const [lastEventAt, setLastEventAt] = useState<string | null>(null)
   const queryClientRef = useRef(queryClient)
   queryClientRef.current = queryClient
+
+  // Read through a ref rather than a subscription: the socket is established
+  // once, and re-establishing it whenever the operator scrubs would drop the
+  // connection every time they touched the timeline.
+  const replaying = useScrubStore((state) => !state.live)
+  const replayingRef = useRef(replaying)
+  replayingRef.current = replaying
 
   useEffect(() => {
     let disposed = false
@@ -97,7 +105,7 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         try {
           const envelope = JSON.parse(message.data) as RealtimeEnvelope
           setLastEventAt(envelope.occurredAt ?? new Date().toISOString())
-          applyRealtimeEvent(queryClientRef.current, envelope)
+          applyRealtimeEvent(queryClientRef.current, envelope, replayingRef.current)
         } catch {
           // Ignore malformed frames; the stream remains the source of truth.
         }

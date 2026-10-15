@@ -164,22 +164,29 @@ func TestMetricsExposeOperationalSignals(t *testing.T) {
 	}
 }
 
-func TestMetricsReplaceStaleEntitiesClearsRecoveredAssets(t *testing.T) {
+func TestMetricsStaleGaugeTracksRecoveryFromTransitions(t *testing.T) {
 	m := New()
 	m.ObserveStaleEntity("asset-1", true)
 	m.ObserveStaleEntity("asset-2", true)
-	m.ReplaceStaleEntities([]string{"asset-2", "asset-3"})
+	// Duplicate notifications must not double-count.
+	m.ObserveStaleEntity("asset-1", true)
+	m.ObserveStaleEntity("asset-3", true)
 
 	recorder := httptest.NewRecorder()
 	m.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/metrics", nil))
-	if !strings.Contains(recorder.Body.String(), "c4isr_stale_entities 2") {
-		t.Fatalf("stale gauge after replacement = %s", recorder.Body.String())
+	if !strings.Contains(recorder.Body.String(), "c4isr_stale_entities 3") {
+		t.Fatalf("stale gauge = %s, want 3", recorder.Body.String())
 	}
-	m.ReplaceStaleEntities(nil)
+
+	// The freshness monitor reports recovery, so the gauge must fall without
+	// waiting for a new telemetry event.
+	m.ObserveStaleEntity("asset-1", false)
+	m.ObserveStaleEntity("asset-2", false)
+	m.ObserveStaleEntity("asset-3", false)
 	recorder = httptest.NewRecorder()
 	m.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/metrics", nil))
 	if !strings.Contains(recorder.Body.String(), "c4isr_stale_entities 0") {
-		t.Fatalf("stale gauge after clearing = %s", recorder.Body.String())
+		t.Fatalf("stale gauge after recovery = %s, want 0", recorder.Body.String())
 	}
 }
 

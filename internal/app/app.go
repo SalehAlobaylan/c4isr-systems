@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/alerts"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/arearule"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/assessments"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/assets"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/audit"
@@ -25,8 +26,10 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/missions"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/observations"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/operators"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/picture"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/config"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/realtime"
@@ -107,15 +110,26 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		}, nil
 	}
 
+	// Freshness thresholds are resolved once here so the API, the realtime
+	// stream, and any future integration all classify trust identically.
+	freshnessPolicy := cfg.FreshnessPolicy()
+
 	sourceSvc := sources.NewService(sources.NewPostgresRepository(pool), bus)
-	assetSvc := assets.NewService(assets.NewPostgresRepository(pool), bus)
+	assetSvc := assets.NewServiceWithFreshness(assets.NewPostgresRepository(pool), bus, freshnessPolicy)
 	observationSvc := observations.NewService(observations.NewPostgresRepository(pool), sourceSvc, bus)
 	telemetrySvc := telemetry.NewService(telemetry.NewPostgresRepository(pool), assetSvc, bus)
-	trackSvc := tracks.NewService(tracks.NewPostgresRepository(pool), observationSvc, bus)
+	trackSvc := tracks.NewServiceWithFreshness(tracks.NewPostgresRepository(pool), observationSvc, bus, freshnessPolicy)
 	classificationSvc := classifications.NewService(classifications.NewPostgresRepository(pool), bus)
 	geofenceSvc := geospatial.NewService(geospatial.NewPostgresRepository(pool), bus)
 	geofenceSvc.SetObserver(metrics)
-	alertSvc := alerts.NewService(alerts.NewPostgresRepository(pool), bus)
+	// Area observations are routed to spatial rules instead of the track
+	// pipeline: a wildfire or a weather cell has extent, not a trajectory.
+	areaRuleSvc := arearule.NewService(arearule.NewGeospatialAdapter(geofenceSvc), bus)
+	areaRuleSvc.SetObserver(metrics)
+	areaRuleSvc.SetFailureObserver(metrics)
+	// Alerts name their subject in operator language rather than by internal
+	// identifier, so the alert centre reads as prose an operator can act on.
+	alertSvc := alerts.NewServiceWithClassifier(alerts.NewPostgresRepository(pool), bus, classificationSvc)
 	incidentSvc := incidents.NewService(incidents.NewPostgresRepository(pool), bus)
 	missionSvc := missions.NewService(missions.NewPostgresRepository(pool), assetSvc, bus)
 	commandSvc := commands.NewService(commands.NewPostgresRepository(pool), assetSvc, bus)
@@ -148,7 +162,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		sources:         sources.NewHandler(sourceSvc),
 		observations:    observations.NewHandler(observationSvc),
 		assets:          assets.NewHandler(assetSvc),
-		telemetry:       telemetry.NewHandler(telemetrySvc),
+		telemetry:       telemetry.NewHandlerWithFreshness(telemetrySvc, freshnessPolicy),
 		tracks:          tracks.NewHandler(trackSvc),
 		classifications: classifications.NewHandler(classificationSvc),
 		geofences:       geospatial.NewHandler(geofenceSvc),
@@ -160,9 +174,11 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		audit:           audit.NewHandler(auditSvc),
 		operators:       operators.NewHandler(operatorSvc),
 		scenarios:       scenarios.NewHandler(scenarioSvc),
+		picture:         picture.NewHandler(picture.NewService(picture.NewPostgresRepository(pool), freshnessPolicy)),
 		hub:             hub,
 	})
-	staleMonitorCancel, staleMonitorDone := startStaleMonitor(telemetrySvc, metrics, cfg.TelemetryStaleAfter, logger)
+	freshnessMonitor := telemetry.NewFreshnessMonitor(telemetry.NewPostgresRepository(pool), bus, metrics, freshnessPolicy)
+	staleMonitorCancel, staleMonitorDone := startFreshnessMonitor(freshnessMonitor, freshnessPolicy, logger)
 
 	poolClosed = true
 	return &App{
@@ -208,13 +224,16 @@ func (a *App) Close() {
 	}
 }
 
-func startStaleMonitor(service *telemetry.Service, observer telemetry.StaleEntityObserver, staleAfter time.Duration, logger *slog.Logger) (context.CancelFunc, <-chan struct{}) {
-	if staleAfter <= 0 {
-		staleAfter = 5 * time.Minute
-	}
-	interval := time.Minute
-	if staleAfter < interval {
-		interval = staleAfter
+// startFreshnessMonitor runs the periodic reclassification of every asset.
+//
+// The tick interval follows the tightest configured freshness band, so an
+// entity never sits visibly live for long after it should have been marked
+// aging. Freshness is still re-derived on every read; the monitor exists to
+// push transitions to clients that already hold a rendered picture.
+func startFreshnessMonitor(monitor *telemetry.FreshnessMonitor, policy freshness.Policy, logger *slog.Logger) (context.CancelFunc, <-chan struct{}) {
+	interval := policy.DelayedAfter / 2
+	if interval > time.Minute {
+		interval = time.Minute
 	}
 	if interval < time.Second {
 		interval = time.Second
@@ -224,8 +243,8 @@ func startStaleMonitor(service *telemetry.Service, observer telemetry.StaleEntit
 	go func() {
 		defer close(done)
 		reconcile := func() {
-			if err := service.ReconcileStale(ctx, time.Now().UTC().Add(-staleAfter), observer); err != nil && ctx.Err() == nil && logger != nil {
-				logger.Error("reconcile stale telemetry", "error", err)
+			if err := monitor.Reconcile(ctx); err != nil && ctx.Err() == nil && logger != nil {
+				logger.Error("reconcile entity freshness", "error", err)
 			}
 		}
 		reconcile()
@@ -259,6 +278,7 @@ type moduleHandlers struct {
 	audit           *audit.Handler
 	operators       *operators.Handler
 	scenarios       *scenarios.Handler
+	picture         *picture.Handler
 	hub             *realtime.Hub
 }
 
@@ -309,6 +329,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 		h.audit.Mount(r)
 		h.operators.Mount(r)
 		h.scenarios.Mount(r)
+		h.picture.Mount(r)
 		h.hub.Mount(r)
 	})
 

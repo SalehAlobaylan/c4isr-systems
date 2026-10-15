@@ -45,6 +45,8 @@ type trackResponse struct {
 	UpdatedAt        time.Time      `json:"updatedAt"`
 	ClosedAt         *time.Time     `json:"closedAt"`
 	ObservationCount int            `json:"observationCount"`
+	Freshness        string         `json:"freshness"`
+	FreshnessLabel   string         `json:"freshnessLabel"`
 }
 
 type historyPointResponse struct {
@@ -126,5 +128,7 @@ func toResponse(t Track) trackResponse {
 		UpdatedAt:        t.UpdatedAt,
 		ClosedAt:         t.ClosedAt,
 		ObservationCount: t.ObservationCount,
+		Freshness:        string(t.Freshness),
+		FreshnessLabel:   t.Freshness.Label(),
 	}
 }

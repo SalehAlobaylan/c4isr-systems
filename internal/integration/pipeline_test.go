@@ -2,11 +2,14 @@ package integration
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/telemetry"
 )
 
@@ -53,25 +56,51 @@ func TestConcurrencyGuardMigrationRepairsLegacyDuplicates(t *testing.T) {
 	}
 }
 
-func TestStaleMonitorIncludesNeverSeenAssetsAndClearsAfterTelemetry(t *testing.T) {
+// integrationFreshnessObserver records every gauge update so a test can assert
+// on the whole sequence, including an asset recovering contact.
+type integrationFreshnessObserver struct {
+	calls []string
+}
+
+func (o *integrationFreshnessObserver) ObserveStaleEntity(assetID string, stale bool) {
+	state := "live"
+	if stale {
+		state = "not-current"
+	}
+	o.calls = append(o.calls, assetID+":"+state)
+}
+
+func newIntegrationMonitor(t *testing.T, h *harness, observer telemetry.FreshnessObserver) *telemetry.FreshnessMonitor {
+	t.Helper()
+	repo := telemetry.NewPostgresRepository(h.pool)
+	return telemetry.NewFreshnessMonitor(repo, events.NewDispatcher(slog.New(slog.DiscardHandler)), observer, freshness.DefaultPolicy())
+}
+
+func TestFreshnessMonitorCoversNeverSeenAssetsAndRecoversAfterTelemetry(t *testing.T) {
 	h := newHarness(t)
+	ctx := context.Background()
 	h.createSource("stale-source")
 	if status := h.do(http.MethodPost, "/api/v1/assets", map[string]any{
 		"id": "never-seen", "name": "Never Seen", "type": "vehicle",
 	}, nil); status != http.StatusCreated {
 		t.Fatalf("create never-seen asset: status %d", status)
 	}
-	if _, err := h.pool.Exec(context.Background(), `UPDATE assets SET created_at = now() - interval '10 minutes' WHERE id = 'never-seen'`); err != nil {
-		t.Fatalf("age never-seen asset: %v", err)
+
+	observer := &integrationFreshnessObserver{}
+	monitor := newIntegrationMonitor(t, h, observer)
+
+	// An asset that has never reported has no data at all, which is distinct
+	// from being stale: nothing is known rather than something being old.
+	if err := monitor.Reconcile(ctx); err != nil {
+		t.Fatalf("first reconcile: %v", err)
 	}
-	repo := telemetry.NewPostgresRepository(h.pool)
-	cutoff := time.Now().UTC().Add(-5 * time.Minute)
-	ids, err := repo.ListStaleAssetIDs(context.Background(), cutoff)
-	if err != nil {
-		t.Fatalf("list never-seen stale assets: %v", err)
+	// Snapshot and gauge keys are type-namespaced so an asset and a track sharing
+	// an id cannot collapse into one another.
+	if got := monitor.Snapshot()["asset:never-seen"]; got != freshness.StateUnknown {
+		t.Fatalf("never-seen freshness = %q, want %q", got, freshness.StateUnknown)
 	}
-	if !containsString(ids, "never-seen") {
-		t.Fatalf("stale assets = %v, want never-seen", ids)
+	if len(observer.calls) == 0 || observer.calls[0] != "asset:never-seen:not-current" {
+		t.Fatalf("gauge updates = %v, want never-seen marked not-current", observer.calls)
 	}
 
 	if status := h.do(http.MethodPost, "/api/v1/telemetry", map[string]any{
@@ -82,12 +111,96 @@ func TestStaleMonitorIncludesNeverSeenAssetsAndClearsAfterTelemetry(t *testing.T
 	}, nil); status != http.StatusCreated {
 		t.Fatalf("recover never-seen asset: status %d", status)
 	}
-	ids, err = repo.ListStaleAssetIDs(context.Background(), cutoff)
-	if err != nil {
-		t.Fatalf("list recovered stale assets: %v", err)
+
+	if err := monitor.Reconcile(ctx); err != nil {
+		t.Fatalf("second reconcile: %v", err)
 	}
-	if containsString(ids, "never-seen") {
-		t.Fatalf("recovered asset remained stale: %v", ids)
+	if got := monitor.Snapshot()["asset:never-seen"]; got != freshness.StateLive {
+		t.Fatalf("recovered freshness = %q, want %q", got, freshness.StateLive)
+	}
+	last := observer.calls[len(observer.calls)-1]
+	if last != "asset:never-seen:live" {
+		t.Fatalf("final gauge update = %q, want never-seen:live", last)
+	}
+}
+
+func TestFreshnessIsExposedOnAssetAndTrackReads(t *testing.T) {
+	h := newHarness(t)
+	// ingestObservation posts against this shared synthetic source.
+	h.createSource("simulator-test")
+	h.createSource("freshness-source")
+
+	if status := h.do(http.MethodPost, "/api/v1/assets", map[string]any{
+		"id": "freshness-asset", "name": "Freshness Asset", "type": "vehicle",
+	}, nil); status != http.StatusCreated {
+		t.Fatalf("create asset: status %d", status)
+	}
+	if status := h.do(http.MethodPost, "/api/v1/telemetry", map[string]any{
+		"messageId":  "freshness-asset-1",
+		"assetId":    "freshness-asset",
+		"sourceId":   "freshness-source",
+		"observedAt": time.Now().UTC().Add(-time.Second).Format(time.RFC3339Nano),
+	}, nil); status != http.StatusCreated {
+		t.Fatalf("ingest telemetry: status %d", status)
+	}
+
+	// A track built from a current observation is live, and its position must
+	// not be presented as though it were unqualified.
+	h.ingestObservation("freshness-track", 24.7, 46.6, time.Now().UTC().Add(-time.Second))
+
+	var assets struct {
+		Items []struct {
+			ID         string `json:"id"`
+			Freshness  string `json:"freshness"`
+			Label      string `json:"freshnessLabel"`
+			LastSeenAt string `json:"lastSeenAt"`
+		} `json:"items"`
+	}
+	if status := h.do(http.MethodGet, "/api/v1/assets?limit=200", nil, &assets); status != http.StatusOK {
+		t.Fatalf("list assets: status %d", status)
+	}
+	found := false
+	for _, item := range assets.Items {
+		if item.ID != "freshness-asset" {
+			continue
+		}
+		found = true
+		if item.Freshness != string(freshness.StateLive) {
+			t.Errorf("asset freshness = %q, want %q", item.Freshness, freshness.StateLive)
+		}
+		if item.Label != freshness.StateLive.Label() {
+			t.Errorf("asset freshnessLabel = %q, want %q", item.Label, freshness.StateLive.Label())
+		}
+		if item.LastSeenAt == "" {
+			t.Error("asset lastSeenAt must be populated for freshness to be auditable")
+		}
+	}
+	if !found {
+		t.Fatal("freshness-asset missing from asset list")
+	}
+
+	var tracks struct {
+		Items []struct {
+			ID          string `json:"id"`
+			ExternalRef string `json:"externalRef"`
+			Freshness   string `json:"freshness"`
+		} `json:"items"`
+	}
+	if status := h.do(http.MethodGet, "/api/v1/tracks?limit=200", nil, &tracks); status != http.StatusOK {
+		t.Fatalf("list tracks: status %d", status)
+	}
+	found = false
+	for _, item := range tracks.Items {
+		if item.ExternalRef != "freshness-track" {
+			continue
+		}
+		found = true
+		if item.Freshness != string(freshness.StateLive) {
+			t.Errorf("track freshness = %q, want %q", item.Freshness, freshness.StateLive)
+		}
+	}
+	if !found {
+		t.Fatal("freshness-track missing from track list")
 	}
 }
 
