@@ -4,7 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { useEffect, useMemo, useState } from 'react'
 
 import { Page } from '@/components/layout/Page'
-import { StateBadge } from '@/components/shared/badges'
+import { IncidentStatusBadge, PriorityBadge } from '@/components/shared/badges'
 import { DataTable } from '@/components/shared/data-table'
 import { ErrorState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
@@ -46,7 +46,7 @@ export function IncidentsPage() {
         accessorKey: 'id',
         header: 'Incident ID',
         cell: ({ row }) => (
-          <span className="font-mono text-[11px] text-ink-muted" title={row.original.id}>
+          <span className="font-mono text-[12px] text-ink-muted" title={row.original.id}>
             {row.original.id}
           </span>
         ),
@@ -63,12 +63,12 @@ export function IncidentsPage() {
       {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => <StateBadge value={row.original.status} />,
+        cell: ({ row }) => <IncidentStatusBadge value={row.original.status} />,
       },
       {
         accessorKey: 'priority',
         header: 'Priority',
-        cell: ({ row }) => <StateBadge value={row.original.priority} />,
+        cell: ({ row }) => <PriorityBadge value={row.original.priority} />,
       },
       {
         accessorKey: 'assignedOperator',

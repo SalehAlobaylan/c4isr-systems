@@ -7,12 +7,13 @@ export interface SeparatorProps {
   className?: string
 }
 
+/** Decorative divider only. Anything load-bearing gets a control border. */
 export function Separator({ orientation = 'horizontal', className }: SeparatorProps) {
   return (
     <BaseSeparator
       orientation={orientation}
       className={cn(
-        'shrink-0 bg-edge',
+        'shrink-0 bg-[color:var(--emad-border-subtle-soft)]',
         orientation === 'horizontal' ? 'h-px w-full' : 'h-full w-px',
         className,
       )}

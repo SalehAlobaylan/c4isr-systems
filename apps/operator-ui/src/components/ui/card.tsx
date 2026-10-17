@@ -2,12 +2,14 @@ import type { HTMLAttributes } from 'react'
 
 import { cn } from '@/lib/utils'
 
+/**
+ * Standard panel: panel surface, subtle divider, restrained corners
+ * (DESIGN.md §7.4). Hierarchy comes from the heading and spacing rather than
+ * from elevation or a shadow.
+ */
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div
-      className={cn('rounded-[2px] border border-edge bg-panel shadow-sm', className)}
-      {...props}
-    />
+    <div className={cn('rounded-[4px] border border-edge bg-panel', className)} {...props} />
   )
 }
 
@@ -16,11 +18,13 @@ export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElemen
 }
 
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
-  return <h3 className={cn('text-sm font-semibold tracking-wide text-ink', className)} {...props} />
+  return (
+    <h3 className={cn('text-[14px] leading-5 font-semibold text-ink', className)} {...props} />
+  )
 }
 
 export function CardDescription({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {
-  return <p className={cn('text-xs text-ink-muted', className)} {...props} />
+  return <p className={cn('text-[13px] leading-[18px] text-ink-muted', className)} {...props} />
 }
 
 export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {

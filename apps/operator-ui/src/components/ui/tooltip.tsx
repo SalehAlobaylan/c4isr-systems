@@ -10,6 +10,11 @@ export interface TooltipProps {
   className?: string
 }
 
+/**
+ * Supplemental text only. A tooltip must never be the sole place a piece of
+ * information exists, so anything essential belongs in the control's label or
+ * the surrounding panel (DESIGN.md §7.4).
+ */
 export function Tooltip({ content, children, side = 'top', className }: TooltipProps) {
   return (
     <BaseTooltip.Provider>
@@ -19,7 +24,7 @@ export function Tooltip({ content, children, side = 'top', className }: TooltipP
           <BaseTooltip.Positioner side={side} sideOffset={6} className="z-[80]">
             <BaseTooltip.Popup
               className={cn(
-                'max-w-xs rounded-[2px] border border-edge-strong bg-panel-raised px-2.5 py-1.5 text-xs text-ink shadow-xl',
+                'max-w-xs rounded-[6px] border border-edge-strong bg-panel-raised px-3 py-2 text-[12px] leading-4 text-ink transition-opacity duration-[--emad-motion-base]',
                 'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0',
                 className,
               )}

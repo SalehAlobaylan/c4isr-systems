@@ -16,23 +16,25 @@ export interface MenuProps {
   align?: 'start' | 'center' | 'end'
 }
 
+/** Menu surface on the raised step so it reads as floating above the panel. */
 export function Menu({ trigger, items, align = 'end' }: MenuProps) {
   return (
     <BaseMenu.Root>
       <BaseMenu.Trigger render={trigger as ReactElement<Record<string, unknown>>} />
       <BaseMenu.Portal>
         <BaseMenu.Positioner align={align} sideOffset={6} className="z-[70]">
-          <BaseMenu.Popup className="min-w-48 rounded-[2px] border border-edge-strong bg-panel py-1 shadow-2xl outline-none">
+          <BaseMenu.Popup className="min-w-52 rounded-[6px] border border-edge-strong bg-panel-raised py-1">
             {items.map((item) => (
               <BaseMenu.Item
                 key={item.label}
                 disabled={item.disabled}
                 onClick={item.onSelect}
                 className={cn(
-                  'cursor-default px-3 py-1.5 text-xs text-ink-muted outline-none select-none',
+                  'cursor-default px-3 py-2 text-[13px] leading-[18px] text-ink-muted select-none',
                   'data-[highlighted]:bg-panel-hover data-[highlighted]:text-ink',
-                  'data-[disabled]:opacity-40',
-                  item.danger && 'text-red-300 data-[highlighted]:text-red-200',
+                  'data-[disabled]:text-[color:var(--emad-text-secondary)]',
+                  item.danger &&
+                    'text-[color:var(--emad-status-critical)] data-[highlighted]:text-[color:var(--emad-status-critical)]',
                 )}
               >
                 {item.label}

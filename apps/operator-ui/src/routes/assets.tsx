@@ -4,7 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo } from 'react'
 
 import { Page } from '@/components/layout/Page'
-import { FreshnessBadge, StateBadge } from '@/components/shared/badges'
+import { AssetStatusBadge, ConnectionBadge, FreshnessBadge, HealthBadge } from '@/components/shared/badges'
 import { DataTable } from '@/components/shared/data-table'
 import { ErrorState } from '@/components/shared/states'
 import { Select } from '@/components/ui/select'
@@ -65,12 +65,12 @@ export function AssetsPage() {
       {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => <StateBadge value={row.original.status} />,
+        cell: ({ row }) => <AssetStatusBadge value={row.original.status} lastSeenAt={row.original.lastSeenAt} />,
       },
       {
         accessorKey: 'connectionState',
         header: 'Connection',
-        cell: ({ row }) => <StateBadge value={row.original.connectionState || 'unknown'} />,
+        cell: ({ row }) => <ConnectionBadge value={row.original.connectionState || 'unknown'} lastSeenAt={row.original.lastSeenAt} />,
       },
       {
         id: 'freshness',
@@ -86,9 +86,7 @@ export function AssetsPage() {
       {
         id: 'health',
         header: 'Health',
-        cell: ({ row }) => (
-          <span className="font-mono text-xs text-ink-muted">{row.original.health || '—'}</span>
-        ),
+        cell: ({ row }) => <HealthBadge value={row.original.health || 'unknown'} />,
       },
       {
         id: 'position',

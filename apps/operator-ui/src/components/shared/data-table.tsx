@@ -9,6 +9,7 @@ import {
 import { useState, type ReactNode } from 'react'
 
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons'
+import { EmptyState } from '@/components/shared/states'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -106,8 +107,10 @@ export function DataTable<T>({
           ) : rows.length === 0 ? (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={columns.length} className="py-10 text-center whitespace-normal">
-                <p className="text-sm text-ink-muted">{emptyMessage}</p>
-                {emptyAction ? <div className="mt-3 flex justify-center">{emptyAction}</div> : null}
+                {/* "Nothing here" and "the request failed" are different
+                    claims, so the empty state says the first and never borrows
+                    the second's iconography (DESIGN.md §7.7). */}
+                <EmptyState title={emptyMessage} action={emptyAction} />
               </TableCell>
             </TableRow>
           ) : (

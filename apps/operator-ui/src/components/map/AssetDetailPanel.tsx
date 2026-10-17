@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 
+import { AlertTriangleIcon } from '@/components/icons'
 import { ErrorState } from '@/components/shared/states'
-import { FreshnessBadge } from '@/components/shared/badges'
+import { AssetStatusBadge, CommandStateBadge, ConnectionBadge, FreshnessBadge, HealthBadge, KindBadge } from '@/components/shared/badges'
 import { api, type Asset } from '@/lib/api'
 import { freshnessWarning, isActionable } from '@/lib/freshness'
 import {
@@ -83,7 +84,7 @@ export function AssetDetailPanel({ assetId }: { assetId: string }) {
   if (!asset) {
     return (
       <div className="aegis-panel" aria-hidden="true">
-        <span className="block h-3 w-2/3 rounded" style={{ background: 'var(--surface-2)' }} />
+        <span className="block h-3 w-2/3 rounded" style={{ background: 'var(--emad-surface-raised)' }} />
       </div>
     )
   }
@@ -93,22 +94,29 @@ export function AssetDetailPanel({ assetId }: { assetId: string }) {
       <section className="aegis-panel">
         <h2>Asset state</h2>
         <p className="sub">Controlled units · telemetry and orders</p>
-        {!isActionable(asset.freshness) ? (
-          <p className="mt-2 border-l-2 border-[color:var(--st-warn)] bg-[color:var(--st-warn)]/10 px-2 py-1.5 text-[11px] leading-snug text-[color:var(--st-warn)]">
+{!isActionable(asset.freshness) ? (
+          <p className="mt-3 flex items-start gap-2 rounded-[4px] border border-[color:var(--emad-status-caution)] bg-[color:var(--emad-wash-caution)] px-3 py-2 text-[13px] leading-[18px] text-[color:var(--emad-status-caution)]">
+            <AlertTriangleIcon className="mt-px size-4 shrink-0" />
             {freshnessWarning(asset.freshness, asset.lastSeenAt)}
           </p>
         ) : null}
         <dl className="aegis-kv">
           <dt>Status</dt>
-          <dd className="word">{asset.status}</dd>
+          <dd className="word">
+            <AssetStatusBadge value={asset.status} lastSeenAt={asset.lastSeenAt} />
+          </dd>
           <dt>Freshness</dt>
           <dd>
             <FreshnessBadge freshness={asset.freshness} lastSeenAt={asset.lastSeenAt} />
           </dd>
           <dt>Link</dt>
-          <dd className="word">{asset.connectionState}</dd>
+          <dd className="word">
+            <ConnectionBadge value={asset.connectionState || 'unknown'} lastSeenAt={asset.lastSeenAt} />
+          </dd>
           <dt>Health</dt>
-          <dd className="word">{asset.health || 'unknown'}</dd>
+          <dd className="word">
+            <HealthBadge value={asset.health || 'unknown'} />
+          </dd>
           <dt>Name</dt>
           <dd>{asset.name}</dd>
           <dt>Type</dt>
@@ -117,7 +125,7 @@ export function AssetDetailPanel({ assetId }: { assetId: string }) {
           <dd>
             {formatCoord(asset.position)}
             {!isActionable(asset.freshness) ? (
-              <span className="ml-1 text-[10px] uppercase text-[color:var(--faint)]">
+              <span className="ml-1 text-[12px] uppercase text-[color:var(--emad-text-tertiary)]">
                 last known
               </span>
             ) : null}
@@ -132,9 +140,7 @@ export function AssetDetailPanel({ assetId }: { assetId: string }) {
         {asset.capabilities.length > 0 ? (
           <div className="mt-3 flex flex-wrap gap-1">
             {asset.capabilities.map((capability) => (
-              <span className="aegis-src" key={capability}>
-                {capability}
-              </span>
+              <KindBadge key={capability} value={capability} />
             ))}
           </div>
         ) : null}
@@ -144,7 +150,7 @@ export function AssetDetailPanel({ assetId }: { assetId: string }) {
         <h2>Telemetry history ({telemetryQuery.data?.total ?? 0})</h2>
         <p className="sub">Latest samples first</p>
         {telemetryQuery.isLoading ? (
-          <span className="block h-3 w-2/3 rounded" style={{ background: 'var(--surface-2)' }} />
+          <span className="block h-3 w-2/3 rounded" style={{ background: 'var(--emad-surface-raised)' }} />
         ) : (telemetryQuery.data?.items?.length ?? 0) === 0 ? (
           <p className="aegis-empty">No telemetry samples received.</p>
         ) : (
@@ -152,14 +158,14 @@ export function AssetDetailPanel({ assetId }: { assetId: string }) {
             {telemetryQuery.data?.items.map((sample) => (
               <li
                 key={sample.id ?? sample.observedAt}
-                className="flex items-center justify-between gap-3 border-b border-[color:var(--line)] py-2 last:border-b-0"
+                className="flex items-center justify-between gap-3 border-b border-[color:var(--emad-border-subtle-soft)] py-2 last:border-b-0"
               >
-                <span className="mono text-[10px] muted">{formatTimestamp(sample.observedAt)}</span>
-                <span className="mono text-[10px] faint">{formatCoord(sample.position)}</span>
-                <span className="text-[10px] tracking-[.12em] uppercase muted">
+                <span className="mono text-[12px] muted">{formatTimestamp(sample.observedAt)}</span>
+                <span className="mono text-[12px] faint">{formatCoord(sample.position)}</span>
+                <span className="text-[12px] tracking-[.08em] uppercase muted">
                   {sample.connectionState || sample.health || '—'}
                   {sample.freshness && !isActionable(sample.freshness) ? (
-                    <span className="ml-1 text-[color:var(--st-warn)]">
+                    <span className="ml-1 text-[color:var(--emad-status-caution)]">
                       {sample.freshnessLabel?.toLowerCase() ?? 'stale'}
                     </span>
                   ) : null}
@@ -179,15 +185,15 @@ export function AssetDetailPanel({ assetId }: { assetId: string }) {
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {commandsQuery.data?.items.map((command) => (
               <li key={command.id} className="flex items-center justify-between gap-3">
-                <span className="mono text-[11px]">{command.type}</span>
-                <span className="aegis-sev">{command.state}</span>
+                <span className="mono text-[13px]">{command.type}</span>
+                <CommandStateBadge value={command.state} />
               </li>
             ))}
           </ul>
         )}
       </section>
 
-      <p className="mono m-0 px-4 py-3 text-[9px] faint">Updated {formatRelative(asset.updatedAt)}</p>
+      <p className="mono m-0 px-4 py-3 text-[12px] faint">Updated {formatRelative(asset.updatedAt)}</p>
     </>
   )
 }

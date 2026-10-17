@@ -13,7 +13,7 @@ import {
 
 import { AssetDetailPanel } from '@/components/map/AssetDetailPanel'
 import { MapCanvas, type MapLayerKey } from '@/components/map/MapCanvas'
-import { AREA_KIND_COLORS, AREA_KIND_LABELS } from '@/components/map/geojson'
+import { AREA_KIND_LABELS, AREA_KIND_ORDER, areaKindColorVar } from '@/components/map/geojson'
 import { TrackDetailPanel } from '@/components/map/TrackDetailPanel'
 import { Scrubber } from '@/components/map/Scrubber'
 import { ErrorState } from '@/components/shared/states'
@@ -23,6 +23,7 @@ import {
   FRESHNESS_LABELS,
   countFreshness,
   countUntrustworthy,
+  toFreshness,
 } from '@/lib/freshness'
 import {
   formatCoord,
@@ -30,15 +31,23 @@ import {
   formatRelative,
   formatSpeed,
   formatTimestamp,
+  titleCase,
   truncateId,
 } from '@/lib/format'
 import { haversineMeters } from '@/lib/geo'
+import {
+  TONE_GLYPH,
+  presentAssetStatus,
+  presentGeofenceSeverity,
+  presentTrackStatus,
+  toneRef,
+  type SemanticTone,
+} from '@/lib/operationalPresentation'
 import { queryKeys } from '@/lib/queryKeys'
 import { useLayoutStore } from '@/stores/layout'
 import { selectReplayAt, useScrubStore } from '@/stores/scrub'
 import { formatSelection, parseSelection, useUiStore, type Selection } from '@/stores/ui'
 
-import '@/components/map/picture.css'
 
 const TRACK_FILTERS = { limit: 500 }
 const ASSET_FILTERS = { limit: 500 }
@@ -61,21 +70,10 @@ const LAYER_LABELS: Array<{ key: MapLayerKey; label: string }> = [
   { key: 'history', label: 'Movement trails' },
 ]
 
-const TRACK_STATE: Record<string, string> = {
-  active: 'track',
-  lost: 'warn',
-  closed: 'unknown',
-}
-
-const ASSET_STATE: Record<string, string> = {
-  available: 'ok',
-  assigned: 'track',
-  maintenance: 'warn',
-  unavailable: 'warn',
-  offline: 'unknown',
-}
-
 const ACKNOWLEDGED = new Set(['ACKNOWLEDGED', 'COMPLETED'])
+
+/** Worst first, so the legend reads as a scale rather than an arbitrary order. */
+const SEVERITY_ORDER = ['critical', 'high', 'medium', 'low'] as const
 
 /** Scenario refs are namespaced (`<run>__track__traffic-01`); show the readable tail. */
 function shortRef(value: string | undefined | null, fallbackId: string): string {
@@ -155,6 +153,9 @@ export function MapPage() {
 
   const [hidden, setHidden] = useState<Partial<Record<MapLayerKey | 'legend', boolean>>>({})
   const [dragging, setDragging] = useState(false)
+  const [fitPadding, setFitPadding] = useState({ top: 96, bottom: 72 })
+  const wrapRef = useRef<HTMLDivElement | null>(null)
+  const boardRef = useRef<HTMLDivElement | null>(null)
 
   const layerVisibility = useMemo(
     () => ({
@@ -261,30 +262,57 @@ export function MapPage() {
   )
 
   // Live and replayed pictures are rendered from different sources, and the
-// difference is not cosmetic: a replay must come from recorded evidence, not
-// from the current-state projections that have already moved on.
-const replayAt = useScrubStore(selectReplayAt)
-const pictureQuery = useQuery({
-  queryKey: ['picture', replayAt ?? 'live'],
-  queryFn: () =>
-    replayAt ? api.getPicture({ at: replayAt }) : api.getPicture({ live: true }),
-  // While scrubbed, the picture is frozen. Refetching on an interval would
-  // silently walk the operator forward through time.
-  refetchInterval: replayAt ? false : 10_000,
-  enabled: Boolean(replayAt),
-})
+  // difference is not cosmetic: a replay must come from recorded evidence, not
+  // from the current-state projections that have already moved on.
+  const replayAt = useScrubStore(selectReplayAt)
+  const pictureQuery = useQuery({
+    queryKey: ['picture', replayAt ?? 'live'],
+    queryFn: () =>
+      replayAt ? api.getPicture({ at: replayAt }) : api.getPicture({ live: true }),
+    // While scrubbed, the picture is frozen. Refetching on an interval would
+    // silently walk the operator forward through time.
+    refetchInterval: replayAt ? false : 10_000,
+    enabled: Boolean(replayAt),
+  })
 
-const isReplaying = Boolean(replayAt)
+  const isReplaying = Boolean(replayAt)
 
-const tracks = isReplaying
-  ? (pictureQuery.data?.tracks ?? []).map(toLiveTrack)
-  : (tracksQuery.data?.items ?? [])
-const assets = isReplaying
-  ? (pictureQuery.data?.assets ?? []).map(toLiveAsset)
-  : (assetsQuery.data?.items ?? [])
-const pictureGeofences = isReplaying ? (pictureQuery.data?.geofences ?? []) : undefined
+  /**
+   * Measures how much of the plot the top chrome covers.
+   *
+   * The timeline control, the replay banner and the board overlay all sit over
+   * the map, so a selection centred in the raw canvas would be centred
+   * *underneath* them — defeating the point of selecting it. This is measured
+   * rather than hardcoded because the chrome changes height: the banner appears
+   * only during replay, the board collapses, and both wrap at narrow widths.
+   */
+  useEffect(() => {
+    const wrap = wrapRef.current
+    if (!wrap) return
+    const measure = () => {
+      const wrapBox = wrap.getBoundingClientRect()
+      const boardBox = boardRef.current?.getBoundingClientRect()
+      const top = boardBox ? boardBox.bottom - wrapBox.top : 96
+      // The legend column and the mode switch share the bottom edge.
+      setFitPadding({ top: Math.round(top) + 24, bottom: 72 })
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    if (boardRef.current) observer.observe(boardRef.current)
+    observer.observe(wrap)
+    return () => observer.disconnect()
+  }, [overlayOpen, isReplaying])
 
-const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === selection.id) : undefined
+  const tracks = isReplaying
+    ? (pictureQuery.data?.tracks ?? []).map(toLiveTrack)
+    : (tracksQuery.data?.items ?? [])
+  const assets = isReplaying
+    ? (pictureQuery.data?.assets ?? []).map(toLiveAsset)
+    : (assetsQuery.data?.items ?? [])
+  const pictureGeofences = isReplaying ? (pictureQuery.data?.geofences ?? []) : undefined
+
+  const selectedTrack =
+    selection?.kind === 'track' ? tracks.find((t) => t.id === selection.id) : undefined
   const selectedAsset = selection?.kind === 'asset' ? assets.find((a) => a.id === selection.id) : undefined
 
   const measureDistance =
@@ -306,8 +334,8 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
   const legendFreshness = useMemo(() => countFreshness(pictureFreshness), [pictureFreshness])
 
   // Count footprints by phenomenon class so the legend reflects what is actually
-  // on the map, in severity order rather than whatever the API happened to
-  // return first.
+  // on the map, in a fixed worst-first order rather than whatever the API
+  // happened to return first.
   const legendAreaKinds = useMemo(() => {
     const counts = new Map<string, number>()
     for (const observation of areasQuery.data?.items ?? []) {
@@ -315,11 +343,41 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
       if (!kind) continue
       counts.set(kind, (counts.get(kind) ?? 0) + 1)
     }
-    return [...counts.entries()]
-      .map(([kind, count]) => ({ kind, count }))
-      .sort((a, b) => (AREA_KIND_COLORS[a.kind] > AREA_KIND_COLORS[b.kind] ? -1 : 1))
+    return AREA_KIND_ORDER.filter((kind) => counts.has(kind)).map((kind) => ({
+      kind,
+      count: counts.get(kind) ?? 0,
+    }))
   }, [areasQuery.data])
   const staleCount = useMemo(() => countUntrustworthy(pictureFreshness), [pictureFreshness])
+
+  // Zones are drawn by severity, so the legend counts them by severity too. The
+  // legend is the documented non-hue channel for reading the map; an entry that
+  // names one colour for a layer drawn in four would be an assertion rather
+  // than a reading (DESIGN.md §9.3, §12.4).
+  const legendGeofences = useMemo(() => {
+    const counts = new Map<string, { severity: string; count: number; tone: SemanticTone; label: string }>()
+    for (const geofence of pictureGeofences ?? geofencesQuery.data?.items ?? []) {
+      const presentation = presentGeofenceSeverity(geofence.severity)
+      const entry = counts.get(geofence.severity) ?? {
+        severity: geofence.severity,
+        count: 0,
+        tone: presentation.tone,
+        label: titleCase(geofence.severity),
+      }
+      entry.count += 1
+      counts.set(geofence.severity, entry)
+    }
+    return SEVERITY_ORDER.map((severity) => counts.get(severity)).filter(
+      (
+        entry,
+      ): entry is {
+        severity: string
+        count: number
+        tone: SemanticTone
+        label: string
+      } => entry !== undefined,
+    )
+  }, [pictureGeofences, geofencesQuery.data])
 
   const resizerRef = useRef<HTMLDivElement | null>(null)
   const onResizeStart = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -363,12 +421,9 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
       style={{ '--rail-w': `${railWidth}px` } as CSSProperties}
     >
       <div className="aegis-mapcol">
-        <div className="aegis-mapwrap">
+        <div className="aegis-mapwrap" ref={wrapRef}>
           {tracksQuery.isError ? (
-            <div
-              className="absolute inset-0 z-20 flex items-center justify-center p-6"
-              style={{ background: 'rgba(22, 26, 38, 0.86)' }}
-            >
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-veil p-6">
               <ErrorState error={tracksQuery.error} onRetry={() => void tracksQuery.refetch()} />
             </div>
           ) : null}
@@ -378,23 +433,22 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
           {isReplaying ? (
             // A replayed picture must never be mistaken for a live one. The
             // banner is explicit because every number behind it describes a
-            // past moment.
+            // past moment. It sits in flow between the scrubber and the board
+            // overlay rather than floating over them, so it cannot cover the
+            // control that returns an operator to the present.
             <div
-              className="absolute left-1/2 top-[76px] z-[4] -translate-x-1/2 border border-[color:var(--st-warn)] bg-black/80 px-3 py-1.5 text-center"
+              className="z-[5] mx-auto mb-2 w-fit shrink-0 rounded-[4px] border border-[color:var(--emad-status-caution)] bg-[color:var(--emad-surface-overlay)] px-4 py-2 text-center"
               role="status"
               data-testid="replay-banner"
             >
-              <p className="m-0 text-[10px] tracking-[.14em] text-[color:var(--st-warn)] uppercase">
+              <p className="m-0 text-[12px] leading-4 font-semibold tracking-[.08em] text-[color:var(--emad-status-caution)] uppercase">
                 Replaying recorded evidence · realtime updates are not applied
               </p>
             </div>
           ) : null}
 
           {pictureQuery.isError && isReplaying ? (
-            <div
-              className="absolute inset-0 z-20 flex items-center justify-center p-6"
-              style={{ background: 'rgba(22, 26, 38, 0.86)' }}
-            >
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-veil p-6">
               <ErrorState error={pictureQuery.error} onRetry={() => void pictureQuery.refetch()} />
             </div>
           ) : null}
@@ -409,11 +463,17 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
             mode={mapMode}
             measurePoints={drawPoints}
             layers={layerVisibility}
+            fitPadding={fitPadding}
             onSelect={handleSelect}
             onMeasurePoint={addDrawPoint}
           />
 
-          <div className="aegis-mapboard" data-od-id="map-board" aria-label="Entity board overlay">
+          <div
+            className="aegis-mapboard"
+            data-od-id="map-board"
+            aria-label="Entity board overlay"
+            ref={boardRef}
+          >
             <div className="aegis-mbhead">
               <button
                 type="button"
@@ -425,9 +485,11 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
               >
                 Board · {isReplaying ? 'replayed plot' : 'live plot'}
               </button>
-              <span className="mono faint text-[9px]">{entityCount} ENTITIES</span>
-              <span className="mono faint text-[9px]">{selectionLabel}</span>
-              <span className="aegis-mbhint">Click plot or card to inspect · drag to pan · wheel to zoom</span>
+              <span className="mono faint text-[12px]">{entityCount} ENTITIES</span>
+              <span className="mono faint text-[12px]">{selectionLabel}</span>
+              <span className="aegis-mbhint">
+                Click plot or card to inspect · drag to pan · wheel to zoom
+              </span>
               <div className="aegis-popwrap">
                 <button
                   type="button"
@@ -475,7 +537,8 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
                       key={track.id}
                       type="button"
                       className="aegis-mbcard aegis-ent"
-                      data-state={TRACK_STATE[track.status] ?? 'unknown'}
+                      data-tone={presentTrackStatus(track.status).tone}
+                      data-freshness={toFreshness(track.freshness)}
                       aria-pressed={selection?.kind === 'track' && selection.id === track.id}
                       onClick={() =>
                         handleSelect(
@@ -488,7 +551,14 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
                       <span className="inner">
                         <span className="id">{shortRef(track.externalRef, track.id)}</span>
                         <span className="ty">Track</span>
-                        <span className="st">{track.status}</span>
+                        <span className="st">
+                          <i
+                            className="tone-glyph"
+                            data-glyph={TONE_GLYPH[presentTrackStatus(track.status).tone]}
+                            aria-hidden="true"
+                          />
+                          {track.status}
+                        </span>
                         <span className="act">{formatRelative(track.lastSeenAt)}</span>
                       </span>
                     </button>
@@ -498,9 +568,8 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
                       key={asset.id}
                       type="button"
                       className="aegis-mbcard aegis-ent"
-                      data-state={
-                        asset.health === 'critical' ? 'crit' : (ASSET_STATE[asset.status] ?? 'unknown')
-                      }
+                      data-tone={presentAssetStatus(asset.status).tone}
+                      data-freshness={toFreshness(asset.freshness)}
                       aria-pressed={selection?.kind === 'asset' && selection.id === asset.id}
                       onClick={() =>
                         handleSelect(
@@ -513,13 +582,20 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
                       <span className="inner">
                         <span className="id">{asset.name || truncateId(asset.id, 10)}</span>
                         <span className="ty">{asset.type}</span>
-                        <span className="st">{asset.status}</span>
+                        <span className="st">
+                          <i
+                            className="tone-glyph"
+                            data-glyph={TONE_GLYPH[presentAssetStatus(asset.status).tone]}
+                            aria-hidden="true"
+                          />
+                          {asset.status}
+                        </span>
                         <span className="act">{formatRelative(asset.lastSeenAt)}</span>
                       </span>
                     </button>
                   ))}
                   {entityCount === 0 ? (
-                    <p className="m-0 bg-bg px-4 py-6 text-[10px] tracking-[.13em] uppercase faint">
+                    <p className="m-0 bg-bg px-4 py-6 text-[12px] tracking-[.08em] uppercase faint">
                       No entities reported yet.
                     </p>
                   ) : null}
@@ -532,9 +608,7 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
                         label="Status"
                         value={selectedTrack.status}
                         kind="word"
-                        severity={
-                          selectedTrack.status === 'lost' ? 'warn' : selectedTrack.status === 'active' ? undefined : 'warn'
-                        }
+                        tone={presentTrackStatus(selectedTrack.status).tone}
                       />
                       <MetricCell label="Speed" value={formatSpeed(selectedTrack.speed)} />
                       <MetricCell label="Position" value={formatCoord(selectedTrack.position)} />
@@ -544,7 +618,12 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
                     </>
                   ) : selectedAsset ? (
                     <>
-                      <MetricCell label="Status" value={selectedAsset.status} kind="word" />
+                      <MetricCell
+                        label="Status"
+                        value={selectedAsset.status}
+                        kind="word"
+                        tone={presentAssetStatus(selectedAsset.status).tone}
+                      />
                       <MetricCell label="Link" value={selectedAsset.connectionState} kind="word" />
                       <MetricCell label="Health" value={selectedAsset.health || 'unknown'} kind="word" />
                       <MetricCell label="Speed" value={formatSpeed(selectedAsset.speed)} />
@@ -560,28 +639,39 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
                 </div>
               </div>
             ) : null}
-
-            </div>
+          </div>
 
           {hidden.legend !== true ? (
-            <>
+            /* One column, three separate scales: marker shape means entity
+               kind, ring means freshness, dashed outline means an area
+               footprint. They stack rather than float so the third legend can
+               never land on top of the second. */
+            <div className="aegis-maplegends">
               <div className="aegis-maplegend" aria-label="Map legend">
-                <span>
-                  <i style={{ background: 'var(--st-ok)' }} />
-                  Asset
+                <span style={{ color: 'var(--emad-status-positive)' }}>
+                  <i data-shape="asset" />
+                  <span className="text-ink-muted">Asset</span>
                 </span>
-                <span>
-                  <i style={{ background: 'var(--st-track)' }} />
-                  Track
+                <span style={{ color: 'var(--emad-status-info)' }}>
+                  <i data-shape="track" />
+                  <span className="text-ink-muted">Track</span>
                 </span>
-                <span>
-                  <i style={{ background: 'var(--st-warn)' }} />
-                  Track lost
+                <span style={{ color: 'var(--emad-status-caution)' }}>
+                  <i data-shape="track" />
+                  <span className="text-ink-muted">Track lost</span>
                 </span>
-                <span>
-                  <i style={{ background: 'transparent', border: '1px dashed var(--st-crit)' }} />
-                  Restricted
-                </span>
+                {/* Geofences are drawn by severity, so the legend has to read
+                    by severity too. Asserting one colour here would be an
+                    assertion, not a reading, and it would be wrong for three
+                    of the four levels. */}
+                {legendGeofences.map((entry) => (
+                  <span key={entry.severity} style={{ color: toneRef(entry.tone) }}>
+                    <i data-shape="area" />
+                    <span className="text-ink-muted">
+                      Restricted · {entry.label} ({entry.count})
+                    </span>
+                  </span>
+                ))}
               </div>
 
               {/* Freshness is drawn as a ring around the marker, so the legend
@@ -591,47 +681,40 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
               <div className="aegis-maplegend" aria-label="Freshness legend">
                 <span className="cap">Freshness</span>
                 {legendFreshness.map((entry) => (
-                  <span key={entry.state}>
-                    <i
-                      style={{
-                        background: 'transparent',
-                        boxShadow: `inset 0 0 0 2px ${FRESHNESS_COLORS[entry.state]}`,
-                        opacity: entry.state === 'live' ? 0.4 : 1,
-                      }}
-                    />
-                    {FRESHNESS_LABELS[entry.state]} ({entry.count})
+                  <span key={entry.state} style={{ color: FRESHNESS_COLORS[entry.state] }}>
+                    <i data-shape="ring" style={{ opacity: entry.state === 'live' ? 0.4 : 1 }} />
+                    <span className="text-ink-muted">
+                      {FRESHNESS_LABELS[entry.state]} ({entry.count})
+                    </span>
                   </span>
                 ))}
                 {staleCount > 0 ? (
-                  <span className="ml-2 text-[color:var(--st-warn)]">
+                  <span className="ml-2 text-[color:var(--emad-status-caution)]">
                     {staleCount} not current
                   </span>
                 ) : null}
               </div>
 
-              {/* Area kinds only appear once something has been reported, and only while
-                  the layer is drawn. A legend entry for a hidden layer tells the
-                  operator about a hazard they cannot see on the map, which is
-                  worse than saying nothing. An empty legend of hazard classes on
-                  a quiet day likewise reads as a warning that something is
-                  missing. */}
+              {/* Area kinds only appear once something has been reported, and
+                  only while the layer is drawn. A legend entry for a hidden
+                  layer tells the operator about a hazard they cannot see on the
+                  map, which is worse than saying nothing. An empty legend of
+                  hazard classes on a quiet day likewise reads as a warning that
+                  something is missing. */}
               {legendAreaKinds.length > 0 && hidden.areas !== true ? (
                 <div className="aegis-maplegend" aria-label="Event area legend">
                   <span className="cap">Event areas</span>
                   {legendAreaKinds.map((entry) => (
-                    <span key={entry.kind}>
-                      <i
-                        style={{
-                          background: 'transparent',
-                          border: `1px dashed ${AREA_KIND_COLORS[entry.kind] ?? '#3d215b'}`,
-                        }}
-                      />
-                      {AREA_KIND_LABELS[entry.kind] ?? entry.kind} ({entry.count})
+                    <span key={entry.kind} style={{ color: areaKindColorVar(entry.kind) }}>
+                      <i data-shape="area" />
+                      <span className="text-ink-muted">
+                        {AREA_KIND_LABELS[entry.kind] ?? entry.kind} ({entry.count})
+                      </span>
                     </span>
                   ))}
                 </div>
               ) : null}
-            </>
+            </div>
           ) : null}
 
           <div className="aegis-maptools">
@@ -684,7 +767,7 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
             Scenario tallies
           </button>
           <span className="spacer" />
-          <span className="mono faint text-[9px]">
+          <span className="mono faint text-[12px]">
             {observationsQuery.dataUpdatedAt
               ? `SYNC ${formatRelative(new Date(observationsQuery.dataUpdatedAt).toISOString())}`
               : 'SYNC —'}
@@ -747,7 +830,7 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
               Detail rail
             </button>
             <span className="spacer" />
-            <span className="mono faint text-[9px]">DRAG EDGE TO RESIZE</span>
+            <span className="mono faint text-[12px]">DRAG EDGE TO RESIZE</span>
           </div>
           <div className="aegis-panel">
             <h2>
@@ -767,7 +850,7 @@ const selectedTrack = selection?.kind === 'track' ? tracks.find((t) => t.id === 
             {selection?.kind === 'track' ? <TrackDetailPanel trackId={selection.id} /> : null}
             {selection?.kind === 'asset' ? <AssetDetailPanel assetId={selection.id} /> : null}
             {!selection ? (
-              <p className="m-0 text-[11px] tracking-[.12em] uppercase faint">
+              <p className="m-0 text-[13px] tracking-[.02em] faint">
                 Detail, classifications, evidence and assessments appear here.
               </p>
             ) : null}
@@ -792,18 +875,20 @@ function MetricCell({
   label,
   value,
   kind,
-  severity,
+  tone,
 }: {
   label: string
   value: string
   kind?: 'word'
-  severity?: 'warn' | 'crit'
+  tone?: SemanticTone
 }) {
   const missing = value === '—' || value === ''
   return (
-    <div className="aegis-mcell" data-sev={severity}>
+    <div className="aegis-mcell" data-tone={tone}>
       <p className="k">{label}</p>
-      <p className={missing ? 'v na' : kind ? 'v word' : 'v'}>{missing ? 'None' : value}</p>
+      <p className={missing ? 'v na' : kind ? 'v word' : 'v'}>
+        {missing ? 'None' : value}
+      </p>
     </div>
   )
 }

@@ -167,11 +167,21 @@ function errorEnvelope(value: unknown): ErrorEnvelope | undefined {
 async function parseError(response: Response, payload?: unknown): Promise<ApiError> {
   let code = 'http_error'
   let message = `Request failed with status ${response.status}`
-  const body = errorEnvelope(payload) ?? (await response.clone().json().catch(() => undefined))
-  const parsed = errorEnvelope(body)
+  // `openapi-fetch` has already read the response body: `payload` is its
+  // parsed value, the documented envelope for a JSON error and the raw text
+  // otherwise. Cloning the response here is guaranteed to throw ("Response
+  // body is already used") for any body that is not the envelope, and the
+  // throw replaced the server's message with a JavaScript TypeError in the
+  // operator's error state.
+  const parsed = errorEnvelope(payload)
   if (parsed) {
     code = parsed.error.code
     message = parsed.error.message
+  } else if (typeof payload === 'string') {
+    // A short plain-text failure (a proxy's "upstream connect error") is more
+    // truthful than the status alone. An HTML error page is not shown.
+    const text = payload.trim()
+    if (text.length > 0 && text.length <= 200 && !text.startsWith('<')) message = text
   }
   if (response.status === 401) {
     message = 'Authentication failed. Configure the operator UI API token.'

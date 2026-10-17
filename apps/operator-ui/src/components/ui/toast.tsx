@@ -3,19 +3,37 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useToastStore, type ToastVariant } from '@/stores/toasts'
 
+/**
+ * Notifications sit on the raised surface with a tone-coloured edge and icon.
+ *
+ * Two constraints from DESIGN.md matter here:
+ * - §7.6 a success toast must not obscure failure detail, so the tone is never
+ *   the only content: the title always states the outcome in words.
+ * - §3.2 every variant pairs its colour with a distinct icon, so the variant is
+ *   readable without relying on hue.
+ */
 const variantClasses: Record<ToastVariant, string> = {
-  info: 'border-sky-500/40 bg-sky-950/90 text-sky-100',
-  success: 'border-emerald-500/40 bg-emerald-950/90 text-emerald-100',
-  warning: 'border-amber-500/40 bg-amber-950/90 text-amber-100',
-  error: 'border-red-500/50 bg-red-950/90 text-red-100',
+  info: 'border-l-[color:var(--emad-status-info)]',
+  success: 'border-l-[color:var(--emad-status-positive)]',
+  warning: 'border-l-[color:var(--emad-status-caution)]',
+  error: 'border-l-[color:var(--emad-status-critical)]',
+}
+
+const variantIcon: Record<ToastVariant, string> = {
+  info: 'text-[color:var(--emad-status-info)]',
+  success: 'text-[color:var(--emad-status-positive)]',
+  warning: 'text-[color:var(--emad-status-caution)]',
+  error: 'text-[color:var(--emad-status-critical)]',
 }
 
 function ToastIcon({ variant }: { variant: ToastVariant }) {
-  if (variant === 'success') return <CheckIcon className="size-4 text-emerald-300" />
-  if (variant === 'error' || variant === 'warning') {
-    return <AlertTriangleIcon className="size-4 text-amber-300" />
+  if (variant === 'success') {
+    return <CheckIcon className={cn('size-4', variantIcon[variant])} />
   }
-  return <InfoIcon className="size-4 text-sky-300" />
+  if (variant === 'error' || variant === 'warning') {
+    return <AlertTriangleIcon className={cn('size-4', variantIcon[variant])} />
+  }
+  return <InfoIcon className={cn('size-4', variantIcon[variant])} />
 }
 
 export function ToastViewport() {
@@ -25,13 +43,13 @@ export function ToastViewport() {
   if (toasts.length === 0) return null
 
   return (
-    <div className="pointer-events-none fixed right-4 bottom-4 z-[90] flex w-[min(92vw,380px)] flex-col gap-2">
+    <div className="pointer-events-none fixed right-4 bottom-4 z-[90] flex w-[min(92vw,400px)] flex-col gap-2">
       {toasts.map((toast) => (
         <div
           key={toast.id}
           role="status"
           className={cn(
-            'toast-enter pointer-events-auto flex items-start gap-3 rounded-[2px] border px-3 py-2.5 shadow-2xl backdrop-blur',
+            'toast-enter pointer-events-auto flex items-start gap-3 rounded-[6px] border border-edge-strong border-l-4 bg-panel-raised px-4 py-3',
             variantClasses[toast.variant],
           )}
         >
@@ -39,16 +57,15 @@ export function ToastViewport() {
             <ToastIcon variant={toast.variant} />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium">{toast.title}</p>
+            <p className="text-[14px] leading-5 font-medium text-ink">{toast.title}</p>
             {toast.description ? (
-              <p className="mt-0.5 text-xs opacity-80">{toast.description}</p>
+              <p className="mt-1 text-[13px] leading-[18px] text-ink-muted">{toast.description}</p>
             ) : null}
           </div>
           <Button
             variant="ghost"
             size="icon-sm"
             aria-label="Dismiss notification"
-            className="text-current hover:bg-white/10"
             onClick={() => dismiss(toast.id)}
           >
             <XIcon className="size-3.5" />

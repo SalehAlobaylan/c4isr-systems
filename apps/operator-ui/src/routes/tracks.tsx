@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 
 import { Page } from '@/components/layout/Page'
 import { DataTable } from '@/components/shared/data-table'
-import { FreshnessBadge, StateBadge } from '@/components/shared/badges'
+import { FreshnessBadge, TrackStatusBadge } from '@/components/shared/badges'
 import { ErrorState } from '@/components/shared/states'
 import { Select } from '@/components/ui/select'
 import { api, type Track } from '@/lib/api'
@@ -58,7 +58,7 @@ export function TracksPage() {
       {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => <StateBadge value={row.original.status} />,
+        cell: ({ row }) => <TrackStatusBadge value={row.original.status} lastSeenAt={row.original.lastSeenAt} />,
       },
       {
         id: 'freshness',

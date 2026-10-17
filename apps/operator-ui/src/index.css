@@ -1,27 +1,83 @@
+/*
+ * EMAD operator interface stylesheet.
+ *
+ * This is the single entry point for the application's CSS: tokens, the
+ * shell/component vocabulary, the board and the picture are all imported from
+ * here. That is deliberate, not tidiness.
+ *
+ * Cascade layer order must be fixed before anything else, because layers are
+ * ordered by *first appearance across the document*, not by import order. A
+ * stylesheet that opens a layer it has not seen before creates it — so if
+ * `board.css` (imported by a route module) were injected ahead of Tailwind, it
+ * would create `components` first and thereby rank it **below** `base`. Every
+ * component rule in the application would then lose to Preflight's
+ * `border: 0 solid`, and the symptom would look like broken styling rather
+ * than a broken cascade. One stylesheet, one deterministic order.
+ */
+@layer theme, base, components, utilities;
+
 @import 'tailwindcss';
+@import './styles/tokens.css';
+@import './components/board/board.css';
+@import './components/map/picture.css';
 
-@theme {
-  --color-bg: #161a26;
-  --color-panel: #1f2533;
-  --color-panel-raised: #242939;
-  --color-panel-hover: #2a3043;
-  --color-edge: #2b3242;
-  --color-edge-strong: #363c52;
-  --color-ink: #fcffff;
-  --color-ink-muted: #a3a6b5;
-  --color-ink-faint: #6f7587;
-  --color-accent: #4a6fb5;
-  --color-accent-strong: #37538a;
-  --color-accent-blue: #4a6fb5;
-  --color-ok: #2f7d78;
-  --color-warn: #c4552c;
-  --color-danger: #c4552c;
-  --color-critical: #d0563a;
+/* ============================================================================
+   Tailwind v4 integration
+   ---------------------------------------------------------------------------
+   These are aliases, not a second palette: every value is a `var()` reference
+   to a canonical token in `styles/tokens.css`. `inline` tells Tailwind to
+   substitute the reference into the utility itself rather than re-emitting a
+   `--color-*` variable, so there is exactly one place a colour is defined.
+   ========================================================================== */
 
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono:
-    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+@theme inline {
+  --color-bg: var(--emad-surface-canvas);
+  --color-canvas: var(--emad-surface-canvas);
+  --color-panel: var(--emad-surface-panel);
+  --color-panel-raised: var(--emad-surface-raised);
+  --color-panel-hover: var(--emad-surface-hover);
+  --color-selected: var(--emad-surface-selected);
+  --color-overlay: var(--emad-surface-overlay);
+  --color-veil: var(--emad-surface-veil);
+  --color-nav: var(--emad-surface-nav);
+  --color-nav-raised: var(--emad-surface-nav-raised);
+
+  --color-edge: var(--emad-border-subtle);
+  --color-edge-strong: var(--emad-border-control);
+
+  --color-ink: var(--emad-text-primary);
+  --color-ink-muted: var(--emad-text-secondary);
+  --color-ink-faint: var(--emad-text-tertiary);
+  --color-ink-on-dark: var(--emad-text-on-dark);
+
+  /* `accent` is the graphite structural anchor: it is what a selected nav
+     item, a focused rule and a brand edge are drawn in. It is not a status,
+     and it is not lime (DESIGN.md §2.4). */
+  --color-accent: var(--emad-industrial-graphite);
+  --color-accent-hover: var(--emad-surface-nav-raised);
+  --color-accent-pressed: var(--emad-graphite-ink);
+  /* Accent-coloured *text* on a pale surface. Lime is 1.51:1 on ceramic and
+     can never be small copy, so a brand-related label uses this green step
+     instead (DESIGN.md §2.2). */
+  --color-accent-strong: var(--emad-lime-on-light);
+  /* Text that sits on a graphite or lime fill. */
+  --color-accent-on: var(--emad-text-on-dark);
+  /* The brand signature. Restricted to dark surfaces, and rare by design. */
+  --color-brand-lime: var(--emad-energized-lime);
+  --color-signal: var(--emad-signal-teal);
+
+  --color-ok: var(--emad-status-positive);
+  --color-warn: var(--emad-status-caution);
+  --color-high: var(--emad-status-high);
+  --color-danger: var(--emad-status-critical);
+  --color-critical: var(--emad-status-critical);
+  --color-info: var(--emad-status-info);
+  --color-inactive: var(--emad-status-neutral);
+  --color-review: var(--emad-status-review);
+  --color-track: var(--emad-status-info);
+
+  --font-sans: var(--emad-font-sans);
+  --font-mono: var(--emad-font-mono);
 }
 
 @layer base {
@@ -33,20 +89,58 @@
 
   body {
     margin: 0;
-    background-color: var(--color-bg);
-    color: var(--color-ink);
-    font-family: var(--font-sans);
-    font-size: 14px;
+    background-color: var(--emad-surface-canvas);
+    color: var(--emad-text-primary);
+    font-family: var(--emad-font-sans);
+    /* DESIGN.md §5.2: ordinary body text is 14px. */
+    font-size: var(--emad-type-body);
+    line-height: var(--emad-type-leading-body);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
 
   * {
-    border-color: var(--color-edge);
+    border-color: var(--emad-border-subtle);
+  }
+
+  /* Arabic keeps its own family and must not inherit Latin tracking or case
+     transformations; the wordmark is the only Arabic string today and it is
+     wrapped in <bdi>, but the rule makes that structural rather than incidental. */
+  :where([lang='ar'], [dir='rtl']) {
+    font-family: var(--emad-font-arabic);
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+  /* Figures, coordinates and timestamps align on the digit.
+     DESIGN.md §5.2 asks for this wherever figures are compared, not only in
+     the board. It is asserted here as a *guarantee* rather than left to each
+     call site: the alternative is a number that shifts sideways between two
+     rows of the same table, which is the one thing a comparison surface
+     cannot afford. `.font-mono` is included because the mono utility sets a
+     family but not this, and most numeric cells use the utility rather than
+     the component class. */
+  :where(time, .mono, .font-mono, [data-numeric]) {
+    font-variant-numeric: tabular-nums;
+  }
+  :where(table, [role='table']) :where(td, th) {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* One focus treatment for every control on the pale workspace. The offset
+     places the ring outside the control, on the surrounding surface, which
+     keeps it visible even on a graphite primary button — where a teal ring
+     would otherwise sit against its own fill. Controls *on* graphite
+     (navigation, the scenario bar) override this with `--emad-focus-dark`
+     (DESIGN.md §6.2). */
+  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: var(--emad-focus-width) solid var(--emad-focus-outline);
+    outline-offset: var(--emad-focus-offset);
   }
 
   ::selection {
-    background-color: color-mix(in srgb, var(--color-accent) 35%, transparent);
+    background-color: color-mix(in srgb, var(--emad-signal-teal) 24%, transparent);
+    color: var(--emad-text-primary);
   }
 
   ::-webkit-scrollbar {
@@ -57,1272 +151,1383 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--color-edge-strong);
-    border-radius: 8px;
-    border: 2px solid var(--color-bg);
+    background: var(--emad-border-control-soft);
+    border-radius: 6px;
+    border: 2px solid var(--emad-surface-canvas);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #3a5064;
+    background: var(--emad-border-control);
+  }
+
+  /* Transitions describe state changes; when the operator has asked for less
+     motion, nothing animates. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
 
-/* MapLibre dark console adjustments */
+/* MapLibre chrome, restyled for the light workspace. Attribution and provider
+   licensing are never hidden, only restyled, and stay legible over the
+   basemap. The vendor icons are SVG masks drawn in black, so they need no
+   inversion on a ceramic panel — only a muted ink so they do not compete with
+   the operational layers. */
 .maplibregl-ctrl-group {
-  background: #1f2533 !important;
-  border: 1px solid #2b3242 !important;
-  box-shadow: none !important;
+  background: var(--emad-surface-panel) !important;
+  border: 1px solid var(--emad-border-control-soft) !important;
+  box-shadow: var(--emad-shadow-control) !important;
 }
 .maplibregl-ctrl-group button {
   background: transparent !important;
 }
 .maplibregl-ctrl-group button + button {
-  border-top: 1px solid #2b3242 !important;
+  border-top: 1px solid var(--emad-border-subtle-soft) !important;
 }
 .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
-  filter: invert(0.85) hue-rotate(180deg);
+  filter: opacity(0.66);
 }
 .maplibregl-ctrl-attrib {
-  background: rgba(22, 26, 38, 0.7) !important;
-  color: #6f7587 !important;
-  font-size: 10px !important;
+  background: var(--emad-surface-veil) !important;
+  color: var(--emad-text-tertiary) !important;
+  /* Documented exception to the 12px floor: attribution is not operational
+     information, but it must still be readable. */
+  font-size: 11px !important;
 }
 .maplibregl-ctrl-attrib a {
-  color: #a3a6b5 !important;
+  color: var(--emad-text-secondary) !important;
+}
+.maplibregl-ctrl-scale {
+  background: var(--emad-surface-veil) !important;
+  border-color: var(--emad-border-control-soft) !important;
+  color: var(--emad-text-secondary) !important;
 }
 .maplibregl-canvas:focus {
   outline: none;
 }
 
-@keyframes toast-in {
+@keyframes emad-toast-in {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 .toast-enter {
-  animation: toast-in 0.16s ease-out;
+  animation: emad-toast-in var(--emad-motion-base) var(--emad-ease);
 }
 
-/* ── EMAD design tokens — ported from docs/C2-Operational-Awareness-Prototype ── */
-:root {
-  --bg: #161a26;
-  --surface: #1f2533;
-  --surface-2: #242939;
-  --band: #363c52;
-  --fg: #fcffff;
-  --fg-2: #dfe4ec;
-  --muted: #a3a6b5;
-  --faint: #6f7587;
-  --line: rgba(252, 255, 255, 0.08);
-  --line-2: rgba(252, 255, 255, 0.18);
-  --st-ok: #0e5d5a;
-  --st-track: #273c6b;
-  --st-warn: #913214;
-  --st-unknown: #3d215b;
-  --st-crit: #b83a1f;
-  --accent: var(--st-track);
-  --accent-on: #fcffff;
-  --font-display: 'D-DIN-Bold', 'D-DIN', 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
-  --font-body: 'D-DIN', 'DIN Alternate', 'Helvetica Neue', Arial, sans-serif;
-  --t-2xs: 9px;
-  --t-xs: 10px;
-  --t-sm: 11px;
-  --t-md: 12px;
-  --t-lg: 13px;
-  --t-xl: 17px;
-  --t-2xl: 22px;
-  --t-3xl: 30px;
-  --motion: 140ms;
-  --ease: cubic-bezier(0.2, 0, 0, 1);
-  --gutter: 176px;
-  --col: 232px;
-  --rowh: 44px;
-  --enth: 96px;
-  --spine-w: 46px;
-}
+@layer components {
+  /* ── Small shared vocabulary ──────────────────────────────────────── */
 
-.cap {
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-}
-.mono {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-.muted {
-  color: var(--muted);
-}
-.faint {
-  color: var(--faint);
-}
-.spacer {
-  margin-left: auto;
-}
-
-/* ── app shell ── */
-.aegis-app {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  height: 100%;
-  overflow: hidden;
-  background: var(--bg);
-  color: var(--fg);
-}
-.aegis-main {
-  min-height: 0;
-  overflow: hidden;
-  background: var(--bg);
-}
-.aegis-foot-op {
-  margin-left: auto;
-}
-.aegis-pagefoot {
-  border-top: 1px solid var(--line);
-  padding: 12px 20px;
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  font-size: var(--t-2xs);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-
-/* ── top chrome ── */
-.aegis-topbar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 10px 20px;
-  background: var(--bg);
-}
-.aegis-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-}
-.aegis-glyph {
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--line-2);
-  display: grid;
-  place-items: center;
-  font-family: var(--font-display);
-  font-size: 13px;
-  letter-spacing: 0.06em;
-}
-.aegis-brand h1 {
-  font-family: var(--font-display);
-  font-size: var(--t-xl);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin: 0;
-}
-.aegis-brand .sub {
-  font-size: var(--t-2xs);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--faint);
-  margin: 3px 0 0;
-}
-.aegis-nav {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.aegis-nav a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 12px 10px;
-  border-bottom: 1px solid transparent;
-  color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  text-decoration: none;
-  transition: color var(--motion) var(--ease);
-}
-.aegis-nav a:hover {
-  color: var(--fg);
-}
-.aegis-nav a[aria-selected='true'] {
-  color: var(--fg);
-  border-bottom-color: var(--fg);
-}
-.aegis-nav-sec {
-  display: flex;
-  gap: 2px;
-  margin-left: 10px;
-  padding-left: 10px;
-  border-left: 1px solid var(--line);
-}
-.aegis-nav-sec a {
-  font-size: var(--t-2xs);
-  color: var(--faint);
-}
-.aegis-topright {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.aegis-live {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--t-xs);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.aegis-live--down {
-  color: var(--fg-2);
-}
-.aegis-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--st-ok);
-  flex: none;
-}
-.aegis-dot--live {
-  background: var(--st-ok);
-}
-.aegis-dot--paused {
-  background: var(--st-warn);
-}
-.aegis-dot--init {
-  background: var(--st-unknown);
-}
-.aegis-dot--down {
-  background: var(--st-crit);
-}
-.aegis-sys {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: 0;
-  border-radius: 2px;
-  padding: 4px 6px;
-  color: var(--fg-2);
-  font-size: var(--t-xs);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.aegis-sys:hover {
-  color: var(--fg);
-}
-.aegis-ok {
-  color: var(--fg-2);
-}
-.aegis-warn {
-  color: var(--st-warn);
-}
-.aegis-crit {
-  color: var(--st-crit);
-}
-.aegis-faint {
-  color: var(--faint);
-}
-.aegis-iconbtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 34px;
-  padding: 7px 10px;
-  background: rgba(0, 0, 0, 0.24);
-  border: 1px solid var(--line-2);
-  border-radius: 2px;
-  color: var(--fg);
-  font-family: var(--font-body);
-  font-size: var(--t-2xs);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition:
-    background var(--motion) var(--ease),
-    color var(--motion) var(--ease);
-}
-.aegis-iconbtn:hover {
-  background: rgba(0, 0, 0, 0.46);
-}
-.aegis-iconbtn:focus-visible,
-.aegis-dsc:focus-visible,
-.aegis-nav a:focus-visible,
-.aegis-sys:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px var(--accent-on),
-    0 0 0 3px var(--bg);
-}
-.aegis-kbd {
-  display: inline-block;
-  font-family: var(--font-mono);
-  font-size: var(--t-2xs);
-  border: 1px solid var(--line-2);
-  border-bottom-width: 2px;
-  border-radius: 2px;
-  padding: 2px 7px;
-  color: var(--fg);
-  background: rgba(0, 0, 0, 0.3);
-  min-width: 24px;
-  text-align: center;
-  line-height: 1.5;
-}
-
-/* ── toolbar band ── */
-.aegis-band {
-  background: var(--band);
-  color: var(--fg);
-  padding: 0 20px;
-}
-.aegis-brow {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-  padding: 9px 0;
-  min-height: 44px;
-}
-.aegis-brow.sub {
-  border-top: 1px solid rgba(252, 255, 255, 0.16);
-  padding-bottom: 12px;
-}
-.aegis-lbl {
-  font-size: var(--t-2xs);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--fg-2);
-  opacity: 0.72;
-}
-.aegis-scenario {
-  font-family: var(--font-display);
-  font-size: var(--t-md);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-.aegis-clock {
-  font-family: var(--font-mono);
-  font-size: var(--t-md);
-  letter-spacing: 0.02em;
-  color: var(--fg);
-}
-.aegis-spacer {
-  margin-left: auto;
-}
-.aegis-grp {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.aegis-band select {
-  max-width: 220px;
-}
-.aegis-band button,
-.aegis-band select {
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(252, 255, 255, 0.22);
-  color: var(--fg);
-  border-radius: 2px;
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-  padding: 9px 12px;
-  min-height: 38px;
-  cursor: pointer;
-  font-family: var(--font-body);
-}
-.aegis-band button:hover:not(:disabled),
-.aegis-band select:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.36);
-  border-color: rgba(252, 255, 255, 0.42);
-}
-.aegis-band button:disabled,
-.aegis-band select:disabled {
-  opacity: 0.42;
-  cursor: not-allowed;
-}
-.aegis-band select {
-  font-family: var(--font-mono);
-  font-weight: 400;
-  letter-spacing: 0.04em;
-}
-.aegis-band .aegis-dsc {
-  background: transparent;
-  border: 0;
-  padding: 6px 4px;
-  min-height: 32px;
-  color: var(--fg-2);
-  font-size: var(--t-2xs);
-  letter-spacing: 0.14em;
-}
-.aegis-band .aegis-dsc:hover {
-  background: transparent;
-  color: var(--fg);
-}
-.aegis-band .aegis-iconbtn {
-  min-height: 34px;
-  padding: 7px 10px;
-  background: rgba(0, 0, 0, 0.24);
-  border: 1px solid var(--line-2);
-}
-.aegis-band-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  min-height: 38px;
-  padding: 9px 12px;
-  background: rgba(0, 0, 0, 0.22);
-  border: 1px solid rgba(252, 255, 255, 0.22);
-  border-radius: 2px;
-  color: var(--fg);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-  text-decoration: none;
-}
-.aegis-band-link:hover {
-  background: rgba(0, 0, 0, 0.36);
-  border-color: rgba(252, 255, 255, 0.42);
-}
-
-/* ── disclosure contract ── */
-.aegis-dsc {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  background: transparent;
-  border: 0;
-  border-radius: 2px;
-  padding: 6px 4px;
-  min-height: 32px;
-  color: var(--fg-2);
-  font-family: var(--font-body);
-  font-size: var(--t-2xs);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color var(--motion) var(--ease);
-}
-.aegis-dsc::before {
-  content: '';
-  width: 0;
-  height: 0;
-  border-left: 5px solid currentColor;
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
-  transform: rotate(90deg);
-  transition: transform var(--motion) var(--ease);
-  flex: none;
-}
-.aegis-dsc[aria-expanded='false']::before {
-  transform: rotate(0);
-}
-.aegis-dsc:hover {
-  color: var(--fg);
-}
-
-/* ── sheet (help dialog) ── */
-.aegis-sheet-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  background: rgba(6, 8, 14, 0.72);
-}
-.aegis-sheet {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  width: min(660px, calc(100vw - 40px));
-  max-height: calc(100vh - 80px);
-  border: 1px solid var(--line-2);
-  border-radius: 2px;
-  background: var(--surface);
-  color: var(--fg);
-  padding: 0;
-}
-.aegis-sheet-h {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 15px 18px;
-  border-bottom: 1px solid var(--line);
-}
-.aegis-sheet-h h2 {
-  font-family: var(--font-display);
-  font-size: var(--t-lg);
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  margin: 0;
-}
-.aegis-sheet-b {
-  padding: 16px 18px 8px;
-  overflow-y: auto;
-  max-height: 60vh;
-}
-.aegis-sheet-f {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 18px;
-  border-top: 1px solid var(--line);
-}
-.aegis-sheet-link {
-  color: var(--fg);
-  font-size: var(--t-xs);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.aegis-legend-group {
-  margin: 0 0 14px;
-}
-.aegis-legend-group h3 {
-  font-family: var(--font-display);
-  font-size: var(--t-2xs);
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin: 0 0 6px;
-}
-.aegis-kvrow {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  gap: 8px 14px;
-  align-items: center;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--line);
-  font-size: var(--t-md);
-}
-.aegis-kvrow:last-child {
-  border-bottom: 0;
-}
-.aegis-kvrow .txt {
-  color: var(--muted);
-  font-size: var(--t-2xs);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-.aegis-note {
-  font-size: var(--t-sm);
-  color: var(--fg-2);
-  margin: 0;
-}
-
-@media (max-width: 820px) {
-  .aegis-topbar {
-    flex-wrap: wrap;
-    row-gap: 2px;
-    padding-left: 12px;
-    padding-right: 12px;
+  /* Restrained uppercase micro-label. Tracking is deliberately modest; wide
+     tracking applied to Arabic would break shaping, which is why the rule is
+     scoped rather than global. */
+  .cap {
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    line-height: var(--emad-type-leading-meta);
   }
+
+  .mono {
+    font-family: var(--emad-font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .muted {
+    color: var(--emad-text-secondary);
+  }
+
+  .faint {
+    color: var(--emad-text-tertiary);
+  }
+
+  .spacer {
+    margin-left: auto;
+  }
+
+  /* ── Operational tone: colour, shape and label together ────────────────
+     A tone is expressed as a colour and a silhouette. The silhouette is what
+     survives colour-vision deficiency, greyscale printing and a projector with
+     a broken colour channel (DESIGN.md §3.2, §10). */
+
+  .tone-glyph {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    flex: none;
+    background: currentColor;
+  }
+  .tone-glyph[data-glyph='circle'] {
+    border-radius: 50%;
+  }
+  .tone-glyph[data-glyph='square'] {
+    border-radius: 1px;
+  }
+  .tone-glyph[data-glyph='diamond'] {
+    width: 8px;
+    height: 8px;
+    transform: rotate(45deg);
+  }
+  /* An open diamond: "a conclusion is pending review". Hollow, so it is not the
+     filled diamond of `high` in greyscale either. */
+  .tone-glyph[data-glyph='open-diamond'] {
+    width: 8px;
+    height: 8px;
+    transform: rotate(45deg);
+    background: transparent;
+    box-shadow: inset 0 0 0 2px currentColor;
+  }
+  .tone-glyph[data-glyph='triangle'] {
+    width: 0;
+    height: 0;
+    background: transparent;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-bottom: 9px solid currentColor;
+  }
+  /* Octagon reads as "stop" and cannot be confused with the caution triangle. */
+  .tone-glyph[data-glyph='alert'] {
+    clip-path: polygon(30% 0, 70% 0, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0 70%, 0 30%);
+  }
+  /* A dash, not a dot: "not applicable" should not read as "small but fine". */
+  .tone-glyph[data-glyph='bar'] {
+    height: 3px;
+    margin-top: 3px;
+  }
+
+  /* The status badge. Carries a label always — an empty coloured chip standing
+     in for meaning is explicitly disallowed (DESIGN.md §7.5). */
+  .aegis-sev {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    line-height: var(--emad-type-leading-meta);
+    border: 1px solid currentColor;
+    border-radius: var(--emad-radius-card);
+    padding: 3px 8px;
+    white-space: nowrap;
+    color: var(--emad-text-secondary);
+  }
+  .aegis-sev[data-tone='positive'] {
+    color: var(--emad-status-positive);
+  }
+  .aegis-sev[data-tone='info'] {
+    color: var(--emad-status-info);
+  }
+  .aegis-sev[data-tone='review'] {
+    color: var(--emad-status-review);
+  }
+  .aegis-sev[data-tone='caution'] {
+    color: var(--emad-status-caution);
+  }
+  .aegis-sev[data-tone='high'] {
+    color: var(--emad-status-high);
+  }
+  .aegis-sev[data-tone='critical'] {
+    color: var(--emad-status-critical);
+  }
+  .aegis-sev[data-tone='neutral'] {
+    color: var(--emad-text-tertiary);
+  }
+
+  /* Neutral provenance chip: identifies a kind or a source. Never a status. */
+  .aegis-src {
+    font-family: var(--emad-font-mono);
+    font-size: var(--emad-type-dense);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    line-height: var(--emad-type-leading-meta);
+    color: var(--emad-text-secondary);
+    background: var(--emad-surface-raised);
+    border: 1px solid var(--emad-border-subtle-soft);
+    border-radius: var(--emad-radius-card);
+    padding: 3px 6px;
+  }
+
+  /* ── Application shell ──────────────────────────────────────────────── */
+
+  .aegis-app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    height: 100%;
+    overflow: hidden;
+    background: var(--emad-surface-canvas);
+    color: var(--emad-text-primary);
+  }
+
+  .aegis-main {
+    min-height: 0;
+    overflow: hidden;
+    background: var(--emad-surface-canvas);
+  }
+
+  .aegis-foot-op {
+    margin-left: auto;
+  }
+
+  .aegis-pagefoot {
+    border-top: 1px solid var(--emad-border-subtle-soft);
+    padding: 10px 20px;
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    align-items: baseline;
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-tertiary);
+    background: var(--emad-surface-panel);
+  }
+
+  .aegis-view {
+    min-height: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    background: var(--emad-surface-canvas);
+  }
+
+  /* ── Top chrome ───────────────────────────────────────────────────────
+     One dark graphite structural rail. DESIGN.md §5.3 makes this an
+     intentional feature of the balanced-light identity rather than a leftover
+     from the previous dark theme: it is what gives the workspace its
+     industrial character, and it is the only place lime appears. */
+
+  /* The top bar's layout wrapper. It carries the measured nav-fit state
+     (`--navrows`): whether the single row fits depends on the width of the
+     operator chip, which changes with session state, so it is measured in
+     TopBar rather than decided by a width breakpoint. */
+
+  .topbar-shell {
+    display: block;
+  }
+
+  .aegis-topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    /* The graphite anchor. Its text/border roles flip to the on-dark family
+       for everything inside this bar — see the rules below. */
+    background: var(--emad-surface-nav);
+    color: var(--emad-text-on-dark);
+    border-bottom: 1px solid var(--emad-border-nav-subtle);
+  }
+
+  .aegis-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: none;
+  }
+
+  /* A ruled square, not a logo. It marks the wordmark without claiming to be
+     an emblem. On graphite the rule is the one lime signature moment in the
+     shell, so the glyph is the brand anchor rather than a status. */
+  .aegis-glyph {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--emad-energized-lime);
+    color: var(--emad-energized-lime);
+    display: grid;
+    place-items: center;
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .aegis-brand h1 {
+    font-size: var(--emad-type-panel-heading);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: var(--emad-type-tracking-label);
+    color: var(--emad-text-on-dark);
+    /* The name never breaks. A wrapped wordmark silently doubles the height of
+       the top bar and takes that height straight out of the map below it. */
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  .aegis-brand .sub {
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-nav-muted);
+    margin: 2px 0 0;
+  }
+
+  /* Navigation. The active view gets strong text and a restrained lime
+     underline — not a filled lime tab (DESIGN.md §5.2, §6.1).
+
+     The nav is the only part of the bar allowed to give ground, and it never
+     clips a label mid-word: when the measured row cannot fit every item, the
+     nav moves to its own full-width row (see `.topbar-shell--navrows` below).
+     Only when even that row is too narrow — a phone-width console — does the
+     nav scroll. The brand and the status controls never shrink: an operator
+     must always be able to see who they are and whether the link is up. */
   .aegis-nav {
-    order: 3;
-    flex-basis: 100%;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    flex: 0 1 auto;
     overflow-x: auto;
     scrollbar-width: none;
-    border-top: 1px solid var(--line);
+  }
+
+  .aegis-nav a {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    min-height: 40px;
+    padding: 10px 9px;
+    border-bottom: 2px solid transparent;
+    color: var(--emad-text-nav-muted);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      color var(--emad-motion-fast) var(--emad-ease),
+      background var(--emad-motion-fast) var(--emad-ease),
+      border-color var(--emad-motion-fast) var(--emad-ease);
   }
   .aegis-nav::-webkit-scrollbar {
     display: none;
   }
-  .aegis-nav a {
+
+  .aegis-nav a:hover {
+    color: var(--emad-text-on-dark);
+    background: var(--emad-surface-nav-hover);
+  }
+
+  .aegis-nav a:active {
+    background: var(--emad-surface-nav-raised);
+  }
+
+  .aegis-nav a[aria-selected='true'] {
+    color: var(--emad-text-on-dark);
+    border-bottom-color: var(--emad-energized-lime);
+  }
+
+  .aegis-nav-sec {
+    display: flex;
+    gap: 2px;
+    margin-left: 10px;
+    padding-left: 10px;
+    border-left: 1px solid var(--emad-border-nav-subtle);
+  }
+
+  .aegis-topright {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     flex: none;
   }
-  .aegis-brand {
+
+  /* Link state is spelled out. A coloured dot alone would leave "live" to be
+     inferred from a hue (DESIGN.md §7.1). On graphite the status colours are
+     dark-on-light, so each dot is paired with a pale ring to keep it legible
+     against the rail. */
+  .aegis-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-nav-muted);
+  }
+
+  .aegis-live--down {
+    color: var(--emad-text-on-dark);
+  }
+
+  .aegis-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+    box-shadow: 0 0 0 1px var(--emad-border-nav-strong);
+    background: var(--emad-text-nav-muted);
+  }
+  .aegis-dot--live {
+    background: var(--emad-status-positive-on-graphite);
+  }
+  .aegis-dot--paused {
+    background: var(--emad-status-caution-on-graphite);
+  }
+  .aegis-dot--init {
+    background: var(--emad-status-info-on-graphite);
+  }
+  .aegis-dot--down {
+    background: var(--emad-status-critical-on-graphite);
+  }
+
+  .aegis-sys {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--emad-radius-control);
+    padding: 6px 8px;
+    min-height: var(--emad-control-height);
+    color: var(--emad-text-on-dark);
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-sys:hover {
+    background: var(--emad-surface-nav-hover);
+  }
+
+  /* System health on the rail. The dark status hues would sink into graphite,
+     so each is lifted to a light step for use on this surface only — the
+     canonical status tokens stay dark for every light-surface use. */
+  .aegis-ok {
+    color: var(--emad-status-positive-on-graphite);
+  }
+  .aegis-warn {
+    color: var(--emad-status-caution-on-graphite);
+  }
+  .aegis-crit {
+    color: var(--emad-status-critical-on-graphite);
+  }
+  .aegis-faint {
+    color: var(--emad-text-nav-muted);
+  }
+
+  .aegis-iconbtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: var(--emad-control-height);
+    padding: 7px 11px;
+    background: var(--emad-surface-nav-raised);
+    border: 1px solid var(--emad-border-nav-subtle);
+    border-radius: var(--emad-radius-control);
+    color: var(--emad-text-on-dark);
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      background var(--emad-motion-fast) var(--emad-ease),
+      border-color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-iconbtn:hover:not(:disabled) {
+    background: var(--emad-surface-nav-hover-strong);
+    border-color: var(--emad-border-nav-strong);
+  }
+  .aegis-iconbtn:disabled {
+    cursor: not-allowed;
+    color: var(--emad-text-nav-muted);
+    background: var(--emad-surface-nav);
+  }
+
+  .aegis-kbd {
+    display: inline-block;
+    font-family: var(--emad-font-mono);
+    font-size: var(--emad-type-dense);
+    border: 1px solid var(--emad-border-nav-strong);
+    border-bottom-width: 2px;
+    border-radius: var(--emad-radius-card);
+    padding: 2px 7px;
+    color: var(--emad-text-on-dark);
+    background: var(--emad-surface-nav-raised);
+    min-width: 24px;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  /* Focus on the graphite rail. The workspace focus ring is teal, which on
+     graphite is roughly 1.9:1 and effectively invisible; lime is 8.68:1
+     (DESIGN.md §2.5, §6.2). Every control inside the bar inherits this, so a
+     keyboard user navigating the console never loses the caret — and no test
+     that only ever inspects the light workspace would have caught the gap. */
+  .aegis-topbar :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline-color: var(--emad-focus-dark);
+  }
+  .aegis-topbar button:focus-visible {
+    border-color: var(--emad-energized-lime);
+  }
+
+  /* ── Scenario run bar ─────────────────────────────────────────────────
+     The second structural band, on ceramic. It is a workspace control strip,
+     not a second navigation rail: DESIGN.md §5.3 keeps the *graphite* anchor
+     to brand and navigation, so this band is a light surface with the run
+     controls on it. */
+
+  .aegis-band {
+    background: var(--emad-surface-panel);
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+    color: var(--emad-text-primary);
+    padding: 0 20px;
+  }
+
+  .aegis-brow {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 9px 0;
+    min-height: 44px;
+  }
+
+  .aegis-brow.sub {
+    border-top: 1px solid var(--emad-border-subtle-soft);
+    padding-bottom: 12px;
+  }
+
+  .aegis-lbl {
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+  }
+
+  /* A long scenario name truncates rather than forcing the whole run bar onto a
+     second row. The bar sits directly above the map on the picture screen, so
+     every pixel it grows is plot the operator cannot see. */
+  .aegis-scenario {
+    font-size: var(--emad-type-body);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .aegis-clock {
+    font-family: var(--emad-font-mono);
+    font-size: var(--emad-type-body);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+    color: var(--emad-text-primary);
+  }
+
+  .aegis-spacer {
+    margin-left: auto;
+  }
+
+  .aegis-grp {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .aegis-band select {
+    max-width: 240px;
+  }
+
+  /* Controls in the run bar share one shape with the toolbar buttons, so the
+     bar reads as one surface rather than a set of unrelated fields. */
+  .aegis-band button,
+  .aegis-band select {
+    background: var(--emad-surface-input);
+    border: 1px solid var(--emad-border-control);
+    color: var(--emad-text-primary);
+    border-radius: var(--emad-radius-control);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    padding: 8px 12px;
+    min-height: var(--emad-control-height);
+    cursor: pointer;
+    font-family: var(--emad-font-sans);
+    transition:
+      background var(--emad-motion-fast) var(--emad-ease),
+      border-color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-band button:hover:not(:disabled),
+  .aegis-band select:hover:not(:disabled) {
+    background: var(--emad-surface-hover);
+    border-color: var(--emad-border-control);
+  }
+  .aegis-band button:disabled,
+  .aegis-band select:disabled {
+    color: var(--emad-text-tertiary);
+    cursor: not-allowed;
+    background: var(--emad-surface-inset);
+  }
+  .aegis-band select {
+    font-family: var(--emad-font-mono);
+    font-weight: 400;
+    letter-spacing: 0.03em;
+    text-transform: none;
+  }
+
+  .aegis-band-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: var(--emad-control-height);
+    padding: 8px 12px;
+    background: var(--emad-surface-raised);
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-control);
+    color: var(--emad-text-primary);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    text-decoration: none;
+    transition:
+      background var(--emad-motion-fast) var(--emad-ease),
+      border-color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-band-link:hover {
+    background: var(--emad-surface-hover);
+    border-color: var(--emad-border-control);
+  }
+
+  /* ── Disclosure control ───────────────────────────────────────────── */
+
+  .aegis-dsc {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: transparent;
+    border: 0;
+    border-radius: var(--emad-radius-control);
+    padding: 6px 4px;
+    min-height: var(--emad-control-height-compact);
+    color: var(--emad-text-secondary);
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-dsc::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 5px solid currentColor;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    transform: rotate(90deg);
+    transition: transform var(--emad-motion-fast) var(--emad-ease);
+    flex: none;
+  }
+  .aegis-dsc[aria-expanded='false']::before {
+    transform: rotate(0);
+  }
+  .aegis-dsc:hover {
+    color: var(--emad-text-primary);
+  }
+
+  /* ── Help sheet ───────────────────────────────────────────────────── */
+
+  .aegis-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: var(--emad-surface-scrim);
+  }
+  .aegis-sheet {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    width: min(680px, calc(100vw - 40px));
+    max-height: calc(100vh - 80px);
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-float);
+    background: var(--emad-surface-raised);
+    color: var(--emad-text-primary);
+    box-shadow: var(--emad-shadow-float);
+    padding: 0;
+  }
+  .aegis-sheet-h {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+  }
+  .aegis-sheet-h h2 {
+    font-size: var(--emad-type-panel-heading);
+    font-weight: 600;
+    line-height: var(--emad-type-leading-panel-heading);
+    margin: 0;
+  }
+  .aegis-sheet-b {
+    padding: 16px 18px 8px;
+    overflow-y: auto;
+    max-height: 60vh;
+  }
+  .aegis-sheet-f {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 18px;
+    border-top: 1px solid var(--emad-border-subtle-soft);
+  }
+  .aegis-sheet-link {
+    color: var(--emad-link);
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+  }
+  .aegis-legend-group {
+    margin: 0 0 16px;
+  }
+  .aegis-legend-group h3 {
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+    margin: 0 0 6px;
+  }
+  .aegis-kvrow {
+    display: grid;
+    grid-template-columns: 160px minmax(0, 1fr);
+    gap: 8px 14px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+    font-size: var(--emad-type-body);
+  }
+  .aegis-kvrow:last-child {
+    border-bottom: 0;
+  }
+  .aegis-kvrow .txt {
+    color: var(--emad-text-secondary);
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+  }
+  .aegis-note {
+    font-size: var(--emad-type-secondary);
+    line-height: var(--emad-type-leading-secondary);
+    color: var(--emad-text-secondary);
+    margin: 0;
+  }
+
+  /* ── Entity header block — board columns and the map overlay ───────────
+     Administrative status rides the labelled chip inside the block; data
+     freshness rides the left edge and the hatch. Two dimensions, two
+     channels, so neither has to borrow the other's colour. */
+
+  .aegis-ent {
+    padding: 0;
+    vertical-align: top;
+  }
+  .aegis-ent .inner {
+    display: block;
+    background: var(--emad-surface-panel);
+    padding: 11px 12px 12px;
+    min-height: var(--emad-board-header);
+    border-left: 3px solid var(--fresh, transparent);
+    transition: background var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-ent .id {
+    display: block;
+    font-size: var(--emad-type-body);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--emad-text-primary);
+  }
+  .aegis-ent .ty {
+    display: block;
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+    margin-top: 3px;
+  }
+  .aegis-ent .st {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--tone, var(--emad-text-secondary));
+    border: 1px solid currentColor;
+    border-radius: var(--emad-radius-card);
+    padding: 3px 7px;
+  }
+  /* Auxiliary metadata: timestamps, sub-labels and units. Tight leading is
+     correct here and nowhere else. */
+  .aegis-ent .act {
+    display: block;
+    margin-top: 9px;
+    font-size: var(--emad-type-meta);
+    line-height: var(--emad-type-leading-meta);
+    letter-spacing: var(--emad-type-tracking-micro);
+    color: var(--emad-text-secondary);
+  }
+  .aegis-ent:hover .inner {
+    background: var(--emad-surface-hover);
+  }
+  .aegis-ent[data-tone='positive'] {
+    --tone: var(--emad-status-positive);
+  }
+  .aegis-ent[data-tone='info'] {
+    --tone: var(--emad-status-info);
+  }
+  .aegis-ent[data-tone='review'] {
+    --tone: var(--emad-status-review);
+  }
+  .aegis-ent[data-tone='caution'] {
+    --tone: var(--emad-status-caution);
+  }
+  .aegis-ent[data-tone='high'] {
+    --tone: var(--emad-status-high);
+  }
+  .aegis-ent[data-tone='critical'] {
+    --tone: var(--emad-status-critical);
+  }
+  .aegis-ent[data-tone='neutral'] {
+    --tone: var(--emad-text-tertiary);
+  }
+
+  /* ── Chip rail ────────────────────────────────────────────────────── */
+
+  .aegis-chipline {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 20px 10px;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+  .aegis-chipline .lead {
+    min-width: 168px;
+    flex: none;
+  }
+  .aegis-chipline-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+  }
+  .aegis-chips-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1 1 0;
     min-width: 0;
   }
+  .aegis-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    min-width: 0;
+  }
+  .aegis-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .aegis-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--emad-surface-panel);
+    border: 1px solid var(--emad-border-subtle-soft);
+    border-radius: var(--emad-radius-control);
+    padding: 7px 11px;
+    min-height: var(--emad-control-height);
+    white-space: nowrap;
+    cursor: pointer;
+    color: var(--emad-text-secondary);
+    transition:
+      background var(--emad-motion-fast) var(--emad-ease),
+      border-color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-chip:hover {
+    background: var(--emad-surface-hover);
+    border-color: var(--emad-border-control-soft);
+  }
+  /* A pressed chip is a filter that is on. The graphite edge is the only place
+     the structural accent marks selection, and it marks chrome, not domain
+     state. Lime is deliberately absent: it is a brand signature reserved for
+     dark surfaces, and 2px of it on a ceramic chip would sit at 1.51:1
+     (DESIGN.md §2.2, §5.2). */
+  .aegis-chip[aria-pressed='true'] {
+    background: var(--emad-surface-selected);
+    border-color: var(--emad-border-control-soft);
+    box-shadow: inset 0 -2px 0 var(--emad-industrial-graphite);
+    color: var(--emad-text-primary);
+  }
+  .aegis-chip .n {
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+  }
+  .aegis-chip .t {
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-micro);
+    text-transform: uppercase;
+    color: var(--emad-text-tertiary);
+  }
+  .aegis-chip.more {
+    background: transparent;
+    border-style: dashed;
+    color: var(--emad-text-secondary);
+    font-family: var(--emad-font-mono);
+  }
+
+  /* ── Segmented control ────────────────────────────────────────────── */
+
+  .aegis-seg {
+    display: inline-flex;
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-control);
+    overflow: hidden;
+  }
+  .aegis-seg button {
+    background: var(--emad-surface-panel);
+    border: 0;
+    border-left: 1px solid var(--emad-border-subtle-soft);
+    color: var(--emad-text-secondary);
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    padding: 8px 12px;
+    min-height: var(--emad-control-height);
+    cursor: pointer;
+    transition:
+      background var(--emad-motion-fast) var(--emad-ease),
+      color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-seg button:first-child {
+    border-left: 0;
+  }
+  .aegis-seg button:hover {
+    background: var(--emad-surface-hover);
+    color: var(--emad-text-primary);
+  }
+  .aegis-seg button:active {
+    background: var(--emad-surface-pressed);
+  }
+  .aegis-seg button[aria-pressed='true'] {
+    background: var(--emad-surface-selected);
+    color: var(--emad-text-primary);
+    box-shadow: inset 0 -2px 0 var(--emad-industrial-graphite);
+  }
+
+  /* ── Popover + switch ─────────────────────────────────────────────── */
+
+  .aegis-pop {
+    position: absolute;
+    z-index: 14;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--emad-surface-raised);
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-float);
+    padding: 10px 12px 12px;
+    min-width: 240px;
+    box-shadow: var(--emad-shadow-float);
+  }
+  .aegis-pop .ph {
+    margin: 0 0 8px;
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+  }
+
+  .aegis-sw {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 7px 6px;
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: var(--emad-radius-control);
+    min-height: 38px;
+    color: var(--emad-text-secondary);
+  }
+  .aegis-sw:hover {
+    background: var(--emad-surface-hover);
+    color: var(--emad-text-primary);
+  }
+  /* A layer toggle is chrome. Its "on" state is a switch, not a domain
+     status, so it takes the interactive accent rather than a status hue. */
+  .aegis-sw input {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 34px;
+    height: 18px;
+    border-radius: 9px;
+    border: 1px solid var(--emad-border-control);
+    background: var(--emad-surface-canvas);
+    position: relative;
+    cursor: pointer;
+    flex: none;
+    margin: 0;
+    transition:
+      background var(--emad-motion-fast) var(--emad-ease),
+      border-color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-sw input::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--emad-text-secondary);
+    transition:
+      transform var(--emad-motion-fast) var(--emad-ease),
+      background var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-sw input:checked {
+    background: var(--emad-industrial-graphite);
+    border-color: var(--emad-industrial-graphite);
+  }
+  .aegis-sw input:checked::after {
+    transform: translateX(16px);
+    background: var(--emad-text-on-dark);
+  }
+
+  /* ── Buttons + inline status ──────────────────────────────────────── */
+
+  .aegis-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: var(--emad-radius-control);
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    cursor: pointer;
+    background: var(--emad-surface-raised);
+    color: var(--emad-text-primary);
+    border: 1px solid var(--emad-border-control-soft);
+    min-height: var(--emad-control-height);
+    transition:
+      background var(--emad-motion-fast) var(--emad-ease),
+      border-color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-btn:hover:not(:disabled) {
+    background: var(--emad-surface-hover);
+    border-color: var(--emad-border-control);
+  }
+  .aegis-btn:disabled {
+    cursor: not-allowed;
+    color: var(--emad-text-tertiary);
+    background: var(--emad-surface-panel);
+    border-color: var(--emad-border-subtle-soft);
+  }
+
+  .aegis-confbar {
+    height: 6px;
+    background: var(--emad-surface-canvas);
+    border: 1px solid var(--emad-border-subtle-soft);
+    border-radius: 3px;
+    overflow: hidden;
+    min-width: 70px;
+  }
+  /* Confidence is a property of an interpretation, so the bar is a neutral
+     instrument, not a green-to-red quality scale (DESIGN.md §8.2). */
+  .aegis-confbar span {
+    display: block;
+    height: 100%;
+    background: var(--emad-signal-teal);
+  }
+
+  /* ── Detail rail ──────────────────────────────────────────────────── */
+
+  .aegis-rail {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    background: var(--emad-surface-canvas);
+  }
+  .aegis-railhead {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--emad-surface-canvas);
+  }
+  .aegis-panel {
+    padding: 16px;
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+  }
+  .aegis-panel h2 {
+    font-size: var(--emad-type-panel-heading);
+    font-weight: 600;
+    line-height: var(--emad-type-leading-panel-heading);
+    margin: 0 0 3px;
+  }
+  .aegis-panel .sub {
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-tertiary);
+    margin: 0 0 14px;
+  }
+  .aegis-kv {
+    display: grid;
+    grid-template-columns: 116px minmax(0, 1fr);
+    gap: 8px 12px;
+    margin: 0;
+    font-size: var(--emad-type-body);
+  }
+  .aegis-kv dt {
+    color: var(--emad-text-tertiary);
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    padding-top: 2px;
+  }
+  .aegis-kv dd {
+    margin: 0;
+    font-family: var(--emad-font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+    overflow-wrap: anywhere;
+    color: var(--emad-text-primary);
+  }
+  .aegis-kv dd.word {
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-secondary);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+  }
+  /* In a narrow rail a status badge with an age beside it would otherwise run
+     off the edge and take the age — the half of the badge that says how long
+     the operator has been looking at something old — with it. */
+  .aegis-kv dd .aegis-sev {
+    max-width: 100%;
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  .aegis-resizer {
+    position: relative;
+    cursor: col-resize;
+    touch-action: none;
+    background: var(--emad-surface-canvas);
+  }
+  .aegis-resizer::after {
+    content: '';
+    position: absolute;
+    inset: 0 3px;
+    background: var(--emad-border-subtle);
+    transition: background var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-resizer:hover::after,
+  .aegis-resizer[data-drag='true']::after {
+    background: var(--emad-industrial-graphite);
+  }
+  .aegis-resizer:focus-visible::after {
+    background: var(--emad-industrial-graphite);
+  }
+
+  .aegis-railspine {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 6px;
+    background: var(--emad-surface-canvas);
+    border-left: 1px solid var(--emad-border-subtle-soft);
+    overflow: hidden;
+  }
+  .aegis-railspine button {
+    writing-mode: vertical-rl;
+    background: var(--emad-surface-raised);
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-control);
+    color: var(--emad-text-secondary);
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    padding: 14px 7px;
+    cursor: pointer;
+    min-height: 74px;
+    transition:
+      background var(--emad-motion-fast) var(--emad-ease),
+      color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-railspine button:hover {
+    background: var(--emad-surface-hover);
+    color: var(--emad-text-primary);
+  }
+
+  /* ── List views ───────────────────────────────────────────────────── */
+
+  .aegis-listview {
+    overflow-y: auto;
+    min-height: 0;
+    padding: 0 20px 24px;
+  }
+
+  .aegis-listhead {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    flex-wrap: wrap;
+    padding: 18px 0 14px;
+  }
+  .aegis-listhead h2 {
+    font-size: var(--emad-type-heading);
+    font-weight: 600;
+    line-height: var(--emad-type-leading-heading);
+    margin: 0;
+  }
+
+  .aegis-empty {
+    padding: 32px 16px;
+    font-size: var(--emad-type-body);
+    letter-spacing: var(--emad-type-tracking-micro);
+    color: var(--emad-text-secondary);
+  }
+
+  .aegis-timestrip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    border-top: 1px solid var(--emad-border-subtle-soft);
+    background: var(--emad-surface-panel);
+  }
+  .aegis-timestrip > div {
+    padding: 12px 16px;
+  }
+  .aegis-timestrip > div + div {
+    border-left: 1px solid var(--emad-border-subtle-soft);
+  }
+  .aegis-timestrip .k {
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+    margin: 0 0 4px;
+  }
+  /* A key operational figure: large, tabular, and never dressed as a status. */
+  .aegis-timestrip .v {
+    font-family: var(--emad-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--emad-type-figure);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: var(--emad-type-leading-figure);
+    color: var(--emad-text-primary);
+    margin: 0;
+  }
+}
+
+/* ── Narrow layouts ───────────────────────────────────────────────────────
+   Critical controls wrap rather than truncate, and the rail drops below the
+   plot rather than crushing itself to nothing (DESIGN.md §10).
+
+   The first tier is 1100px rather than 820px: the top bar is a single row of
+   brand, five primary views, three secondary views and three status controls,
+   and below ~1100px it stops fitting. Wrapping it there keeps every control
+   reachable instead of pushing the operator identity off the right edge. */
+@media (max-width: 1100px) {
+  .aegis-panel {
+    padding: 14px;
+  }
+}
+
+/* When the bar's single row cannot fit every navigation item, the navigation
+   takes its own row rather than clipping `SCENARIOS` to `SCENAR`. The state is
+   measured in TopBar, not decided by a width: a container query can see the
+   bar's width but never its content, and the unauthenticated operator chip is
+   wider than the signed-in one — the same viewport fits or does not depending
+   on session state. */
+.topbar-shell--navrows .aegis-topbar {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+/* Nothing measured above may change when this state toggles — the brand,
+   including its subline, and the status cluster keep their natural widths, or
+   the measurement would feed back into itself and oscillate. */
+.topbar-shell--navrows .aegis-nav {
+  order: 3;
+  /* `flex: 0 0 100%`, not `flex-basis: 100%`: the base `flex: 0 1 auto`
+     leaves the nav shrinkable, and a shrinkable full-basis item simply
+     squeezes back onto the first line instead of wrapping. */
+  flex: 0 0 100%;
+  padding-top: 4px;
+  border-top: 1px solid var(--emad-border-subtle-soft);
+}
+.topbar-shell--navrows .aegis-topright {
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+@media (max-width: 820px) {
   .aegis-topbar,
   .aegis-band,
   .aegis-pagefoot {
     padding-left: 12px;
     padding-right: 12px;
   }
-  .aegis-topright {
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    min-width: 0;
-  }
-  .aegis-sys-health {
-    display: none;
-  }
+  .aegis-sys-health,
   .aegis-operator-id {
     display: none;
   }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .aegis-dsc,
-  .aegis-dsc::before,
-  .aegis-iconbtn,
-  .aegis-nav a {
-    transition: none;
-  }
-}
-
-/* ── view frame ── */
-.aegis-view {
-  min-height: 0;
-  overflow: hidden;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  background: var(--bg);
-}
-.aegis-sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-}
-
-/* ── entity header block — shared by board columns and the map overlay ── */
-.aegis-ent {
-  padding: 0;
-  vertical-align: top;
-}
-.aegis-ent .inner {
-  display: block;
-  background: var(--st, var(--surface));
-  padding: 11px 12px 12px;
-  min-height: var(--enth);
-}
-.aegis-ent .id {
-  display: block;
-  font-family: var(--font-display);
-  font-size: var(--t-lg);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--fg);
-}
-.aegis-ent .ty {
-  display: block;
-  font-size: var(--t-2xs);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--fg);
-  opacity: 0.72;
-  margin-top: 4px;
-}
-.aegis-ent .st {
-  display: inline-block;
-  margin-top: 12px;
-  font-size: var(--t-2xs);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  border: 1px solid rgba(252, 255, 255, 0.5);
-  border-radius: 2px;
-  padding: 3px 7px;
-}
-.aegis-ent .act {
-  display: block;
-  margin-top: 10px;
-  font-size: var(--t-2xs);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--fg);
-  opacity: 0.75;
-}
-.aegis-ent:hover .inner {
-  filter: brightness(1.22);
-}
-.aegis-ent[data-state='ok'] {
-  --st: var(--st-ok);
-}
-.aegis-ent[data-state='track'] {
-  --st: var(--st-track);
-}
-.aegis-ent[data-state='warn'] {
-  --st: var(--st-warn);
-}
-.aegis-ent[data-state='unknown'] {
-  --st: var(--st-unknown);
-}
-.aegis-ent[data-state='crit'] {
-  --st: var(--st-crit);
-}
-
-/* ── chip rail ── */
-.aegis-chipline {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 20px 10px;
-  min-width: 0;
-  flex-wrap: wrap;
-}
-.aegis-chipline .lead {
-  min-width: 156px;
-  flex: none;
-}
-.aegis-chipline-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-left: auto;
-}
-.aegis-chips-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1 1 0;
-  min-width: 0;
-}
-.aegis-chips {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  min-width: 0;
-}
-.aegis-chips::-webkit-scrollbar {
-  display: none;
-}
-.aegis-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 2px;
-  padding: 7px 11px;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: background var(--motion) var(--ease);
-}
-.aegis-chip:hover {
-  background: var(--surface-2);
-}
-.aegis-chip[aria-pressed='true'] {
-  border-color: var(--line-2);
-}
-.aegis-chip .n {
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-.aegis-chip .t {
-  font-size: var(--t-2xs);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-.aegis-chip.more {
-  background: transparent;
-  border-style: dashed;
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: var(--t-md);
-}
-
-/* ── segmented control ── */
-.aegis-seg {
-  display: inline-flex;
-  border: 1px solid var(--line-2);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.aegis-seg button {
-  background: rgba(0, 0, 0, 0.24);
-  border: 0;
-  border-left: 1px solid var(--line-2);
-  color: var(--fg-2);
-  font-family: var(--font-body);
-  font-size: var(--t-2xs);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  padding: 8px 11px;
-  min-height: 34px;
-  cursor: pointer;
-  transition: background var(--motion) var(--ease);
-}
-.aegis-seg button:first-child {
-  border-left: 0;
-}
-.aegis-seg button:hover {
-  background: rgba(0, 0, 0, 0.46);
-  color: var(--fg);
-}
-.aegis-seg button[aria-pressed='true'] {
-  background: var(--fg);
-  color: var(--bg);
-}
-
-/* ── popover + switch ── */
-.aegis-pop {
-  position: absolute;
-  z-index: 14;
-  right: 10px;
-  top: calc(100% + 8px);
-  background: var(--surface-2);
-  border: 1px solid var(--line-2);
-  border-radius: 2px;
-  padding: 9px 10px 11px;
-  min-width: 236px;
-  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.6);
-}
-.aegis-pop .ph {
-  margin: 0 0 7px;
-  font-size: var(--t-2xs);
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.aegis-sw {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 7px 6px;
-  font-size: var(--t-2xs);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  border-radius: 2px;
-  min-height: 38px;
-  color: var(--fg-2);
-}
-.aegis-sw:hover {
-  background: rgba(252, 255, 255, 0.07);
-  color: var(--fg);
-}
-.aegis-sw input {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 34px;
-  height: 18px;
-  border-radius: 9px;
-  border: 1px solid var(--line-2);
-  background: rgba(0, 0, 0, 0.34);
-  position: relative;
-  cursor: pointer;
-  flex: none;
-  margin: 0;
-}
-.aegis-sw input::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--muted);
-  transition:
-    transform var(--motion) var(--ease),
-    background var(--motion) var(--ease);
-}
-.aegis-sw input:checked {
-  background: var(--st-ok);
-  border-color: var(--st-ok);
-}
-.aegis-sw input:checked::after {
-  transform: translateX(16px);
-  background: var(--fg);
-}
-
-/* ── buttons + status ── */
-.aegis-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border-radius: 2px;
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  background: rgba(252, 255, 255, 0.07);
-  color: var(--fg);
-  border: 1px solid var(--line-2);
-  min-height: 40px;
-  transition: background var(--motion) var(--ease);
-}
-.aegis-btn:hover:not(:disabled) {
-  background: rgba(252, 255, 255, 0.16);
-}
-.aegis-btn:disabled {
-  opacity: 0.42;
-  cursor: not-allowed;
-}
-.aegis-btn-solid {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-on);
-}
-.aegis-btn-solid:hover:not(:disabled) {
-  background: var(--fg);
-  border-color: var(--fg);
-}
-.aegis-confbar {
-  height: 5px;
-  background: var(--line);
-  border-radius: 2px;
-  overflow: hidden;
-  min-width: 70px;
-}
-.aegis-confbar span {
-  display: block;
-  height: 100%;
-  background: var(--fg);
-}
-.aegis-statusline {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: var(--t-2xs);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-.aegis-statusline i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex: none;
-}
-
-/* ── detail rail ── */
-.aegis-rail {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  background: var(--bg);
-}
-.aegis-railhead {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--line);
-}
-.aegis-tabs {
-  display: flex;
-  gap: 2px;
-  border-bottom: 1px solid var(--line);
-  padding: 0 12px;
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  z-index: 4;
-}
-.aegis-tabs button {
-  background: transparent;
-  border: 0;
-  color: var(--muted);
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  padding: 15px 9px;
-  cursor: pointer;
-  min-height: 44px;
-  box-shadow: inset 0 -2px 0 transparent;
-}
-.aegis-tabs button[aria-selected='true'] {
-  color: var(--fg);
-  box-shadow: inset 0 -2px 0 var(--fg);
-}
-.aegis-panel {
-  padding: 18px 16px;
-  border-bottom: 1px solid var(--line);
-}
-.aegis-panel h2 {
-  font-family: var(--font-display);
-  font-size: var(--t-md);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin: 0 0 3px;
-}
-.aegis-panel .sub {
-  font-size: var(--t-2xs);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--faint);
-  margin: 0 0 14px;
-}
-.aegis-kv {
-  display: grid;
-  grid-template-columns: 118px minmax(0, 1fr);
-  gap: 8px 12px;
-  margin: 0;
-  font-size: var(--t-md);
-}
-.aegis-kv dt {
-  color: var(--faint);
-  font-size: var(--t-2xs);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  padding-top: 2px;
-}
-.aegis-kv dd {
-  margin: 0;
-  font-family: var(--font-mono);
-  letter-spacing: 0.02em;
-  overflow-wrap: anywhere;
-}
-.aegis-kv dd.word {
-  font-family: var(--font-body);
-  font-size: var(--t-sm);
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-.aegis-resizer {
-  position: relative;
-  cursor: col-resize;
-  touch-action: none;
-  background: var(--bg);
-}
-.aegis-resizer::after {
-  content: '';
-  position: absolute;
-  inset: 0 3px;
-  background: var(--line);
-  transition: background var(--motion) var(--ease);
-}
-.aegis-resizer:hover::after,
-.aegis-resizer[data-drag='true']::after {
-  background: var(--fg);
-}
-.aegis-resizer:focus-visible::after {
-  background: var(--fg);
-}
-.aegis-railspine {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 6px;
-  background: var(--bg);
-  border-left: 1px solid var(--line);
-  overflow: hidden;
-}
-.aegis-railspine button {
-  writing-mode: vertical-rl;
-  background: transparent;
-  border: 1px solid var(--line-2);
-  border-radius: 2px;
-  color: var(--fg-2);
-  font-family: var(--font-body);
-  font-size: var(--t-2xs);
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  padding: 13px 6px;
-  cursor: pointer;
-  min-height: 74px;
-  transition:
-    background var(--motion) var(--ease),
-    color var(--motion) var(--ease);
-}
-.aegis-railspine button:hover {
-  background: rgba(252, 255, 255, 0.09);
-  color: var(--fg);
-}
-
-/* ── list views ── */
-.aegis-listview {
-  overflow-y: auto;
-  min-height: 0;
-  padding: 0 20px 24px;
-}
-.aegis-listhead {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  padding: 16px 0 14px;
-}
-.aegis-listhead h2 {
-  font-family: var(--font-display);
-  font-size: var(--t-xl);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  margin: 0;
-}
-.aegis-rowline {
-  display: grid;
-  grid-template-columns: 104px 116px 168px minmax(0, 1fr) 190px 128px;
-  gap: 16px;
-  align-items: center;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
-  font-size: var(--t-md);
-}
-.aegis-rowline.head {
-  border-bottom-color: var(--line-2);
-  font-size: var(--t-2xs);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-.aegis-rowline .n {
-  font-family: var(--font-mono);
-}
-.aegis-rowline .ttl {
-  letter-spacing: 0.03em;
-}
-.aegis-rowline .ttl b {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  display: block;
-  font-size: var(--t-lg);
-}
-.aegis-rowline .ttl small {
-  display: block;
-  font-size: var(--t-2xs);
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-  color: var(--faint);
-  margin-top: 3px;
-}
-.aegis-empty {
-  padding: 34px 14px;
-  font-size: var(--t-xs);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-.aegis-sev {
-  display: inline-block;
-  font-size: var(--t-2xs);
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  padding: 4px 8px;
-  border: 1px solid currentColor;
-  border-radius: 2px;
-}
-.aegis-sev.critical {
-  color: var(--st-crit);
-}
-.aegis-sev.warning {
-  color: var(--st-warn);
-}
-.aegis-sev.info {
-  color: var(--muted);
-}
-.aegis-cmdsteps {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-}
-.aegis-cmdsteps span {
-  font-size: var(--t-2xs);
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  border: 1px solid var(--line);
-  border-radius: 2px;
-  padding: 5px 8px;
-  color: var(--muted);
-}
-.aegis-cmdsteps span.done {
-  color: var(--accent-on);
-  background: var(--st-ok);
-  border-color: var(--st-ok);
-}
-.aegis-cmdsteps span.active {
-  color: var(--fg);
-  border-color: var(--fg);
-}
-.aegis-detailgrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-}
-.aegis-detailgrid div {
-  background: var(--bg);
-  padding: 14px 16px;
-}
-.aegis-detailgrid .k {
-  font-size: var(--t-2xs);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--faint);
-  margin: 0 0 6px;
-}
-.aegis-detailgrid .v {
-  font-family: var(--font-mono);
-  font-size: var(--t-xl);
-}
-.aegis-timestrip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  border-top: 1px solid var(--line);
-}
-.aegis-timestrip > div {
-  padding: 12px 16px;
-}
-.aegis-timestrip > div + div {
-  border-left: 1px solid var(--line);
-}
-.aegis-timestrip .k {
-  font-size: var(--t-2xs);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--faint);
-  margin: 0 0 6px;
-}
-.aegis-timestrip .v {
-  font-family: var(--font-display);
-  font-size: var(--t-3xl);
-  letter-spacing: 0.04em;
-}
-.aegis-src {
-  font-family: var(--font-mono);
-  font-size: var(--t-2xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--fg-2);
-  background: rgba(0, 0, 0, 0.24);
-  border-radius: 2px;
-  padding: 3px 6px;
-}
-
-@media (max-width: 1100px) {
-  .aegis-rowline {
-    grid-template-columns: 90px 100px 140px minmax(0, 1fr) 150px 108px;
-    gap: 10px;
-  }
-}
-
-@media (max-width: 820px) {
   .aegis-chipline,
   .aegis-listview {
     padding-left: 12px;
@@ -1335,16 +1540,16 @@
     padding: 10px 12px;
   }
   .aegis-timestrip .v {
-    font-size: var(--t-2xl);
-  }
-  .aegis-rowline {
-    grid-template-columns: 84px minmax(0, 1fr);
-    row-gap: 4px;
-  }
-  .aegis-rowline .hd {
-    display: none;
+    font-size: var(--emad-type-heading);
+    line-height: var(--emad-type-leading-heading);
   }
   .aegis-listhead {
-    padding-top: 12px;
+    padding-top: 14px;
+  }
+  .aegis-kv {
+    grid-template-columns: 104px minmax(0, 1fr);
+  }
+  .aegis-kvrow {
+    grid-template-columns: 130px minmax(0, 1fr);
   }
 }

@@ -173,7 +173,7 @@ export function AssessmentFormDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={() => void form.handleSubmit()} disabled={createMutation.isPending}>
+          <Button variant="primary" onClick={() => void form.handleSubmit()} disabled={createMutation.isPending}>
             {createMutation.isPending ? 'Saving…' : 'Record assessment'}
           </Button>
         </>

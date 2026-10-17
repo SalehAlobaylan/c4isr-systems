@@ -9,6 +9,7 @@
  */
 
 import type { components } from '@/lib/openapi.generated'
+import { FRESHNESS_TONE, type SemanticTone, toneRef } from '@/lib/operationalPresentation'
 
 export type Freshness = components['schemas']['Freshness']
 
@@ -30,23 +31,25 @@ export const FRESHNESS_LABELS: Record<Freshness, string> = {
   unknown: 'No data',
 }
 
-/** Map colour per state. Deliberately distinct from entity type colour. */
+/**
+ * Map and legend colour per state.
+ *
+ * Freshness is drawn as a *ring around* a marker, never as the marker colour
+ * (DESIGN.md §8.1, §9.2): the marker already carries entity meaning, so
+ * recolouring it would destroy one of the two readings. `unavailable` and
+ * `unknown` share the inactive grey and are told apart by pattern and label,
+ * because "contact lost" and "never reported" are different claims.
+ */
 export const FRESHNESS_COLORS: Record<Freshness, string> = {
-  live: 'var(--st-ok)',
-  delayed: 'var(--st-warn)',
-  stale: 'var(--st-crit)',
-  unavailable: 'var(--faint)',
-  unknown: 'var(--muted)',
+  live: toneRef(FRESHNESS_TONE.live),
+  delayed: toneRef(FRESHNESS_TONE.delayed),
+  stale: toneRef(FRESHNESS_TONE.stale),
+  unavailable: toneRef(FRESHNESS_TONE.unavailable),
+  unknown: toneRef(FRESHNESS_TONE.unknown),
 }
 
-/** Badge tone, reusing the existing semantic tones. */
-export const FRESHNESS_TONES: Record<Freshness, 'ok' | 'warn' | 'crit' | 'muted'> = {
-  live: 'ok',
-  delayed: 'warn',
-  stale: 'crit',
-  unavailable: 'muted',
-  unknown: 'muted',
-}
+/** Badge tone. Shares the operational semantic vocabulary with every other status. */
+export const FRESHNESS_TONES: Record<Freshness, SemanticTone> = FRESHNESS_TONE
 
 /**
  * Trustworthy states are the ones an operator may act on without a caveat.

@@ -9,7 +9,14 @@ import {
   PlusIcon,
 } from '@/components/icons'
 import { Page } from '@/components/layout/Page'
-import { ActorBadge, SeverityBadge, StateBadge } from '@/components/shared/badges'
+import {
+  ActorBadge,
+  AlertStateBadge,
+  AssetStatusBadge,
+  IncidentStatusBadge,
+  PriorityBadge,
+  SeverityBadge,
+} from '@/components/shared/badges'
 import { DataTable } from '@/components/shared/data-table'
 import { DetailList, ErrorState, SectionTitle } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
@@ -93,7 +100,7 @@ export function IncidentDetailPage() {
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
             <ActorBadge value={row.original.actorType} />
-            <span className="font-mono text-[10px] text-ink-faint">{row.original.actorId || '—'}</span>
+            <span className="font-mono text-[12px] text-ink-faint">{row.original.actorId || '—'}</span>
           </div>
         ),
       },
@@ -108,7 +115,7 @@ export function IncidentDetailPage() {
         accessorKey: 'subjectType',
         header: 'Subject',
         cell: ({ row }) => (
-          <span className="font-mono text-[10px] text-ink-muted">
+          <span className="font-mono text-[12px] text-ink-muted">
             {row.original.subjectType}
             {row.original.subjectId ? ` · ${truncateId(row.original.subjectId, 22)}` : ''}
           </span>
@@ -170,9 +177,9 @@ export function IncidentDetailPage() {
           <TabsPanel value="overview" keepMounted>
             <div className="flex max-w-4xl flex-col gap-5">
               <div className="flex flex-wrap items-center gap-2">
-                <StateBadge value={incident.status} />
-                <StateBadge value={incident.priority} />
-                <span className="font-mono text-[10px] text-ink-faint">{incident.id}</span>
+                <IncidentStatusBadge value={incident.status} />
+                <PriorityBadge value={incident.priority} />
+                <span className="font-mono text-[12px] text-ink-faint">{incident.id}</span>
               </div>
 
               <DetailList
@@ -192,7 +199,7 @@ export function IncidentDetailPage() {
 
               <section className="flex flex-col gap-2">
                 <SectionTitle>Description</SectionTitle>
-                <p className="rounded-[2px] border border-edge bg-panel px-4 py-3 text-sm whitespace-pre-wrap text-ink-muted">
+                <p className="rounded-[4px] border border-edge bg-panel px-4 py-3 text-sm whitespace-pre-wrap text-ink-muted">
                   {incident.description || 'No description recorded.'}
                 </p>
               </section>
@@ -250,17 +257,17 @@ export function IncidentDetailPage() {
                     {incident.alerts.map((alert) => (
                       <li
                         key={alert.id}
-                        className="flex items-center justify-between gap-3 rounded-[2px] border border-edge bg-panel px-4 py-2.5"
+                        className="flex items-center justify-between gap-3 rounded-[4px] border border-edge bg-panel px-4 py-2.5"
                       >
                         <div className="min-w-0">
                           <p className="truncate text-xs text-ink">{alert.title}</p>
-                          <p className="font-mono text-[10px] text-ink-faint">
+                          <p className="font-mono text-[12px] text-ink-faint">
                             {alert.id} · {formatTimestamp(alert.createdAt)}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                           <SeverityBadge value={alert.severity} />
-                          <StateBadge value={alert.state} />
+                          <AlertStateBadge value={alert.state} />
                         </div>
                       </li>
                     ))}
@@ -277,13 +284,13 @@ export function IncidentDetailPage() {
                     {incident.tracks.map((track) => (
                       <li
                         key={track.id}
-                        className="flex items-center justify-between gap-3 rounded-[2px] border border-edge bg-panel px-4 py-2.5"
+                        className="flex items-center justify-between gap-3 rounded-[4px] border border-edge bg-panel px-4 py-2.5"
                       >
                         <div className="min-w-0">
                           <p className="font-mono text-xs text-ink">
                             {track.externalRef || track.id}
                           </p>
-                          <p className="font-mono text-[10px] text-ink-faint">
+                          <p className="font-mono text-[12px] text-ink-faint">
                             {track.id} · {formatCoord(track.position)}
                           </p>
                         </div>
@@ -310,16 +317,16 @@ export function IncidentDetailPage() {
                     {incident.assets.map((asset) => (
                       <li
                         key={asset.id}
-                        className="flex items-center justify-between gap-3 rounded-[2px] border border-edge bg-panel px-4 py-2.5"
+                        className="flex items-center justify-between gap-3 rounded-[4px] border border-edge bg-panel px-4 py-2.5"
                       >
                         <div className="min-w-0">
                           <p className="text-xs text-ink">{asset.name}</p>
-                          <p className="font-mono text-[10px] text-ink-faint">
+                          <p className="font-mono text-[12px] text-ink-faint">
                             {asset.id} · {formatCoord(asset.position)}
                           </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
-                          <StateBadge value={asset.status} />
+                          <AssetStatusBadge value={asset.status} />
                           <Link
                             to="/map"
                             search={{ selected: `asset:${asset.id}` }}
@@ -346,10 +353,10 @@ export function IncidentDetailPage() {
                         key={observation.id}
                         className="flex items-center justify-between gap-3 rounded border border-edge px-3 py-1.5"
                       >
-                        <span className="font-mono text-[10px] text-ink-muted">
+                        <span className="font-mono text-[12px] text-ink-muted">
                           {observation.id}
                         </span>
-                        <span className="font-mono text-[10px] text-ink-faint">
+                        <span className="font-mono text-[12px] text-ink-faint">
                           {observation.sourceId} · {formatCoord(observation.position)} ·{' '}
                           {formatTimestamp(observation.observedAt)}
                         </span>
@@ -377,10 +384,10 @@ export function IncidentDetailPage() {
                     {incident.assessments.map((assessment) => (
                       <li
                         key={assessment.id}
-                        className="rounded-[2px] border border-edge bg-panel px-4 py-2.5"
+                        className="rounded-[4px] border border-edge bg-panel px-4 py-2.5"
                       >
                         <p className="text-xs text-ink">{assessment.conclusion}</p>
-                        <p className="mt-0.5 font-mono text-[10px] text-ink-faint">
+                        <p className="mt-0.5 font-mono text-[12px] text-ink-faint">
                           {assessment.method} · {formatConfidence(assessment.confidence)} ·{' '}
                           {formatTimestamp(assessment.createdAt)}
                         </p>

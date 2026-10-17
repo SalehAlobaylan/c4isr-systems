@@ -192,7 +192,9 @@ export function ScenarioBar() {
           Scenario
         </button>
         <span className="aegis-scenario">
-          {activeRun ? `${activeRun.scenarioName} · seed ${activeRun.seed}` : 'No active run'}
+          {activeRun
+            ? `${activeRun.scenarioName}${activeRun.seed !== undefined && activeRun.seed !== null ? ` · seed ${activeRun.seed}` : ''}`
+            : 'No active run'}
         </span>
         {activeRuns.length > 1 ? (
           <select
@@ -210,7 +212,11 @@ export function ScenarioBar() {
         ) : null}
         <span className="aegis-clock" id="aegis-run-clock">
           {activeRun
-            ? `T+${formatVirtualTime(activeRun.virtualTimeMs)} · ${activeRun.playbackSpeed}×`
+            ? `T+${formatVirtualTime(activeRun.virtualTimeMs)} · ${
+                typeof activeRun.playbackSpeed === 'number' && Number.isFinite(activeRun.playbackSpeed)
+                  ? `${activeRun.playbackSpeed}×`
+                  : '—'
+              }`
             : 'T+0:00 · —'}
         </span>
         <span className="aegis-live aegis-run-state">

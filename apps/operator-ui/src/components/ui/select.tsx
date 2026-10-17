@@ -21,6 +21,10 @@ export interface SelectProps {
   ariaLabel?: string
 }
 
+/**
+ * Filter and choice control. Panel surface with a control border, so it is
+ * distinguishable from a panel behind it without needing a shadow.
+ */
 export function Select({
   value,
   onValueChange,
@@ -46,9 +50,9 @@ export function Select({
         id={id}
         aria-label={ariaLabel}
         className={cn(
-          'inline-flex h-9 w-full items-center justify-between gap-2 rounded-[2px] border border-[color:var(--line-2)] bg-[color:var(--surface)] px-3 text-[10px] font-bold tracking-[.12em] text-ink uppercase transition-colors outline-none select-none',
-          'hover:bg-[color:var(--surface-2)] focus-visible:shadow-[0_0_0_2px_var(--accent-on),0_0_0_3px_var(--bg)]',
-          'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-42',
+          'inline-flex h-9 w-full items-center justify-between gap-2 rounded-[4px] border border-edge-strong bg-panel px-3 text-[13px] font-semibold tracking-[.08em] text-ink uppercase transition-colors select-none',
+          'hover:bg-panel-hover',
+          'data-[disabled]:cursor-not-allowed data-[disabled]:border-edge data-[disabled]:bg-[color:var(--emad-surface-raised)] data-[disabled]:text-[color:var(--emad-text-secondary)]',
           className,
         )}
       >
@@ -67,7 +71,7 @@ export function Select({
         <BaseSelect.Positioner sideOffset={4} className="z-[70]">
           <BaseSelect.Popup
             className={cn(
-              'max-h-72 min-w-[var(--anchor-width)] overflow-y-auto rounded-[2px] border border-[color:var(--line-2)] bg-[color:var(--surface-2)] py-1 shadow-2xl transition-all',
+              'max-h-72 min-w-[var(--anchor-width)] overflow-y-auto rounded-[6px] border border-edge-strong bg-panel-raised py-1 transition-opacity duration-[--emad-motion-base]',
               'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0',
             )}
           >
@@ -77,9 +81,9 @@ export function Select({
                 value={option.value}
                 disabled={option.disabled}
                 className={cn(
-                  'relative flex cursor-default items-center gap-2 py-2 pr-3 pl-7 text-[10px] font-bold tracking-[.12em] text-ink-muted uppercase outline-none select-none',
-                  'data-[highlighted]:bg-[rgba(252,255,255,.07)] data-[highlighted]:text-ink',
-                  'data-[selected]:text-ink data-[disabled]:opacity-40',
+                  'relative flex cursor-default items-center gap-2 py-2 pr-3 pl-7 text-[13px] font-semibold tracking-[.08em] text-ink-muted uppercase select-none',
+                  'data-[highlighted]:bg-panel-hover data-[highlighted]:text-ink',
+                  'data-[selected]:text-ink data-[disabled]:text-[color:var(--emad-text-secondary)]',
                 )}
               >
                 <BaseSelect.ItemIndicator className="absolute left-2 inline-flex items-center">

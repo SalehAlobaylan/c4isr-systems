@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Dialog as BaseDialog } from '@base-ui-components/react/dialog'
@@ -42,11 +42,16 @@ const HELP_KEYS: Array<[string, string]> = [
   ['?', 'Close this panel · Esc also closes'],
 ]
 
+/**
+ * Link state is spelled out, never implied by a colour. `LINK` alone left an
+ * operator guessing whether the picture they were looking at was current, so
+ * the states DESIGN.md §7.1 names are used verbatim.
+ */
 const WS_LABEL: Record<RealtimeStatus, string> = {
-  connected: 'LINK',
-  connecting: 'LINK INIT',
+  connected: 'LIVE',
+  connecting: 'CONNECTING',
   reconnecting: 'LINK RETRY',
-  disconnected: 'LINK DOWN',
+  disconnected: 'DISCONNECTED',
 }
 
 const WS_DOT: Record<RealtimeStatus, string> = {
@@ -72,6 +77,62 @@ export function TopBar() {
   const navigate = useNavigate()
   const { status: realtimeStatus, lastEventAt } = useRealtime()
   const [helpOpen, setHelpOpen] = useState(false)
+  const shellRef = useRef<HTMLDivElement | null>(null)
+  const barRef = useRef<HTMLElement | null>(null)
+  const brandRef = useRef<HTMLDivElement | null>(null)
+  const navRef = useRef<HTMLElement | null>(null)
+  const topRightRef = useRef<HTMLDivElement | null>(null)
+  const [navOwnRow, setNavOwnRow] = useState(false)
+
+  // Whether the bar's single row fits depends on content as much as on width:
+  // the unauthenticated operator chip is wider than the signed-in one, so the
+  // same viewport fits or clips depending on session state. A container query
+  // can see the bar's width but never its content, so the fit is measured.
+  // The items are `flex: none`, so their widths are identical before and after
+  // the row moves and the measurement cannot oscillate.
+  useEffect(() => {
+    const shell = shellRef.current
+    const bar = barRef.current
+    const nav = navRef.current
+    const brand = brandRef.current
+    const topRight = topRightRef.current
+    if (!shell || !bar || !nav || !brand || !topRight) return
+
+    let disposed = false
+    const measure = () => {
+      if (disposed) return
+      const navGap = Number.parseFloat(getComputedStyle(nav).columnGap) || 0
+      const items = Array.from(nav.children) as HTMLElement[]
+      const content =
+        items.reduce((sum, item) => {
+          const style = getComputedStyle(item)
+          return (
+            sum +
+            item.offsetWidth +
+            (Number.parseFloat(style.marginLeft) || 0) +
+            (Number.parseFloat(style.marginRight) || 0)
+          )
+        }, 0) + navGap * Math.max(0, items.length - 1)
+      const barStyle = getComputedStyle(bar)
+      const chrome =
+        (Number.parseFloat(barStyle.paddingLeft) || 0) +
+        (Number.parseFloat(barStyle.paddingRight) || 0) +
+        (Number.parseFloat(barStyle.columnGap) || 0) * 2
+      const available = shell.clientWidth - brand.offsetWidth - topRight.offsetWidth - chrome
+      setNavOwnRow(content > available + 1)
+    }
+
+    measure()
+    const observer = new ResizeObserver(measure)
+    for (const element of [shell, brand, topRight, nav]) observer.observe(element)
+    // Weights arrive with the webfont; a measurement taken before that is
+    // taken on fallback metrics.
+    void document.fonts.ready.then(measure)
+    return () => {
+      disposed = true
+      observer.disconnect()
+    }
+  }, [])
 
   const healthQuery = useQuery({
     queryKey: queryKeys.health(),
@@ -102,6 +163,13 @@ export function TopBar() {
       : healthDegraded
         ? 'SYS DEGRADED'
         : 'SYS …'
+  // A degraded backend needs its time context visible, not only in a tooltip:
+  // "since when has this been degraded?" is the question an operator asks
+  // first, and DESIGN.md §7.4 forbids essential information living only on
+  // hover (§7.7 asks for a caution label *and* time context).
+  const healthSince = healthQuery.data ? formatRelative(healthQuery.data.time) : null
+  const healthTone = healthOk ? 'aegis-ok' : healthDown ? 'aegis-crit' : healthDegraded ? 'aegis-warn' : 'aegis-faint'
+  const healthDetail = healthDegraded || healthDown ? ` · ${healthSince ?? 'unknown'}` : ''
 
   const toggleHelp = useCallback(() => setHelpOpen((open) => !open), [])
 
@@ -127,8 +195,12 @@ export function TopBar() {
 
   return (
     <>
-      <header className="aegis-topbar">
-        <div className="aegis-brand">
+      {/* The wrapper carries the measured fit state. A container cannot query
+          itself, and the fit depends on content the browser cannot compare —
+          see the measurement effect above. */}
+      <div ref={shellRef} className={cn('topbar-shell', navOwnRow && 'topbar-shell--navrows')}>
+        <header ref={barRef} className="aegis-topbar">
+        <div ref={brandRef} className="aegis-brand">
           <span className="aegis-glyph" aria-hidden="true">
             ع
           </span>
@@ -136,10 +208,14 @@ export function TopBar() {
             <h1 dir="ltr">
               EMAD | <bdi lang="ar" dir="rtl">عِماد</bdi>
             </h1>
-            <p className="sub">C4ISR-aware · C2-first</p>
+            {/* One of the two sublines DESIGN.md §2.3 approves, chosen because
+                this screen is the operational picture. The alternative,
+                "C4ISR-aware", was an unapproved phrase that also edges toward
+                a certification claim the product does not make (§1). */}
+            <p className="sub">C4ISR Operational Awareness</p>
           </div>
         </div>
-        <nav className="aegis-nav" aria-label="Console views">
+        <nav ref={navRef} className="aegis-nav" aria-label="Console views">
           {PRIMARY_VIEWS.map((view) => (
             <Link
               key={view.to}
@@ -151,7 +227,7 @@ export function TopBar() {
               {view.label}
             </Link>
           ))}
-          <span className="aegis-nav-sec">
+          <span className="aegis-nav-sec" aria-label="Secondary views">
             {SECONDARY_VIEWS.map((view) => (
               <Link key={view.to} to={view.to} title={view.label}>
                 {view.label}
@@ -159,7 +235,7 @@ export function TopBar() {
             ))}
           </span>
         </nav>
-        <div className="aegis-topright">
+        <div ref={topRightRef} className="aegis-topright">
           <span
             className={cn('aegis-live', realtimeStatus !== 'connected' && 'aegis-live--down')}
             title={
@@ -186,30 +262,10 @@ export function TopBar() {
               onClick={() => void healthQuery.refetch()}
               title="Backend health — click to re-check"
             >
-              <ActivityIcon
-                className={cn(
-                  'size-3.5',
-                  healthOk
-                    ? 'aegis-ok'
-                    : healthDown
-                      ? 'aegis-crit'
-                      : healthDegraded
-                        ? 'aegis-warn'
-                        : 'aegis-faint',
-                )}
-              />
-              <span
-                className={cn(
-                  healthOk
-                    ? 'aegis-ok'
-                    : healthDown
-                      ? 'aegis-crit'
-                      : healthDegraded
-                        ? 'aegis-warn'
-                        : 'aegis-faint',
-                )}
-              >
+              <ActivityIcon className={cn('size-3.5', healthTone)} />
+              <span className={healthTone}>
                 {healthLabel}
+                {healthDetail}
               </span>
             </button>
           </Tooltip>
@@ -260,6 +316,7 @@ export function TopBar() {
           </button>
         </div>
       </header>
+      </div>
 
       <ScenarioBar />
 

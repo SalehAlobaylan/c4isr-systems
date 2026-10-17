@@ -11,10 +11,15 @@ import {
   type Freshness,
 } from '@/lib/freshness'
 import { formatCoord, formatHeading, formatRelative, truncateId } from '@/lib/format'
+import {
+  FRESHNESS_TONE,
+  TONE_GLYPH,
+  presentAssetStatus,
+  presentTrackStatus,
+  type SemanticTone,
+} from '@/lib/operationalPresentation'
 import { queryKeys } from '@/lib/queryKeys'
 import { useLayoutStore } from '@/stores/layout'
-
-import '@/components/board/board.css'
 
 const TRACK_FILTERS = { limit: 500 }
 const ASSET_FILTERS = { limit: 500 }
@@ -24,29 +29,20 @@ const SOURCE_FILTERS = { limit: 100 }
 
 const EMPTY: never[] = []
 
-const TRACK_STATE: Record<string, string> = {
-  active: 'track',
-  lost: 'warn',
-  closed: 'unknown',
-}
-
-const ASSET_STATE: Record<string, string> = {
-  available: 'ok',
-  assigned: 'track',
-  maintenance: 'warn',
-  unavailable: 'warn',
-  offline: 'unknown',
-}
-
 interface Column {
   key: string
   kind: 'track' | 'asset'
   id: string
   label: string
   subtitle: string
-  state: string
+  /**
+   * Administrative tone, carried by the labelled chip inside the header. It is
+   * deliberately not the header's background: a filled card per entity would
+   * read as severity and would fight the freshness edge underneath it.
+   */
+  tone: SemanticTone
   status: string
-  statusSeverity?: 'ok' | 'warn' | 'crit'
+  statusSeverity?: SemanticTone
   act: string
   track?: Track
   asset?: Asset
@@ -62,7 +58,7 @@ interface Metric {
   value: (column: Column) => {
     text: string
     kind?: 'word' | 'na' | 'coord'
-    sev?: 'ok' | 'warn' | 'crit'
+    sev?: SemanticTone
   } | null
 }
 
@@ -90,10 +86,15 @@ function disambiguate(labels: Map<string, number>, label: string, subtitle: stri
   return token ? `${subtitle} · ${token}` : subtitle
 }
 
-function trackSeverity(status: string): Column['statusSeverity'] {
-  if (status === 'active') return undefined
-  if (status === 'lost') return 'warn'
-  return undefined
+/**
+ * The tone a status cell wears, when it should be tinted at all.
+ *
+ * Most states are already readable as words, so a cell is left in primary text
+ * unless the state is one an operator should notice without reading it. Tone is
+ * a reinforcement here, never the only carrier.
+ */
+function statusSeverity(tone: SemanticTone): SemanticTone | undefined {
+  return tone === 'caution' || tone === 'high' || tone === 'critical' ? tone : undefined
 }
 
 export function BoardPage() {
@@ -177,26 +178,28 @@ export function BoardPage() {
   const columns: Column[] = useMemo(() => {
     const assetColumns = assets
       .filter((asset) => !hiddenAssets.includes(asset.id))
-      .map((asset) => ({
-        key: `asset:${asset.id}`,
-        kind: 'asset' as const,
-        id: asset.id,
-        label: asset.name || truncateId(asset.id, 10),
-        subtitle: asset.type || 'Asset',
-        state: asset.health === 'critical' ? 'crit' : (ASSET_STATE[asset.status] ?? 'unknown'),
-        status: asset.status,
-        statusSeverity:
-          asset.health === 'critical'
-            ? ('crit' as const)
-            : asset.status === 'available'
-              ? undefined
-              : ('warn' as const),
-        act: formatRelative(asset.lastSeenAt),
-        asset,
-        observations: 0,
-        sources: 0,
-        alerts: alertsByAsset.get(asset.id) ?? 0,
-      }))
+      .map((asset) => {
+        const presentation = presentAssetStatus(asset.status)
+        return {
+          key: `asset:${asset.id}`,
+          kind: 'asset' as const,
+          id: asset.id,
+          label: asset.name || truncateId(asset.id, 10),
+          subtitle: asset.type || 'Asset',
+          // The badge denotes the *status field* and nothing else. Platform
+          // health is a separate fact with its own column, and letting it
+          // repaint the status chip would make a chip reading AVAILABLE claim
+          // to be a fault report (DESIGN.md §7.5).
+          tone: presentation.tone,
+          status: asset.status,
+          statusSeverity: statusSeverity(presentation.tone),
+          act: formatRelative(asset.lastSeenAt),
+          asset,
+          observations: 0,
+          sources: 0,
+          alerts: alertsByAsset.get(asset.id) ?? 0,
+        }
+      })
 
     const trackColumns = tracks
       .filter((track) => {
@@ -204,21 +207,24 @@ export function BoardPage() {
         const observed = observationsByTrack.get(track.externalRef)
         return observed ? selectedSources.some((sourceId) => observed.has(sourceId)) : false
       })
-      .map((track) => ({
-        key: `track:${track.id}`,
-        kind: 'track' as const,
-        id: track.id,
-        label: shortRef(track.externalRef, track.id),
-        subtitle: 'Track',
-        state: TRACK_STATE[track.status] ?? 'unknown',
-        status: track.status,
-        statusSeverity: trackSeverity(track.status),
-        act: formatRelative(track.lastSeenAt),
-        track,
-        observations: track.observationCount,
-        sources: observationsByTrack.get(track.externalRef)?.size ?? 0,
-        alerts: alertsByTrack.get(track.id) ?? 0,
-      }))
+      .map((track) => {
+        const presentation = presentTrackStatus(track.status)
+        return {
+          key: `track:${track.id}`,
+          kind: 'track' as const,
+          id: track.id,
+          label: shortRef(track.externalRef, track.id),
+          subtitle: 'Track',
+          tone: presentation.tone,
+          status: track.status,
+          statusSeverity: statusSeverity(presentation.tone),
+          act: formatRelative(track.lastSeenAt),
+          track,
+          observations: track.observationCount,
+          sources: observationsByTrack.get(track.externalRef)?.size ?? 0,
+          alerts: alertsByTrack.get(track.id) ?? 0,
+        }
+      })
 
     const all: Column[] = [...trackColumns, ...assetColumns]
     const labelCounts = new Map<string, number>()
@@ -246,11 +252,12 @@ export function BoardPage() {
         return {
           text: FRESHNESS_LABELS[state].toUpperCase(),
           kind: 'word',
-          sev: isActionable(state)
-            ? undefined
-            : state === 'unavailable' || state === 'stale'
-              ? ('crit' as const)
-              : ('warn' as const),
+          // The tone comes straight from the freshness vocabulary, so "contact
+          // lost" is never painted in the same red as "stale" and "no data" is
+          // never painted in the same amber as "delayed". Those are three
+          // different claims and they lead to three different actions
+          // (DESIGN.md §3.2, §8.1).
+          sev: isActionable(state) ? undefined : FRESHNESS_TONE[state],
         }
       },
     },
@@ -299,7 +306,10 @@ export function BoardPage() {
       label: 'Alerts',
       value: (column) =>
         column.kind === 'track' || column.alerts > 0
-          ? { text: String(column.alerts), sev: column.alerts > 0 ? ('warn' as const) : undefined }
+          ? {
+              text: String(column.alerts),
+              sev: column.alerts > 0 ? ('caution' as const) : undefined,
+            }
           : null,
     },
     {
@@ -323,7 +333,7 @@ export function BoardPage() {
           >
             Assets &amp; sources
           </button>
-          <p className="mono faint m-0 mt-1 text-[9px]">
+          <p className="mono faint m-0 mt-1 text-[12px]">
             {assets.length} ASSETS · {sources.length} SOURCES
             {selectedSources.length > 0 || hiddenAssets.length > 0 ? ' · FILTERED' : ''}
           </p>
@@ -430,7 +440,7 @@ export function BoardPage() {
                 {columns.map((column) => (
                   <th
                     className="aegis-ent ent-col"
-                    data-state={column.state}
+                    data-tone={column.tone}
                     data-freshness={columnFreshness(column)}
                     key={column.key}
                     scope="col"
@@ -446,7 +456,10 @@ export function BoardPage() {
                       <span className="inner">
                         <span className="id">{column.label}</span>
                         <span className="ty">{column.subtitle}</span>
-                        <span className="st">{column.status}</span>
+                        <span className="st">
+                          <i className="tone-glyph" data-glyph={TONE_GLYPH[column.tone]} aria-hidden="true" />
+                          {column.status}
+                        </span>
                         <span className="act">{column.act}</span>
                       </span>
                     </button>
@@ -463,12 +476,21 @@ export function BoardPage() {
                   </th>
                   {columns.map((column) => {
                     const value = metric.value(column)
-                    if (!value) return <td className="cell na" key={column.key}>n/a</td>
+                    if (!value) {
+                      return (
+                        <td className="cell na" key={column.key}>
+                          n/a
+                        </td>
+                      )
+                    }
                     return (
                       <td
                         className={`cell ${value.kind ?? ''}`}
                         data-sev={value.sev}
                         key={column.key}
+                        // The cell ellipsises in a narrow column, and the value
+                        // is the data — so the full text is always available.
+                        title={value.text}
                       >
                         {value.text}
                       </td>

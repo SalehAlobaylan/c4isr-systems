@@ -142,6 +142,7 @@ export function AttachRelationDialog({
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={() => void form.handleSubmit()}
             disabled={attachMutation.isPending || !selectedEntityId}
           >

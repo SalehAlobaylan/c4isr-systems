@@ -1,0 +1,291 @@
+/* ============================================================================
+   EMAD — Alloy Pearl, Balanced design tokens
+   ---------------------------------------------------------------------------
+   Canonical source of colour, typography, geometry and motion for the operator
+   interface. Normative contract: `DESIGN.md` §2 palette, §3 token contract,
+   §4 typography, §5 layout/geometry, §7 operational semantics, §8 map.
+
+   Nothing in this file is a per-component decision. Every raw value here traces
+   back to the design contract; everything else in the application resolves
+   through these variables. If a colour is needed that is not defined here, the
+   correct action is to decide whether it is a brand primitive, an interface
+   role, an operational semantic, or a map-domain value — and add it here with
+   that intent stated — never to inline a hex literal in a component.
+
+   Four independent layers, per DESIGN.md §2.1–2.3 and §3.1:
+     1. `--emad-<primitive>`                          the eight foundation colours
+     2. `--emad-surface-*` `--emad-text-*` `--emad-border-*`   interface roles
+     3. `--emad-status-*`                           operational semantics
+     4. `--emad-map-*`                              map-domain palette
+
+   One permanent appearance. There is deliberately no dark token family and no
+   `prefers-color-scheme` branch: DESIGN.md §1.2 forbids a light/dark switch, and
+   a second colour authority is the single fastest way for a palette to drift.
+
+   Industrial graphite is the structural anchor and energized lime is a *brand
+   signature only*. Lime is never severity, confidence, connection health,
+   freshness, affiliation, or "selected domain state" (DESIGN.md §2.4, §3.3).
+   ========================================================================== */
+
+:root {
+  /* ── Foundation primitives ───────────────────────────────────────────
+     DESIGN.md §2.1. These eight are the *only* literal colour values in the
+     file; every interface role below derives from them, so a change of
+     foundation value propagates instead of leaving stale copies behind. */
+  --emad-mineral-canvas: #e3e9e2;
+  --emad-ceramic-surface: #f2f4ed;
+  --emad-mist-surface: #d4ded8;
+  --emad-industrial-graphite: #202b2d;
+  --emad-graphite-ink: #1d3030;
+  --emad-energized-lime: #b7d36b;
+  --emad-signal-teal: #3c7780;
+  --emad-structural-border: #b4c4b9;
+
+  /* ── Interface surfaces ──────────────────────────────────────────────
+     Three low-glare light steps, deliberately close in value: separation is
+     carried by spacing, typography and borders, never by the surface step
+     alone (DESIGN.md §5.3). */
+  --emad-surface-canvas: var(--emad-mineral-canvas);
+  --emad-surface-panel: var(--emad-ceramic-surface);
+  /* `raised` is the *recessed/grouped* step on a light canvas — DESIGN.md
+     §5.3 calls this Mist, and the name is kept because ~21 call sites read it
+     as "the step above the panel". On a light surface that is a deeper tint,
+     not a lighter one. */
+  --emad-surface-inset: var(--emad-mist-surface);
+  --emad-surface-raised: var(--emad-mist-surface);
+  --emad-surface-hover: #e8eee7;
+  --emad-surface-pressed: color-mix(in srgb, var(--emad-mist-surface) 76%, var(--emad-structural-border));
+  --emad-surface-selected: #c7d9c8;
+  --emad-surface-input: #f7f8f2;
+
+  /* The one dark structural anchor. Navigation and primary actions live here
+     so the workspace keeps its industrial character without the whole
+     application becoming graphite (DESIGN.md §5.3). */
+  --emad-surface-nav: var(--emad-industrial-graphite);
+  --emad-surface-nav-raised: #304044;
+
+  /* ── Interface text ────────────────────────────────────────────────── */
+  --emad-text-primary: var(--emad-graphite-ink);
+  --emad-text-secondary: #4b6159;
+  /* Tertiary is low-emphasis, non-critical supporting copy on light surfaces.
+     It is secondary-with-lower-contrast, never a body-text colour. */
+  --emad-text-tertiary: #5f7469;
+  /* Text that sits on graphite or another dark structural anchor. */
+  --emad-text-on-dark: #e9f2ea;
+  /* Text inside a lime-filled control: graphite on lime is 8.68:1. */
+  --emad-text-on-lime: var(--emad-industrial-graphite);
+  /* Secondary navigation text on the graphite rail — deliberately not the
+     light-surface secondary, which does not clear contrast on graphite. */
+  --emad-text-nav-muted: #b7cac4;
+
+  /* Small actionable text on light surfaces. Signal teal is a *graphic* accent;
+     as 13px copy it is 4.11:1 on canvas and fails, so links use this darker
+     step (DESIGN.md §2.2, §2.5). */
+  --emad-link: #2c626b;
+  /* The only legible green-toned *text* on a light surface. Lime itself is
+     1.51:1 on ceramic and must never be used as small text. */
+  --emad-lime-on-light: #355a3f;
+
+  /* ── Interface borders ───────────────────────────────────────────────
+     `subtle` is decoration only and is below the 3:1 essential non-text
+     threshold; `control` is for meaningful actionable boundaries. */
+  --emad-border-subtle: var(--emad-structural-border);
+  --emad-border-control: #607f77;
+
+  /* ── Operational semantics ───────────────────────────────────────────
+     Meaning, not decoration. Chosen for usable text contrast on all three
+     core light surfaces (DESIGN.md §2.3). Always paired with a label and a
+     non-colour cue (glyph, shape, ring, pattern); never the sole signal
+     (DESIGN.md §7.1). */
+  --emad-status-positive: #276645;
+  --emad-status-info: #2a5b66;
+  --emad-status-caution: #7e5319;
+  --emad-status-high: #91451f;
+  --emad-status-critical: #9a372f;
+  --emad-status-neutral: #4b6159;
+  /* A provisional assessment awaiting review. It is *not* "info" and must
+     never stand in for it: the difference is whether the platform has a
+     conclusion or the operator still has to make one. */
+  --emad-status-review: #2c626b;
+
+  /* ── The same statuses, on graphite ───────────────────────────────────
+     The graphite rail carries a live/retry dot and a system-health label, and
+     the status colours above are dark hues chosen for the three *light*
+     surfaces (DESIGN.md §2.3). On graphite they would sink below visibility,
+     so the rail uses these lifted steps.
+
+     They are a surface rendering, not a second palette: each is the same
+     status, and none of them is reachable from anywhere but the rail. They
+     live here rather than as literals in the stylesheet so the "one file owns
+     every colour" rule stays true and this decision stays reviewable. */
+  --emad-status-positive-on-graphite: #7fd6a4;
+  --emad-status-info-on-graphite: #85c4cc;
+  --emad-status-caution-on-graphite: #e2b775;
+  --emad-status-critical-on-graphite: #eb9a92;
+
+  /* ── Derived interface roles ─────────────────────────────────────────
+     Composites of the primitives above. Declared once so a change of surface
+     or brand value propagates instead of being re-guessed per component. */
+
+  /* Primary action: graphite fill, light text. The single most important
+     contrast pair in the application, and the reason it is named. */
+  --emad-on-graphite: var(--emad-text-on-dark);
+
+  /* Hover / pressed feedback on the graphite rail and on light controls. */
+  --emad-surface-nav-hover: color-mix(in srgb, var(--emad-surface-nav-raised) 70%, var(--emad-surface-nav));
+  /* Hover for a control that already sits on the raised step: lifted toward
+     the on-dark ink rather than toward the darker rail. */
+  --emad-surface-nav-hover-strong: color-mix(
+    in srgb,
+    var(--emad-surface-nav-raised) 82%,
+    var(--emad-text-on-dark)
+  );
+  /* Hairlines on graphite, where the pale structural border would be a glare. */
+  --emad-border-nav-subtle: rgb(255 255 255 / 0.12);
+  --emad-border-nav-strong: rgb(255 255 255 / 0.24);
+
+  /* Floats that must stay readable over busy map imagery: opaque enough to
+     read, measured rather than glassy (DESIGN.md §6.7). */
+  --emad-surface-overlay: color-mix(in srgb, var(--emad-ceramic-surface) 96%, var(--emad-mineral-canvas));
+  --emad-surface-veil: color-mix(in srgb, var(--emad-mineral-canvas) 82%, transparent);
+  --emad-surface-scrim: color-mix(in srgb, var(--emad-graphite-ink) 46%, transparent);
+
+  /* Softened borders, so a divider reads as a divider rather than a rule. */
+  --emad-border-subtle-soft: color-mix(in srgb, var(--emad-structural-border) 62%, transparent);
+  --emad-border-control-soft: color-mix(in srgb, var(--emad-border-control) 72%, transparent);
+
+  /* A single wash tone per status, for inline notices that already carry text
+     and an icon. Tinted backgrounds never carry meaning on their own. The set
+     is limited to the tones actually used in an inline notice — a wash
+     declared for a state nobody renders is a colour with no reader. */
+  --emad-wash-positive: color-mix(in srgb, var(--emad-status-positive) 12%, transparent);
+  --emad-wash-caution: color-mix(in srgb, var(--emad-status-caution) 12%, transparent);
+  --emad-wash-critical: color-mix(in srgb, var(--emad-status-critical) 12%, transparent);
+
+  /* Focus. Two indicators, because there are two kinds of surface: teal on the
+     pale workspace, lime on graphite. The offset places the ring on the
+     *surrounding* surface rather than on the control's own fill, so it stays
+     visible on a primary button too (DESIGN.md §6.2). */
+  --emad-focus-light: var(--emad-link);
+  --emad-focus-dark: var(--emad-energized-lime);
+  --emad-focus-outline: var(--emad-focus-light);
+  --emad-focus-width: 2px;
+  --emad-focus-offset: 2px;
+
+  /* Elevation. On a light canvas a shadow is a hint of lift, not a smudge:
+     low alpha, wide, and only ever under something that actually floats. */
+  --emad-shadow-float: 0 10px 28px rgb(29 48 48 / 0.14);
+  --emad-shadow-control: 0 1px 2px rgb(29 48 48 / 0.1);
+
+  /* A texture, not a hue: the hatch that marks "no current data" on a board
+     column header. Declared here so it is one value rather than a colour
+     literal repeated wherever a hatch appears. It is a dark hatch: on a light
+     canvas a light overlay would be invisible. */
+  --emad-hatch: rgb(29 48 48 / 0.07);
+
+  /* ── Typography ──────────────────────────────────────────────────────
+     Roles and sizes from DESIGN.md §4. IBM Plex Sans / Sans Arabic / Mono are
+     bundled locally under the SIL Open Font License, so operator legibility
+     never depends on a runtime third-party fetch (§4.1). */
+  --emad-font-sans: 'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, -apple-system,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --emad-font-arabic: 'IBM Plex Sans Arabic', 'IBM Plex Sans', 'Segoe UI', Tahoma, Arial,
+    sans-serif;
+  --emad-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Monaco,
+    Consolas, 'Liberation Mono', monospace;
+
+  /* Size scale, DESIGN.md §4.2. Ordinary operational text never goes below
+     12px; the only exception is nonessential map attribution. */
+  --emad-type-hero: 30px;
+  --emad-type-leading-hero: 36px;
+  --emad-type-heading: 24px;
+  --emad-type-leading-heading: 30px;
+  --emad-type-panel-heading: 20px;
+  --emad-type-leading-panel-heading: 26px;
+  --emad-type-subheading: 16px;
+  --emad-type-leading-subheading: 22px;
+  --emad-type-body: 14px;
+  --emad-type-leading-body: 21px;
+  --emad-type-secondary: 13px;
+  --emad-type-leading-secondary: 18px;
+  --emad-type-dense: 12px;
+  --emad-type-leading-dense: 17px;
+  --emad-type-meta: 12px;
+  --emad-type-leading-meta: 16px;
+  --emad-type-figure: 26px;
+  --emad-type-leading-figure: 1.2;
+
+  /* Restrained tracking for uppercase Latin micro-labels — DESIGN.md §4.2
+     caps it at 0.04em. Never applied to Arabic: shaping must not be disturbed
+     by Latin-style letter spacing. */
+  --emad-type-tracking-micro: 0.03em;
+  --emad-type-tracking-label: 0.04em;
+
+  /* ── Geometry ────────────────────────────────────────────────────────
+     DESIGN.md §5.2: 4px default, 6px for cards and dialogs, 2px for compact
+     data controls. The spacing ramp itself is not redeclared here: Tailwind's
+     scale is already a 4px grid, and a parallel copy of it would be a second
+     source of truth for something with no visual meaning of its own. */
+  --emad-radius-card: 6px;
+  --emad-radius-control: 4px;
+  --emad-radius-compact: 2px;
+  --emad-radius-float: 6px;
+  --emad-control-height: 36px;
+  --emad-control-height-compact: 32px;
+
+  /* Board matrix geometry. Density is the operator's persisted choice. */
+  --emad-board-gutter: 184px;
+  --emad-board-column: 248px;
+  --emad-board-row: 46px;
+  --emad-board-header: 120px;
+
+  /* Collapsed detail rail spine on the picture. */
+  --emad-rail-spine: 46px;
+
+  /* ── Motion ──────────────────────────────────────────────────────────
+     Transitions describe state changes, 120–180ms ease-out. No pulses, sweeps
+     or blinking alerts (DESIGN.md §10). */
+  --emad-motion-fast: 120ms;
+  --emad-motion-base: 150ms;
+  --emad-motion-slow: 180ms;
+  --emad-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* ── Map-domain palette ──────────────────────────────────────────────
+     The map is an information layer, not the brand surface (DESIGN.md §8.1),
+     and it is drawn by MapLibre, which needs resolved colour strings rather
+     than CSS custom properties. These values therefore live in their own
+     namespace and are derived from the operational status tokens, so a status
+     cannot change hue between the map and the board.
+
+     They are deliberately *derived*, not new hues: the map reads the same
+     operational vocabulary the rest of the interface uses. What the map adds
+     is shape (ring, dash pattern, donut vs solid) so the same colour is never
+     the only thing carrying a distinction (§8.2). */
+  --emad-map-entity-track: var(--emad-status-info);
+  --emad-map-entity-asset: var(--emad-status-positive);
+  --emad-map-freshness-live: var(--emad-status-positive);
+  --emad-map-freshness-delayed: var(--emad-status-caution);
+  --emad-map-freshness-stale: var(--emad-status-critical);
+  --emad-map-freshness-unavailable: var(--emad-status-neutral);
+  --emad-map-freshness-unknown: var(--emad-status-neutral);
+  --emad-map-severity-critical: var(--emad-status-critical);
+  --emad-map-severity-high: var(--emad-status-high);
+  --emad-map-severity-medium: var(--emad-status-caution);
+  --emad-map-severity-low: var(--emad-status-info);
+  --emad-map-area-hazard: var(--emad-status-critical);
+  --emad-map-area-weather: var(--emad-status-caution);
+  --emad-map-area-infrastructure: var(--emad-status-high);
+  --emad-map-area-crowd: var(--emad-status-info);
+  --emad-map-area-environmental: var(--emad-status-neutral);
+  /* Measurement is a tool, not a warning: a neutral instrument colour with
+     geometry endpoints, so caution amber is never implied (§8.2). */
+  --emad-map-measure: var(--emad-signal-teal);
+  /* Selection and history are chrome channels, kept out of the status
+     vocabulary so they can never be mistaken for domain state. */
+  --emad-map-selection: var(--emad-graphite-ink);
+  --emad-map-history: #7c9189;
+  /* Basemap land base. Mist, per DESIGN.md §8.1 — the map sits *on* the
+     workspace rather than punching a hole in it, and a marker at the frame
+     edge still reads against it. */
+  --emad-map-ground: var(--emad-mist-surface);
+}

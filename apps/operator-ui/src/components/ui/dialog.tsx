@@ -16,6 +16,12 @@ export interface DialogProps {
   wide?: boolean
 }
 
+/**
+ * Modal dialog. Raised surface with a measured border rather than a deep
+ * shadow, and a scrim opaque enough that the dialog is unambiguously in front
+ * (DESIGN.md §6.2, §7.4). Focus management is Base UI's; nothing here
+ * overrides it.
+ */
 export function Dialog({
   open,
   onOpenChange,
@@ -29,22 +35,28 @@ export function Dialog({
   return (
     <BaseDialog.Root open={open} onOpenChange={onOpenChange}>
       <BaseDialog.Portal>
-        <BaseDialog.Backdrop className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] transition-opacity data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+        <BaseDialog.Backdrop
+          className={cn(
+            'fixed inset-0 z-40 transition-opacity duration-[--emad-motion-base]',
+            'bg-[color:var(--emad-surface-scrim)]',
+            'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0',
+          )}
+        />
         <BaseDialog.Popup
           className={cn(
-            'fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[min(92vw,560px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[2px] border border-edge-strong bg-panel shadow-2xl transition-all',
-            'data-[ending-style]:scale-[0.98] data-[ending-style]:opacity-0 data-[starting-style]:scale-[0.98] data-[starting-style]:opacity-0',
-            wide && 'w-[min(94vw,760px)]',
+            'fixed top-1/2 left-1/2 z-50 flex max-h-[85vh] w-[min(92vw,600px)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-[6px] border border-edge-strong bg-panel-raised transition-opacity duration-[--emad-motion-base]',
+            'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0',
+            wide && 'w-[min(94vw,800px)]',
             className,
           )}
         >
           <div className="flex items-start justify-between gap-4 border-b border-edge px-5 py-4">
             <div className="flex flex-col gap-1">
-              <BaseDialog.Title className="text-sm font-semibold tracking-wide text-ink">
+              <BaseDialog.Title className="text-[16px] leading-6 font-semibold text-ink">
                 {title}
               </BaseDialog.Title>
               {description ? (
-                <BaseDialog.Description className="text-xs text-ink-muted">
+                <BaseDialog.Description className="text-[13px] leading-[18px] text-ink-muted">
                   {description}
                 </BaseDialog.Description>
               ) : null}
@@ -59,7 +71,7 @@ export function Dialog({
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
           {footer ? (
-            <div className="flex items-center justify-end gap-2 border-t border-edge bg-panel-raised/40 px-5 py-3">
+            <div className="flex items-center justify-end gap-2 border-t border-edge bg-panel px-5 py-3">
               {footer}
             </div>
           ) : null}

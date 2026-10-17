@@ -4,13 +4,14 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
 
 import {
+  AlertTriangleIcon,
   PauseIcon,
   PlayIcon,
   RefreshIcon,
   StopIcon,
 } from '@/components/icons'
 import { Page } from '@/components/layout/Page'
-import { StateBadge } from '@/components/shared/badges'
+import { EventStatusBadge, RunStatusBadge } from '@/components/shared/badges'
 import { DataTable } from '@/components/shared/data-table'
 import { ErrorState, SectionTitle } from '@/components/shared/states'
 import { Field } from '@/components/shared/form'
@@ -19,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { api, type ScenarioRun, type ScenarioSummary } from '@/lib/api'
 import { formatRelative, formatTimestamp, formatVirtualTime } from '@/lib/format'
 import { queryKeys } from '@/lib/queryKeys'
@@ -151,7 +153,7 @@ export function ScenariosPage() {
         cell: ({ row }) => (
           <div className="min-w-0">
             <p className="font-mono text-xs text-ink">{row.original.scenarioName}</p>
-            <p className="font-mono text-[10px] text-ink-faint">{row.original.id}</p>
+            <p className="font-mono text-[12px] text-ink-faint">{row.original.id}</p>
           </div>
         ),
       },
@@ -165,7 +167,7 @@ export function ScenariosPage() {
       {
         accessorKey: 'status',
         header: 'Status',
-        cell: ({ row }) => <StateBadge value={row.original.status} />,
+        cell: ({ row }) => <RunStatusBadge value={row.original.status} />,
       },
       {
         id: 'virtualTimeMs',
@@ -181,10 +183,10 @@ export function ScenariosPage() {
         header: 'Event cursor',
         cell: ({ row }) => (
           <div className="min-w-32">
-            <p className="truncate font-mono text-[11px] text-ink-muted" title={row.original.lastAction}>
+            <p className="truncate font-mono text-[12px] text-ink-muted" title={row.original.lastAction}>
               {row.original.lastAction || '—'}
             </p>
-            <p className="font-mono text-[10px] text-ink-faint">
+            <p className="font-mono text-[12px] text-ink-faint">
               {row.original.eventsRun}/{row.original.eventsTotal} actions
             </p>
           </div>
@@ -247,6 +249,7 @@ export function ScenariosPage() {
                 <Button
                   variant="secondary"
                   size="sm"
+                  aria-label="Pause this run"
                   title="Pause"
                   onClick={() => runActionMutation.mutate({ id: run.id, action: 'pause' })}
                 >
@@ -257,6 +260,7 @@ export function ScenariosPage() {
                 <Button
                   variant="secondary"
                   size="sm"
+                  aria-label="Resume this run"
                   title="Resume"
                   onClick={() => runActionMutation.mutate({ id: run.id, action: 'resume' })}
                 >
@@ -264,9 +268,12 @@ export function ScenariosPage() {
                 </Button>
               ) : null}
               {isActive ? (
+                /* Stopping a run cannot be undone. An icon alone is not enough
+                   for a control with that consequence (DESIGN.md §6.3, §10). */
                 <Button
                   variant="destructive"
                   size="sm"
+                  aria-label="Stop this run"
                   title="Stop"
                   onClick={() => runActionMutation.mutate({ id: run.id, action: 'stop' })}
                 >
@@ -317,7 +324,7 @@ export function ScenariosPage() {
               {(scenariosQuery.data?.items ?? []).map((scenario) => (
                 <div
                   key={scenario.name}
-                  className="flex flex-col gap-3 rounded-[2px] border border-edge bg-panel p-4"
+                  className="flex flex-col gap-3 rounded-[4px] border border-edge bg-panel p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -333,11 +340,11 @@ export function ScenariosPage() {
                     </Badge>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    <Badge variant="muted">{scenario.sources} sources</Badge>
-                    <Badge variant="muted">{scenario.assets} assets</Badge>
-                    <Badge variant="muted">{scenario.tracks} tracks</Badge>
-                    <Badge variant="muted">{scenario.geofences} geofences</Badge>
-                    <Badge variant="muted">{scenario.events} events</Badge>
+                    <Badge variant="neutral">{scenario.sources} sources</Badge>
+                    <Badge variant="neutral">{scenario.assets} assets</Badge>
+                    <Badge variant="neutral">{scenario.tracks} tracks</Badge>
+                    <Badge variant="neutral">{scenario.geofences} geofences</Badge>
+                    <Badge variant="neutral">{scenario.events} events</Badge>
                   </div>
                   <Button size="sm" className="mt-auto self-start" onClick={() => setStartTarget(scenario)}>
                     <PlayIcon className="size-3.5" />
@@ -347,10 +354,7 @@ export function ScenariosPage() {
               ))}
               {scenariosQuery.isLoading
                 ? Array.from({ length: 3 }).map((_, index) => (
-                    <div
-                      key={index}
-                      className="h-40 animate-pulse rounded-[2px] border border-edge bg-panel"
-                    />
+                    <Skeleton key={index} className="h-40 border border-edge bg-panel" />
                   ))
                 : null}
             </div>
@@ -386,7 +390,7 @@ export function ScenariosPage() {
             >
               Event history · {inspectedRun.scenarioName}
             </SectionTitle>
-            <div className="rounded-[2px] border border-edge bg-panel p-4">
+            <div className="rounded-[4px] border border-edge bg-panel p-4">
               <div className="mb-4 grid grid-cols-1 gap-2 text-xs text-ink-muted md:grid-cols-3">
                 <span className="font-mono">run {inspectedRun.id}</span>
                 <span className="font-mono">namespace {inspectedRun.resourceNamespace}</span>
@@ -397,11 +401,11 @@ export function ScenariosPage() {
               {eventsQuery.isError ? (
                 <ErrorState error={eventsQuery.error} onRetry={() => void eventsQuery.refetch()} />
               ) : eventsQuery.isLoading ? (
-                <div className="h-32 animate-pulse rounded border border-edge bg-panel-raised" />
+                <Skeleton className="h-32 border border-edge bg-panel-raised" />
               ) : eventsQuery.data?.items?.length ? (
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[620px] text-left text-xs">
-                    <thead className="border-b border-edge text-[10px] tracking-widest text-ink-faint uppercase">
+                    <thead className="border-b border-edge text-[12px] tracking-[.08em] text-ink-muted uppercase">
                       <tr>
                         <th className="px-2 py-2 font-medium">Seq</th>
                         <th className="px-2 py-2 font-medium">Virtual time</th>
@@ -416,8 +420,20 @@ export function ScenariosPage() {
                           <td className="px-2 py-2 font-mono text-ink-faint">{event.sequence}</td>
                           <td className="px-2 py-2 font-mono">{formatVirtualTime(event.atMs)}</td>
                           <td className="px-2 py-2 font-mono text-ink">{event.name}</td>
-                          <td className="px-2 py-2"><StateBadge value={event.status} /></td>
-                          <td className="max-w-sm px-2 py-2 text-red-300/80">{event.error ?? '—'}</td>
+                          <td className="px-2 py-2"><EventStatusBadge value={event.status} /></td>
+                          <td className="max-w-sm px-2 py-2">
+                            {/* A failure reason is evidence, not decoration: it
+                                is quoted in full and paired with an icon so it
+                                reads the same in greyscale. */}
+                            {event.error ? (
+                              <span className="flex items-start gap-1.5 text-[color:var(--emad-status-critical)]">
+                                <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" />
+                                {event.error}
+                              </span>
+                            ) : (
+                              <span className="text-[color:var(--emad-text-tertiary)]">—</span>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -495,7 +511,7 @@ function StartScenarioDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={() => void form.handleSubmit()} disabled={pending}>
+          <Button variant="primary" onClick={() => void form.handleSubmit()} disabled={pending}>
             {pending ? 'Starting…' : 'Start run'}
           </Button>
         </>

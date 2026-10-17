@@ -69,7 +69,7 @@ export function TimelinePage() {
         cell: ({ row }) => (
           <div className="flex items-center gap-2">
             <ActorBadge value={row.original.actorType} />
-            <span className="font-mono text-[10px] text-ink-faint">
+            <span className="font-mono text-[12px] text-ink-faint">
               {row.original.actorId || '—'}
             </span>
           </div>
@@ -86,7 +86,7 @@ export function TimelinePage() {
         accessorKey: 'subjectType',
         header: 'Subject',
         cell: ({ row }) => (
-          <span className="font-mono text-[10px] text-ink-muted">
+          <span className="font-mono text-[12px] text-ink-muted">
             {row.original.subjectType}
             {row.original.subjectId ? ` · ${truncateId(row.original.subjectId, 24)}` : ''}
           </span>
@@ -96,7 +96,7 @@ export function TimelinePage() {
         accessorKey: 'correlationId',
         header: 'Correlation',
         cell: ({ row }) => (
-          <span className="font-mono text-[10px] text-ink-faint">
+          <span className="font-mono text-[12px] text-ink-faint">
             {row.original.correlationId || '—'}
           </span>
         ),

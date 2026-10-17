@@ -84,6 +84,11 @@ export function Scrubber() {
           </>
         )}
         <span className="hint">Picture as of</span>
+        <span className="bounds">
+          {earliest !== null ? formatTimestamp(new Date(earliest).toISOString()) : '—'}
+          {' → '}
+          {latest !== null ? formatTimestamp(new Date(latest).toISOString()) : '—'}
+        </span>
       </div>
 
       <div className="controls">
@@ -138,12 +143,6 @@ export function Scrubber() {
           </button>
         )}
       </div>
-
-      <p className="bounds">
-        {earliest !== null ? formatTimestamp(new Date(earliest).toISOString()) : '—'}
-        {' → '}
-        {latest !== null ? formatTimestamp(new Date(latest).toISOString()) : '—'}
-      </p>
     </div>
   )
 }

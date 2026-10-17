@@ -1,242 +1,283 @@
-/* aegis- prefixed entity board — ported from
-   docs/C2-Operational-Awareness-Prototype/index.html (board table, sticky label
-   gutter, entity header block, density, metric cells, sources footer strip). */
+/* ============================================================================
+   Entity board
+   ---------------------------------------------------------------------------
+   A matrix of entities (columns) against measurements (rows). It is a dense
+   comparison tool, so density beats decoration: numbers are tabular, rows are
+   compact, and the row labels stay pinned while the matrix scrolls sideways.
 
-.aegis-board-scroll {
-  overflow: auto;
-  min-height: 0;
-  padding: 0 20px 20px;
-}
-.aegis-board {
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-  width: max-content;
-}
-.aegis-board col.g {
-  width: var(--gutter);
-}
-.aegis-board col.c {
-  width: var(--col);
-}
-.aegis-board th,
-.aegis-board td {
-  padding: 0;
-  text-align: left;
-  vertical-align: middle;
-  font-weight: 400;
-  border-left: 1px solid var(--line);
-}
-.aegis-board .gutter {
-  position: sticky;
-  left: 0;
-  z-index: 3;
-  background: var(--bg);
-  border-left: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0 14px 0 0;
-}
-.aegis-board thead .gutter {
-  align-items: flex-end;
-  padding-bottom: 8px;
-}
-.aegis-board tbody .gutter {
-  height: var(--rowh);
-  border-bottom: 1px solid var(--line);
-}
-.aegis-board tbody tr:last-child .gutter {
-  border-bottom: 0;
-}
-.aegis-board .rlabel {
-  font-size: var(--t-xs);
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.aegis-board .rsub {
-  font-family: var(--font-mono);
-  font-size: var(--t-2xs);
-  color: var(--faint);
-  letter-spacing: 0.04em;
-}
+   Two freshness channels are used, and they are the only status-like encoding
+   in the header: a coloured left edge for the state, and a hatch for the states
+   where "no data" and "old data" must not be confused. Administrative status is
+   the labelled chip inside the header, never the background — a large filled
+   card per entity would read as severity (DESIGN.md §7.5, §8.1).
+   ========================================================================== */
 
-/* metric cells */
-.aegis-board td.cell {
-  height: var(--rowh);
-  font-family: var(--font-mono);
-  font-size: var(--t-xl);
-  letter-spacing: 0.01em;
-  padding: 0 12px;
-  color: var(--fg);
-  border-bottom: 1px solid var(--line);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* density — the operator's choice of scan volume, persisted */
-.aegis-board[data-density='compact'] {
-  --rowh: 34px;
-  --enth: 72px;
-}
-.aegis-board[data-density='compact'] td.cell {
-  font-size: var(--t-lg);
-}
-.aegis-board[data-density='compact'] .aegis-ent .inner {
-  padding: 8px 11px 9px;
-}
-.aegis-board[data-density='compact'] .aegis-ent .ty {
-  display: none;
-}
-.aegis-board[data-density='compact'] .aegis-ent .st {
-  margin-top: 7px;
-}
-.aegis-board[data-density='compact'] .aegis-ent .act {
-  margin-top: 6px;
-}
-.aegis-board td.cell.na {
-  background: var(--surface);
-  color: var(--muted);
-  font-size: var(--t-md);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-.aegis-board td.cell.word {
-  font-family: var(--font-body);
-  font-size: var(--t-sm);
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-.aegis-board td.cell.coord {
-  font-size: var(--t-2xs);
-  letter-spacing: 0.02em;
-  color: var(--muted);
-}
-.aegis-board td.cell[data-sev='crit'] {
-  color: var(--st-crit);
-}
-.aegis-board td.cell[data-sev='warn'] {
-  color: var(--st-warn);
-}
-.aegis-board td.cell[data-sev='ok'] {
-  color: var(--st-ok);
-}
-.aegis-board th.ent-col {
-  padding: 0;
-  vertical-align: top;
-}
-.aegis-board th.ent-col button {
-  display: block;
-  width: 100%;
-  background: transparent;
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
-  color: inherit;
-}
-.aegis-board th.ent-col .inner {
-  display: block;
-  background: var(--st, var(--surface));
-  padding: 11px 12px 12px;
-  min-height: var(--enth);
-  overflow: hidden;
-  /* Freshness rides the existing left edge rather than adding a badge, so a
-     column header stays readable at board density. A live entity is
-     unmarked; anything else is qualified by colour and a hatched overlay. */
-  border-left: 3px solid transparent;
-  transition: border-color 120ms linear;
-}
-.aegis-board th.ent-col[data-freshness='delayed'] .inner {
-  border-left-color: var(--st-warn);
-}
-.aegis-board th.ent-col[data-freshness='stale'] .inner {
-  border-left-color: var(--st-crit);
-}
-.aegis-board th.ent-col[data-freshness='unavailable'] .inner {
-  border-left-color: var(--faint);
-}
-/* "No data" is a different claim from "old data", so it gets its own
-   treatment rather than reusing the stale colour. */
-.aegis-board th.ent-col[data-freshness='unknown'] .inner {
-  border-left-color: var(--muted);
-  background-image: repeating-linear-gradient(
-    135deg,
-    rgb(255 255 255 / 0.035) 0 6px,
-    transparent 6px 12px
-  );
-}
-.aegis-board th.ent-col[data-freshness='stale'] .inner,
-.aegis-board th.ent-col[data-freshness='unavailable'] .inner {
-  background-image: repeating-linear-gradient(
-    135deg,
-    rgb(255 255 255 / 0.05) 0 5px,
-    transparent 5px 10px
-  );
-}
-.aegis-board th.ent-col .inner > * {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.aegis-board th.ent-col:focus-visible {
-  outline: none;
-  box-shadow:
-    inset 0 0 0 2px var(--fg),
-    0 0 0 2px var(--accent-on),
-    0 0 0 3px var(--bg);
-}
-
-/* sources footer strip */
-.aegis-board tfoot .gutter {
-  height: 52px;
-  padding-top: 10px;
-  align-items: flex-start;
-}
-.aegis-board tfoot td {
-  height: 52px;
-  background: var(--surface);
-  padding: 8px 12px;
-  vertical-align: top;
-}
-.aegis-srcstrip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-content: flex-start;
-}
-.aegis-board .src {
-  font-family: var(--font-mono);
-  font-size: var(--t-2xs);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--fg-2);
-  background: rgba(0, 0, 0, 0.24);
-  border-radius: 2px;
-  padding: 3px 6px;
-}
-.aegis-board .src.none {
-  background: transparent;
-  color: var(--faint);
-}
-.aegis-board tbody tr:hover td.cell {
-  background: var(--surface-2);
-}
-.aegis-board tbody tr:hover td.cell.na {
-  background: var(--surface-2);
-}
-
-@media (max-width: 820px) {
+@layer components {
   .aegis-board-scroll {
-    padding-left: 12px;
-    padding-right: 12px;
+    overflow: auto;
+    min-height: 0;
+    padding: 0 20px 20px;
   }
+
   .aegis-board {
-    --gutter: 132px;
-    --col: 196px;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+    width: max-content;
+  }
+
+  .aegis-board col.g {
+    width: var(--emad-board-gutter);
+  }
+  .aegis-board col.c {
+    width: var(--emad-board-column);
+  }
+
+  .aegis-board th,
+  .aegis-board td {
+    padding: 0;
+    text-align: left;
+    vertical-align: middle;
+    font-weight: 400;
+    border-left: 1px solid var(--emad-border-subtle-soft);
+  }
+
+  /* The pinned row-label gutter keeps its own background so columns scrolling
+     underneath it stay hidden rather than showing through, plus a measured edge
+     so it still reads as a boundary while they move (DESIGN.md §7.5). */
+  .aegis-board .gutter {
+    position: sticky;
+    left: 0;
+    z-index: 3;
+    background: var(--emad-surface-canvas);
+    border-left: 0;
+    border-right: 1px solid var(--emad-border-control-soft);
+    box-shadow: 6px 0 12px -8px rgb(4 10 12 / 0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    padding: 0 14px 0 0;
+  }
+  .aegis-board thead .gutter {
+    justify-content: flex-end;
+    padding-bottom: 10px;
+  }
+  .aegis-board tbody .gutter {
+    height: var(--emad-board-row);
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+  }
+  .aegis-board tbody tr:last-child .gutter {
+    border-bottom: 0;
+  }
+
+  .aegis-board .rlabel {
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+  }
+  .aegis-board .rsub {
+    font-family: var(--emad-font-mono);
+    font-size: var(--emad-type-dense);
+    color: var(--emad-text-tertiary);
+    letter-spacing: 0.02em;
+  }
+
+  /* ── Metric cells ────────────────────────────────────────────────────
+     14px rather than a display size: this is a comparison surface, and a
+     number you can line up beats a number that shouts. */
+  /* A dense cell will ellipsise, and the digits that disappear are usually the
+   last ones — which for a coordinate is exactly the part an operator needs.
+   Every numeric cell therefore carries its full value in `title`. */
+  .aegis-board td.cell {
+    height: var(--emad-board-row);
+    font-family: var(--emad-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--emad-type-body);
+    letter-spacing: 0.01em;
+    padding: 0 12px;
+    color: var(--emad-text-primary);
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: background var(--emad-motion-fast) var(--emad-ease);
+  }
+
+  /* Density is the operator's choice of scan volume and is persisted. Compact
+     reduces the row, never below the 12px legibility floor. */
+  .aegis-board[data-density='compact'] {
+    --emad-board-row: 34px;
+    --emad-board-header: 96px;
+  }
+  .aegis-board[data-density='compact'] td.cell {
+    font-size: var(--emad-type-dense);
+  }
+  .aegis-board[data-density='compact'] .aegis-ent .inner {
+    padding: 8px 11px 9px;
+  }
+  .aegis-board[data-density='compact'] .aegis-ent .ty {
+    display: none;
+  }
+  .aegis-board[data-density='compact'] .aegis-ent .st {
+    margin-top: 7px;
+  }
+  .aegis-board[data-density='compact'] .aegis-ent .act {
+    margin-top: 6px;
+  }
+
+  /* "Not applicable" is spelled out rather than rendered as an empty cell. */
+  .aegis-board td.cell.na {
+    background: var(--emad-surface-panel);
+    color: var(--emad-text-tertiary);
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+  }
+  .aegis-board td.cell.word {
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+  }
+  .aegis-board td.cell.coord {
+    font-size: var(--emad-type-dense);
+    letter-spacing: 0;
+    color: var(--emad-text-secondary);
+  }
+  /* One rule per tone, so a cell can never be painted with a colour that means
+     something else elsewhere. Tints are a reinforcement on top of readable
+     text, never the carrier. */
+  .aegis-board td.cell[data-sev='critical'] {
+    color: var(--emad-status-critical);
+  }
+  .aegis-board td.cell[data-sev='high'] {
+    color: var(--emad-status-high);
+  }
+  .aegis-board td.cell[data-sev='caution'] {
+    color: var(--emad-status-caution);
+  }
+  .aegis-board td.cell[data-sev='info'] {
+    color: var(--emad-status-info);
+  }
+  .aegis-board td.cell[data-sev='neutral'] {
+    color: var(--emad-text-tertiary);
+  }
+
+  .aegis-board th.ent-col {
+    padding: 0;
+    vertical-align: top;
+  }
+  .aegis-board th.ent-col button {
+    display: block;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+  }
+  .aegis-board th.ent-col .inner {
+    overflow: hidden;
+  }
+  .aegis-board th.ent-col .inner > * {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Freshness rides the existing left edge rather than adding a badge, so a
+     column header stays readable at board density. A live entity is unmarked;
+     anything else is qualified by edge colour and, where the state is a claim
+     about the absence of data, by a hatch. */
+  .aegis-board th.ent-col[data-freshness='delayed'] {
+    --fresh: var(--emad-status-caution);
+  }
+  .aegis-board th.ent-col[data-freshness='stale'] {
+    --fresh: var(--emad-status-critical);
+  }
+  .aegis-board th.ent-col[data-freshness='unavailable'] {
+    --fresh: var(--emad-status-neutral);
+  }
+  /* "No data" is a different claim from "old data", so it gets its own
+     treatment rather than reusing the stale colour. */
+  .aegis-board th.ent-col[data-freshness='unknown'] {
+    --fresh: var(--emad-status-neutral);
+  }
+  .aegis-board th.ent-col[data-freshness='unknown'] .inner,
+  .aegis-board th.ent-col[data-freshness='stale'] .inner,
+  .aegis-board th.ent-col[data-freshness='unavailable'] .inner {
+    background-image: repeating-linear-gradient(
+      135deg,
+      var(--emad-hatch) 0 5px,
+      transparent 5px 10px
+    );
+  }
+
+  .aegis-board th.ent-col:focus-visible {
+    outline: none;
+  }
+  .aegis-board th.ent-col:focus-visible .inner {
+    box-shadow:
+      inset 0 0 0 2px var(--emad-surface-panel),
+      0 0 0 4px var(--emad-focus-light);
+  }
+
+  /* ── Sources footer strip ──────────────────────────────────────────── */
+
+  .aegis-board tfoot .gutter {
+    height: 56px;
+    padding-top: 10px;
+    justify-content: flex-start;
+  }
+  .aegis-board tfoot td {
+    height: 56px;
+    background: var(--emad-surface-panel);
+    padding: 10px 12px;
+    vertical-align: top;
+  }
+  .aegis-srcstrip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-content: flex-start;
+  }
+  .aegis-board .src {
+    font-family: var(--emad-font-mono);
+    font-size: var(--emad-type-dense);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+    background: var(--emad-surface-raised);
+    border: 1px solid var(--emad-border-subtle-soft);
+    border-radius: var(--emad-radius-card);
+    padding: 3px 6px;
+  }
+  .aegis-board .src.none {
+    background: transparent;
+    border-style: dashed;
+    color: var(--emad-text-tertiary);
+  }
+
+  .aegis-board tbody tr:hover td.cell {
+    background: var(--emad-surface-hover);
+  }
+  .aegis-board tbody tr:hover td.cell.na {
+    background: var(--emad-surface-hover);
+  }
+
+  @media (max-width: 820px) {
+    .aegis-board-scroll {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+    .aegis-board {
+      --emad-board-gutter: 140px;
+      --emad-board-column: 212px;
+    }
   }
 }

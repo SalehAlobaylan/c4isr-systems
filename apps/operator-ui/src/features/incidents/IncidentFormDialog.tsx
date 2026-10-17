@@ -105,6 +105,7 @@ export function IncidentFormDialog({
           <form.Subscribe selector={(state) => state.isSubmitting}>
             {(isSubmitting) => (
               <Button
+                variant="primary"
                 onClick={() => void form.handleSubmit()}
                 disabled={isSubmitting || createMutation.isPending}
               >

@@ -4,7 +4,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo } from 'react'
 
 import { Field } from '@/components/shared/form'
-import { StateBadge } from '@/components/shared/badges'
+import { CommandStateBadge, MissionStatusBadge, PriorityBadge } from '@/components/shared/badges'
 import { DataTable } from '@/components/shared/data-table'
 import { SectionTitle } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
@@ -169,7 +169,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
         accessorKey: 'id',
         header: 'Command',
         cell: ({ row }) => (
-          <span className="font-mono text-[11px] text-ink-muted" title={row.original.id}>
+          <span className="font-mono text-[12px] text-ink-muted" title={row.original.id}>
             {row.original.id}
           </span>
         ),
@@ -189,7 +189,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
       {
         accessorKey: 'state',
         header: 'State',
-        cell: ({ row }) => <StateBadge value={row.original.state} />,
+        cell: ({ row }) => <CommandStateBadge value={row.original.state} />,
       },
       {
         accessorKey: 'updatedAt',
@@ -207,7 +207,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
         cell: ({ row }) => {
           const nextStates = COMMAND_TRANSITIONS[row.original.state] ?? []
           if (nextStates.length === 0) {
-            return <span className="text-[10px] text-ink-faint">terminal</span>
+            return <span className="text-[12px] text-ink-faint">terminal</span>
           }
           return (
             <div className="flex items-center gap-1">
@@ -216,7 +216,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
                   key={state}
                   variant="outline"
                   size="sm"
-                  className="h-6 px-2 font-mono text-[10px]"
+                  className="h-7 px-2.5 font-mono text-[12px]"
                   disabled={transitionMutation.isPending}
                   onClick={() =>
                     transitionMutation.mutate({ id: row.original.id, state })
@@ -235,7 +235,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <section className="rounded-lg border border-edge bg-panel p-4">
+      <section className="rounded-[4px] border border-edge bg-panel p-4">
         <SectionTitle className="mb-3">Issue command</SectionTitle>
         <form
           className="grid grid-cols-1 gap-3 md:grid-cols-6"
@@ -327,6 +327,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
           <div className="flex items-end md:col-span-2">
             <Button
               type="submit"
+              variant="primary"
               className="w-full"
               disabled={issueMutation.isPending || !selectedAssetId}
             >
@@ -338,7 +339,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
 
       <section className="flex flex-col gap-3">
         <SectionTitle>Commands ({incidentCommands.length})</SectionTitle>
-        <div className="overflow-hidden rounded-lg border border-edge bg-panel">
+        <div className="overflow-hidden rounded-[4px] border border-edge bg-panel">
           <DataTable
             columns={columns}
             data={incidentCommands}
@@ -359,7 +360,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
             {incidentMissions.map((mission) => (
               <li
                 key={mission.id}
-                className="rounded-lg border border-edge bg-panel px-4 py-3"
+                className="rounded-[4px] border border-edge bg-panel px-4 py-3"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -367,12 +368,12 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
                     <p className="mt-0.5 truncate text-xs text-ink-muted">{mission.objective}</p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <StateBadge value={mission.priority} />
-                    <StateBadge value={mission.status} />
+                    <PriorityBadge value={mission.priority} />
+                    <MissionStatusBadge value={mission.status} />
                   </div>
                 </div>
                 {mission.assets.length > 0 ? (
-                  <p className="mt-2 font-mono text-[10px] text-ink-faint">
+                  <p className="mt-2 font-mono text-[12px] text-ink-faint">
                     assets: {mission.assets.map((asset) => asset.id).join(', ')}
                   </p>
                 ) : null}
@@ -383,7 +384,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
                         key={status}
                         variant="outline"
                         size="sm"
-                        className="h-6 px-2 font-mono text-[10px]"
+                        className="h-7 px-2.5 font-mono text-[12px]"
                         disabled={missionStatusMutation.isPending}
                         onClick={() => missionStatusMutation.mutate({ id: mission.id, status })}
                       >

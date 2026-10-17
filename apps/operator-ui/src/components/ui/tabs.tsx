@@ -26,7 +26,7 @@ export function TabsList({ children, className }: { children: ReactNode; classNa
   return (
     <BaseTabs.List
       className={cn(
-        'flex shrink-0 items-center gap-1 border-b border-edge px-2',
+        'flex shrink-0 items-center gap-1 border-b border-edge bg-panel px-2',
         className,
       )}
     >
@@ -35,6 +35,11 @@ export function TabsList({ children, className }: { children: ReactNode; classNa
   )
 }
 
+/**
+ * The selected tab gets primary text plus a restrained structural edge in the
+ * graphite accent. The accent marks "you are here", which is chrome; any status
+ * shown *inside* the panel keeps its own semantic colour (DESIGN.md §6.1, §7.1).
+ */
 export function TabsTab({
   value,
   children,
@@ -48,8 +53,8 @@ export function TabsTab({
     <BaseTabs.Tab
       value={value}
       className={cn(
-        'relative -mb-px inline-flex items-center gap-1.5 border-b-2 border-transparent px-3 py-2 text-xs font-medium tracking-wide text-ink-muted transition-colors outline-none select-none hover:text-ink',
-        'data-[active]:border-accent data-[active]:text-accent',
+        'relative inline-flex items-center gap-1.5 border-b-2 border-transparent px-3 py-2.5 text-[13px] leading-[18px] font-semibold tracking-[.08em] text-ink-muted uppercase transition-colors select-none hover:text-ink',
+        'data-[active]:border-accent data-[active]:text-ink',
         className,
       )}
     >
@@ -73,7 +78,7 @@ export function TabsPanel({
     <BaseTabs.Panel
       value={value}
       keepMounted={keepMounted}
-      className={cn('min-h-0 flex-1 overflow-y-auto p-4 outline-none', className)}
+      className={cn('min-h-0 flex-1 overflow-y-auto p-4', className)}
     >
       {children}
     </BaseTabs.Panel>

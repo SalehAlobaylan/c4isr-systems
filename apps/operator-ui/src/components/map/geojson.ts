@@ -46,10 +46,10 @@ export interface AreaProperties {
 /**
  * Render area observations as map features.
  *
- * Areas are drawn as translucent filled footprints rather than markers,
- * because they have extent and no position. Colour encodes the phenomenon kind,
- * which is a different dimension from entity type and must not reuse the asset
- * or track palette.
+ * Areas are drawn as translucent filled footprints rather than markers, because
+ * they have extent and no position. Colour encodes the phenomenon kind, which
+ * is a different dimension from entity type and must not reuse the asset or
+ * track palette.
  */
 export function areaFeatures(observations: Observation[]): FeatureCollection<Geometry, AreaProperties> {
   const features: Array<Feature<Geometry, AreaProperties>> = []
@@ -78,14 +78,31 @@ export function areaFeatures(observations: Observation[]): FeatureCollection<Geo
   return { type: 'FeatureCollection', features }
 }
 
-/** Area kind colours, ordered by how much an operator should worry. */
-export const AREA_KIND_COLORS: Record<string, string> = {
-  hazard: '#b83a1f',
-  weather: '#913214',
-  infrastructure: '#a35a12',
-  crowd: '#273c6b',
-  environmental: '#3d215b',
+/**
+ * Area-kind colour tokens, ordered by how much an operator should worry.
+ *
+ * These are token references, not values: the legend swatch, the map fill and
+ * any future map expression must resolve to the same colour, and a literal hex
+ * here would be a second palette that quietly diverges from the rest of the
+ * interface. They are `--emad-map-*` values derived from the operational
+ * status tokens, which is why an area's colour can never disagree with a badge.
+ */
+export const AREA_KIND_TOKENS: Record<string, string> = {
+  hazard: '--emad-map-area-hazard',
+  weather: '--emad-map-area-weather',
+  infrastructure: '--emad-map-area-infrastructure',
+  crowd: '--emad-map-area-crowd',
+  environmental: '--emad-map-area-environmental',
 }
+
+/** Order used by legends, worst first. */
+export const AREA_KIND_ORDER = [
+  'hazard',
+  'infrastructure',
+  'weather',
+  'crowd',
+  'environmental',
+] as const
 
 /** Area kind labels, matching the server's vocabulary exactly. */
 export const AREA_KIND_LABELS: Record<string, string> = {
@@ -96,8 +113,9 @@ export const AREA_KIND_LABELS: Record<string, string> = {
   environmental: 'Environmental condition',
 }
 
-export function areaKindColor(kind: string): string {
-  return AREA_KIND_COLORS[kind] ?? '#3d215b'
+/** Symbolic reference for a kind, safe to use directly in an inline style. */
+export function areaKindColorVar(kind: string): string {
+  return `var(${AREA_KIND_TOKENS[kind] ?? AREA_KIND_TOKENS.environmental})`
 }
 
 export function geofenceFeatures(geofences: Geofence[]): FeatureCollection<Geometry, GeofenceProperties> {

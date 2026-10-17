@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 
+import { AssetStatusBadge } from '@/components/shared/badges'
 import { Field, Textarea, fieldError } from '@/components/shared/form'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
@@ -89,6 +90,7 @@ export function MissionFormDialog({
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={() => void form.handleSubmit()}
             disabled={createMutation.isPending}
           >
@@ -153,7 +155,7 @@ export function MissionFormDialog({
         <form.Field name="assetIds">
           {(field) => (
             <Field label="Assigned assets" hint="Select one or more assets">
-              <div className="flex max-h-44 flex-col gap-1 overflow-y-auto rounded-md border border-edge bg-bg p-2">
+              <div className="flex max-h-44 flex-col gap-1 overflow-y-auto rounded-[4px] border border-edge bg-bg p-2">
                 {(assetsQuery.data?.items ?? []).length === 0 ? (
                   <p className="px-1 py-2 text-xs text-ink-faint">No assets available.</p>
                 ) : (
@@ -162,11 +164,14 @@ export function MissionFormDialog({
                     return (
                       <label
                         key={asset.id}
-                        className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 hover:bg-panel-raised"
+                        className="flex cursor-pointer items-center gap-2 rounded-[4px] px-1.5 py-1.5 hover:bg-panel-hover"
                       >
                         <input
                           type="checkbox"
-                          className="accent-cyan-400"
+                          /* Selection is chrome, so it takes the interactive accent rather than a status
+                             hue: a green tick here would read as "verified". Signal teal is the
+                             interactive accent; lime and positive-green are brand and status. */
+                          className="accent-[color:var(--emad-signal-teal)]"
                           checked={checked}
                           onChange={(event) => {
                             field.handleChange(
@@ -177,9 +182,9 @@ export function MissionFormDialog({
                           }}
                         />
                         <span className="text-xs text-ink">{asset.name}</span>
-                        <span className="font-mono text-[10px] text-ink-faint">{asset.id}</span>
-                        <span className="ml-auto font-mono text-[10px] text-ink-faint">
-                          {asset.status}
+                        <span className="font-mono text-[12px] text-ink-faint">{asset.id}</span>
+                        <span className="ml-auto">
+                          <AssetStatusBadge value={asset.status} />
                         </span>
                       </label>
                     )

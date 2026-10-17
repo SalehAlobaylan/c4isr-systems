@@ -87,8 +87,14 @@ export function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`
 }
 
-/** Virtual scenario time in milliseconds rendered as minutes:seconds. */
-export function formatVirtualTime(ms: number): string {
+/**
+ * Virtual scenario time in milliseconds rendered as minutes:seconds.
+ *
+ * A run can arrive without a clock — the console still has to render the run
+ * bar, so a missing or non-numeric time reads as zero rather than `NaN:NaN`.
+ */
+export function formatVirtualTime(ms: number | null | undefined): string {
+  if (typeof ms !== 'number' || !Number.isFinite(ms)) return '0:00'
   const totalSeconds = Math.max(0, Math.floor(ms / 1000))
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60

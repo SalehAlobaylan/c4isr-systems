@@ -1,406 +1,540 @@
-/* aegis- prefixed operational picture styles — ported from
-   docs/C2-Operational-Awareness-Prototype/index.html (picture layout, board
-   overlay, disclosure contract, compact controls, popover, resizer/spine,
-   responsive breakpoints).
+/* ============================================================================
+   Operational picture
+   ---------------------------------------------------------------------------
+   The map is an information layer, not the product identity (DESIGN.md §9.1).
+   Everything that floats over the plot — the board overlay, the scrubber, the
+   legends, the measurement tool — is opaque enough to read over busy imagery
+   and is built from panel/raised surfaces rather than translucency tricks.
 
-   Depends on prototype tokens and shared classes defined globally in
-   index.css (--bg --surface --surface-2 --band --fg --fg-2 --muted --faint
-   --line --line-2 --st-ok --st-track --st-warn --st-unknown --st-crit and
-   .aegis-dsc / .aegis-iconbtn / .aegis-ent / .aegis-timestrip / .aegis-sw). */
+   The one non-negotiable here is time: LIVE and REPLAY must never look alike,
+   and the control that returns an operator to the present must never be
+   occluded. The scrubber therefore sits above the board overlay.
+   ========================================================================== */
 
-.aegis-picture {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 7px var(--rail-w);
-  min-height: 0;
-  height: 100%;
-  overflow: hidden;
-}
-.aegis-picture[data-rail='off'] {
-  grid-template-columns: minmax(0, 1fr) var(--spine-w);
-}
-.aegis-mapcol {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  border-right: 1px solid var(--line);
-}
-.aegis-mapwrap {
-  position: relative;
-  flex: 1;
-  min-height: 340px;
-  background: var(--bg);
-}
-.aegis-maplegend {
-  position: absolute;
-  left: 16px;
-  bottom: 14px;
-  z-index: 3;
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  flex-wrap: wrap;
-  max-width: min(560px, calc(100% - 32px));
-  font-size: var(--t-2xs);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-  background: rgba(0, 0, 0, 0.55);
-  padding: 7px 11px;
-  border: 1px solid var(--line);
-  border-radius: 2px;
-}
-.aegis-maplegend i {
-  display: inline-block;
-  width: 9px;
-  height: 9px;
-  margin-right: 6px;
-  vertical-align: baseline;
-}
-/* The freshness legend stacks above the entity legend so the two read as
-   separate scales: marker colour means entity kind, ring means freshness. */
-.aegis-maplegend + .aegis-maplegend {
-  bottom: 48px;
-}
-.aegis-maplegend .cap {
-  color: var(--faint);
-  letter-spacing: 0.16em;
-}
-/* The scrubber spans the top of the picture so the moment on screen is always
-   stated. A replay control that can be scrolled out of view invites an
-   operator to act on a historical picture believing it is live. */
-.aegis-scrubber {
-  position: absolute;
-  left: 50%;
-  top: 14px;
-  transform: translateX(-50%);
-  /* Above the map board, which shares this top offset and would otherwise
-     cover the controls. This matters more than it looks: the occluded control
-     was "Return to live", so the one action that gets an operator out of a
-     replayed picture was the one they could not click. */
-  z-index: 6;
-  width: min(560px, calc(100% - 32px));
-  padding: 8px 12px 9px;
-  background: rgba(0, 0, 0, 0.72);
-  border: 1px solid var(--line);
-  border-radius: 2px;
-  font-size: var(--t-2xs);
-  color: var(--muted);
-}
-.aegis-scrubber .head {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.aegis-scrubber .head .hint {
-  margin-left: auto;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--faint);
-}
-/* Live and Replay must never look alike: an operator glancing at the corner
-   has to know instantly which moment they are acting on. */
-.aegis-scrubber .live,
-.aegis-scrubber .replay {
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  font-weight: 700;
-  padding: 1px 6px;
-  border: 1px solid currentColor;
-  border-radius: 2px;
-}
-.aegis-scrubber .live {
-  color: var(--st-ok);
-}
-.aegis-scrubber .replay {
-  color: var(--st-warn);
-}
-.aegis-scrubber .when {
-  font-family: var(--font-mono);
-  font-size: var(--t-2xs);
-  color: var(--fg-2);
-}
-.aegis-scrubber .controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.aegis-scrubber .controls input[type='range'] {
-  flex: 1;
-  accent-color: var(--accent-on, var(--st-warn));
-  cursor: pointer;
-}
-.aegis-scrubber .controls button {
-  background: transparent;
-  border: 1px solid var(--line-2);
-  color: var(--fg-2);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 3px 7px;
-  border-radius: 2px;
-  cursor: pointer;
-}
-.aegis-scrubber .controls button:hover:not(:disabled) {
-  border-color: var(--accent-on, var(--st-warn));
-  color: var(--fg);
-}
-.aegis-scrubber .controls button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-.aegis-scrubber .controls button.return {
-  color: var(--st-ok);
-  border-color: var(--st-ok);
-  white-space: nowrap;
-}
-.aegis-scrubber .bounds {
-  margin: 5px 0 0;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--faint);
-  letter-spacing: 0.06em;
-}
-
-.aegis-maptools {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
-  z-index: 4;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-}
-.aegis-measure {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-end;
-  background: rgba(22, 26, 38, 0.9);
-  border: 1px solid var(--line-2);
-  border-radius: 2px;
-  padding: 8px 10px;
-  backdrop-filter: blur(7px);
-}
-.aegis-measure p {
-  margin: 0;
-  font-size: var(--t-2xs);
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.aegis-measure .dist {
-  font-family: var(--font-mono);
-  color: var(--st-warn);
-}
-
-/* board-on-map — the board's chip system and metric cells laid over the plot */
-.aegis-mapboard {
-  position: absolute;
-  left: 14px;
-  right: 14px;
-  top: 14px;
-  z-index: 4;
-  background: rgba(22, 26, 38, 0.87);
-  border: 1px solid var(--line-2);
-  border-radius: 2px;
-  backdrop-filter: blur(7px);
-}
-.aegis-mbhead {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 7px 11px;
-  border-bottom: 1px solid var(--line);
-}
-/* the layer popover hangs from its own control, not the board */
-.aegis-popwrap {
-  position: relative;
-}
-.aegis-mbhint {
-  margin-left: auto;
-  font-size: var(--t-2xs);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-  text-align: right;
-}
-.aegis-mbcards {
-  display: flex;
-  gap: 1px;
-  background: var(--line);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.aegis-mbcards::-webkit-scrollbar {
-  display: none;
-}
-.aegis-mbcard {
-  flex: none;
-  min-width: 154px;
-  max-width: 190px;
-  background: var(--bg);
-  border: 0;
-  padding: 0;
-  cursor: pointer;
-  text-align: left;
-  color: inherit;
-}
-.aegis-mbcard .inner {
-  display: block;
-  min-height: 0;
-  padding: 9px 11px 10px;
-  overflow: hidden;
-}
-.aegis-mbcard .id,
-.aegis-mbcard .ty,
-.aegis-mbcard .act {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.aegis-mbcard .st {
-  margin-top: 8px;
-}
-.aegis-mbcard .act {
-  margin-top: 7px;
-}
-.aegis-mbcard[aria-pressed='true'] {
-  box-shadow: inset 0 0 0 2px var(--fg);
-}
-.aegis-mbcard[aria-pressed='true'] .act {
-  opacity: 1;
-}
-.aegis-mbcard:focus-visible {
-  box-shadow:
-    inset 0 0 0 2px var(--fg),
-    0 0 0 2px var(--accent-on),
-    0 0 0 3px var(--bg);
-}
-.aegis-mapmetrics {
-  display: flex;
-  overflow-x: auto;
-  scrollbar-width: none;
-  border-top: 1px solid var(--line);
-}
-.aegis-mapmetrics::-webkit-scrollbar {
-  display: none;
-}
-.aegis-mcell {
-  flex: none;
-  min-width: 104px;
-  padding: 7px 11px 9px;
-  border-left: 1px solid var(--line);
-}
-.aegis-mcell:first-child {
-  border-left: 0;
-}
-.aegis-mcell .k {
-  font-size: var(--t-2xs);
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin: 0;
-}
-.aegis-mcell .s {
-  font-family: var(--font-mono);
-  font-size: var(--t-2xs);
-  color: var(--muted);
-  letter-spacing: 0.04em;
-  margin: 1px 0 6px;
-}
-.aegis-mcell .v {
-  font-family: var(--font-mono);
-  font-size: 15px;
-  letter-spacing: 0.01em;
-  color: var(--fg);
-}
-.aegis-mcell .v.na {
-  color: var(--muted);
-  font-size: var(--t-md);
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-.aegis-mcell .v.word {
-  font-family: var(--font-body);
-  font-size: var(--t-sm);
-  font-weight: 700;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
-.aegis-mcell[data-sev='warn'] .v {
-  color: var(--st-warn);
-}
-.aegis-mcell[data-sev='crit'] .v {
-  color: var(--st-crit);
-}
-.aegis-mcell .src {
-  margin-right: 4px;
-}
-
-/* tallies strip header */
-.aegis-tshead {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 16px 0;
-}
-.aegis-tshead .spacer {
-  margin-left: auto;
-}
-
-/* the plot keeps its own attribution while the board overlay floats above it */
-.aegis-picture .maplibregl-ctrl-attrib {
-  background: rgba(11, 15, 20, 0.7);
-  color: var(--faint);
-}
-
-@media (max-width: 1100px) {
-  /* below this width the rail sits under the plot instead of beside it, so the
-     picture column scrolls as one document rather than crushing the rail to zero */
-  .aegis-picture,
+@layer components {
+  .aegis-picture {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 7px var(--rail-w);
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
   .aegis-picture[data-rail='off'] {
-    grid-template-columns: minmax(0, 1fr);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    grid-template-columns: minmax(0, 1fr) var(--emad-rail-spine);
   }
-  .aegis-resizer,
-  .aegis-railspine {
-    display: none !important;
-  }
-  .aegis-mapcol {
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-    min-width: 0;
-  }
-  .aegis-mapcol > * {
-    min-width: 0;
-  }
-  .aegis-mapwrap {
-    min-height: min(56vh, 360px);
-  }
-  .aegis-rail {
-    border-top: 0;
-    min-height: 320px;
-  }
-}
 
-@media (max-width: 820px) {
-  .aegis-mapboard {
-    left: 8px;
-    right: 8px;
-    top: 8px;
+  .aegis-mapcol {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border-right: 1px solid var(--emad-border-subtle-soft);
   }
-  .aegis-mbhint {
-    display: none;
+
+  .aegis-mapwrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 340px;
+    background: var(--emad-map-ground);
+    /* Judged by the plot's own width rather than the viewport's, so the legend
+       also yields under browser zoom and beside a resized rail. */
+    container-type: inline-size;
+    container-name: mapwrap;
+  }
+
+  /* A narrow plot cannot spare the room. The legend is the one piece of map
+     chrome that can go without losing function — the states it names are also
+     stated in every detail panel — so it is the thing that yields. */
+  @container mapwrap (max-width: 620px) {
+    .aegis-maplegends {
+      display: none;
+    }
+  }
+
+  /* ── Legends ───────────────────────────────────────────────────────────
+     Three separate legends because they describe three separate scales:
+     marker shape means entity kind, ring means freshness, dashed outline means
+     an area footprint. They stack in one column rather than floating
+     independently, because three absolutely-positioned panels sharing a corner
+     is three chances for one to land on top of another — and an occluded
+     legend is worse than no legend. The column clears the scale bar, which
+     lives in the same corner. */
+  /* One box, three groups. Three separately-panelled boxes cost ~14px of extra
+     chrome and read as three unrelated things; one panel with dividers reads
+     as a single legend describing three scales, and costs the plot less. */
+  .aegis-maplegends {
+    position: absolute;
+    left: 16px;
+    bottom: 40px;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    max-width: calc(100% - 32px);
+    pointer-events: none;
+    background: var(--emad-surface-overlay);
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-control);
   }
   .aegis-maplegend {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: min(520px, 100%);
+    pointer-events: auto;
+    padding: 4px 10px;
+    font-size: var(--emad-type-dense);
+    line-height: 16px;
+    letter-spacing: var(--emad-type-tracking-micro);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+  }
+  .aegis-maplegend + .aegis-maplegend {
+    border-top: 1px solid var(--emad-border-subtle-soft);
+  }
+  /* Shape first, colour second: an asset is a ring, a track is a solid disc.
+     Reading the legend does not require remembering a hue (DESIGN.md §9.2). */
+  .aegis-maplegend i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 7px;
+    vertical-align: -1px;
+    background: currentColor;
+  }
+  .aegis-maplegend i[data-shape='asset'] {
+    background: transparent;
+    border: 3px solid currentColor;
+    border-radius: 50%;
+  }
+  .aegis-maplegend i[data-shape='track'] {
+    border-radius: 50%;
+  }
+  .aegis-maplegend i[data-shape='ring'] {
+    background: transparent;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 2px currentColor;
+  }
+  .aegis-maplegend i[data-shape='area'] {
+    background: transparent;
+    border: 1px dashed currentColor;
+    border-radius: 0;
+  }
+
+  .aegis-maplegend .cap {
+    color: var(--emad-text-tertiary);
+  }
+
+  /* ── Scrubber ──────────────────────────────────────────────────────────
+     In flow, above the board overlay, rather than floating on top of it.
+     Two consequences, both required: "Return to live" can never be occluded,
+     and neither can the layer control the board header carries.
+
+     Deliberately one compact row. Chrome stacked over a plot is plot the
+     operator cannot click, so every pixel here is paid for out of the map, and
+     a three-row timeline control was paying too much for what it says. */
+  .aegis-scrubber {
+    position: relative;
+    z-index: 6;
+    flex: none;
+    align-self: center;
+    width: min(900px, calc(100% - 32px));
+    margin: 12px 0 8px;
+    padding: 8px 12px;
+    background: var(--emad-surface-overlay);
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-float);
+    font-size: var(--emad-type-dense);
+    color: var(--emad-text-secondary);
+  }
+  .aegis-scrubber .head {
+    display: flex;
+    align-items: center;
+    gap: 10px 14px;
+    flex-wrap: wrap;
+    row-gap: 8px;
+    min-width: 0;
+  }
+  .aegis-scrubber .head .hint {
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-tertiary);
+    white-space: nowrap;
+  }
+  /* Live and Replay must never look alike: an operator glancing at the corner
+     has to know instantly which moment they are acting on. Word, not hue. */
+  .aegis-scrubber .live,
+  .aegis-scrubber .replay {
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    font-weight: 600;
+    padding: 2px 8px;
+    border: 1px solid currentColor;
+    border-radius: var(--emad-radius-card);
+    white-space: nowrap;
+  }
+  .aegis-scrubber .live {
+    color: var(--emad-status-positive);
+  }
+  .aegis-scrubber .replay {
+    color: var(--emad-status-caution);
+  }
+  .aegis-scrubber .when {
+    font-family: var(--emad-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--emad-type-dense);
+    color: var(--emad-text-primary);
+    white-space: nowrap;
+  }
+  .aegis-scrubber .controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 320px;
+    min-width: 0;
+  }
+  .aegis-scrubber .controls input[type='range'] {
+    flex: 1;
+    accent-color: var(--emad-signal-teal);
+    cursor: pointer;
+  }
+  .aegis-scrubber .controls button {
+    background: var(--emad-surface-raised);
+    border: 1px solid var(--emad-border-control-soft);
+    color: var(--emad-text-secondary);
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-micro);
+    text-transform: uppercase;
+    padding: 5px 9px;
+    min-height: var(--emad-control-height-compact);
+    border-radius: var(--emad-radius-control);
+    cursor: pointer;
+    transition:
+      background var(--emad-motion-fast) var(--emad-ease),
+      color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-scrubber .controls button:hover:not(:disabled) {
+    background: var(--emad-surface-hover);
+    color: var(--emad-text-primary);
+  }
+  .aegis-scrubber .controls button:disabled {
+    /* Secondary, not tertiary: this button sits on the raised step, where
+       tertiary measures 4.19:1 (DESIGN.md §3.3). */
+    color: var(--emad-text-secondary);
+    cursor: not-allowed;
+  }
+  /* The way out of a replay stays the most prominent thing in the control. */
+  .aegis-scrubber .controls button.return {
+    color: var(--emad-status-positive);
+    border-color: var(--emad-status-positive);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  /* The window the slider covers. Secondary, and last in the row, so it never
+     displaces the controls that matter. */
+  .aegis-scrubber .bounds {
+    margin: 0 0 0 auto;
+    font-family: var(--emad-font-mono);
+    font-size: var(--emad-type-dense);
+    color: var(--emad-text-tertiary);
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  /* ── Map tools ─────────────────────────────────────────────────────── */
+
+  .aegis-maptools {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .aegis-measure {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+    background: var(--emad-surface-overlay);
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-float);
+    padding: 10px 12px;
+  }
+  .aegis-measure p {
+    margin: 0;
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+  }
+  /* Measurement is an instrument reading, not a warning: neutral signal colour
+     with a numeric result beside it (DESIGN.md §9.3). */
+  .aegis-measure .dist {
+    font-family: var(--emad-font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--emad-signal-teal);
+  }
+
+  /* ── Board overlay on the map ────────────────────────────────────────────
+     Also in flow, directly beneath the scrubber. Two panels that share the same
+     corner and float over the plot will occlude each other eventually; stacking
+     them means neither can hide a control the operator needs. */
+
+  .aegis-mapboard {
+    position: relative;
+    z-index: 4;
+    flex: none;
+    margin: 0 14px;
+    background: var(--emad-surface-overlay);
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-float);
+  }
+  .aegis-mbhead {
+    display: flex;
+    align-items: center;
+    gap: 10px 12px;
+    /* The hint is prose and must never be what pushes the layer control out of
+       reach; it wraps and yields instead. */
+    flex-wrap: wrap;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+  }
+  /* the layer popover hangs from its own control, not the board */
+  .aegis-popwrap {
+    position: relative;
+  }
+  .aegis-mbhint {
+    margin-left: auto;
+    min-width: 0;
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-micro);
+    text-transform: uppercase;
+    color: var(--emad-text-tertiary);
+    text-align: right;
+  }
+  .aegis-mbcards {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .aegis-mbcards::-webkit-scrollbar {
     display: none;
   }
-  .aegis-maptools {
-    right: 8px;
-    bottom: 8px;
+  /* Cards are opaque and separated by their own rule rather than by a gap over
+     a contrasting background: a gap-coloured strip reads as a broken panel
+     when there are fewer entities than the overlay is wide. */
+  .aegis-mbcard {
+    flex: none;
+    min-width: 168px;
+    max-width: 200px;
+    background: var(--emad-surface-canvas);
+    border: 0;
+    border-right: 1px solid var(--emad-border-subtle-soft);
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    color: inherit;
+  }
+  .aegis-mbcard .inner {
+    display: block;
+    min-height: 0;
+    padding: 9px 11px 10px;
+    overflow: hidden;
+  }
+  .aegis-mbcard .id,
+  .aegis-mbcard .ty,
+  .aegis-mbcard .act {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .aegis-mbcard .st {
+    margin-top: 8px;
+  }
+  .aegis-mbcard .act {
+    margin-top: 7px;
+  }
+  /* Freshness rides the left edge of every entity header, on the board and on the
+     map overlay alike. The token is set on the element that *carries* the
+     attribute, and the shared `.aegis-ent .inner` rule in `index.css` consumes
+     it — so the two surfaces cannot drift apart. A live entity is unmarked;
+     the ring appears only when trust is in question. */
+  .aegis-mbcard[data-freshness='delayed'] {
+    --fresh: var(--emad-status-caution);
+  }
+  .aegis-mbcard[data-freshness='stale'] {
+    --fresh: var(--emad-status-critical);
+  }
+  .aegis-mbcard[data-freshness='unavailable'] {
+    --fresh: var(--emad-status-neutral);
+  }
+  .aegis-mbcard[data-freshness='unknown'] {
+    --fresh: var(--emad-status-neutral);
+  }
+  /* "No data" is a different claim from "old data", so it is hatched rather
+     than merely greyed. */
+  .aegis-mbcard[data-freshness='unknown'] .inner,
+  .aegis-mbcard[data-freshness='stale'] .inner,
+  .aegis-mbcard[data-freshness='unavailable'] .inner {
+    background-image: repeating-linear-gradient(
+      135deg,
+      var(--emad-hatch) 0 5px,
+      transparent 5px 10px
+    );
+  }
+
+  /* Selection is chrome, so the one place the graphite anchor marks it. The
+     marker keeps its own operational colour underneath, and the selected
+     background is the selected surface, not a recolouring of the entity. */
+  .aegis-mbcard[aria-pressed='true'] .inner {
+    box-shadow: inset 0 0 0 2px var(--emad-graphite-ink);
+  }
+  .aegis-mbcard:focus-visible {
+    outline: none;
+  }
+  /* Focus on a card needs a ring in the light focus token (teal) against the
+     card's ceramic surface, offset by a canvas-coloured gap so it reads on both
+     the card and the map behind it. */
+  .aegis-mbcard:focus-visible .inner {
+    box-shadow:
+      inset 0 0 0 2px var(--emad-surface-panel),
+      0 0 0 4px var(--emad-focus-light);
+  }
+
+  .aegis-mapmetrics {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-top: 1px solid var(--emad-border-subtle-soft);
+  }
+  .aegis-mapmetrics::-webkit-scrollbar {
+    display: none;
+  }
+  .aegis-mcell {
+    flex: none;
+    min-width: 112px;
+    padding: 8px 12px 10px;
+    border-left: 1px solid var(--emad-border-subtle-soft);
+  }
+  .aegis-mcell:first-child {
+    border-left: 0;
+  }
+  .aegis-mcell .k {
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+    margin: 0;
+  }
+  .aegis-mcell .s {
+    font-family: var(--emad-font-mono);
+    font-size: var(--emad-type-dense);
+    color: var(--emad-text-tertiary);
+    letter-spacing: 0.02em;
+    margin: 2px 0 4px;
+  }
+  .aegis-mcell .v {
+    font-family: var(--emad-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--emad-type-body);
+    letter-spacing: 0.01em;
+    color: var(--emad-text-primary);
+    margin: 0;
+  }
+  .aegis-mcell .v.na {
+    color: var(--emad-text-tertiary);
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+  }
+  .aegis-mcell .v.word {
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+  }
+  .aegis-mcell[data-tone='caution'] .v {
+    color: var(--emad-status-caution);
+  }
+  .aegis-mcell[data-tone='critical'] .v {
+    color: var(--emad-status-critical);
+  }
+  .aegis-mcell[data-tone='high'] .v {
+    color: var(--emad-status-high);
+  }
+  .aegis-mcell .src {
+    margin-right: 4px;
+  }
+
+  /* ── Tallies strip header ──────────────────────────────────────────── */
+
+  .aegis-tshead {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 16px 0;
+  }
+  .aegis-tshead .spacer {
+    margin-left: auto;
+  }
+
+  /* The plot keeps its own attribution while the board overlay floats above it. */
+  .aegis-picture .maplibregl-ctrl-attrib {
+    background: var(--emad-surface-veil);
+    color: var(--emad-text-tertiary);
+  }
+
+  @media (max-width: 1100px) {
+    /* Below this width the rail sits under the plot instead of beside it, so
+       the picture column scrolls as one document rather than crushing the rail
+       to zero. */
+    .aegis-picture,
+    .aegis-picture[data-rail='off'] {
+      grid-template-columns: minmax(0, 1fr);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    .aegis-resizer,
+    .aegis-railspine {
+      display: none !important;
+    }
+    .aegis-mapcol {
+      border-right: 0;
+      border-bottom: 1px solid var(--emad-border-subtle-soft);
+      min-width: 0;
+    }
+    .aegis-mapcol > * {
+      min-width: 0;
+    }
+    .aegis-mapwrap {
+      min-height: min(56vh, 360px);
+    }
+    .aegis-rail {
+      border-top: 0;
+      min-height: 320px;
+    }
+  }
+
+  @media (max-width: 820px) {
+    .aegis-mapboard {
+      margin: 0 8px;
+    }
+    .aegis-mbhint {
+      display: none;
+    }
+    .aegis-maplegends {
+      display: none;
+    }
+    .aegis-maptools {
+      right: 8px;
+      bottom: 8px;
+    }
   }
 }

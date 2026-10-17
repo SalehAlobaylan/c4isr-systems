@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 
 import { Page } from '@/components/layout/Page'
 import { DataTable } from '@/components/shared/data-table'
-import { SeverityBadge, StateBadge } from '@/components/shared/badges'
+import { SeverityBadge, AlertStateBadge } from '@/components/shared/badges'
 import { ErrorState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
@@ -107,17 +107,25 @@ export function AlertsPage() {
       {
         accessorKey: 'state',
         header: 'State',
-        cell: ({ row }) => <StateBadge value={row.original.state} />,
+        cell: ({ row }) => (
+          <AlertStateBadge
+            value={row.original.state}
+            acknowledgedBy={row.original.acknowledgedBy}
+            acknowledgedAt={
+              row.original.acknowledgedAt ? formatRelative(row.original.acknowledgedAt) : null
+            }
+          />
+        ),
       },
       {
         accessorKey: 'title',
         header: 'Alert',
         cell: ({ row }) => (
-          <div className="max-w-[380px] min-w-0">
+          <div className="max-w-[460px] min-w-0">
             <p className="truncate text-xs text-ink" title={row.original.title}>
               {row.original.title}
             </p>
-            <p className="mt-0.5 truncate font-mono text-[10px] text-ink-faint">
+            <p className="mt-0.5 truncate font-mono text-[12px] text-ink-faint">
               {row.original.type} · {row.original.message}
             </p>
           </div>
@@ -132,7 +140,7 @@ export function AlertsPage() {
           return (
             <div className="max-w-[220px] min-w-0" title={provenance.title}>
               <p className="truncate text-xs text-ink">{provenance.label}</p>
-              <p className="mt-0.5 truncate font-mono text-[10px] text-ink-faint">
+              <p className="mt-0.5 truncate font-mono text-[12px] text-ink-faint">
                 {provenance.detail}
               </p>
             </div>
@@ -149,7 +157,7 @@ export function AlertsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 px-2 font-mono text-[10px]"
+                className="h-7 px-2.5 font-mono text-[12px]"
                 onClick={(event) => {
                   event.stopPropagation()
                   void navigate({
@@ -165,7 +173,7 @@ export function AlertsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-6 px-2 font-mono text-[10px]"
+                className="h-7 px-2.5 font-mono text-[12px]"
                 onClick={(event) => {
                   event.stopPropagation()
                   void navigate({
@@ -178,7 +186,7 @@ export function AlertsPage() {
               </Button>
             ) : null}
             {!row.original.trackId && !row.original.incidentId ? (
-              <span className="text-[10px] text-ink-faint">—</span>
+              <span className="text-[12px] text-ink-faint">—</span>
             ) : null}
           </div>
         ),
@@ -254,7 +262,7 @@ export function AlertsPage() {
         <div className="flex items-center gap-2">
           <Select
             ariaLabel="Filter by state"
-            className="w-40"
+            className="w-48"
             value={search.state ?? 'all'}
             onValueChange={(value) =>
               void navigate({
@@ -269,7 +277,7 @@ export function AlertsPage() {
           />
           <Select
             ariaLabel="Filter by severity"
-            className="w-40"
+            className="w-48"
             value={search.severity ?? 'all'}
             onValueChange={(value) =>
               void navigate({

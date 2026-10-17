@@ -20,10 +20,11 @@ export interface SheetProps {
 
 const sideClasses: Record<'left' | 'right', string> = {
   right:
-    'fixed inset-y-0 right-0 z-50 h-full border-l data-[ending-style]:translate-x-full data-[starting-style]:translate-x-full',
-  left: 'fixed inset-y-0 left-0 z-50 h-full border-r data-[ending-style]:-translate-x-full data-[starting-style]:-translate-x-full',
+    'fixed inset-y-0 right-0 z-50 h-full border-l transition-transform duration-[--emad-motion-slow] ease-out data-[ending-style]:translate-x-full data-[starting-style]:translate-x-full',
+  left: 'fixed inset-y-0 left-0 z-50 h-full border-r transition-transform duration-[--emad-motion-slow] ease-out data-[ending-style]:-translate-x-full data-[starting-style]:-translate-x-full',
 }
 
+/** Side panel. Same surface language as the dialog, floated one step higher. */
 export function Sheet({
   open,
   onOpenChange,
@@ -31,7 +32,7 @@ export function Sheet({
   description,
   children,
   side = 'right',
-  widthClassName = 'w-[min(94vw,420px)]',
+  widthClassName = 'w-[min(94vw,440px)]',
   className,
   modal = true,
   style,
@@ -40,12 +41,18 @@ export function Sheet({
     <BaseDialog.Root open={open} onOpenChange={onOpenChange} modal={modal}>
       <BaseDialog.Portal>
         {modal !== false ? (
-          <BaseDialog.Backdrop className="fixed inset-0 z-40 bg-black/40 transition-opacity data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+          <BaseDialog.Backdrop
+            className={cn(
+              'fixed inset-0 z-40 transition-opacity duration-[--emad-motion-base]',
+              'bg-[color:var(--emad-surface-scrim)]',
+              'data-[ending-style]:opacity-0 data-[starting-style]:opacity-0',
+            )}
+          />
         ) : null}
         <BaseDialog.Popup
           style={style}
           className={cn(
-            'flex flex-col border-edge-strong bg-panel shadow-2xl transition-transform duration-200 ease-out',
+            'flex flex-col border-edge-strong bg-panel-raised',
             sideClasses[side],
             widthClassName,
             className,
@@ -53,11 +60,11 @@ export function Sheet({
         >
           <div className="flex items-start justify-between gap-3 border-b border-edge px-4 py-3">
             <div className="flex min-w-0 flex-col gap-0.5">
-              <BaseDialog.Title className="truncate text-sm font-semibold tracking-wide text-ink">
+              <BaseDialog.Title className="truncate text-[16px] leading-6 font-semibold text-ink">
                 {title}
               </BaseDialog.Title>
               {description ? (
-                <BaseDialog.Description className="text-xs text-ink-muted">
+                <BaseDialog.Description className="text-[13px] leading-[18px] text-ink-muted">
                   {description}
                 </BaseDialog.Description>
               ) : null}

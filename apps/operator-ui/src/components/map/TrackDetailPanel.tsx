@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { AlertTriangleIcon } from '@/components/icons'
 import { ErrorState } from '@/components/shared/states'
-import { FreshnessBadge } from '@/components/shared/badges'
+import { AlertStateBadge, FreshnessBadge, SeverityBadge, TrackStatusBadge } from '@/components/shared/badges'
 import { AssessmentFormDialog } from '@/features/incidents/AssessmentFormDialog'
 import { api, type Track } from '@/lib/api'
 import { freshnessWarning, isActionable } from '@/lib/freshness'
@@ -108,14 +109,17 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
       <section className="aegis-panel">
         <h2>Track state</h2>
         <p className="sub">Fused from observations · provenance preserved</p>
-        {!isActionable(track.freshness) ? (
-          <p className="mt-2 border-l-2 border-[color:var(--st-warn)] bg-[color:var(--st-warn)]/10 px-2 py-1.5 text-[11px] leading-snug text-[color:var(--st-warn)]">
+{!isActionable(track.freshness) ? (
+          <p className="mt-3 flex items-start gap-2 rounded-[4px] border border-[color:var(--emad-status-caution)] bg-[color:var(--emad-wash-caution)] px-3 py-2 text-[13px] leading-[18px] text-[color:var(--emad-status-caution)]">
+            <AlertTriangleIcon className="mt-px size-4 shrink-0" />
             {freshnessWarning(track.freshness, track.lastSeenAt)}
           </p>
         ) : null}
         <dl className="aegis-kv">
           <dt>Status</dt>
-          <dd className="word">{track.status}</dd>
+          <dd className="word">
+            <TrackStatusBadge value={track.status} lastSeenAt={track.lastSeenAt} />
+          </dd>
           <dt>Freshness</dt>
           <dd>
             <FreshnessBadge freshness={track.freshness} lastSeenAt={track.lastSeenAt} />
@@ -130,7 +134,7 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
           <dd>
             {formatCoord(track.position)}
             {!isActionable(track.freshness) ? (
-              <span className="ml-1 text-[10px] uppercase text-[color:var(--faint)]">
+              <span className="ml-1 text-[12px] uppercase text-[color:var(--emad-text-tertiary)]">
                 last known
               </span>
             ) : null}
@@ -172,9 +176,9 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
                   <div className="aegis-confbar" style={{ flex: 1 }}>
                     <span style={{ width: `${Math.round((classification.confidence ?? 0) * 100)}%` }} />
                   </div>
-                  <span className="mono text-[10px] faint">{formatConfidence(classification.confidence)}</span>
+                  <span className="mono text-[12px] faint">{formatConfidence(classification.confidence)}</span>
                 </div>
-                <p className="mono mt-1 mb-0 text-[10px] faint">
+                <p className="mono mt-1 mb-0 text-[12px] faint">
                   {classification.method} · {classification.sourceReference || classification.createdBy} ·{' '}
                   {formatTimestamp(classification.createdAt)}
                 </p>
@@ -194,12 +198,12 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
         ) : (
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {observationsQuery.data?.items.map((observation) => (
-              <li className="flex items-center justify-between gap-3 border-b border-[color:var(--line)] py-2 last:border-b-0" key={observation.id}>
-                <span className="mono text-[10px] muted">{formatTimestamp(observation.observedAt)}</span>
-                <span className="text-[10px] tracking-[.12em] uppercase muted">
+              <li className="flex items-center justify-between gap-3 border-b border-[color:var(--emad-border-subtle-soft)] py-2 last:border-b-0" key={observation.id}>
+                <span className="mono text-[12px] muted">{formatTimestamp(observation.observedAt)}</span>
+                <span className="text-[12px] tracking-[.08em] uppercase muted">
                   {observation.sourceId.split('__').pop()}
                 </span>
-                <span className="mono text-[10px] faint">{formatCoord(observation.position)}</span>
+                <span className="mono text-[12px] faint">{formatCoord(observation.position)}</span>
               </li>
             ))}
           </ul>
@@ -215,8 +219,13 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
           <ul className="m-0 flex list-none flex-col gap-2 p-0">
             {alertsQuery.data?.items.map((alert) => (
               <li key={alert.id} className="flex items-center justify-between gap-2">
-                <span className="truncate text-[12px] tracking-[.03em]">{alert.title}</span>
-                <span className="aegis-sev">{alert.severity}</span>
+                <span className="truncate text-[13px] leading-[18px] tracking-[.02em]">
+                  {alert.title}
+                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <SeverityBadge value={alert.severity} />
+                  <AlertStateBadge value={alert.state} />
+                </div>
               </li>
             ))}
           </ul>
@@ -260,7 +269,7 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
             {assessmentsQuery.data?.items.map((assessment) => (
               <li key={assessment.id}>
                 <p className="m-0 text-[12px] tracking-[.03em]">{assessment.conclusion}</p>
-                <p className="mono mt-1 mb-0 text-[10px] faint">
+                <p className="mono mt-1 mb-0 text-[12px] faint">
                   {assessment.method} · {formatConfidence(assessment.confidence)} ·{' '}
                   {formatTimestamp(assessment.createdAt)}
                 </p>
@@ -270,7 +279,7 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
         )}
       </section>
 
-      <p className="mono m-0 px-4 py-3 text-[9px] faint">
+      <p className="mono m-0 px-4 py-3 text-[12px] faint">
         Updated {formatRelative(track.updatedAt)}
       </p>
 
@@ -291,7 +300,7 @@ function PanelSkeleton({ rows = 1 }: { rows?: number }) {
         <span
           key={index}
           className="block h-3 w-full rounded"
-          style={{ background: 'var(--surface-2)' }}
+          style={{ background: 'var(--emad-surface-raised)' }}
         />
       ))}
     </div>

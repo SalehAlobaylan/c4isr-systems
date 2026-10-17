@@ -24,7 +24,7 @@ export function AppShell() {
       </main>
       <footer className="aegis-pagefoot">
         <span dir="ltr">
-          EMAD | <bdi lang="ar" dir="rtl">عِماد</bdi> · C4ISR operational awareness
+          EMAD | <bdi lang="ar" dir="rtl">عِماد</bdi>
         </span>
         <span>Sources → observations → tracks → picture → decision → command</span>
         <span className="aegis-foot-op">Role {operatorRole} · {operatorID.toUpperCase()}</span>
