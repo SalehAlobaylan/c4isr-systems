@@ -498,6 +498,93 @@ test('the interface runs on the approved typeface at the approved body size', as
     }
   })
 
+  test('the header is one row of three separated zones', async ({ page }) => {
+    await page.goto('/map')
+    const bar = (await page.locator('.aegis-topbar').boundingBox())!
+    const nav = (await page.locator('.aegis-nav').boundingBox())!
+
+    // The nav is inside the header, not under it. A second row made the
+    // console look as though it had two levels of navigation.
+    expect(nav.y).toBeGreaterThanOrEqual(bar.y)
+    expect(nav.y + nav.height).toBeLessThanOrEqual(bar.y + bar.height + 1)
+    // The bar is the console's frame, not a surface. Every pixel of it comes
+    // out of the map below.
+    expect(bar.height).toBeLessThanOrEqual(56)
+    // The zones are separated, so the row reads as three things with
+    // different jobs rather than a brand on one side and a widget parked in
+    // the other corner.
+    await expect(page.locator('.aegis-vsep')).toHaveCount(2)
+  })
+
+  test('the console state is one chip, in words', async ({ page }) => {
+    await page.goto('/map')
+    // One answer to "can I trust this console". The realtime link and the
+    // backend health used to be two blocks side by side, and a reader ends
+    // up reading the one they liked.
+    const state = page.locator('.aegis-console-state')
+    await expect(state).toHaveCount(1)
+    await expect(state).toContainText(
+      /NOT AUTHENTICATED|SYSTEM DOWN|LINK LOST|LINK RETRY|DEGRADED|LIVE|CHECKING/,
+    )
+  })
+
+  test('the nav says which two views are primary, and shows it', async ({ page }) => {
+    await page.goto('/map')
+    const primary = page.locator('.aegis-nav-primary a')
+    await expect(primary).toHaveCount(2)
+    await expect(primary.nth(0)).toHaveText('Map')
+    await expect(primary.nth(1)).toHaveText('Systems')
+
+    // The side features are one disclosure, and every one of them is in it —
+    // they are still views, still named, still reachable.
+    const more = page.getByRole('button', { name: /More|Side features/ })
+    await expect(more).toBeVisible()
+    await more.click()
+    const items = page.getByRole('menuitem')
+    await expect(items).toHaveCount(7)
+    for (const label of ['Board', 'Alerts', 'Incidents', 'Audit', 'Assets', 'Tracks', 'Scenarios']) {
+      await expect(page.getByRole('menuitem', { name: label })).toBeVisible()
+    }
+    await page.keyboard.press('Escape')
+
+    // The hierarchy is visible, not only announced: a primary tab is set
+    // larger than the disclosure that holds the tier below it, so the eye
+    // lands on the two views the console is for before it reads the rest.
+    const sizes = await page.evaluate(() => {
+      const size = (selector: string) =>
+        Number.parseFloat(getComputedStyle(document.querySelector(selector)!).fontSize)
+      return { primary: size('.aegis-nav-primary a'), side: size('.aegis-nav-more') }
+    })
+    expect(sizes.primary, 'primary tabs are set the same size as the side features').toBeGreaterThan(
+      sizes.side,
+    )
+
+    // The current page is marked as current, and it is shown as selected: a
+    // nav that says where you are only in colour is a nav that says it to
+    // nobody who cannot see the colour.
+    const current = page.locator('.aegis-nav a[aria-current="page"]')
+    await expect(current).toHaveCount(1)
+    await expect(current).toHaveText('Map')
+    const underline = await current.evaluate((node) => getComputedStyle(node).borderBottomColor)
+    expect(hex(underline)).toBe(hex(await token(page, '--emad-energized-lime')))
+  })
+
+  test('the disclosure names the side feature you are on', async ({ page }) => {
+    // A disclosure that hides seven views must not also hide where you are.
+    await page.goto('/alerts')
+    const more = page.locator('.aegis-nav-more')
+    await expect(more).toContainText('Alerts')
+    await expect(more).toHaveAttribute('aria-current', 'page')
+  })
+
+  test('the number keys follow the nav, in the order it reads', async ({ page }) => {
+    await page.goto('/map')
+    await page.keyboard.press('2')
+    await expect(page).toHaveURL(/\/systems/)
+    await page.keyboard.press('1')
+    await expect(page).toHaveURL(/\/map/)
+  })
+
   test('reduced motion removes transitions and animation', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/map')
@@ -631,12 +718,22 @@ test.describe('operational picture', () => {
     // hit-testable. This is the regression that shipped once already: a floating
     // panel sat over "Return to live".
     //
-    // "Return to live" goes last, because using it leaves replay and relabels
-    // the board — clicking it first would make the next lookup miss.
-    await page.getByRole('button', { name: /Board · replayed plot/ }).first().click({ timeout: 4_000 })
-    await page.getByRole('button', { name: 'Layers', exact: true }).click({ timeout: 4_000 })
-    await page.getByRole('checkbox', { name: 'Legend' }).uncheck()
-    await page.getByRole('button', { name: 'Layers', exact: true }).click()
+// "Return to live" goes last, because using it leaves replay and relabels
+    // the board - clicking it first would make the next lookup miss.
+    //
+    // Layer choice lives on the plot toolbar, and the board arrives collapsed
+    // (that is the state the map is meant to be read in), so the legend toggle
+    // is exercised first with the board still down. Opening the board covers
+    // the toolbar, which is why the order here is not incidental.
+    // Layer visibility has one owner - the chips in the plot console. It used to
+    // also live in a "Layers" popover listing the same five layers; two controls
+    // for one state is how they come to disagree about it.
+    const legendChip = page.getByRole('button', { name: 'Legend', exact: true })
+    await legendChip.click({ timeout: 4_000 })
+    await expect(page.getByLabel('Freshness legend')).toHaveCount(0)
+    await legendChip.click()
+    await expect(page.getByLabel('Freshness legend')).toBeVisible()
+    await page.getByRole('button', { name: /Board .* replayed plot/ }).first().click({ timeout: 4_000 })
     await page.getByRole('button', { name: 'Return to live', exact: true }).click({ timeout: 4_000 })
     await expect(page.getByTestId('scrub-mode')).toHaveText('Live')
   })
@@ -644,7 +741,14 @@ test.describe('operational picture', () => {
   test('selection is marked by an outline, not by recolouring the entity', async ({ page }) => {
     await page.goto('/map?selected=asset%3A' + 'scn_run_demo__asset__patrol-01')
     await expect(page.locator('[data-map-ready="true"]')).toBeVisible()
+    // The board arrives collapsed so the plot can be read; the cards live under
+    // the disclosure. A preselected entity is the one case where the board is
+    // worth opening unprompted - the operator asked for a specific track and
+    // the card row is how they confirm they got it.
     const card = page.locator('.aegis-mbcard[aria-pressed="true"]')
+    if ((await card.count()) === 0) {
+      await page.getByRole('button', { name: /Board .* plot/ }).first().click()
+    }
     await expect(card).toHaveCount(1)
     // The selection outline is chrome; the entity's own status colour is untouched.
     // Graphite ink is the chrome channel under Alloy Pearl — §7.1 requires

@@ -9,7 +9,9 @@ import { IncidentsPage } from '@/routes/incidents'
 import { MapPage } from '@/routes/map'
 import { ScenariosPage } from '@/routes/scenarios'
 import { TimelinePage } from '@/routes/timeline'
+import { TrackInspectorPage } from '@/routes/track-inspector'
 import { TracksPage } from '@/routes/tracks'
+import { SystemsPage } from '@/routes/systems'
 
 const rootRoute = createRootRoute({ component: AppShell })
 
@@ -46,6 +48,22 @@ const tracksRoute = createRoute({
     status: typeof search.status === 'string' && search.status ? search.status : undefined,
   }),
   component: TracksPage,
+})
+
+// The full evidence and provenance view for a single track. The map's detail
+// rail is the same question asked in passing while working; this is the route
+// an operator opens when the answer itself is the task.
+const trackInspectorRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/tracks/$id',
+  component: TrackInspectorPage,
+})
+
+// Cross-system health and command state in one view.
+const systemsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/systems',
+  component: SystemsPage,
 })
 
 const assetsRoute = createRoute({
@@ -121,6 +139,8 @@ const routeTree = rootRoute.addChildren([
   boardRoute,
   mapRoute,
   tracksRoute,
+  trackInspectorRoute,
+  systemsRoute,
   assetsRoute,
   alertsRoute,
   incidentsRoute,

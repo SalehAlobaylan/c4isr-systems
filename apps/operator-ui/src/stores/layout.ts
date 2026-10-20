@@ -6,19 +6,19 @@ export type LayoutToggleKey =
   | 'chipsOpen'
   | 'runOpen'
   | 'overlayOpen'
-  | 'talliesOpen'
   | 'railOpen'
   | 'layersOpen'
+  | 'trayOpen'
 
 export interface LayoutState {
   density: LayoutDensity
   chipsOpen: boolean
   runOpen: boolean
   overlayOpen: boolean
-  talliesOpen: boolean
   railOpen: boolean
   railWidth: number
   layersOpen: boolean
+  trayOpen: boolean
   setDensity: (density: LayoutDensity) => void
   toggle: (key: LayoutToggleKey) => void
   setRailWidth: (width: number) => void
@@ -29,11 +29,14 @@ const defaults = {
   density: 'comfortable' as LayoutDensity,
   chipsOpen: true,
   runOpen: false,
-  overlayOpen: true,
-  talliesOpen: true,
+  // The board overlay hangs over the top of the plot. The picture is the
+  // workspace, so it starts collapsed and the operator opens it deliberately —
+  // the same reasoning as the telemetry dock. It is one keystroke away.
+  overlayOpen: false,
   railOpen: true,
   railWidth: 380,
   layersOpen: false,
+  trayOpen: false,
 }
 
 export const useLayoutStore = create<LayoutState>()(
@@ -49,8 +52,8 @@ export const useLayoutStore = create<LayoutState>()(
     }),
     {
       name: 'aegis.c2.layout.v1',
-      partialize: ({ density, chipsOpen, runOpen, overlayOpen, talliesOpen, railOpen, railWidth, layersOpen }) => ({
-        density, chipsOpen, runOpen, overlayOpen, talliesOpen, railOpen, railWidth, layersOpen,
+      partialize: ({ density, chipsOpen, runOpen, overlayOpen, railOpen, railWidth, layersOpen, trayOpen }) => ({
+        density, chipsOpen, runOpen, overlayOpen, railOpen, railWidth, layersOpen, trayOpen,
       }),
     },
   ),

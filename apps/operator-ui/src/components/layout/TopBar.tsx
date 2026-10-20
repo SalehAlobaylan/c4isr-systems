@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Dialog as BaseDialog } from '@base-ui-components/react/dialog'
 
-import { ActivityIcon, UserIcon } from '@/components/icons'
-import { ScenarioBar } from '@/components/layout/ScenarioBar'
+import { UserIcon } from '@/components/icons'
 import { Menu } from '@/components/ui/menu'
 import { Tooltip } from '@/components/ui/tooltip'
 import { API_TOKEN, api, fetchHealth, realtimeUrl } from '@/lib/api'
@@ -14,27 +13,46 @@ import { cn } from '@/lib/utils'
 import { useRealtime, type RealtimeStatus } from '@/realtime/RealtimeProvider'
 import { toast } from '@/stores/toasts'
 
+/**
+ * The two surfaces the console is for.
+ *
+ * Everything else in the nav is a side feature: real, reachable, and built on
+ * the same API, but not what an operator lives in. They are rendered a tier
+ * below, because a nav that gives five views equal weight is a nav that
+ * gives an operator five equal things to hold in their head before they have
+ * looked at anything.
+ *
+ * The numbers run 1..9 across both tiers in the order they appear, so a
+ * number always means the same thing: the nth tab in the nav.
+ */
 const PRIMARY_VIEWS = [
-  { index: 1, to: '/board', label: 'Board' },
-  { index: 2, to: '/map', label: 'Picture' },
-  { index: 3, to: '/alerts', label: 'Alerts' },
-  { index: 4, to: '/incidents', label: 'Incidents' },
-  { index: 5, to: '/timeline', label: 'Audit' },
+  { index: 1, to: '/map', label: 'Map' },
+  { index: 2, to: '/systems', label: 'Systems' },
 ] as const
 
 const SECONDARY_VIEWS = [
-  { to: '/assets', label: 'Assets' },
-  { to: '/tracks', label: 'Tracks' },
-  { to: '/scenarios', label: 'Scenarios' },
+  { index: 3, to: '/board', label: 'Board' },
+  { index: 4, to: '/alerts', label: 'Alerts' },
+  { index: 5, to: '/incidents', label: 'Incidents' },
+  { index: 6, to: '/timeline', label: 'Audit' },
+  { index: 7, to: '/assets', label: 'Assets' },
+  { index: 8, to: '/tracks', label: 'Tracks' },
+  { index: 9, to: '/scenarios', label: 'Scenarios' },
 ] as const
 
+const ALL_VIEWS = [...PRIMARY_VIEWS, ...SECONDARY_VIEWS] as const
+
 const HELP_KEYS: Array<[string, string]> = [
-  ['1', 'Board view'],
-  ['2', 'Picture view'],
-  ['3', 'Alerts view'],
-  ['4', 'Incidents view'],
-  ['5', 'Audit view'],
-  ['Space', 'Pause or resume the active scenario run'],
+  ['1', 'Map view'],
+  ['2', 'Systems view'],
+  ['3', 'Board view'],
+  ['4', 'Alerts view'],
+  ['5', 'Incidents view'],
+  ['6', 'Audit view'],
+  ['7', 'Assets view'],
+  ['8', 'Tracks view'],
+  ['9', 'Scenarios view'],
+  ['Space', 'Pause or resume the scenario run (picture view)'],
   ['R', 'Replay — restart the active run with the same seed'],
   ['[', 'Collapse the picture detail rail'],
   [']', 'Expand the picture detail rail'],
@@ -54,13 +72,6 @@ const WS_LABEL: Record<RealtimeStatus, string> = {
   disconnected: 'DISCONNECTED',
 }
 
-const WS_DOT: Record<RealtimeStatus, string> = {
-  connected: 'aegis-dot aegis-dot--live',
-  connecting: 'aegis-dot aegis-dot--init',
-  reconnecting: 'aegis-dot aegis-dot--init',
-  disconnected: 'aegis-dot aegis-dot--down',
-}
-
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
   const tag = target.tagName.toLowerCase()
@@ -75,6 +86,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
 
 export function TopBar() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { status: realtimeStatus, lastEventAt } = useRealtime()
   const [helpOpen, setHelpOpen] = useState(false)
   const shellRef = useRef<HTMLDivElement | null>(null)
@@ -82,57 +94,6 @@ export function TopBar() {
   const brandRef = useRef<HTMLDivElement | null>(null)
   const navRef = useRef<HTMLElement | null>(null)
   const topRightRef = useRef<HTMLDivElement | null>(null)
-  const [navOwnRow, setNavOwnRow] = useState(false)
-
-  // Whether the bar's single row fits depends on content as much as on width:
-  // the unauthenticated operator chip is wider than the signed-in one, so the
-  // same viewport fits or clips depending on session state. A container query
-  // can see the bar's width but never its content, so the fit is measured.
-  // The items are `flex: none`, so their widths are identical before and after
-  // the row moves and the measurement cannot oscillate.
-  useEffect(() => {
-    const shell = shellRef.current
-    const bar = barRef.current
-    const nav = navRef.current
-    const brand = brandRef.current
-    const topRight = topRightRef.current
-    if (!shell || !bar || !nav || !brand || !topRight) return
-
-    let disposed = false
-    const measure = () => {
-      if (disposed) return
-      const navGap = Number.parseFloat(getComputedStyle(nav).columnGap) || 0
-      const items = Array.from(nav.children) as HTMLElement[]
-      const content =
-        items.reduce((sum, item) => {
-          const style = getComputedStyle(item)
-          return (
-            sum +
-            item.offsetWidth +
-            (Number.parseFloat(style.marginLeft) || 0) +
-            (Number.parseFloat(style.marginRight) || 0)
-          )
-        }, 0) + navGap * Math.max(0, items.length - 1)
-      const barStyle = getComputedStyle(bar)
-      const chrome =
-        (Number.parseFloat(barStyle.paddingLeft) || 0) +
-        (Number.parseFloat(barStyle.paddingRight) || 0) +
-        (Number.parseFloat(barStyle.columnGap) || 0) * 2
-      const available = shell.clientWidth - brand.offsetWidth - topRight.offsetWidth - chrome
-      setNavOwnRow(content > available + 1)
-    }
-
-    measure()
-    const observer = new ResizeObserver(measure)
-    for (const element of [shell, brand, topRight, nav]) observer.observe(element)
-    // Weights arrive with the webfont; a measurement taken before that is
-    // taken on fallback metrics.
-    void document.fonts.ready.then(measure)
-    return () => {
-      disposed = true
-      observer.disconnect()
-    }
-  }, [])
 
   const healthQuery = useQuery({
     queryKey: queryKeys.health(),
@@ -153,23 +114,61 @@ export function TopBar() {
   const operatorRole = sessionQuery.data?.operator?.role ?? (API_TOKEN ? 'checking' : 'token required')
   const operatorLabel = operatorID.toUpperCase()
 
+  // The side feature the operator is currently inside, if any. The header
+  // says so in the disclosure itself, so the collapse of the side features
+  // into one control never costs the operator their bearings.
+  const activeSideFeature =
+    SECONDARY_VIEWS.find((view) => location.pathname.startsWith(view.to)) ?? null
+
   const healthOk = healthQuery.isSuccess && healthQuery.data.status === 'ok'
   const healthDown = healthQuery.isError
   const healthDegraded = healthQuery.isSuccess && healthQuery.data.status !== 'ok'
-  const healthLabel = healthOk
-    ? 'SYS OK'
-    : healthDown
-      ? 'SYS DOWN'
-      : healthDegraded
-        ? 'SYS DEGRADED'
-        : 'SYS …'
   // A degraded backend needs its time context visible, not only in a tooltip:
   // "since when has this been degraded?" is the question an operator asks
   // first, and DESIGN.md §7.4 forbids essential information living only on
   // hover (§7.7 asks for a caution label *and* time context).
   const healthSince = healthQuery.data ? formatRelative(healthQuery.data.time) : null
-  const healthTone = healthOk ? 'aegis-ok' : healthDown ? 'aegis-crit' : healthDegraded ? 'aegis-warn' : 'aegis-faint'
-  const healthDetail = healthDegraded || healthDown ? ` · ${healthSince ?? 'unknown'}` : ''
+
+  /* One status for the whole console, not two.
+     The realtime link and the backend health were separate blocks, and the
+     header answered the question "is this thing working?" with two answers
+     side by side, which is how a reader ends up reading the one they liked.
+     They are now one chip that names the worst state: a console that cannot
+     be trusted says so, and a console that can says one word. Everything
+     behind the word is one hover away, and the word is what the operator
+     reads. */
+  const consoleState = !authenticated
+    ? { label: 'NOT AUTHENTICATED', tone: 'aegis-crit' as const }
+    : healthDown
+      ? { label: 'SYSTEM DOWN', tone: 'aegis-crit' as const }
+      : realtimeStatus === 'disconnected'
+        ? { label: 'LINK LOST', tone: 'aegis-crit' as const }
+        : realtimeStatus === 'reconnecting' || realtimeStatus === 'connecting'
+          ? { label: 'LINK RETRY', tone: 'aegis-warn' as const }
+          : healthDegraded
+            ? { label: 'DEGRADED', tone: 'aegis-warn' as const }
+            : realtimeStatus === 'connected' && healthOk
+              ? { label: 'LIVE', tone: 'aegis-ok' as const }
+              : { label: 'CHECKING', tone: 'aegis-faint' as const }
+  // A degraded backend needs its time context visible, not only in a tooltip:
+  // "since when has this been degraded?" is the question an operator asks
+  // first, and DESIGN.md §7.4 forbids essential information living only on
+  // hover (§7.7 asks for a caution label *and* time context). So the chip
+  // carries it whenever the state is not a good one.
+  const consoleStateLabel = `${consoleState.label}${
+    healthDegraded || healthDown ? ` · ${healthSince ?? 'unknown'}` : ''
+  }`
+  const consoleStateDetail = [
+    `realtime: ${WS_LABEL[realtimeStatus].toLowerCase()}`,
+    healthQuery.data
+      ? `service: ${healthQuery.data.status} · database: ${healthQuery.data.database}`
+      : healthQuery.isError
+        ? 'backend health check failed'
+        : 'checking backend health…',
+    lastEventAt ? `last event ${formatRelative(lastEventAt)}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   const toggleHelp = useCallback(() => setHelpOpen((open) => !open), [])
 
@@ -183,9 +182,9 @@ export function TopBar() {
         return
       }
       if (helpOpen) return
-      if (/^[1-5]$/.test(event.key)) {
+      if (/^[1-9]$/.test(event.key)) {
         event.preventDefault()
-        const view = PRIMARY_VIEWS[Number(event.key) - 1]
+        const view = ALL_VIEWS[Number(event.key) - 1]
         if (view) void navigate({ to: view.to as never })
       }
     }
@@ -195,130 +194,150 @@ export function TopBar() {
 
   return (
     <>
-      {/* The wrapper carries the measured fit state. A container cannot query
-          itself, and the fit depends on content the browser cannot compare —
-          see the measurement effect above. */}
-      <div ref={shellRef} className={cn('topbar-shell', navOwnRow && 'topbar-shell--navrows')}>
+      {/* One row, in the order DESIGN.md §1.3 ranks meaning: where you are,
+          then whether you can trust it, then who you are. The brand
+          descriptor moved to the footer, because a brand expression is the
+          last thing the header should spend its height on. */}
+      <div ref={shellRef} className="topbar-shell">
         <header ref={barRef} className="aegis-topbar">
         <div ref={brandRef} className="aegis-brand">
           <span className="aegis-glyph" aria-hidden="true">
             ع
           </span>
-          <div>
-            <h1 dir="ltr">
-              EMAD | <bdi lang="ar" dir="rtl">عِماد</bdi>
-            </h1>
-            {/* One of the two sublines DESIGN.md §2.3 approves, chosen because
-                this screen is the operational picture. The alternative,
-                "C4ISR-aware", was an unapproved phrase that also edges toward
-                a certification claim the product does not make (§1). */}
-            <p className="sub">C4ISR Operational Awareness</p>
-          </div>
+          <h1 dir="ltr">
+            EMAD | <bdi lang="ar" dir="rtl">عِماد</bdi>
+          </h1>
         </div>
+        <span className="aegis-vsep" aria-hidden="true" />
         <nav ref={navRef} className="aegis-nav" aria-label="Console views">
-          {PRIMARY_VIEWS.map((view) => (
-            <Link
-              key={view.to}
-              to={view.to as never}
-              activeProps={{ 'aria-selected': 'true' }}
-              inactiveProps={{ 'aria-selected': 'false' }}
-              title={`${view.label} (${view.index})`}
-            >
-              {view.label}
-            </Link>
-          ))}
-          <span className="aegis-nav-sec" aria-label="Secondary views">
-            {SECONDARY_VIEWS.map((view) => (
-              <Link key={view.to} to={view.to} title={view.label}>
+          <span className="aegis-nav-primary" role="group" aria-label="Primary views">
+            {PRIMARY_VIEWS.map((view) => (
+              <Link
+                key={view.to}
+                to={view.to as never}
+                activeProps={{ 'aria-current': 'page' }}
+                title={`${view.label} (${view.index})`}
+              >
                 {view.label}
               </Link>
             ))}
           </span>
-        </nav>
-        <div ref={topRightRef} className="aegis-topright">
-          <span
-            className={cn('aegis-live', realtimeStatus !== 'connected' && 'aegis-live--down')}
-            title={
-              lastEventAt
-                ? `Last realtime event ${formatRelative(lastEventAt)}`
-                : 'Waiting for realtime events'
-            }
-          >
-            <span className={WS_DOT[realtimeStatus]} aria-hidden="true" />
-            {WS_LABEL[realtimeStatus]}
-          </span>
-          <Tooltip
-            content={
-              healthQuery.data
-                ? `database: ${healthQuery.data.database} · checked ${formatRelative(healthQuery.data.time)}`
-                : healthQuery.isError
-                  ? 'Backend health check failed'
-                  : 'Checking backend health…'
-            }
-          >
-            <button
-              type="button"
-              className="aegis-sys aegis-sys-health"
-              onClick={() => void healthQuery.refetch()}
-              title="Backend health — click to re-check"
-            >
-              <ActivityIcon className={cn('size-3.5', healthTone)} />
-              <span className={healthTone}>
-                {healthLabel}
-                {healthDetail}
-              </span>
-            </button>
-          </Tooltip>
+          {/* The side features live behind one disclosure. They are real
+              views and every one of them is a keystroke away, but they are
+              not what the console is for, and eight tabs in the header said
+              otherwise. The trigger names the side feature you are actually
+              on, so the disclosure never hides where you are. */}
           <Menu
-            align="end"
+            align="start"
             trigger={
               <button
                 type="button"
-                className="aegis-iconbtn"
-                title={authenticated ? `Signed in as ${operatorID}` : 'Authentication status'}
-                aria-label={authenticated ? `Signed in as ${operatorID}` : 'Authentication status'}
+                className="aegis-nav-more"
+                aria-current={activeSideFeature ? 'page' : undefined}
+                title={
+                  activeSideFeature
+                    ? `${activeSideFeature.label} — side feature (${activeSideFeature.index})`
+                    : 'Side features'
+                }
               >
-                <UserIcon className="size-3.5" />
-                <span className="aegis-operator-id">{operatorLabel}</span>
+                <span>{activeSideFeature ? activeSideFeature.label : 'More'}</span>
+                <span className="caret" aria-hidden="true">
+                  ▾
+                </span>
               </button>
             }
-            items={[
-              {
-                label: 'Copy operator ID',
-                disabled: !authenticated,
-                onSelect: () => {
-                  if (!authenticated) return
-                  void navigator.clipboard.writeText(operatorID)
-                  toast({ title: 'Operator ID copied', variant: 'success' })
-                },
-              },
-              {
-                label: 'Copy realtime endpoint',
-                onSelect: () => {
-                  void navigator.clipboard.writeText(realtimeUrl())
-                  toast({ title: 'Realtime endpoint copied', variant: 'success' })
-                },
-              },
-            ]}
+            items={SECONDARY_VIEWS.map((view) => ({
+              label: view.label,
+              hint: String(view.index),
+              onSelect: () => void navigate({ to: view.to as never }),
+            }))}
           />
+        </nav>
+        <span className="aegis-vsep" aria-hidden="true" />
+        <div ref={topRightRef} className="aegis-topright">
+          {/* One chip for the whole console's state. */}
+          <Tooltip content={consoleStateDetail}>
+            <button
+              type="button"
+              className="aegis-console-state"
+              onClick={() => void healthQuery.refetch()}
+              title={`${consoleStateDetail} — click to re-check`}
+            >
+              <span
+                className={cn(
+                  'aegis-dot',
+                  consoleState.tone === 'aegis-ok'
+                    ? 'aegis-dot--live'
+                    : consoleState.tone === 'aegis-warn'
+                      ? 'aegis-dot--paused'
+                      : 'aegis-dot--down',
+                )}
+                aria-hidden="true"
+              />
+              <span className={consoleState.tone}>{consoleStateLabel}</span>
+            </button>
+          </Tooltip>
+          {/* The operator is an identity, and it is only shown when there is
+              one. The console's state chip already says "NO TOKEN" when the
+              session cannot be established, so the operator slot does not
+              also have to report a condition wearing an identity's clothes. */}
+          {authenticated ? (
+            <Menu
+              align="end"
+              trigger={
+                <button
+                  type="button"
+                  className="aegis-iconbtn aegis-operator"
+                  title={`${operatorID} · ${operatorRole}`}
+                  aria-label={`Signed in as ${operatorID}`}
+                >
+                  <UserIcon className="size-3.5" />
+                  <span className="aegis-operator-role">{operatorRole.toUpperCase()}</span>
+                </button>
+              }
+              items={[
+                {
+                  label: 'Copy operator ID',
+                  onSelect: () => {
+                    void navigator.clipboard.writeText(operatorID)
+                    toast({ title: 'Operator ID copied', variant: 'success' })
+                  },
+                },
+                {
+                  label: 'Copy realtime endpoint',
+                  onSelect: () => {
+                    void navigator.clipboard.writeText(realtimeUrl())
+                    toast({ title: 'Realtime endpoint copied', variant: 'success' })
+                  },
+                },
+              ]}
+            />
+          ) : null}
+          {/* The shortcut sheet is a help panel, not a feature. A button that
+              says "Shortcuts" in the same weight as the operator and the
+              status chip promoted it to the same rank. A glyph says the same
+              thing in a quarter of the space. */}
           <button
             type="button"
-            className="aegis-iconbtn"
+            className="aegis-iconbtn aegis-helpbtn"
             aria-haspopup="dialog"
             aria-expanded={helpOpen}
+            aria-label="Keyboard shortcuts and controls"
             onClick={toggleHelp}
             title="Keyboard shortcuts and controls (?)"
           >
-            Shortcuts{' '}
-            <span className="aegis-kbd" aria-hidden="true">
-              ?
-            </span>
+            <span aria-hidden="true">?</span>
           </button>
         </div>
       </header>
       </div>
 
-      <ScenarioBar />
+      {/* The scenario transport is not part of the shell. Scenarios are a side
+          feature with their own console, and every page's chrome was
+          mounting it — which made the system's own header depend on a
+          subsystem that has nothing to do with reading the picture, and
+          polled it every five seconds to do it. The picture carries it in
+          its drawer, where the run that produced the picture is relevant. */}
 
       <BaseDialog.Root open={helpOpen} onOpenChange={setHelpOpen}>
         <BaseDialog.Portal>
@@ -346,7 +365,7 @@ export function TopBar() {
                 <p className="aegis-note">
                   The run bar, board chips, map overlay, tallies strip and detail rail each
                   collapse from the chevron in their header. Your arrangement is remembered on
-                  this device; Reset layout in the scenario bar restores the defaults. The
+                  this device; Reset layout in the picture drawer restores the defaults. The
                   picture rail also drags: grab its left edge, or focus the handle and use the
                   arrow keys.
                 </p>

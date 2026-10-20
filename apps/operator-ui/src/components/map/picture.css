@@ -12,22 +12,53 @@
    ========================================================================== */
 
 @layer components {
+  /* The picture is a full-bleed canvas with instruments docked to its edges,
+     not a three-column dashboard. The detail rail used to be a grid column
+     that permanently stole a third of the width; it is now a floating drawer
+     over the map, so the plot is the full window whether or not anything is
+     being inspected, and the map underneath stays pannable and zoomable. */
   .aegis-picture {
+    position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 7px var(--rail-w);
+    grid-template-columns: minmax(0, 1fr);
     min-height: 0;
     height: 100%;
     overflow: hidden;
+    /* How far the edge-docked instruments must yield while the drawer is open.
+       The drawer floats, so by default it would sit on top of the board's own
+       controls, the scrubber's right-hand end and the measure tool — and a
+       control an operator cannot click is a control that does not exist. The
+       plot itself is never inset: only the chrome that could be covered. */
+    --drawer-inset: 0px;
   }
-  .aegis-picture[data-rail='off'] {
-    grid-template-columns: minmax(0, 1fr) var(--emad-rail-spine);
+  .aegis-picture[data-rail='on'] {
+    --drawer-inset: calc(var(--rail-w) + 32px);
+  }
+  .aegis-picture[data-rail='on'] .aegis-scrubber,
+  .aegis-picture[data-rail='on'] .aegis-mapboard,
+  .aegis-picture[data-rail='on'] .aegis-maptools,
+  .aegis-picture[data-rail='on'] .aegis-tray {
+    margin-right: var(--drawer-inset);
+  }
+  /* The scrubber is centred by transform, so a right margin shifts it off the
+     centre of the plot and leaves it running under the drawer. It is centred on
+     the *free* area instead: the drawer covers the right edge, so the visual
+     centre of what the operator can see is half an inset to the left of the
+     plot's own centre. */
+  .aegis-picture[data-rail='on'] .aegis-scrubber {
+    margin-right: 0;
+  }
+  .aegis-scrubber,
+  .aegis-mapboard,
+  .aegis-maptools,
+  .aegis-tray {
+    transition: margin-right var(--emad-motion-base) var(--emad-ease);
   }
 
   .aegis-mapcol {
     display: flex;
     flex-direction: column;
     min-width: 0;
-    border-right: 1px solid var(--emad-border-subtle-soft);
   }
 
   .aegis-mapwrap {
@@ -52,6 +83,164 @@
     }
   }
 
+  /* ── The plot console ──────────────────────────────────────────────────
+     One floating panel for everything that acts on the plot: the timeline,
+     what the picture holds, which layers are drawn, and the view tools. It
+     replaced three separate panels whose boundaries meant nothing - the
+     timeline was not one concern and the layer chips were not another - and
+     two of those panels could toggle the same layer visibility. */
+  /* The console is the drawer's top section, not an overlay. Floating across
+     the top of the plot it covered the picture it describes and cost the map a
+     band of height on every viewport; docked in the rail it costs nothing, and
+     the rail is already where the picture's detail is read. */
+  .aegis-console {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    border-bottom: 1px solid var(--emad-border-subtle);
+    /* Pinned: the picture's own instruments never scroll away. It is allowed
+       to shrink on a very short viewport, and then it scrolls itself, so the
+       transport is never the thing that gets clipped. */
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  .aegis-console-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  /* A row that carries a label indents its controls past it, so the label
+     belongs to the controls beside it rather than floating above them. */
+  .aegis-console-row:has(> .aegis-console-label) {
+    padding-left: 0;
+  }
+  .aegis-console-row > .aegis-console-label + * {
+    margin-left: 2px;
+  }
+  /* The rail is narrower than the plot was, and every extra wrapped row here
+     costs the detail below it. Chips give up their generous plot-sized padding
+     rather than the panel giving up a line. */
+  .aegis-console .aegis-cluster-chip {
+    padding: 5px 7px;
+    gap: 5px;
+  }
+  .aegis-console .aegis-iconbtn {
+    min-height: 34px;
+    min-width: 34px;
+    padding: 0 8px;
+  }
+  /* The projection is a fact about the plot, not a control, so at drawer width
+     it reads as a caption under the tools instead of a lone word that looks
+     like a row that failed to fill. */
+  .aegis-console .ref {
+    flex: 1 0 100%;
+    text-align: right;
+    margin-top: -2px;
+  }
+  /* Pushes the view tools to the right of a row without spending a second
+     line on them, so a short row still reads as one line of facts. */
+  .aegis-cluster-spacer {
+    flex: 1 1 auto;
+    min-width: 8px;
+  }
+  /* The timeline keeps its own identity inside the console: it is the only
+     row that is scrubbed rather than pressed. */
+  /* The rail is 300-600px wide, so the timeline keeps the drawer's own surface
+     rather than double-framing itself, and lets its head wrap. */
+  .aegis-console .aegis-scrubber {
+    border: 0;
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+    border-radius: 0;
+    box-shadow: none;
+    background: transparent;
+    margin: 0;
+    padding: 0 0 10px;
+  }
+  /* ── Edge-docked instruments ──────────────────────────────────────────
+     The picture is a full-bleed canvas with instruments on its edges, not a
+     frame around a plot. Two clusters live on the top edge: a left cluster
+     carrying what the plot holds and what is switched on, and a centred
+     toolbar carrying the handful of controls an operator reaches for mid-task.
+
+     Both are anchored below whatever the plot already occupies at the top
+     (`--chrome-top`, measured by the page) rather than at a hardcoded offset,
+     because the timeline control is there and its height changes with replay.
+     `pointer-events: none` on the wrapper lets the plot stay draggable through
+     the gaps between clusters. */
+
+
+
+  .aegis-cluster-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--emad-surface-overlay);
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-control);
+  }
+  .aegis-cluster-stat .k {
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+  }
+  .aegis-cluster-stat .v {
+    font-family: var(--emad-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--emad-type-dense);
+    color: var(--emad-text-primary);
+  }
+  /* Layer chips are switches, not filters: they say what is drawn, and pressing
+     one says "stop drawing that". The pressed state is a filled graphite
+     surface with an explicit aria-pressed, never a hue alone. */
+  .aegis-cluster-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    min-height: var(--emad-control-height-compact);
+    background: var(--emad-surface-overlay);
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-control);
+    color: var(--emad-text-primary);
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      background var(--emad-motion-fast) var(--emad-ease),
+      border-color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-cluster-chip:hover {
+    background: var(--emad-surface-hover);
+    border-color: var(--emad-border-control);
+  }
+  .aegis-cluster-chip[aria-pressed='false'] {
+    background: var(--emad-surface-raised);
+    color: var(--emad-text-tertiary);
+  }
+  .aegis-cluster-chip .n {
+    font-family: var(--emad-font-mono);
+    font-variant-numeric: tabular-nums;
+    opacity: 0.75;
+  }
+
+
+
+
+
+
+
+
+
+
   /* ── Legends ───────────────────────────────────────────────────────────
      Three separate legends because they describe three separate scales:
      marker shape means entity kind, ring means freshness, dashed outline means
@@ -66,8 +255,12 @@
   .aegis-maplegends {
     position: absolute;
     left: 16px;
-    bottom: 40px;
-    z-index: 3;
+    /* Clears the floating dock. The dock is the bottom instrument of the plot,
+       so the legend and the measurement readout sit on top of it rather than
+       under it — two bottom-anchored panels cannot share one edge without one
+       of them hiding the other's figures. */
+    bottom: 48px;
+    z-index: 6;
     display: flex;
     flex-direction: column;
     max-width: calc(100% - 32px);
@@ -134,13 +327,16 @@
      Deliberately one compact row. Chrome stacked over a plot is plot the
      operator cannot click, so every pixel here is paid for out of the map, and
      a three-row timeline control was paying too much for what it says. */
-  .aegis-scrubber {
-    position: relative;
-    z-index: 6;
-    flex: none;
-    align-self: center;
-    width: min(900px, calc(100% - 32px));
-    margin: 12px 0 8px;
+.aegis-scrubber {
+    /* Sits inside the plot console as its timeline row. It was once a
+       full-width band of its own above the map, which cost the canvas its
+       height on every viewport — the control the operator needs least often
+       was taking the most map. */
+    position: static;
+    width: auto;
+    transform: none;
+    margin: 0 0 6px;
+    z-index: 7;
     padding: 8px 12px;
     background: var(--emad-surface-overlay);
     border: 1px solid var(--emad-border-control-soft);
@@ -248,12 +444,26 @@
   .aegis-maptools {
     position: absolute;
     right: 14px;
-    bottom: 14px;
-    z-index: 4;
+    bottom: 48px;
+    z-index: 6;
     display: flex;
     flex-direction: column;
     align-items: flex-end;
     gap: 8px;
+  }
+  /* Everything anchored to the plot's bottom edge climbs above the dock by its
+     measured height. Two bottom-anchored panels cannot share one edge without
+     one of them hiding the other's figures. */
+  .aegis-mapwrap .aegis-maplegends,
+  .aegis-mapwrap .aegis-maptools {
+    bottom: var(--tray-clear, 48px);
+  }
+  /* Collapsed, the dock is a handle, and a handle is sized to its label. Left
+     spanning the plot it is still a bar across the bottom of the screen — which
+     is the thing it was collapsed to stop being. */
+  .aegis-mapwrap[data-tray='closed'] .aegis-tray {
+    right: auto;
+    max-width: calc(100% - 28px);
   }
   .aegis-measure {
     display: flex;
@@ -286,10 +496,24 @@
      them means neither can hide a control the operator needs. */
 
   .aegis-mapboard {
-    position: relative;
+    /* The board is a floating panel on the plot, not a band in the page. The
+       canvas is absolutely positioned, so anything in flow here simply sits on
+       top of the map and pushes the plot's own chrome around; anchoring it to a
+       measured offset keeps the instruments above it and the map beneath both. */
+    position: absolute;
+    top: var(--board-top, 96px);
+    left: 14px;
+    /* Hugs its content instead of spanning the plot. A full-width board is a
+       slab of panel over the map for as long as it is open, and it is what
+       squeezes the right-hand side until the operator has nowhere left to
+       click. Sized to its cards, it takes only the width it has something to
+       show. */
+    width: fit-content;
+    max-width: min(760px, calc(100% - 28px));
     z-index: 4;
-    flex: none;
-    margin: 0 14px;
+    max-height: calc(100% - var(--board-top, 96px) - 96px);
+    display: flex;
+    flex-direction: column;
     background: var(--emad-surface-overlay);
     border: 1px solid var(--emad-border-control-soft);
     border-radius: var(--emad-radius-float);
@@ -305,18 +529,8 @@
     border-bottom: 1px solid var(--emad-border-subtle-soft);
   }
   /* the layer popover hangs from its own control, not the board */
-  .aegis-popwrap {
-    position: relative;
-  }
-  .aegis-mbhint {
-    margin-left: auto;
-    min-width: 0;
-    font-size: var(--emad-type-dense);
-    letter-spacing: var(--emad-type-tracking-micro);
-    text-transform: uppercase;
-    color: var(--emad-text-tertiary);
-    text-align: right;
-  }
+
+
   .aegis-mbcards {
     display: flex;
     overflow-x: auto;
@@ -475,16 +689,6 @@
 
   /* ── Tallies strip header ──────────────────────────────────────────── */
 
-  .aegis-tshead {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 16px 0;
-  }
-  .aegis-tshead .spacer {
-    margin-left: auto;
-  }
-
   /* The plot keeps its own attribution while the board overlay floats above it. */
   .aegis-picture .maplibregl-ctrl-attrib {
     background: var(--emad-surface-veil);
@@ -526,9 +730,7 @@
     .aegis-mapboard {
       margin: 0 8px;
     }
-    .aegis-mbhint {
-      display: none;
-    }
+
     .aegis-maplegends {
       display: none;
     }

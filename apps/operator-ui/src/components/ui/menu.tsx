@@ -8,6 +8,9 @@ export interface MenuAction {
   onSelect?: () => void
   disabled?: boolean
   danger?: boolean
+  /** A short hint set to the right of the label — a keystroke, for a menu
+   *  whose items are navigable from the keyboard. */
+  hint?: string
 }
 
 export interface MenuProps {
@@ -37,7 +40,14 @@ export function Menu({ trigger, items, align = 'end' }: MenuProps) {
                     'text-[color:var(--emad-status-critical)] data-[highlighted]:text-[color:var(--emad-status-critical)]',
                 )}
               >
-                {item.label}
+                {item.hint ? (
+                  <span className="flex w-full items-center justify-between gap-6">
+                    <span>{item.label}</span>
+                    <span className="font-mono text-[12px] opacity-55">{item.hint}</span>
+                  </span>
+                ) : (
+                  item.label
+                )}
               </BaseMenu.Item>
             ))}
           </BaseMenu.Popup>

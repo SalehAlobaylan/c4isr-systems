@@ -1,12 +1,19 @@
 <!doctype html>
-<html lang="en" class="dark">
+<!-- `lang` is deliberately not switched: DESIGN.md §11.3 requires English and
+     Arabic to shape correctly together, and `dir` is left to LTR because the
+     operator language is English while coordinates, timestamps and identifiers
+     are LTR content regardless (DESIGN.md §11.3). -->
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark" />
+    <!-- Alloy Pearl is one permanent balanced-light appearance. Declaring a dark
+         `color-scheme` here would let the UA repaint form controls and scrollbars
+         dark against a light interface (DESIGN.md §1.2). -->
+    <meta name="color-scheme" content="light" />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0f14'/%3E%3Cpath d='M16 5v22M5 16h22' stroke='%2322d3ee' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%2322d3ee' stroke-width='2'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23202b2d'/%3E%3Cpath d='M16 5v22M5 16h22' stroke='%23b7d36b' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='7' fill='none' stroke='%233c7780' stroke-width='2'/%3E%3C/svg%3E"
     />
     <title>EMAD | عِماد — C2 Operational Awareness Console</title>
   </head>

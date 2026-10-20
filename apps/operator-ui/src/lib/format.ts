@@ -106,6 +106,17 @@ export function formatDistanceMeters(meters: number): string {
   return `${(meters / 1000).toFixed(2)} km`
 }
 
+/**
+ * A count with a correctly inflected noun: `plural(1, 'asset')` reads "1 asset".
+ *
+ * Counts are quoted to the operator as-is ("1 assets"), and a mis-inflected count
+ * in a status line undermines trust in the number itself — which is the worst
+ * place for a slip of grammar, so it gets one shared implementation.
+ */
+export function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : pluralForm}`
+}
+
 export function titleCase(value?: string | null): string {
   if (!value) return '—'
   return value

@@ -5,7 +5,7 @@ import maplibregl, {
   type MapMouseEvent,
   type StyleSpecification,
 } from 'maplibre-gl'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useImperativeHandle, useRef, useState, type Ref } from 'react'
 
 import { MAP_STYLE_URL, type Asset, type Geofence, type Observation, type Track, type TrackHistoryPoint } from '@/lib/api'
 import { AREA_KIND_TOKENS } from '@/components/map/geojson'
@@ -599,9 +599,27 @@ export interface MapCanvasProps {
    * defeats the point of selecting it. The caller measures the chrome and
    * passes it in, because only it knows how tall that chrome currently is.
    */
-  fitPadding?: { top: number; bottom: number }
+  fitPadding?: { top: number; bottom: number; left?: number; right?: number }
   onSelect: (selection: Selection | null) => void
   onMeasurePoint: (point: { lng: number; lat: number }) => void
+  /**
+   * Optional handle on the map's own camera.
+   *
+   * The picture's centred toolbar drives zoom, but MapLibre's instance lives
+   * here. Exposing a two-method handle is the smallest thing that lets the
+   * toolbar control the real map without hoisting the map into a context or
+   * rebuilding it on every command — a rebuilt map loses the operator's centre
+   * and zoom, which is the one thing a zoom button must not do.
+   */
+  cameraRef?: Ref<MapCameraHandle>
+}
+
+/** The camera controls the edge toolbar exposes. */
+export interface MapCameraHandle {
+  zoomIn: () => void
+  zoomOut: () => void
+  /** Current zoom, so the toolbar can report it rather than guess. */
+  zoom: () => number
 }
 
 export function MapCanvas({
@@ -617,10 +635,24 @@ export function MapCanvas({
   fitPadding,
   onSelect,
   onMeasurePoint,
+  cameraRef,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [ready, setReady] = useState(false)
+  // The camera handle the edge toolbar drives. Every call is null-safe: the
+  // toolbar is rendered before the map has finished constructing, and a zoom
+  // button that throws during the basemap fetch is worse than one that does
+  // nothing for a moment.
+  useImperativeHandle(
+    cameraRef,
+    () => ({
+      zoomIn: () => mapRef.current?.zoomIn({ duration: 180 }),
+      zoomOut: () => mapRef.current?.zoomOut({ duration: 180 }),
+      zoom: () => mapRef.current?.getZoom() ?? 0,
+    }),
+    [],
+  )
   const [initError, setInitError] = useState<string | null>(null)
   const [operationalLayers, setOperationalLayers] = useState<string[]>([])
   // Read by the error handler, which is registered once and cannot see later
@@ -840,11 +872,20 @@ map.on('load', () => {
     map.easeTo({
       center: [position.lng, position.lat],
       zoom: Math.max(map.getZoom(), 13.5),
-      // Keeps the selected marker inside the plot the operator can actually
-      // see, rather than under the timeline control or the board overlay.
-      ...(padding
-        ? { padding: { top: padding.top, bottom: padding.bottom, left: 24, right: 24 } }
-        : {}),
+// Keeps the selected marker inside the plot the operator can actually
+        // see, rather than under the timeline control, the board overlay or the
+        // floating detail drawer. The drawer is measured by the caller because
+        // only it knows whether the drawer is open and how wide it currently is.
+        ...(padding
+          ? {
+              padding: {
+                top: padding.top,
+                bottom: padding.bottom,
+                left: padding.left ?? 24,
+                right: padding.right ?? 24,
+              },
+            }
+          : {}),
       duration: 650,
     })
   }, [ready, selected, tracks, assets])

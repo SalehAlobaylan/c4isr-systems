@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useNavigate, useSearch } from '@tanstack/react-router'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo } from 'react'
 
@@ -43,9 +43,15 @@ export function TracksPage() {
         accessorKey: 'id',
         header: 'Track ID',
         cell: ({ row }) => (
-          <span className="font-mono text-xs text-ink-muted" title={row.original.id}>
+          <Link
+            to="/tracks/$id"
+            params={{ id: row.original.id }}
+            className="mono text-[12px] text-[color:var(--emad-link)]"
+            title={`Inspect evidence and provenance for ${row.original.id}`}
+            onClick={(event) => event.stopPropagation()}
+          >
             {row.original.id}
-          </span>
+          </Link>
         ),
       },
       {

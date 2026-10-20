@@ -1,21 +1,18 @@
 import { Outlet } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
 
+import { ChainRibbon } from '@/components/layout/ChainRibbon'
 import { TopBar } from '@/components/layout/TopBar'
 import { ToastViewport } from '@/components/ui/toast'
-import { API_TOKEN, api } from '@/lib/api'
-import { queryKeys } from '@/lib/queryKeys'
 
+/**
+ * The shell.
+ *
+ * The operator's identity is read once, by the header, which is the only
+ * place that shows it. The footer used to fetch the same session a second
+ * time to print the role and the id again; two owners for one fact, and a
+ * duplicate request on every page.
+ */
 export function AppShell() {
-  const sessionQuery = useQuery({
-    queryKey: queryKeys.currentOperator(),
-    queryFn: () => api.getCurrentOperator(),
-    retry: false,
-    staleTime: 5 * 60_000,
-  })
-  const operatorID = sessionQuery.data?.operator?.id ?? 'not authenticated'
-  const operatorRole = sessionQuery.data?.operator?.role ?? (API_TOKEN ? 'checking' : 'token required')
-
   return (
     <div className="aegis-app">
       <TopBar />
@@ -23,11 +20,8 @@ export function AppShell() {
         <Outlet />
       </main>
       <footer className="aegis-pagefoot">
-        <span dir="ltr">
-          EMAD | <bdi lang="ar" dir="rtl">عِماد</bdi>
-        </span>
-        <span>Sources → observations → tracks → picture → decision → command</span>
-        <span className="aegis-foot-op">Role {operatorRole} · {operatorID.toUpperCase()}</span>
+        <ChainRibbon />
+        <span className="aegis-foot-op">C4ISR Operational Awareness</span>
       </footer>
       <ToastViewport />
     </div>

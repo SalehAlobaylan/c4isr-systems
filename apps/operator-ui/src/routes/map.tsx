@@ -12,10 +12,16 @@ import {
 } from 'react'
 
 import { AssetDetailPanel } from '@/components/map/AssetDetailPanel'
-import { MapCanvas, type MapLayerKey } from '@/components/map/MapCanvas'
+import {
+  MapCanvas,
+  type MapCameraHandle,
+  type MapLayerKey,
+} from '@/components/map/MapCanvas'
 import { AREA_KIND_LABELS, AREA_KIND_ORDER, areaKindColorVar } from '@/components/map/geojson'
 import { TrackDetailPanel } from '@/components/map/TrackDetailPanel'
 import { Scrubber } from '@/components/map/Scrubber'
+import { TelemetryTray } from '@/components/map/TelemetryTray'
+import { ScenarioBar } from '@/components/layout/ScenarioBar'
 import { ErrorState } from '@/components/shared/states'
 import { api, type Asset, type PictureAsset, type PictureTrack, type Track } from '@/lib/api'
 import {
@@ -28,6 +34,7 @@ import {
 import {
   formatCoord,
   formatDistanceMeters,
+  formatHeading,
   formatRelative,
   formatSpeed,
   formatTimestamp,
@@ -59,15 +66,19 @@ const AREA_FILTERS = { area: true, limit: 200 }
 const COMMAND_FILTERS = { limit: 200 }
 const OPEN_ALERTS = { state: 'ACTIVE', limit: 1 }
 
-const LAYER_LABELS: Array<{ key: MapLayerKey; label: string }> = [
+// The legend's footprint on the plot, in pixels: three fixed rows parked this far
+// above the bottom edge (picture.css .aegis-maplegends). Kept as a constant so
+// the collision test below can decide whether to drop the legend without reading
+// an element whose absence is the decision it is making.
+const LEGEND_CLEARANCE = 40
+const LEGEND_BAND = 100
+
+const LAYER_CHIPS: Array<{ key: MapLayerKey; label: string }> = [
   { key: 'tracks', label: 'Tracks' },
   { key: 'assets', label: 'Assets' },
-  { key: 'geofences', label: 'Restricted zones' },
-  // Listed after the zones because an area is only meaningful relative to them:
-  // an empty map with footprints and nothing to compare them against reads as
-  // nothing happening.
-  { key: 'areas', label: 'Event areas' },
-  { key: 'history', label: 'Movement trails' },
+  { key: 'geofences', label: 'Zones' },
+  { key: 'areas', label: 'Areas' },
+  { key: 'history', label: 'Trails' },
 ]
 
 const ACKNOWLEDGED = new Set(['ACKNOWLEDGED', 'COMPLETED'])
@@ -144,18 +155,44 @@ export function MapPage() {
   const showTrackHistory = useUiStore((state) => state.showTrackHistory)
 
   const overlayOpen = useLayoutStore((state) => state.overlayOpen)
-  const talliesOpen = useLayoutStore((state) => state.talliesOpen)
   const railOpen = useLayoutStore((state) => state.railOpen)
   const railWidth = useLayoutStore((state) => state.railWidth)
-  const layersOpen = useLayoutStore((state) => state.layersOpen)
+  const trayOpen = useLayoutStore((state) => state.trayOpen)
   const toggle = useLayoutStore((state) => state.toggle)
   const setRailWidth = useLayoutStore((state) => state.setRailWidth)
 
   const [hidden, setHidden] = useState<Partial<Record<MapLayerKey | 'legend', boolean>>>({})
   const [dragging, setDragging] = useState(false)
-  const [fitPadding, setFitPadding] = useState({ top: 96, bottom: 72 })
-  const wrapRef = useRef<HTMLDivElement | null>(null)
-  const boardRef = useRef<HTMLDivElement | null>(null)
+  const [fitPadding, setFitPadding] = useState({ top: 96, bottom: 72, right: 24 })
+  /**
+   * Whether the board overlay has grown tall enough to reach the legend.
+   *
+   * The legend is the one piece of map chrome that may yield: every state it
+   * names is also stated on the dock, the detail drawer and every detail panel,
+   * so hiding it costs a key rather than information. The board may not yield —
+   * it is what the operator is working from. Collision is measured rather than
+   * assumed, because the board grows a metrics row the moment something is
+   * selected and that is exactly when the legend is most needed and least
+   * affordable.
+   */
+  const [legendYields, setLegendYields] = useState(false)
+  /**
+   * How far down the plot the top chrome reaches, published so the edge
+   * clusters can sit below it instead of on top of it.
+   *
+   * This is the timeline control, and it is measured rather than assumed because
+   * it grows a row during replay and wraps at narrow widths. The clusters are
+   * positioned from this value, so the scrubber is never covered — which is the
+   * one occlusion picture.css refuses to accept.
+   */
+const [chromeTop, setChromeTop] = useState(16)
+const [boardTop, setBoardTop] = useState(96)
+const [trayClear, setTrayClear] = useState(48)
+const wrapRef = useRef<HTMLDivElement | null>(null)
+const boardRef = useRef<HTMLDivElement | null>(null)
+const railRef = useRef<HTMLElement | null>(null)
+  // The map's own camera, driven by the centred toolbar.
+  const cameraRef = useRef<MapCameraHandle | null>(null)
 
   const layerVisibility = useMemo(
     () => ({
@@ -278,13 +315,14 @@ export function MapPage() {
   const isReplaying = Boolean(replayAt)
 
   /**
-   * Measures how much of the plot the top chrome covers.
+   * Measures how much of the plot the floating chrome covers.
    *
-   * The timeline control, the replay banner and the board overlay all sit over
-   * the map, so a selection centred in the raw canvas would be centred
-   * *underneath* them — defeating the point of selecting it. This is measured
-   * rather than hardcoded because the chrome changes height: the banner appears
-   * only during replay, the board collapses, and both wrap at narrow widths.
+   * The timeline control and the board overlay sit over the map from the top,
+   * and the detail drawer floats over it from the right, so a selection centred
+   * in the raw canvas would be centred *underneath* them — defeating the point
+   * of selecting it. All of it is measured rather than hardcoded because the
+   * chrome changes size: the replay banner appears only during replay, the
+   * board collapses, the drawer resizes, and the strip wraps at narrow widths.
    */
   useEffect(() => {
     const wrap = wrapRef.current
@@ -293,15 +331,50 @@ export function MapPage() {
       const wrapBox = wrap.getBoundingClientRect()
       const boardBox = boardRef.current?.getBoundingClientRect()
       const top = boardBox ? boardBox.bottom - wrapBox.top : 96
+const railBox = railRef.current?.getBoundingClientRect()
+      const right = railOpen && railBox ? wrapBox.right - railBox.left + 16 : 24
+      // The console's own offset. Measured from the replay banner, never from
+      // anything inside the console: the timeline lives in the console now, so
+      // anchoring to it asks the panel to sit below itself, which walks it off
+      // the plot one resize at a time.
+      const bannerBox = wrap.querySelector('[data-testid="replay-banner"]')?.getBoundingClientRect()
+      const chrome = bannerBox ? Math.round(bannerBox.bottom - wrapBox.top) + 12 : 12
+      setChromeTop(chrome)
+      // The console lives in the drawer now, so the board no longer hangs from
+      // it - it opens at the plot's top edge, clear of the replay banner.
+      setBoardTop(chrome)
+      // How far the other bottom-anchored panels must climb to clear the dock.
+      // Measured rather than assumed: the dock is one row collapsed and two
+      // when its cells wrap, so any fixed offset is right only at the width it
+      // was guessed at, and wrong everywhere else.
+      const trayBox = wrap.querySelector('.aegis-tray')?.getBoundingClientRect()
+      setTrayClear(trayBox ? Math.round(trayBox.height) + 24 : 48)
+      // The legend is anchored LEGEND_CLEARANCE above the plot's bottom edge and
+      // occupies a bounded band — three fixed rows. The board hangs from the
+      // top. When those meet on a short plot the legend goes.
+      //
+      // The band is derived rather than measured, because measuring it would
+      // mean reading an element that this very condition removes: mount, measure,
+      // hide, lose the reference, show again — an oscillation that ends with the
+      // legend half-drawn over the board.
+      setLegendYields(
+        boardBox ? boardBox.bottom - wrapBox.top > wrapBox.height - LEGEND_CLEARANCE - LEGEND_BAND : false,
+      )
       // The legend column and the mode switch share the bottom edge.
-      setFitPadding({ top: Math.round(top) + 24, bottom: 72 })
+      setFitPadding({ top: Math.round(top) + 24, bottom: 72, right: Math.round(right) })
     }
     measure()
     const observer = new ResizeObserver(measure)
     if (boardRef.current) observer.observe(boardRef.current)
+    // The dock changes height when it opens and when its cells wrap. Watching
+    // the plot alone cannot see either: the dock floats, so the plot it sits on
+    // never changes size when the dock does.
+    const tray = wrap.querySelector('.aegis-tray')
+    if (tray) observer.observe(tray)
+    if (railRef.current) observer.observe(railRef.current)
     observer.observe(wrap)
     return () => observer.disconnect()
-  }, [overlayOpen, isReplaying])
+  }, [overlayOpen, isReplaying, railOpen, railWidth, hidden.legend])
 
   const tracks = isReplaying
     ? (pictureQuery.data?.tracks ?? []).map(toLiveTrack)
@@ -410,9 +483,30 @@ export function MapPage() {
   }
 
   const entityCount = tracks.length + assets.length
+
+  const geofenceCount =
+    (isReplaying ? pictureGeofences : geofencesQuery.data?.items)?.length ?? 0
+  // What each layer is currently contributing to the picture. The chips on the
+  // left edge state this and switch the layer off, so an operator never has to
+  // open a popover to find out why a layer is not drawn.
+  const layerCounts: Record<MapLayerKey, number> = {
+    tracks: tracks.length,
+    assets: assets.length,
+    geofences: geofenceCount,
+    areas: areasQuery.data?.items?.length ?? 0,
+    history: showTrackHistory ? (historyQuery.data?.items?.length ?? 0) : 0,
+  }
+  // Empty when there is nothing to say, rather than a label for nothing: the
+  // console should widen when it has an answer and stay out of the way when it
+  // does not.
   const selectionLabel = selection
     ? `${selection.kind === 'track' ? 'TRACK' : 'ASSET'} ${truncateId(selection.id, 12)}`
-    : 'SEL —'
+    : ''
+
+  const freshnessLabel = observationsQuery.dataUpdatedAt
+    ? formatRelative(new Date(observationsQuery.dataUpdatedAt).toISOString())
+    : ''
+  const selectionCoords = formatCoord(selectedTrack?.position ?? selectedAsset?.position ?? null)
 
   return (
     <div
@@ -421,14 +515,24 @@ export function MapPage() {
       style={{ '--rail-w': `${railWidth}px` } as CSSProperties}
     >
       <div className="aegis-mapcol">
-        <div className="aegis-mapwrap" ref={wrapRef}>
+        <div
+          className="aegis-mapwrap"
+          data-tray={trayOpen ? 'open' : 'closed'}
+          ref={wrapRef}
+          style={
+            {
+              '--chrome-top': `${chromeTop}px`,
+              '--board-top': `${boardTop}px`,
+              '--tray-clear': `${trayClear}px`,
+            } as CSSProperties
+          }
+        >
           {tracksQuery.isError ? (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-veil p-6">
               <ErrorState error={tracksQuery.error} onRetry={() => void tracksQuery.refetch()} />
             </div>
           ) : null}
 
-          <Scrubber />
 
           {isReplaying ? (
             // A replayed picture must never be mistaken for a live one. The
@@ -453,7 +557,8 @@ export function MapPage() {
             </div>
           ) : null}
 
-          <MapCanvas
+        <MapCanvas
+          cameraRef={cameraRef}
             geofences={pictureGeofences ?? geofencesQuery.data?.items ?? []}
             areas={areasQuery.data?.items ?? []}
             tracks={tracks}
@@ -485,48 +590,17 @@ export function MapPage() {
               >
                 Board · {isReplaying ? 'replayed plot' : 'live plot'}
               </button>
-              <span className="mono faint text-[12px]">{entityCount} ENTITIES</span>
-              <span className="mono faint text-[12px]">{selectionLabel}</span>
-              <span className="aegis-mbhint">
-                Click plot or card to inspect · drag to pan · wheel to zoom
-              </span>
-              <div className="aegis-popwrap">
-                <button
-                  type="button"
-                  className="aegis-iconbtn"
-                  aria-expanded={layersOpen}
-                  aria-controls="layer-pop"
-                  aria-haspopup="true"
-                  onClick={() => toggle('layersOpen')}
-                  title="Choose which map layers are drawn (L)"
-                >
-                  Layers
-                </button>
-
-                {layersOpen ? (
-                  <div className="aegis-pop" id="layer-pop" aria-label="Map layers">
-                    <p className="ph">Map layers</p>
-                    {LAYER_LABELS.map(({ key, label }) => (
-                      <label className="aegis-sw" key={key}>
-                        <input
-                          type="checkbox"
-                          checked={hidden[key] !== true}
-                          onChange={(event) => setHidden((state) => ({ ...state, [key]: !event.target.checked }))}
-                        />
-                        <span>{label}</span>
-                      </label>
-                    ))}
-                    <label className="aegis-sw">
-                      <input
-                        type="checkbox"
-                        checked={hidden.legend !== true}
-                        onChange={(event) => setHidden((state) => ({ ...state, legend: !event.target.checked }))}
-                      />
-                      <span>Legend</span>
-                    </label>
-                  </div>
-                ) : null}
-              </div>
+<span className="mono faint text-[12px]">{entityCount} ENTITIES</span>
+              {/* The selection is named only when there is one. "SEL —" is a
+                  label for nothing, and a row of empty labels reads as a panel
+                  that failed to load rather than one that is simply idle. */}
+              {selectionLabel ? (
+                <span className="mono faint text-[12px]">{selectionLabel}</span>
+              ) : null}
+              {/* No pointer-and-keyboard tutorial on the map. It is help text
+                  about the chrome, it does not describe the situation the
+                  operator is reading, and it is the widest thing in the header —
+                  so it pushes the panel far wider than its content needs. */}
             </div>
 
             {overlayOpen ? (
@@ -601,8 +675,13 @@ export function MapPage() {
                   ) : null}
                 </div>
 
-                <div className="aegis-mapmetrics" aria-label="Selected entity metrics">
-                  {selectedTrack ? (
+                {/* The metrics band exists to describe a selection. With nothing
+                    selected it has nothing to describe, and a "Selection: None"
+                    row costs ~60px of the plot to tell the operator what they can
+                    already see. */}
+                {selectedTrack || selectedAsset ? (
+                  <div className="aegis-mapmetrics" aria-label="Selected entity metrics">
+                    {selectedTrack ? (
                     <>
                       <MetricCell
                         label="Status"
@@ -630,22 +709,40 @@ export function MapPage() {
                       <MetricCell label="Position" value={formatCoord(selectedAsset.position)} />
                       <MetricCell label="Last seen" value={formatRelative(selectedAsset.lastSeenAt)} />
                     </>
-                  ) : (
-                    <div className="aegis-mcell">
-                      <p className="k">Selection</p>
-                      <p className="v na">None</p>
-                    </div>
-                  )}
-                </div>
+                  ) : null}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
 
-          {hidden.legend !== true ? (
-            /* One column, three separate scales: marker shape means entity
-               kind, ring means freshness, dashed outline means an area
-               footprint. They stack rather than float so the third legend can
-               never land on top of the second. */
+        <TelemetryTray
+          open={trayOpen}
+          onToggle={() => toggle('trayOpen')}
+          isReplaying={isReplaying}
+          selectedTrack={selectedTrack}
+          selectedAsset={selectedAsset}
+          observationTotal={observationsQuery.data?.total}
+          activeTrackCount={activeTracks}
+          alertCount={
+            isReplaying ? (pictureQuery.data?.alerts?.length ?? 0) : (alertsQuery.data?.total ?? 0)
+          }
+          acknowledged={acknowledged}
+          commandTotal={commands.length}
+          trackCount={tracks.length}
+          assetCount={assets.length}
+          areaCount={areasQuery.data?.items?.length ?? 0}
+          geofenceCount={geofenceCount}
+          untrustworthyCount={staleCount}
+          freshnessCounts={legendFreshness}
+          syncAt={observationsQuery.dataUpdatedAt}
+          isLoading={tracksQuery.isLoading || assetsQuery.isLoading}
+        />
+          {hidden.legend !== true && !legendYields ? (
+            /* One box, three groups. Three separately-panelled boxes cost ~14px
+               of extra chrome and read as three unrelated things; one panel with
+               dividers reads as a single legend describing three scales, and
+               costs the plot less. */
             <div className="aegis-maplegends">
               <div className="aegis-maplegend" aria-label="Map legend">
                 <span style={{ color: 'var(--emad-status-positive)' }}>
@@ -717,8 +814,15 @@ export function MapPage() {
             </div>
           ) : null}
 
-          <div className="aegis-maptools">
-            {mapMode === 'measure' ? (
+          {/* No mode switch in this corner. Measurement has exactly one
+              owner - the toolbar's Ruler, which is a toggle and so both starts
+              and stops it. A second control that could start the same mode is
+              how a plot ends up measuring something nobody asked for, and how
+              two controls end up disagreeing about what the plot is doing.
+              The container exists only while there is a measurement to report,
+              so the corner is genuinely empty the rest of the time. */}
+          {mapMode === 'measure' ? (
+            <div className="aegis-maptools">
               <div className="aegis-measure">
                 <p>
                   {drawPoints.length === 0
@@ -736,66 +840,29 @@ export function MapPage() {
                   </button>
                 ) : null}
               </div>
-            ) : null}
-            <div className="aegis-seg" role="group" aria-label="Map interaction mode">
-              <button
-                type="button"
-                aria-pressed={mapMode === 'inspect'}
-                onClick={() => {
-                  setMapMode('inspect')
-                  clearDrawing()
-                }}
-              >
-                Inspect
-              </button>
-              <button type="button" aria-pressed={mapMode === 'measure'} onClick={() => setMapMode('measure')}>
-                Measure
-              </button>
             </div>
-          </div>
+          ) : null}
         </div>
 
-        <div className="aegis-tshead">
-          <button
-            type="button"
-            className="aegis-dsc"
-            aria-expanded={talliesOpen}
-            aria-controls="pane-timeline"
-            onClick={() => toggle('talliesOpen')}
-            title="Collapse the running tallies"
-          >
-            Scenario tallies
-          </button>
-          <span className="spacer" />
-          <span className="mono faint text-[12px]">
-            {observationsQuery.dataUpdatedAt
-              ? `SYNC ${formatRelative(new Date(observationsQuery.dataUpdatedAt).toISOString())}`
-              : 'SYNC —'}
-          </span>
-        </div>
+        {/* The bottom telemetry dock.
+            This replaces the former "Scenario tallies" strip rather than
+            stacking under it. The map column is height-constrained — at a 720px
+            viewport the plot is already pinned to its 340px floor with no slack
+            — so an additional band does not add information, it subtracts map.
 
-        {talliesOpen ? (
-          <div className="aegis-timestrip" id="pane-timeline">
-            <div>
-              <p className="k">Observations</p>
-              <p className="v">{observationsQuery.data?.total ?? '—'}</p>
-            </div>
-            <div>
-              <p className="k">Active tracks</p>
-              <p className="v">{tracksQuery.isLoading ? '—' : activeTracks}</p>
-            </div>
-            <div>
-              <p className="k">Open alerts</p>
-              <p className="v">{alertsQuery.data?.total ?? '—'}</p>
-            </div>
-            <div>
-              <p className="k">Commands ack</p>
-              <p className="v">
-                {commandsQuery.isLoading ? '—' : `${acknowledged} / ${commands.length}`}
-              </p>
-            </div>
-          </div>
-        ) : null}
+            Placement is load-bearing. It sits inside `.aegis-mapcol` as an
+            ordinary in-flow sibling of `MapCanvas`: *not* a child of
+            `.aegis-picture` (that grid declares three explicit columns, so a
+            fourth child would be auto-placed into an implicit row), and *not*
+            inside `.aegis-mapwrap` (a container-query context that hides
+            overlays below 620px, and the plot that owns MapLibre's click
+            handling). It carries no `z-index`, so it cannot rise above the
+            scrubber, the replay banner or the board overlay.
+
+            Realtime is suspended while scrubbed, so its alert count is sourced
+            from the frozen snapshot during replay rather than from live lists —
+            otherwise the dock would report a present-tense picture beside a
+            past-tense map. */}
       </div>
 
       {railOpen ? (
@@ -804,7 +871,7 @@ export function MapPage() {
           className="aegis-resizer"
           role="separator"
           aria-orientation="vertical"
-          aria-label="Resize detail rail"
+          aria-label="Resize detail drawer"
           aria-valuemin={300}
           aria-valuemax={600}
           aria-valuenow={railWidth}
@@ -812,28 +879,176 @@ export function MapPage() {
           data-drag={dragging || undefined}
           onPointerDown={onResizeStart}
           onKeyDown={onResizeKeyDown}
-          title="Drag or use arrow keys to resize"
+          title="Drag or use arrow keys to resize the picture drawer"
         />
       ) : null}
 
       {railOpen ? (
-        <aside className="aegis-rail" aria-label="Operations rail">
+        <aside className="aegis-rail" aria-label="Operations rail" ref={railRef}>
           <div className="aegis-railhead">
+            <h2 className="aegis-railhead-title">Picture</h2>
             <button
               type="button"
-              className="aegis-dsc"
-              aria-expanded
-              aria-pressed
+              className="aegis-iconbtn aegis-rail-collapse"
+              aria-label="Collapse the picture drawer"
               onClick={() => toggle('railOpen')}
-              title="Collapse the detail rail to a spine ([)"
+              title="Collapse the picture drawer ([)"
             >
-              Detail rail
+              <span aria-hidden="true">›</span>
             </button>
             <span className="spacer" />
-            <span className="mono faint text-[12px]">DRAG EDGE TO RESIZE</span>
+            <button
+              type="button"
+              className="aegis-iconbtn aegis-rail-collapse"
+              aria-label="Reset the workspace layout"
+              onClick={() => useLayoutStore.getState().reset()}
+              title="Reset the workspace layout"
+            >
+              <span aria-hidden="true">⟲</span>
+            </button>
           </div>
-          <div className="aegis-panel">
-            <h2>
+          {/* ── Plot instruments ──────────────────────────────────────────────
+            The timeline, the picture's figures and the layer switches live in
+            the drawer, not on the plot. As a floating panel across the top of
+            the map they covered the thing they describe; docked here they cost
+            the plot nothing, and the drawer is already where an operator reads
+            the picture's detail.
+
+            Three labelled rows, one owner per fact. It used to be three
+            separate panels - an entity cluster, a map toolbar and a timeline -
+            and the split cost more than it bought: layer visibility had two
+            owners, the not-current count appeared in both this panel and the
+            dock, and the entity count appeared three times in one panel. Two
+            controls that toggle one state will eventually disagree about it. */}
+          <div className="aegis-console">
+            <Scrubber />
+
+            <div className="aegis-console-row">
+              <span className="aegis-cluster-stat">
+                <span className="k">Entities</span>
+                <span className="v">{entityCount}</span>
+              </span>
+              {/* Rendered only when there is an answer. "FRESHNESS —" is a
+                  label for nothing, and a row of empty labels reads as a panel
+                  that failed to load rather than one that is simply idle. */}
+              {freshnessLabel ? (
+                <span className="aegis-cluster-stat">
+                  <span className="k">Freshness</span>
+                  <span className="v">{freshnessLabel}</span>
+                </span>
+              ) : null}
+              {/* Staleness has a dedicated cell in the dock, which is where an
+                  operator looks for it. Saying it here as well meant two panels
+                  to read and one to trust when they disagreed. */}
+              <span className="aegis-cluster-spacer" />
+              {selectionCoords !== '—' ? (
+                <span className="aegis-cluster-stat">
+                  <span className="k">Position</span>
+                  <span className="v mono">{selectionCoords}</span>
+                </span>
+              ) : null}
+              {selectedTrack ? (
+                <span className="aegis-cluster-stat">
+                  <span className="k">Speed</span>
+                  <span className="v">{formatSpeed(selectedTrack.speed)}</span>
+                </span>
+              ) : null}
+              {selectedTrack || selectedAsset ? (
+                <span className="aegis-cluster-stat">
+                  <span className="k">Heading</span>
+                  <span className="v">{formatHeading(selectedTrack?.heading ?? selectedAsset?.heading)}</span>
+                </span>
+              ) : null}
+            </div>
+
+            <div className="aegis-console-row" role="group" aria-label="Map layers">
+              <span className="aegis-console-label">Layers</span>
+              {/* The chips are the layer control. There is no separate Layers
+                  popover listing the same five layers - one owner, so the row
+                  below cannot fall out of step with it. */}
+              {LAYER_CHIPS.map(({ key, label }) => {
+                const count = layerCounts[key]
+                const on = hidden[key] !== true
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className="aegis-cluster-chip"
+                    aria-pressed={on}
+                    onClick={() => setHidden((state) => ({ ...state, [key]: on }))}
+                    title={`${on ? 'Hide' : 'Show'} ${label.toLowerCase()}`}
+                  >
+                    {label}
+                    <span className="n">{count}</span>
+                  </button>
+                )
+              })}
+              {/* The legend is a visibility switch like any other, so it lives
+                  with the others rather than in a menu that also has to carry
+                  an on/off for it. */}
+              <button
+                type="button"
+                className="aegis-cluster-chip"
+                aria-pressed={hidden.legend !== true}
+                // Same inversion as the layer chips: `true` means hidden, so a currently
+                // visible switch writes `true` and a hidden one writes `false`.
+                onClick={() => setHidden((state) => ({ ...state, legend: state.legend !== true }))}
+                title={hidden.legend === true ? 'Show the map legend' : 'Hide the map legend'}
+              >
+                Legend
+              </button>
+            </div>
+
+            {/* The view tools are not layers. They change what the operator is
+                looking at rather than what the picture contains, and sharing a
+                line with the layer switches made a switch and a zoom button
+                look like the same sort of thing. */}
+            <div className="aegis-console-row" role="group" aria-label="View tools">
+              <span className="aegis-console-label">View</span>
+              <button
+                type="button"
+                className="aegis-iconbtn"
+                aria-pressed={mapMode === 'measure'}
+                onClick={() => {
+                  const next = mapMode === 'measure' ? 'inspect' : 'measure'
+                  setMapMode(next)
+                  // Leaving measure mode must not strand a half-drawn line: the
+                  // readout would keep describing a distance the operator can no
+                  // longer edit or see.
+                  if (next === 'inspect') clearDrawing()
+                }}
+                title="Measure a distance on the plot"
+              >
+                Ruler
+              </button>
+              <button
+                type="button"
+                className="aegis-iconbtn"
+                onClick={() => cameraRef.current?.zoomOut()}
+                aria-label="Zoom out"
+                title="Zoom out"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                className="aegis-iconbtn"
+                onClick={() => cameraRef.current?.zoomIn()}
+                aria-label="Zoom in"
+                title="Zoom in"
+              >
+                +
+              </button>
+              <span className="ref">WGS84 / 4326</span>
+            </div>
+          </div>
+
+          {/* The region that scrolls. The picture's own instruments above it
+              stay put; only what depends on a selection moves. */}
+          <div className="aegis-railscroll">
+            <div className="aegis-panel">
+              <p className="aegis-railsection">Selection</p>
+              <h2>
               {selectedTrack
                 ? `Track ${shortRef(selectedTrack.externalRef, selectedTrack.id)}`
                 : selectedAsset
@@ -854,6 +1069,19 @@ export function MapPage() {
                 Detail, classifications, evidence and assessments appear here.
               </p>
             ) : null}
+            </div>
+
+            {/* The scenario transport is a side feature and it is marked as
+                one. It is a separate system — the scenario console owns
+                starting, pausing and restarting runs — and it appears here
+                only because the picture is what a run produces. It is last in
+                the panel, after the picture's own detail, so nothing the
+                operator came to read is pushed down by it, and the drawer
+                works with no scenario running at all. */}
+            <section className="aegis-rail-side" aria-label="Scenario run">
+              <p className="aegis-railsection">Scenario</p>
+              <ScenarioBar variant="drawer" />
+            </section>
           </div>
         </aside>
       ) : (
@@ -861,9 +1089,9 @@ export function MapPage() {
           <button
             type="button"
             onClick={() => useLayoutStore.setState({ railOpen: true })}
-            title="Expand the detail rail (])"
+            title="Expand the picture drawer (])"
           >
-            Detail
+            Picture
           </button>
         </div>
       )}

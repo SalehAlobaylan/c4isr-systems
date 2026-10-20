@@ -21,7 +21,7 @@ const RUNS_FILTER = { limit: 20 } as const
 
 const ACTIVE_STATES = new Set(['RUNNING', 'PAUSED'])
 
-export function ScenarioBar() {
+export function ScenarioBar({ variant = 'band' }: { variant?: 'band' | 'drawer' }) {
   const queryClient = useQueryClient()
   const runOpen = useLayoutStore((state) => state.runOpen)
   const toggle = useLayoutStore((state) => state.toggle)
@@ -107,11 +107,11 @@ export function ScenarioBar() {
     },
   })
 
-  const replayMutation = useMutation({
+  const restartMutation = useMutation({
     mutationFn: (run: ScenarioRun) => api.restartScenarioRun(run.id),
     onSuccess: (run) => {
       toast({
-        title: 'Replay started',
+        title: 'Run restarted',
         description: `${run.scenarioName} @ ${run.playbackSpeed}× · seed ${run.seed}`,
         variant: 'success',
       })
@@ -119,7 +119,7 @@ export function ScenarioBar() {
     },
     onError: (error) => {
       toast({
-        title: 'Replay failed',
+        title: 'Restart failed',
         description: error instanceof Error ? error.message : undefined,
         variant: 'error',
       })
@@ -163,12 +163,12 @@ export function ScenarioBar() {
         startPauseResume()
       } else if (event.key.toLowerCase() === 'r' && activeRun) {
         event.preventDefault()
-        replayMutation.mutate(activeRun)
+        restartMutation.mutate(activeRun)
       }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [activeRun, replayMutation])
+  }, [activeRun, restartMutation])
 
   const startPauseResume = () => {
     if (!activeRun) return
@@ -176,10 +176,16 @@ export function ScenarioBar() {
     runAction.mutate({ id: activeRun.id, action })
   }
 
-  const statusLabel = activeRun ? (activeRun.status === 'PAUSED' ? 'PAUSED' : 'LIVE') : 'IDLE'
+  // "Running", not "Live". The picture's own transport is in the same panel
+  // now and calls its live state "Live", and two different clocks in one
+  // drawer that answer to the same word is a way to stop trusting both.
+  const statusLabel = activeRun ? (activeRun.status === 'PAUSED' ? 'PAUSED' : 'RUNNING') : 'IDLE'
 
   return (
-    <div className="aegis-band" data-od-id="run-bar">
+    <div
+      className={cn('aegis-band', variant === 'drawer' && 'aegis-band--drawer')}
+      data-od-id="run-bar"
+    >
       <div className="aegis-brow">
         <button
           type="button"
@@ -225,48 +231,60 @@ export function ScenarioBar() {
         </span>
         <span className="aegis-spacer" />
         <span className="aegis-grp">
-          <button
-            type="button"
-            id="aegis-btnPlay"
-            aria-pressed={activeRun?.status === 'PAUSED'}
-            disabled={!activeRun || runAction.isPending}
-            onClick={startPauseResume}
-            title="Pause or resume the scenario clock (Space)"
-          >
-            {activeRun?.status === 'PAUSED' ? 'Resume' : 'Pause'}
-          </button>
-          <button
-            type="button"
-            id="aegis-btnReplay"
-            disabled={!activeRun || replayMutation.isPending}
-            onClick={() => activeRun && replayMutation.mutate(activeRun)}
-            title="Replay — restart the active run with the same seed (R)"
-          >
-            Replay
-          </button>
-          {scenarios.length > 0 ? (
-            <select
-              aria-label="Start a scenario"
-              value={startName}
-              disabled={startMutation.isPending}
-              onChange={(event) => {
-                const name = event.target.value
-                setStartName('')
-                if (name) startMutation.mutate({ name, speed: 1 })
-              }}
-              title="Start a scenario run at 1×"
-            >
-              <option value="">Start scenario…</option>
-              {scenarios.map((scenario) => (
-                <option key={scenario.name} value={scenario.name}>
-                  {scenario.name}
-                </option>
-              ))}
-            </select>
-          ) : null}
-          <Link to="/scenarios" className="aegis-band-link" title="Open the scenario console">
-            Scenario console
-          </Link>
+          {/* In the drawer, an idle scenario is one line. The transport
+              buttons are disabled without a run, and a row of dead controls
+              under a side feature is noise the operator has to read past. The
+              console link stays: it is how a run gets started from here. */}
+          {variant === 'drawer' && !activeRun ? (
+            <Link to="/scenarios" className="aegis-band-link" title="Open the scenario console">
+              Scenario console
+            </Link>
+          ) : (
+            <>
+              <button
+                type="button"
+                id="aegis-btnPlay"
+                aria-pressed={activeRun?.status === 'PAUSED'}
+                disabled={!activeRun || runAction.isPending}
+                onClick={startPauseResume}
+                title="Pause or resume the scenario clock (Space)"
+              >
+                {activeRun?.status === 'PAUSED' ? 'Resume' : 'Pause'}
+              </button>
+              <button
+                type="button"
+                id="aegis-btnRestart"
+                disabled={!activeRun || restartMutation.isPending}
+                onClick={() => activeRun && restartMutation.mutate(activeRun)}
+                title="Restart the active run with the same seed (R)"
+              >
+                Restart
+              </button>
+              {scenarios.length > 0 && variant !== 'drawer' ? (
+                <select
+                  aria-label="Start a scenario"
+                  value={startName}
+                  disabled={startMutation.isPending}
+                  onChange={(event) => {
+                    const name = event.target.value
+                    setStartName('')
+                    if (name) startMutation.mutate({ name, speed: 1 })
+                  }}
+                  title="Start a scenario run at 1×"
+                >
+                  <option value="">Start scenario…</option>
+                  {scenarios.map((scenario) => (
+                    <option key={scenario.name} value={scenario.name}>
+                      {scenario.name}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              <Link to="/scenarios" className="aegis-band-link" title="Open the scenario console">
+                Scenario console
+              </Link>
+            </>
+          )}
         </span>
       </div>
       {runOpen ? (
@@ -303,10 +321,6 @@ export function ScenarioBar() {
             </select>
           </span>
           <span className="aegis-spacer" />
-          <span className="aegis-lbl">Layout is remembered on this device</span>
-          <button type="button" className="aegis-iconbtn" onClick={() => useLayoutStore.getState().reset()}>
-            Reset layout
-          </button>
         </div>
       ) : null}
     </div>

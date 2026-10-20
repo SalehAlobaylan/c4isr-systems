@@ -68,6 +68,41 @@ export const asset = {
   updatedAt: now,
 }
 
+/**
+ * The sensor inventory behind the picture. One of the three is degraded, so
+ * the systems grid has a subsystem that is honestly reporting trouble rather
+ * than a uniformly healthy board.
+ */
+export const sources = [
+  {
+    id: 'scn_run_demo__source__radar-01',
+    name: 'radar-01',
+    type: 'sensor',
+    status: 'active',
+    metadata: { scenarioRunId: 'scn_run_demo' },
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: 'scn_run_demo__source__eo-ir-02',
+    name: 'eo-ir-02',
+    type: 'sensor',
+    status: 'active',
+    metadata: { scenarioRunId: 'scn_run_demo' },
+    createdAt: now,
+    updatedAt: now,
+  },
+  {
+    id: 'scn_run_demo__source__ais-shore-04',
+    name: 'ais-shore-04',
+    type: 'external',
+    status: 'degraded',
+    metadata: { scenarioRunId: 'scn_run_demo' },
+    createdAt: now,
+    updatedAt: '2026-09-20T11:41:00Z',
+  },
+]
+
 export const geofence = {
   id: 'scn_run_demo__geofence__restricted-zone',
   name: 'Restricted Zone A',
@@ -159,6 +194,7 @@ export async function mockOperationalWorkflow(page: Page): Promise<void> {
   let incident: Record<string, any> | null = null
   let mission: Record<string, any> | null = null
   let command: Record<string, any> | null = null
+  let recordedClassifications: Array<Record<string, any>> = []
   let assessments: Array<Record<string, any>> = [
     {
       id: 'assessment-1',
@@ -270,6 +306,10 @@ export async function mockOperationalWorkflow(page: Page): Promise<void> {
       await json(route, list([{ name: 'restricted-area-intrusion', description: 'Synthetic replay' }]))
       return
     }
+    if (path === '/api/v1/sources' && method === 'GET') {
+      await json(route, list(sources))
+      return
+    }
     if (path === '/api/v1/geofences' && method === 'GET') {
       await json(route, list([geofence]))
       return
@@ -290,7 +330,26 @@ export async function mockOperationalWorkflow(page: Page): Promise<void> {
       return
     }
     if (path === `/api/v1/tracks/${track.id}/classifications` && method === 'GET') {
-      await json(route, list([{ id: 'classification-1', label: 'vehicle', confidence: 0.91, method: 'radar', sourceReference: 'radar-01', createdBy: 'system', createdAt: now }]))
+      await json(route, list([
+        { id: 'classification-1', label: 'vehicle', confidence: 0.91, method: 'radar', sourceReference: 'radar-01', createdBy: 'system', createdAt: now },
+        ...recordedClassifications,
+      ]))
+      return
+    }
+    // An operator's own classification. It is recorded rather than computed, so
+    // it joins the list the next time the track is read.
+    if (path === '/api/v1/classifications' && method === 'POST') {
+      const body = request.postDataJSON() as Record<string, unknown>
+      recordedClassifications.unshift({
+        id: `classification-${recordedClassifications.length + 2}`,
+        label: body.label,
+        confidence: body.confidence ?? null,
+        method: body.method ?? 'OPERATOR',
+        sourceReference: body.sourceReference ?? '',
+        createdBy: 'operator-01',
+        createdAt: now,
+      })
+      await json(route, recordedClassifications[0], 201)
       return
     }
     if (path === `/api/v1/tracks/${staleTrack.id}` && method === 'GET') {

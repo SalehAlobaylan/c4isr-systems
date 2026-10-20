@@ -371,6 +371,38 @@
     background: var(--emad-surface-canvas);
     color: var(--emad-text-primary);
   }
+  /* Rows are assigned rather than inferred from child order. The run
+     transport is a band under the header on most routes and lives in the
+     picture drawer's first row instead, so the shell's children change
+     between routes. An order-dependent grid put the map in the auto row the
+     moment the band moved, and the map collapsed to its min-height with a
+     band of dead space beneath it. */
+  /* A side feature inside the drawer. It is visually a different thing from
+     the picture's own instruments: a hairline above, a muted ground, and no
+     border of its own pretending to be a panel. */
+  .aegis-rail-side {
+    border-top: 1px solid var(--emad-border-subtle-soft);
+    background: var(--emad-surface-inset);
+  }
+  .aegis-rail-side > .aegis-railsection {
+    padding: 10px 12px 0;
+  }
+  .aegis-rail-side .aegis-band--drawer {
+    border-bottom: 0;
+    padding: 0 12px 12px;
+  }
+  .aegis-app > .topbar-shell {
+    grid-row: 1;
+  }
+  .aegis-app > .aegis-band {
+    grid-row: 2;
+  }
+  .aegis-app > .aegis-main {
+    grid-row: 3;
+  }
+  .aegis-app > .aegis-pagefoot {
+    grid-row: 4;
+  }
 
   .aegis-main {
     min-height: 0;
@@ -382,9 +414,54 @@
     margin-left: auto;
   }
 
+  /* The chain of custody, read live. Each stage is a count and a label, and
+     the stages that have a view are links, so the footer is the one place an
+     operator can see how much the system is holding and jump to it. */
+  .aegis-chain-ribbon {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 0;
+    min-width: 0;
+  }
+  .aegis-chain-stage {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px 0;
+  }
+  .aegis-chain-arrow {
+    color: var(--emad-text-tertiary);
+    opacity: 0.6;
+    padding: 0 8px;
+  }
+  .aegis-chain-link {
+    /* Inline, not flex: the space between the count and the label is a real
+       space in the text, so the footer reads as "3 sources" to a screen
+       reader and not as "3sources". */
+    display: inline;
+    color: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  a.aegis-chain-link:hover {
+    color: var(--emad-link);
+    text-decoration: underline;
+  }
+  .aegis-chain-count {
+    font-family: var(--emad-font-mono);
+    font-weight: 600;
+    color: var(--emad-text-primary);
+  }
+  .aegis-chain-label {
+    color: var(--emad-text-tertiary);
+  }
+
   .aegis-pagefoot {
+    /* Alloy Pearl 5's footer is a single `h-8` strip of status text — a
+       baseline, not a panel. At 10px/20px padding it was a band tall enough to
+       read as a second navigation row, which is not what it is for. */
     border-top: 1px solid var(--emad-border-subtle-soft);
-    padding: 10px 20px;
+    padding: 5px 20px;
     display: flex;
     gap: 18px;
     flex-wrap: wrap;
@@ -410,10 +487,11 @@
      from the previous dark theme: it is what gives the workspace its
      industrial character, and it is the only place lime appears. */
 
-  /* The top bar's layout wrapper. It carries the measured nav-fit state
-     (`--navrows`): whether the single row fits depends on the width of the
-     operator chip, which changes with session state, so it is measured in
-     TopBar rather than decided by a width breakpoint. */
+  /* The top bar's layout wrapper. The header is a single row: the brand, the
+     two primary views, and the console's own state. The nav used to be
+     measured and moved to a row of its own when the row ran out of room,
+     which gave the console two levels of navigation and buried the level
+     that mattered. It does not move now. */
 
   .topbar-shell {
     display: block;
@@ -422,13 +500,26 @@
   .aegis-topbar {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 10px 20px;
+    gap: 12px;
+    /* 52px, the height the Alloy Pearl picture uses for its header. The bar
+       is the console's frame, not a surface: every pixel of it is taken from
+       the map. */
+    min-height: 52px;
+    padding: 6px 16px;
     /* The graphite anchor. Its text/border roles flip to the on-dark family
-       for everything inside this bar — see the rules below. */
+       for everything inside this bar - see the rules below. */
     background: var(--emad-surface-nav);
     color: var(--emad-text-on-dark);
     border-bottom: 1px solid var(--emad-border-nav-subtle);
+  }
+  /* A hairline between the header's zones. Without it the row reads as a
+     brand on one side and a small widget parked in the other corner, rather
+     than three things with different jobs. */
+  .aegis-vsep {
+    width: 1px;
+    height: 20px;
+    flex: none;
+    background: var(--emad-border-nav-subtle);
   }
 
   .aegis-brand {
@@ -465,38 +556,119 @@
     margin: 0;
   }
 
-  .aegis-brand .sub {
-    font-size: var(--emad-type-dense);
-    letter-spacing: var(--emad-type-tracking-label);
-    text-transform: uppercase;
-    color: var(--emad-text-nav-muted);
-    margin: 2px 0 0;
-  }
 
   /* Navigation. The active view gets strong text and a restrained lime
      underline — not a filled lime tab (DESIGN.md §5.2, §6.1).
 
      The nav is the only part of the bar allowed to give ground, and it never
-     clips a label mid-word: when the measured row cannot fit every item, the
-     nav moves to its own full-width row (see `.topbar-shell--navrows` below).
-     Only when even that row is too narrow — a phone-width console — does the
-     nav scroll. The brand and the status controls never shrink: an operator
-     must always be able to see who they are and whether the link is up. */
+     clips a label mid-word: it scrolls when the row is too narrow. The brand
+     and the console's state never shrink — an operator must always be able
+     to see who they are and whether the console is working. */
   .aegis-nav {
     display: flex;
     align-items: center;
     gap: 2px;
     min-width: 0;
-    flex: 0 1 auto;
+    /* The nav lives in the header row now, so it takes the space between the
+       brand and the status cluster rather than pushing them apart. */
+    flex: 1 1 auto;
     overflow-x: auto;
     scrollbar-width: none;
+  }
+  /* The disclosure that holds the side features. It is set like the side
+     features it holds, not like the primary tabs, because that is what it
+     is: the way to the tier below. */
+  .aegis-nav-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    min-height: 32px;
+    padding: 6px 8px;
+    margin-left: 8px;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    background: transparent;
+    color: var(--emad-text-nav-muted);
+    font-family: var(--emad-font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-nav-more:hover {
+    color: var(--emad-text-on-dark);
+  }
+  .aegis-nav-more[aria-current='page'] {
+    color: var(--emad-text-on-dark);
+    border-bottom-color: var(--emad-energized-lime);
+  }
+  .aegis-nav-more .caret {
+    font-size: 12px;
+    opacity: 0.7;
+  }
+  /* The console's state, in one chip. It replaces two blocks that each
+     answered half of the same question. */
+  .aegis-console-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 30px;
+    padding: 4px 9px;
+    border: 1px solid transparent;
+    border-radius: var(--emad-radius-control);
+    background: transparent;
+    color: var(--emad-text-on-dark);
+    font-family: var(--emad-font-sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .aegis-console-state:hover {
+    background: var(--emad-surface-nav-hover);
+    border-color: var(--emad-border-nav-subtle);
+  }
+  /* The operator: an identity, not a headline. The role is what an operator
+     needs at a glance; the id is a hover and a copy away. It is a quiet
+     control — the console's state is the thing in the header that should
+     catch the eye, not who is signed in. */
+  .aegis-operator-role {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+  }
+  .aegis-iconbtn.aegis-operator {
+    background: transparent;
+    border-color: transparent;
+    color: var(--emad-text-nav-muted);
+  }
+  .aegis-iconbtn.aegis-operator:hover {
+    background: var(--emad-surface-nav-hover);
+    border-color: var(--emad-border-nav-subtle);
+    color: var(--emad-text-on-dark);
+  }
+  /* The shortcut sheet is help, not a feature. A glyph carries it in a
+     quarter of the space a labelled button takes. */
+  .aegis-helpbtn {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+    padding: 0;
+    font-size: 13px;
+    font-weight: 700;
   }
 
   .aegis-nav a {
     display: inline-flex;
     align-items: center;
     flex: none;
-    min-height: 40px;
+    min-height: 36px;
     padding: 10px 9px;
     border-bottom: 2px solid transparent;
     color: var(--emad-text-nav-muted);
@@ -524,17 +696,26 @@
     background: var(--emad-surface-nav-raised);
   }
 
-  .aegis-nav a[aria-selected='true'] {
+  .aegis-nav a[aria-current='page'] {
     color: var(--emad-text-on-dark);
     border-bottom-color: var(--emad-energized-lime);
   }
 
-  .aegis-nav-sec {
+  /* Two tiers. The two views the console is for are set larger, brighter and
+     further apart, so the eye lands on them first; the side features keep
+     every affordance of a tab but are set a step down. A nav where every
+     view is the same size is a nav that asks the operator to choose before
+     they have looked at anything. */
+  .aegis-nav-primary {
     display: flex;
-    gap: 2px;
-    margin-left: 10px;
-    padding-left: 10px;
-    border-left: 1px solid var(--emad-border-nav-subtle);
+    gap: 4px;
+  }
+  .aegis-nav-primary a {
+    min-height: 36px;
+    padding: 8px 12px;
+    color: var(--emad-text-on-dark);
+    font-size: 13px;
+    letter-spacing: calc(var(--emad-type-tracking-label) * 1.4);
   }
 
   .aegis-topright {
@@ -560,9 +741,6 @@
     color: var(--emad-text-nav-muted);
   }
 
-  .aegis-live--down {
-    color: var(--emad-text-on-dark);
-  }
 
   .aegis-dot {
     width: 8px;
@@ -578,33 +756,8 @@
   .aegis-dot--paused {
     background: var(--emad-status-caution-on-graphite);
   }
-  .aegis-dot--init {
-    background: var(--emad-status-info-on-graphite);
-  }
   .aegis-dot--down {
     background: var(--emad-status-critical-on-graphite);
-  }
-
-  .aegis-sys {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: var(--emad-radius-control);
-    padding: 6px 8px;
-    min-height: var(--emad-control-height);
-    color: var(--emad-text-on-dark);
-    font-family: var(--emad-font-sans);
-    font-size: var(--emad-type-dense);
-    font-weight: 600;
-    letter-spacing: var(--emad-type-tracking-label);
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: background var(--emad-motion-fast) var(--emad-ease);
-  }
-  .aegis-sys:hover {
-    background: var(--emad-surface-nav-hover);
   }
 
   /* System health on the rail. The dark status hues would sink into graphite,
@@ -692,6 +845,35 @@
     border-bottom: 1px solid var(--emad-border-subtle-soft);
     color: var(--emad-text-primary);
     padding: 0 20px;
+  }
+  /* The band as a drawer section. On the picture route the run transport is
+     not a strip under the header but the first section of the drawer, beside
+     the picture's own timeline. It packs to the left instead of spreading to
+     the edges, because a 300px column has no edges worth spreading to. */
+  .aegis-band--drawer {
+    background: transparent;
+    border-bottom: 1px solid var(--emad-border-subtle);
+    padding: 0 12px;
+  }
+  .aegis-band--drawer .aegis-brow {
+    padding: 10px 0;
+    min-height: 0;
+    gap: 6px 10px;
+  }
+  .aegis-band--drawer .aegis-brow.sub {
+    padding: 8px 0 10px;
+  }
+  .aegis-band--drawer .aegis-spacer {
+    display: none;
+  }
+  .aegis-band--drawer .aegis-grp {
+    width: 100%;
+  }
+  .aegis-band--drawer select {
+    max-width: 100%;
+  }
+  .aegis-band--drawer .aegis-scenario {
+    min-width: 0;
   }
 
   .aegis-brow {
@@ -1155,83 +1337,17 @@
 
   /* ── Popover + switch ─────────────────────────────────────────────── */
 
-  .aegis-pop {
-    position: absolute;
-    z-index: 14;
-    right: 0;
-    top: calc(100% + 6px);
-    background: var(--emad-surface-raised);
-    border: 1px solid var(--emad-border-control-soft);
-    border-radius: var(--emad-radius-float);
-    padding: 10px 12px 12px;
-    min-width: 240px;
-    box-shadow: var(--emad-shadow-float);
-  }
-  .aegis-pop .ph {
-    margin: 0 0 8px;
-    font-size: var(--emad-type-dense);
-    font-weight: 600;
-    letter-spacing: var(--emad-type-tracking-label);
-    text-transform: uppercase;
-    color: var(--emad-text-secondary);
-  }
 
-  .aegis-sw {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    padding: 7px 6px;
-    font-size: var(--emad-type-dense);
-    letter-spacing: var(--emad-type-tracking-label);
-    text-transform: uppercase;
-    cursor: pointer;
-    border-radius: var(--emad-radius-control);
-    min-height: 38px;
-    color: var(--emad-text-secondary);
-  }
-  .aegis-sw:hover {
-    background: var(--emad-surface-hover);
-    color: var(--emad-text-primary);
-  }
+
+
+
+
   /* A layer toggle is chrome. Its "on" state is a switch, not a domain
      status, so it takes the interactive accent rather than a status hue. */
-  .aegis-sw input {
-    appearance: none;
-    -webkit-appearance: none;
-    width: 34px;
-    height: 18px;
-    border-radius: 9px;
-    border: 1px solid var(--emad-border-control);
-    background: var(--emad-surface-canvas);
-    position: relative;
-    cursor: pointer;
-    flex: none;
-    margin: 0;
-    transition:
-      background var(--emad-motion-fast) var(--emad-ease),
-      border-color var(--emad-motion-fast) var(--emad-ease);
-  }
-  .aegis-sw input::after {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 2px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--emad-text-secondary);
-    transition:
-      transform var(--emad-motion-fast) var(--emad-ease),
-      background var(--emad-motion-fast) var(--emad-ease);
-  }
-  .aegis-sw input:checked {
-    background: var(--emad-industrial-graphite);
-    border-color: var(--emad-industrial-graphite);
-  }
-  .aegis-sw input:checked::after {
-    transform: translateX(16px);
-    background: var(--emad-text-on-dark);
-  }
+
+
+
+
 
   /* ── Buttons + inline status ──────────────────────────────────────── */
 
@@ -1285,12 +1401,41 @@
 
   /* ── Detail rail ──────────────────────────────────────────────────── */
 
+  /* The detail drawer, floating over the plot's right edge.
+     An overlay rather than a column, so the map is the full window and only the
+     area genuinely underneath the drawer is unavailable to a click. It is opaque
+     because a panel an operator cannot read over busy imagery is not a panel
+     (picture.css header rule); the drawer is also the only floating element
+     allowed a shadow, because it is the only one that reads as lifted. */
   .aegis-rail {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 12;
+    width: var(--rail-w);
+    max-width: calc(100% - 32px);
+    max-height: calc(100% - 32px);
     min-width: 0;
     display: flex;
     flex-direction: column;
+    /* The drawer is three regions, not one long scroll. The picture's own
+       instruments are pinned and never scroll away, and only the selection
+       detail moves. A timeline an operator has to scroll back up to find is a
+       timeline they stop reaching for. */
+    overflow: hidden;
+    background: var(--emad-surface-overlay);
+    border: 1px solid var(--emad-border-subtle);
+    border-radius: var(--emad-radius-card);
+    box-shadow: var(--emad-shadow-float);
+  }
+  /* The region that moves. Everything above it is fixed to the panel. It is
+     given a floor so that on a short viewport the picture's instruments give
+     up height rather than squeezing the selection out of existence. */
+  .aegis-railscroll {
+    flex: 1 1 auto;
+    min-height: 120px;
     overflow-y: auto;
-    background: var(--emad-surface-canvas);
+    overscroll-behavior: contain;
   }
   .aegis-railhead {
     display: flex;
@@ -1298,10 +1443,68 @@
     gap: 10px;
     padding: 8px 12px;
     border-bottom: 1px solid var(--emad-border-subtle-soft);
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: var(--emad-surface-canvas);
+    flex: 0 0 auto;
+    background: var(--emad-surface-overlay);
+    border-radius: var(--emad-radius-card) var(--emad-radius-card) 0 0;
+  }
+  /* The panel's name is a label, not an action. It used to be a button that
+     said "Picture" and collapsed the panel when pressed, so its name promised
+     a view and its behaviour did something else. */
+  .aegis-railhead-title {
+    margin: 0;
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+  }
+  /* The collapse control is a small chevron beside the name, not the name
+     itself: the name says what the panel is, the chevron says what the button
+     does. */
+  .aegis-rail-collapse {
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
+    min-height: 24px;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1;
+    /* A quiet control beside a title. The filled icon button is right for
+       something an operator presses mid-task; this one is pressed once in a
+       blue moon, and a heavy square next to the panel's name is noise. */
+    background: transparent;
+    border-color: transparent;
+    color: var(--emad-text-tertiary);
+  }
+  .aegis-rail-collapse:hover {
+    background: var(--emad-surface-hover);
+    border-color: var(--emad-border-control-soft);
+    color: var(--emad-text-primary);
+  }
+  /* The section label used inside the panel, so the panel reads as three
+     named things rather than an undifferentiated column. */
+  .aegis-railsection {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--emad-text-tertiary);
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+  }
+  /* The label that names a row of controls inside the console. Layers and
+     view tools are different kinds of control and were sharing a line, which
+     made a switch and a zoom button look like the same sort of thing. */
+  .aegis-console-label {
+    flex: 0 0 auto;
+    min-width: 52px;
+    color: var(--emad-text-tertiary);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
   }
   .aegis-panel {
     padding: 16px;
@@ -1358,40 +1561,75 @@
     white-space: normal;
   }
 
+  /* The drawer's grab strip. It rides the drawer's left edge rather than
+     occupying a grid column of its own, because the drawer no longer owns a
+     column — the plot underneath is fully live and only this 7px seam is
+     reserved for resizing. */
   .aegis-resizer {
-    position: relative;
+    position: absolute;
+    top: 16px;
+    bottom: 16px;
+    left: calc(16px + var(--rail-w) - 7px);
+    width: 7px;
+    z-index: 13;
     cursor: col-resize;
     touch-action: none;
-    background: var(--emad-surface-canvas);
+    background: transparent;
   }
   .aegis-resizer::after {
     content: '';
     position: absolute;
-    inset: 0 3px;
-    background: var(--emad-border-subtle);
+    inset: 0 2px;
+    border-radius: 2px;
+    background: transparent;
     transition: background var(--emad-motion-fast) var(--emad-ease);
+  }
+  /* A visible grip on the handle itself. The panel used to carry the words
+     "DRAG EDGE" in its header at all times, which was an instruction printed
+     in a permanent place rather than an affordance on the thing being
+     dragged. The grip is on the edge, is always there, and brightens when
+     the handle is hovered or focused. */
+  .aegis-resizer::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3px;
+    height: 34px;
+    transform: translate(-50%, -50%);
+    border-radius: 2px;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--emad-border-control) 0 2px,
+      transparent 2px 5px
+    );
+    opacity: 0.55;
+    transition: opacity var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-resizer:hover::before,
+  .aegis-resizer:focus-visible::before {
+    opacity: 1;
   }
   .aegis-resizer:hover::after,
   .aegis-resizer[data-drag='true']::after {
-    background: var(--emad-industrial-graphite);
+    background: var(--emad-border-control);
   }
   .aegis-resizer:focus-visible::after {
-    background: var(--emad-industrial-graphite);
+    background: var(--emad-focus-light);
   }
 
+  /* Collapsed: the drawer is gone and the map is the whole window, so the way
+     back is a small floating tab on the right edge rather than a 46px column
+     that would reserve space nobody is using. */
   .aegis-railspine {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 12;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 6px;
-    background: var(--emad-surface-canvas);
-    border-left: 1px solid var(--emad-border-subtle-soft);
-    overflow: hidden;
   }
   .aegis-railspine button {
-    writing-mode: vertical-rl;
-    background: var(--emad-surface-raised);
+    background: var(--emad-surface-overlay);
     border: 1px solid var(--emad-border-control-soft);
     border-radius: var(--emad-radius-control);
     color: var(--emad-text-secondary);
@@ -1400,9 +1638,9 @@
     font-weight: 600;
     letter-spacing: var(--emad-type-tracking-label);
     text-transform: uppercase;
-    padding: 14px 7px;
+    padding: 8px 10px;
     cursor: pointer;
-    min-height: 74px;
+    box-shadow: var(--emad-shadow-control);
     transition:
       background var(--emad-motion-fast) var(--emad-ease),
       color var(--emad-motion-fast) var(--emad-ease);
@@ -1441,36 +1679,660 @@
     color: var(--emad-text-secondary);
   }
 
-  .aegis-timestrip {
+
+
+
+
+  /* A key operational figure: large, tabular, and never dressed as a status. */
+
+
+  /* ── Inspector surfaces (track inspector, system grid) ───────────────────
+     Shared by the two inspection views, which have the same job: show what the
+     platform holds, show what it does not, and never let the second be hidden
+     by the first. Two columns on a wide screen, one when there is not room. */
+  .aegis-xgrid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    border-top: 1px solid var(--emad-border-subtle-soft);
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 16px;
+    padding: 16px;
+    align-items: start;
+  }
+  .aegis-xcol {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  /* Panels stack without a doubled bottom rule, and keep the ceramic surface
+     so the columns read as panels rather than as floating cards. */
+  .aegis-xcol > .aegis-panel,
+  .aegis-xgrid12 > div > .aegis-panel {
+    border: 1px solid var(--emad-border-subtle-soft);
+    border-radius: var(--emad-radius-card);
+    background: var(--emad-surface-panel);
+    margin-bottom: 16px;
+  }
+  .aegis-xcol > .aegis-panel:last-child,
+  .aegis-xgrid12 > div > .aegis-panel:last-child {
+    margin-bottom: 0;
+  }
+
+  /* ── The evidence chain ────────────────────────────────────────────────
+     Six stages from raw source to recorded action. The bar along the bottom of
+     a cell is a *redundant* cue only: the cell's own note text always states
+     whether the link is complete, so nothing here is carried by colour alone
+     (DESIGN.md §7.1). */
+  .aegis-chain {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
     background: var(--emad-surface-panel);
   }
-  .aegis-timestrip > div {
-    padding: 12px 16px;
+  .aegis-chain-cell {
+    position: relative;
+    min-width: 0;
+    padding: 12px 16px 14px;
   }
-  .aegis-timestrip > div + div {
+  .aegis-chain-cell + .aegis-chain-cell {
     border-left: 1px solid var(--emad-border-subtle-soft);
   }
-  .aegis-timestrip .k {
+  .aegis-chain-cell .k {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    margin: 0 0 4px;
     font-size: var(--emad-type-dense);
     font-weight: 600;
     letter-spacing: var(--emad-type-tracking-label);
     text-transform: uppercase;
     color: var(--emad-text-secondary);
-    margin: 0 0 4px;
   }
-  /* A key operational figure: large, tabular, and never dressed as a status. */
-  .aegis-timestrip .v {
-    font-family: var(--emad-font-mono);
-    font-variant-numeric: tabular-nums;
+  .aegis-chain-idx {
+    font-size: var(--emad-type-dense);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--emad-text-tertiary);
+  }
+  .aegis-chain-cell .v {
+    margin: 0;
     font-size: var(--emad-type-figure);
     font-weight: 600;
-    letter-spacing: 0.02em;
     line-height: var(--emad-type-leading-figure);
     color: var(--emad-text-primary);
+  }
+  .aegis-chain-cell .n {
+    margin: 4px 0 0;
+    font-size: var(--emad-type-dense);
+    line-height: var(--emad-type-leading-meta);
+    color: var(--emad-text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .aegis-chain-cell[data-complete='partial']::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 2px;
+    background: var(--emad-status-caution);
+  }
+
+  /* ── Compact record list ────────────────────────────────────────────────
+     The ledger / evidence rows. Hairline separated, no zebra: striping would
+     imply an alternating significance the data does not have (DESIGN.md §6.5). */
+  .aegis-xlist {
+    display: flex;
+    flex-direction: column;
+  }
+  .aegis-xitem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+  }
+  .aegis-xitem:first-child {
+    padding-top: 0;
+  }
+  .aegis-xitem:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+  .aegis-xitem[data-flag='partial'] .aegis-src {
+    border-color: var(--emad-status-caution);
+    color: var(--emad-status-caution);
+  }
+
+  /* ── Interpretation cards ──────────────────────────────────────────────
+     Classifications and assessments. Mist inset for the supporting rows so a
+     conclusion and its supporting facts are typographically distinct without
+     implying the conclusion is the more truthful of the two (DESIGN.md §6.4). */
+  .aegis-xcards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    list-style: none;
     margin: 0;
+    padding: 0;
+  }
+  .aegis-xcard {
+    border: 1px solid var(--emad-border-subtle-soft);
+    border-radius: var(--emad-radius-card);
+    background: var(--emad-surface-panel);
+    padding: 12px;
+  }
+  .aegis-xcard-title {
+    font-size: var(--emad-type-body);
+    font-weight: 600;
+    color: var(--emad-text-primary);
+  }
+  .aegis-xcard-body {
+    margin: 8px 0 0;
+    font-size: var(--emad-type-secondary);
+    line-height: var(--emad-type-leading-secondary);
+    color: var(--emad-text-secondary);
+  }
+  .aegis-xcard-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 10px;
+    border-radius: var(--emad-radius-control);
+    background: var(--emad-surface-raised);
+  }
+  .aegis-xrow {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    min-width: 0;
+  }
+  .aegis-xrow .k {
+    flex: none;
+    color: var(--emad-text-secondary);
+  }
+  .aegis-xrow .v {
+    min-width: 0;
+    text-align: right;
+    color: var(--emad-text-primary);
+  }
+  /* A value too long to sit beside its label takes the full width beneath it.
+     Right-aligning a wrapped JSON blob produces a ragged right-hand staircase
+     that reads as rendering damage rather than as data. */
+  .aegis-xrow--stack {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .aegis-xrow--stack .v {
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  /* ── Integrity checks ───────────────────────────────────────────────────
+     Each row states its verdict in words; the leading bar repeats it. */
+  .aegis-xchecks {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .aegis-xcheck {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--emad-radius-control);
+    background: var(--emad-surface-raised);
+    border-left: 2px solid var(--emad-text-tertiary);
+  }
+  .aegis-xcheck[data-ok='true'] {
+    border-left-color: var(--emad-status-positive);
+  }
+  .aegis-xcheck[data-ok='false'] {
+    border-left-color: var(--emad-status-caution);
+  }
+  .aegis-xcheck .cap {
+    color: var(--emad-text-secondary);
+  }
+
+  .aegis-xnote {
+    margin: 10px 0 0;
+    font-size: var(--emad-type-dense);
+    line-height: var(--emad-type-leading-meta);
+    color: var(--emad-text-tertiary);
+  }
+  /* A health verdict inside a key/value strip. The strip's `.v` slot normally
+     holds a large tabular figure; a status badge is the right thing there
+     instead of a word in a huge mono face. */
+  .aegis-xhealth {
+    margin: 0;
+    line-height: var(--emad-type-leading-figure);
+  }
+  .aegis-xhealth .aegis-sev {
+    font-size: var(--emad-type-body);
+  }
+  .aegis-xsummary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* ── Inspector table ────────────────────────────────────────────────────
+     Dense, monospaced numerics, sticky heading. No zebra striping; rows are
+     separated by a single hairline. */
+  .aegis-xtable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--emad-type-dense);
+  }
+  .aegis-xtable th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 6px 10px 6px 0;
+    text-align: left;
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+    background: var(--emad-surface-raised);
+    border-bottom: 1px solid var(--emad-border-subtle);
+  }
+  .aegis-xtable td {
+    padding: 6px 10px 6px 0;
+    color: var(--emad-text-primary);
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .aegis-xtable tr:last-child td {
+    border-bottom: 0;
+  }
+
+  /* ── The twelve-column workspace grid ─────────────────────────────────
+     The inspector is laid out on a real 12-column grid rather than two
+     half-width columns, because the two rows it needs are *deliberately*
+     asymmetric: the evidence row is 5/7 and the ledger row is 4/8. Two
+     fr-columns cannot express that, and forcing both rows to the same split
+     would give the narrow panels content they do not need and take width from
+     the ones that do. */
+  .aegis-xgrid12 {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 16px;
+    padding: 16px;
+    align-items: start;
+  }
+  .aegis-span5 {
+    grid-column: span 5;
+  }
+  .aegis-span7 {
+    grid-column: span 7;
+  }
+  .aegis-span4 {
+    grid-column: span 4;
+  }
+  .aegis-span8 {
+    grid-column: span 8;
+  }
+  .aegis-span12 {
+    grid-column: span 12;
+  }
+  /* Panels stacked inside a span read as one column of evidence, not as a
+     dashboard of unrelated cards. */
+  .aegis-xgrid12 > * {
+    min-width: 0;
+  }
+
+  /* ── System grid (multi-system command grid) ─────────────────────────── */
+  /* Six-across summary strip, one cell per subsystem. Two across on a phone,
+     three on a tablet, six only when each cell can still hold a label and a
+     figure without truncating either. */
+  .aegis-kpi6 {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+    padding: 16px 16px 0;
+  }
+  .aegis-kpi6 > div {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--emad-border-subtle-soft);
+    border-radius: var(--emad-radius-card);
+    background: var(--emad-surface-panel);
+  }
+  .aegis-kpi6 .k {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+  }
+  /* The subsystem name is the cell's identity, so it wraps rather than
+     truncates — at six across, "TRACK CORRELATI…" identifies nothing. The
+     verdict below repeats the state anyway, so the name can afford the lines. */
+  .aegis-kpi-name {
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+  .aegis-kpi6 .v {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px;
+    min-width: 0;
+    font-family: var(--emad-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--emad-type-subheading);
+    font-weight: 600;
+    line-height: var(--emad-type-leading-subheading);
+    color: var(--emad-text-primary);
+  }
+  .aegis-kpi6 .v .aegis-sev {
+    flex: none;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-flex;
+  }
+  .aegis-kpi6 .v .aegis-sev span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .aegis-kpi6 .n {
+    font-size: var(--emad-type-dense);
+    line-height: var(--emad-type-leading-meta);
+    color: var(--emad-text-secondary);
+  }
+
+  .aegis-xsystems {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    padding: 16px;
+    align-items: stretch;
+  }
+  .aegis-xsystem {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid var(--emad-border-subtle-soft);
+    border-radius: var(--emad-radius-card);
+    background: var(--emad-surface-panel);
+  }
+  /* The card's own header band, raised a step so the title reads as the card's
+     caption rather than as body copy. */
+  .aegis-xsystem-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 12px 12px 0;
+    padding: 6px 8px;
+    border-radius: var(--emad-radius-control);
+    background: var(--emad-surface-raised);
+  }
+  .aegis-xsystem-idx {
+    font-family: var(--emad-font-mono);
+    font-size: var(--emad-type-dense);
+    color: var(--emad-text-secondary);
+    flex: none;
+  }
+  .aegis-xsystem-title {
+    font-size: var(--emad-type-secondary);
+    font-weight: 600;
+    line-height: var(--emad-type-leading-secondary);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-primary);
+    margin: 0;
+    min-width: 0;
+    /* A card's name wraps to a second line rather than truncating. The name is
+       the card's identity — "TRACK CORRELAT…" identifies nothing — and the
+       badge beside it is a status, which can yield width before a name can. */
+    overflow-wrap: break-word;
+  }
+  .aegis-xsystem-body {
+    padding: 12px;
+    flex: 1;
+  }
+  /* Two-across labelled tiles. Two, not three: a label like "NOT CURRENT" is
+     longer than the tile it would sit above at a three-across density, and a
+     wrapped label in a metric strip reads as a mistake. */
+  .aegis-xsystem-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .aegis-xsystem-metric {
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: var(--emad-radius-control);
+    background: var(--emad-surface-raised);
+  }
+  /* Labels and detail lines inside the inspector and the system grid.
+     These sit on ceramic (panel) and on the raised mist tiles. Tertiary is
+     1.51:1-and-below on neither: it is 4.52:1 on ceramic, which passes AA by
+     0.02, and 3.64:1 on mist, which does not pass at all. Secondary is the
+     documented pairing for both surfaces (4.83:1 on mist, 6.01:1 on ceramic)
+     and still reads as a supporting label rather than as body copy. */
+  .aegis-xsystem-metric .k {
+    margin: 0 0 2px;
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-secondary);
+    overflow-wrap: break-word;
+  }
+  .aegis-xsystem-metric .v {
+    margin: 0;
+    font-family: var(--emad-font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: var(--emad-type-body);
+    font-weight: 600;
+    line-height: var(--emad-type-leading-body);
+    color: var(--emad-text-primary);
+  }
+  /* The foot of every card: the context string on the left, the way onward on
+     the right. Both ends are useful only together — a button with no context is
+     an action with no precondition. */
+  .aegis-xsystem-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--emad-border-subtle-soft);
+    background: var(--emad-surface-raised);
+    border-radius: 0 0 var(--emad-radius-card) var(--emad-radius-card);
+  }
+  .aegis-xsystem-attn {
+    margin-top: 4px;
+  }
+  /* The device inventory a subsystem is actually made of. It sits under the
+     cell's own figures because the figures say how many and the inventory says
+     which. */
+  .aegis-xsystem-inventory {
+    margin-top: 10px;
+    border-top: 1px solid var(--emad-border-subtle-soft);
+    padding-top: 8px;
+  }
+  .aegis-xsystem-inventory .aegis-xtable th {
+    position: static;
+  }
+  /* A short form inside a panel: labelled fields, a note that says what a
+     blank means, and one button. */
+  .aegis-xform {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .aegis-xform-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .aegis-xfield {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 160px;
+    min-width: 0;
+  }
+  .aegis-xfield > .k {
+    color: var(--emad-text-tertiary);
+    font-size: var(--emad-type-dense);
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+  }
+  .aegis-xfield input,
+  .aegis-xfield select {
+    min-height: var(--emad-control-height);
+    padding: 6px 8px;
+    background: var(--emad-surface-raised);
+    border: 1px solid var(--emad-border-control-soft);
+    border-radius: var(--emad-radius-control);
+    color: var(--emad-text-primary);
+    font-family: var(--emad-font-sans);
+    font-size: var(--emad-type-dense);
+  }
+  .aegis-xform-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .aegis-xsystem-attn > .cap {
+    margin: 0 0 6px;
+    color: var(--emad-text-tertiary);
+  }
+  .aegis-xsystem-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .aegis-xsystem-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .aegis-xsystem-foot .ctx {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--emad-font-mono);
+    font-size: var(--emad-type-dense);
+    color: var(--emad-text-secondary);
+  }
+  /* A list row that is also the link to its own detail. The affordance has to
+     be visible on the row, not only on its cursor. */
+  .aegis-xitem-link {
+    text-decoration: none;
+    transition: background var(--emad-motion-fast) var(--emad-ease);
+  }
+  .aegis-xitem-link:hover,
+  .aegis-xitem-link:focus-visible {
+    background: var(--emad-surface-hover);
+    border-radius: var(--emad-radius-control);
+  }
+
+  /* ── Docked telemetry tray (picture) ────────────────────────────────────
+     An ordinary in-flow block at the foot of the map column. `flex: none` is
+     stated rather than left to the default `flex: 0 1 auto`, because the
+     column is height-constrained and a shrinkable tray would silently compress
+     itself instead of the plot above it. No z-index and no shadow: the tray is
+     a panel, and a panel that floats over the map is a thing the operator has
+     to reason around. */
+.aegis-tray {
+  /* A floating dock on the plot, not a band under it (Alloy Pearl 5, "BOTTOM
+     DOCKED MULTI-SYSTEM TELEMETRY TRAY": absolutely positioned at the bottom of
+     the canvas). In flow it subtracted its own height from the only thing it
+     describes — at a 720px viewport the plot was already at its floor, so a
+     band of dock is not information added, it is map removed. */
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  right: 14px;
+  z-index: 5;
+  border: 1px solid var(--emad-border-control-soft);
+  border-radius: var(--emad-radius-float);
+  /* Opaque, not translucent. The dock reads as a floating panel from its
+     border and shadow; a see-through background would let the map show through
+     behind text the operator has to read, and its contrast would then depend on
+     whatever happens to be underneath. */
+  background: var(--emad-surface-overlay);
+  box-shadow: var(--emad-shadow-float);
+}
+  .aegis-tray-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 16px;
+    border-bottom: 1px solid var(--emad-border-subtle-soft);
+    flex-wrap: wrap;
+  }
+  /* The one-line answer the collapsed tray still owes its operator: which
+     entities the figures belong to. Truncates rather than pushing the mode
+     badge off the right edge. */
+  .aegis-tray-headline {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--emad-type-dense);
+    color: var(--emad-text-secondary);
+  }
+  .aegis-tray-cells {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+  .aegis-tray-cell {
+    min-width: 0;
+    padding: 10px 16px;
+  }
+  .aegis-tray-cell + .aegis-tray-cell {
+    border-left: 1px solid var(--emad-border-subtle-soft);
+  }
+  .aegis-tray-cell .k {
+    margin: 0 0 4px;
+    font-size: var(--emad-type-dense);
+    font-weight: 600;
+    letter-spacing: var(--emad-type-tracking-label);
+    text-transform: uppercase;
+    color: var(--emad-text-tertiary);
+  }
+  .aegis-tray-cell .v {
+    margin: 0;
+    font-size: var(--emad-type-secondary);
+    line-height: var(--emad-type-leading-secondary);
+    color: var(--emad-text-primary);
+    /* A long external ref or coordinate must ellipsize rather than widen its
+       cell and push the rest of the row off the dock. */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .aegis-tray-freshness {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  .aegis-tray-freshness .aegis-sev {
+    font-size: var(--emad-type-dense);
+    padding: 2px 6px;
   }
 }
 
@@ -1486,6 +2348,53 @@
   .aegis-panel {
     padding: 14px;
   }
+  /* Twelve columns stop being readable before they stop fitting: below this
+     width every span collapses to full width rather than to some arbitrary
+     fraction, because a 4-column panel holding a data table is a worse panel
+     than a full-width one. */
+  .aegis-xgrid12 {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+  .aegis-span5,
+  .aegis-span7,
+  .aegis-span4,
+  .aegis-span8 {
+    grid-column: span 1;
+  }
+  /* The two inspector columns are a reading convenience, not a requirement:
+     below this width they stack so neither column is squeezed to a column of
+     truncated identifiers. */
+  .aegis-xgrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px;
+  }
+  .aegis-xcol > .aegis-panel {
+    margin-bottom: 12px;
+  }
+  /* Six stages will not hold their notes at this width, so they fold to three
+     rather than shrinking the figures below a readable size. */
+  .aegis-chain {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .aegis-chain-cell:nth-child(4) {
+    border-left: 0;
+  }
+  .aegis-chain-cell:nth-child(n + 4) {
+    border-top: 1px solid var(--emad-border-subtle-soft);
+  }
+  .aegis-xsystems {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    padding: 12px;
+  }
+  .aegis-kpi6 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 12px 12px 0;
+  }
 }
 
 /* When the bar's single row cannot fit every navigation item, the navigation
@@ -1494,28 +2403,9 @@
    bar's width but never its content, and the unauthenticated operator chip is
    wider than the signed-in one — the same viewport fits or does not depending
    on session state. */
-.topbar-shell--navrows .aegis-topbar {
-  flex-wrap: wrap;
-  row-gap: 6px;
-}
 /* Nothing measured above may change when this state toggles — the brand,
    including its subline, and the status cluster keep their natural widths, or
    the measurement would feed back into itself and oscillate. */
-.topbar-shell--navrows .aegis-nav {
-  order: 3;
-  /* `flex: 0 0 100%`, not `flex-basis: 100%`: the base `flex: 0 1 auto`
-     leaves the nav shrinkable, and a shrinkable full-basis item simply
-     squeezes back onto the first line instead of wrapping. */
-  flex: 0 0 100%;
-  padding-top: 4px;
-  border-top: 1px solid var(--emad-border-subtle-soft);
-}
-.topbar-shell--navrows .aegis-topright {
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  min-width: 0;
-}
 
 @media (max-width: 820px) {
   .aegis-topbar,
@@ -1524,25 +2414,14 @@
     padding-left: 12px;
     padding-right: 12px;
   }
-  .aegis-sys-health,
-  .aegis-operator-id {
-    display: none;
-  }
   .aegis-chipline,
   .aegis-listview {
     padding-left: 12px;
     padding-right: 12px;
   }
-  .aegis-timestrip {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-  .aegis-timestrip > div {
-    padding: 10px 12px;
-  }
-  .aegis-timestrip .v {
-    font-size: var(--emad-type-heading);
-    line-height: var(--emad-type-leading-heading);
-  }
+
+
+
   .aegis-listhead {
     padding-top: 14px;
   }
@@ -1551,5 +2430,41 @@
   }
   .aegis-kvrow {
     grid-template-columns: 130px minmax(0, 1fr);
+  }
+  /* Two stages per row once the tablet width cannot hold three. */
+  .aegis-chain {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .aegis-chain-cell:nth-child(odd) {
+    border-left: 0;
+  }
+  .aegis-chain-cell:nth-child(n + 3) {
+    border-top: 1px solid var(--emad-border-subtle-soft);
+  }
+.aegis-xsystem-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .aegis-kpi6 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 12px 12px 0;
+  }
+.aegis-xsystems {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* The tray cells stop being columns and become a wrapping row of blocks: a
+     squeezed column of ellipsised figures is worse than an extra line. */
+  .aegis-tray-cells {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  }
+  .aegis-tray-cell {
+    padding: 10px 12px;
+  }
+  .aegis-tray-cell:nth-child(2n) {
+    border-left: 0;
+  }
+  .aegis-tray-cell:nth-child(n + 3) {
+    border-top: 1px solid var(--emad-border-subtle-soft);
   }
 }

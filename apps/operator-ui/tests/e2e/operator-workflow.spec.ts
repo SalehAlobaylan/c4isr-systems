@@ -128,15 +128,15 @@ test('an operator can see an event footprint on the map', async ({ page }, testI
 
   // The layer is operator-controllable: a footprint can cover a whole city and
   // an operator may need it out of the way to see what is underneath. The
-  // controls live behind the Layers popover, so it has to be opened first.
-  await page.getByRole('button', { name: 'Layers', exact: true }).click()
-  const toggle = page.getByRole('checkbox', { name: 'Event areas' })
-  await expect(toggle).toBeChecked()
+  // controls are chips in the plot console, pressed while the layer is drawn.
+  const toggle = page.getByRole('button', { name: /^Areas/ })
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true')
 
   // Turning it off must actually remove the footprint's legend entry, so an
   // operator can tell the layer is off rather than assuming there is nothing
   // to see.
-  await toggle.uncheck()
+  await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false')
   await expect(areaLegend).toHaveCount(0)
 })
 
@@ -148,31 +148,83 @@ test('operator can follow evidence to outcome and inspect it on the map', async 
   const canvas = page.locator('.maplibregl-canvas')
   await expect(canvas).toBeVisible()
   await expect(page.locator('[data-map-ready="true"]')).toBeVisible()
-  await page.getByRole('button', { name: 'Measure', exact: true }).click()
+  // Measurement has one owner: the plot toolbar's Ruler, which toggles the
+  // mode. The board is collapsed on arrival, so the toolbar is on screen and
+  // the plot is clear - which is the state this test is about.
+  await page.getByRole('button', { name: 'Ruler', exact: true }).click()
   await expect(page.getByText('Click the plot to set the start point.', { exact: true })).toBeVisible()
 
-  // The board overlay and the timeline control sit above the plot, and the legend
-  // column and mode switch sit over its lower-left and lower-right corners, so
-  // the clickable plot is a band in between. Both edges are measured rather
-  // than guessed: a hardcoded fraction of the canvas height silently became a
-  // click on chrome once the chrome grew, which is exactly the kind of test
-  // that stops testing.
-  await page.getByRole('button', { name: /Board · live plot/ }).click()
+// The board is a floating strip over the plot and the legend occupies the
+  // lower-left corner. Neither bounds the clickable area across the full
+  // width, so a single global band is the wrong model - and modelling it that
+  // way is what made this test brittle: a hardcoded fraction of the canvas
+  // height silently became a click on chrome once the chrome grew, which is
+  // exactly the kind of test that stops testing.
+  await page.getByRole('button', { name: /Board .* live plot/ }).click()
 
   const wrap = await page.locator('.aegis-mapwrap').boundingBox()
   const board = await page.locator('.aegis-mapboard').boundingBox()
-  const legends = await page.locator('.aegis-maplegends').boundingBox()
-  if (!wrap) throw new Error('map wrap did not expose a bounding box')
+  const canvasBox = await page.locator('.maplibregl-canvas').boundingBox()
+  if (!wrap || !canvasBox) throw new Error('map chrome did not expose a bounding box')
 
-  const plotTop = board ? board.y + board.height : wrap.y
-  const plotBottom = legends ? legends.y : wrap.y + wrap.height
-  const plotHeight = plotBottom - plotTop
-  if (plotHeight < 60) throw new Error('no usable plot area below the map chrome')
+  // Free plot at the probe column. The board hangs from the top; the legend and
+  // the measurement readout hang from the bottom. Neither the legend nor the
+  // readout spans the full width, so they bound the column only where they
+  // actually reach it — measuring them across the whole plot is what made this
+  // brittle before, and ignoring them entirely is what let the readout swallow a
+  // click that the test then believed it had made on the map.
+  // The drawer carries the instruments now, so it bounds the free plot on the
+  // right as well as the top. The probe is placed inside what is left rather
+  // than at a fixed fraction of the canvas, which is how it ended up under the
+  // drawer the moment the drawer grew.
+  const railBox = await page.locator('.aegis-rail').boundingBox()
+  const probeX = railBox
+    ? canvasBox.x + (railBox.x - canvasBox.x) * 0.55
+    : canvasBox.x + wrap.width * 0.62
+  // The board hangs from the top; the legend and the measurement readout hang
+  // from the bottom. Each bounds the column only where it actually reaches it:
+  // measuring them across the whole plot is what made this brittle before, and
+  // ignoring them entirely is what let chrome swallow a click the test then
+  // believed it had made on the map.
+  const furniture = await page
+    .locator(
+      '.aegis-mapboard, .aegis-rail, .aegis-maplegends, .aegis-measure',
+    )
+    .evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const box = node.getBoundingClientRect()
+        return { x: box.x, width: box.width, top: box.y, bottom: box.y + box.height }
+      }),
+    )
+  const covers = (box: { x: number; width: number }) => box.x <= probeX && probeX <= box.x + box.width
+  const above = furniture.filter((box) => covers(box) && box.top <= canvasBox.y + canvasBox.height * 0.5)
+  const below = furniture.filter((box) => covers(box) && box.top > canvasBox.y + canvasBox.height * 0.5)
 
-  // Mid-height of the free band, horizontally past the legend column.
-  const midY = plotTop - wrap.y + plotHeight * 0.5
-  await canvas.click({ position: { x: wrap.width * 0.62, y: midY - plotHeight * 0.15 } })
-  await canvas.click({ position: { x: wrap.width * 0.78, y: midY + plotHeight * 0.15 } })
+  const freeTop = above.length ? Math.max(...above.map((box) => box.bottom)) : canvasBox.y
+  const freeBottom = below.length ? Math.min(...below.map((box) => box.top)) : canvasBox.y + canvasBox.height
+  const freeHeight = freeBottom - freeTop
+  if (freeHeight < 40) throw new Error('no usable plot area at the probe column')
+
+  // Hit-test the point actually clicked instead of trusting a proxy for it:
+  // anything that is not the map canvas would swallow the measurement.
+  const probe = { x: probeX, y: (freeTop + freeBottom) * 0.5 }
+  const swallower = await page.evaluate(
+    ({ x, y }) => {
+      const el = document.elementFromPoint(x, y)
+      return el ? `${el.tagName}.${el.className}` : 'nothing'
+    },
+    probe,
+  )
+  expect(swallower).toContain('canvas')
+
+  const midY = (freeTop - canvasBox.y + freeBottom - canvasBox.y) * 0.5
+  // Both points stay in the free column. The second used to sit at a fixed 78%
+  // of the width, which is inside the drawer now that the drawer carries the
+  // instruments: the click landed on a layer chip and the test then believed it
+  // had measured.
+  const probeOffset = probeX - canvasBox.x
+  await canvas.click({ position: { x: probeOffset, y: midY - freeHeight * 0.15 } })
+  await canvas.click({ position: { x: probeOffset - 60, y: midY + freeHeight * 0.15 } })
   // Matched without exact punctuation: the product's wording uses an em dash and
   // has changed once, which is why this assertion sat stale for so long.
   await expect(page.getByText('Measurement complete', { exact: false })).toBeVisible()
