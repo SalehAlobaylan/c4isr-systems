@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/presentation"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -52,7 +55,15 @@ type IngestResult struct {
 // observation is retained even when later processing fails, preserving the
 // evidence layer.
 func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, error) {
+	if scopeErr := access.Require(ctx, "observations.ingest"); scopeErr != nil {
+		return IngestResult{}, scopeErr
+	}
+
 	in.Normalize()
+	in.ID = access.ResourceID(ctx, "observation", in.ID)
+	if err := access.RequireSource(ctx, in.SourceID); err != nil {
+		return IngestResult{}, err
+	}
 	spanCtx, span := observability.StartSpan(ctx, "c4isr.observation.ingest",
 		attribute.String("observation.id", in.ID),
 		attribute.String("source.id", in.SourceID),
@@ -62,7 +73,7 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 	defer func() { observability.EndSpan(span, spanErr) }()
 
 	now := s.now()
-	if err := in.Validate(now); err != nil {
+	if err := in.Validate(freshness.Now(ctx, now)); err != nil {
 		spanErr = err
 		s.publishRejected(ctx, in, err)
 		return IngestResult{}, err
@@ -82,6 +93,7 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 	}
 
 	obs := Observation{
+		SemanticKind: in.SemanticKind, GeometryRole: in.GeometryRole,
 		ID:         in.ID,
 		SourceID:   in.SourceID,
 		Type:       in.Type,
@@ -126,6 +138,7 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 // never see an area.
 func observationEvent(obs Observation, duplicate, retry bool) events.ObservationReceived {
 	ev := events.ObservationReceived{
+		SemanticKind: obs.SemanticKind, GeometryRole: obs.GeometryRole,
 		At:            obs.ReceivedAt,
 		ObservationID: obs.ID,
 		SourceID:      obs.SourceID,
@@ -179,17 +192,35 @@ func rejectionReason(cause error) string {
 
 // Get returns an observation by id.
 func (s *Service) Get(ctx context.Context, id string) (Observation, error) {
+	if scopeErr := access.Require(ctx, "observations.read"); scopeErr != nil {
+		return Observation{}, scopeErr
+	}
+
+	var err error
+	id, err = presentation.ResolveObservation(ctx, id)
+	if err != nil {
+		return Observation{}, err
+	}
+
 	return s.repo.Get(ctx, id)
 }
 
 // List returns observations newest first.
 func (s *Service) List(ctx context.Context, filter ListFilter, limit, offset int) ([]Observation, int, error) {
+	if scopeErr := access.Require(ctx, "observations.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	return s.repo.List(ctx, filter, ClampLimit(limit), max(offset, 0))
 }
 
 // MarkProcessed records that the platform processed an observation. Other
 // modules (tracks) call this once the observation is attached as evidence.
 func (s *Service) MarkProcessed(ctx context.Context, id string) error {
+	if scopeErr := access.Require(ctx, "observations.process"); scopeErr != nil {
+		return scopeErr
+	}
+
 	return s.repo.MarkProcessed(ctx, id)
 }
 

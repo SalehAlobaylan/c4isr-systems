@@ -25,6 +25,10 @@ case "$command_name" in
 esac
 
 goose_bin="${GOOSE_BIN:-goose}"
+# Windows paths may carry backslashes; normalise them so a POSIX shell can exec them.
+case "$goose_bin" in
+    *\\*) goose_bin=$(printf '%s' "$goose_bin" | tr '\\' '/') ;;
+esac
 if [ ! -x "$goose_bin" ] && ! command -v "$goose_bin" >/dev/null 2>&1; then
     echo "goose is required; run task setup or set GOOSE_BIN" >&2
     exit 1

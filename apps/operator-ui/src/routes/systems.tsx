@@ -1,6 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useWorkspace } from '@/lib/workspaceContext'
+import { PublicSystemsWorkspace, SimulationSystemsWorkspace } from '@/features/workspace/SystemsWorkspace'
+import { useQuery } from '@/lib/scopedQueries'
+
 import { Link } from '@tanstack/react-router'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import { Page } from '@/components/layout/Page'
 import {
@@ -10,7 +13,7 @@ import {
   SeverityBadge,
 } from '@/components/shared/badges'
 import { EmptyState, ErrorState } from '@/components/shared/states'
-import { api, fetchHealth } from '@/lib/api'
+import { useAPI } from '@/lib/api'
 import { formatRelative, formatTimestamp, truncateId } from '@/lib/format'
 import {
   TONE_GLYPH,
@@ -18,7 +21,7 @@ import {
   presentValue,
   type SemanticTone,
 } from '@/lib/operationalPresentation'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 
 const LIST_LIMIT = 500
 
@@ -164,16 +167,19 @@ function Cell({ cell, onRetry }: { cell: SystemCell; onRetry: () => void }) {
   )
 }
 
-export function SystemsPage() {
+export function LegacySystemsPage() {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const healthQuery = useQuery({
     queryKey: queryKeys.health(),
-    queryFn: () => fetchHealth(),
+    queryFn: () => api.fetchHealth(),
     refetchInterval: 30_000,
   })
 
   const sourceQuery = useQuery({
     queryKey: queryKeys.sources.list({ limit: LIST_LIMIT }),
     queryFn: () => api.listSources({ limit: LIST_LIMIT }),
+    refetchInterval: 15_000,
   })
 
   const observationQuery = useQuery({
@@ -230,13 +236,16 @@ export function SystemsPage() {
 
     /* ── 01 Sources ─────────────────────────────────────────────────────── */
     const sourceStatus = countBy(sources, (item) => item.status)
+    const hasIngestion = sources.some((source) => source.ingestion)
+    const unavailable = (source: (typeof sources)[number]) => source.status === 'offline' || source.ingestion?.state === 'unavailable'
+    const sourceTone = (source: (typeof sources)[number]) => presentValue(source.ingestion?.state ?? source.status, { active: 'info', current: 'info', stale: 'caution', degraded: 'caution', unavailable: 'critical', unknown: 'caution', disabled: 'neutral' }).tone
     const sourceFreshest = sources
       .map((item) => item.updatedAt)
       .filter(Boolean)
       .sort()
       .at(-1)
     const degradedSources = sources.filter(
-      (item) => item.status === 'degraded' || item.status === 'offline',
+      (item) => item.status === 'degraded' || unavailable(item) || (item.ingestion && (item.ingestion.state !== 'current' || item.ingestion.pendingPublications > 0)),
     )
 
     /* ── 02 Observations ───────────────────────────────────────────────── */
@@ -315,34 +324,34 @@ export function SystemsPage() {
       headline: `${sources.length}`,
       verdict:
         degradedSources.length > 0
-          ? degradedSources.some((s) => s.status === 'offline')
+          ? degradedSources.some(unavailable)
             ? 'Offline'
             : 'Degraded'
           : sources.length > 0
             ? 'Nominal'
             : 'None registered',
       verdictTone:
-        degradedSources.some((s) => s.status === 'offline')
+        degradedSources.some(unavailable)
           ? 'critical'
           : degradedSources.length > 0
             ? 'caution'
             : sources.length > 0
               ? 'positive'
               : 'neutral',
-      context: sourceFreshest
+      context: hasIngestion ? 'Provider query coverage; missing records do not prove absence.' : sourceFreshest
         ? `last source update ${formatRelative(sourceFreshest)}`
         : 'no sources registered',
       metrics: [
         { key: 'Sources', value: String(sources.length) },
-        { key: 'Active', value: String(sourceStatus.get('active') ?? 0) },
+        { key: hasIngestion ? 'Current coverage' : 'Active', value: String(hasIngestion ? sources.filter((source) => source.ingestion?.state === 'current').length : (sourceStatus.get('active') ?? 0)) },
         {
-          key: 'Degraded',
-          value: String((sourceStatus.get('degraded') ?? 0) + (sourceStatus.get('offline') ?? 0)),
+          key: hasIngestion ? 'Needs attention' : 'Degraded',
+          value: String(degradedSources.length),
         },
       ],
       attention: degradedSources.slice(0, 6).map((source) => ({
         label: truncateId(source.name || source.id, 18),
-        tone: presentValue(source.status, { active: 'info', degraded: 'caution' }).tone,
+        tone: sourceTone(source),
         count: 1,
       })),
       /* The devices themselves, not just their count. The reference grid names
@@ -357,11 +366,12 @@ export function SystemsPage() {
               <th scope="col">Device</th>
               <th scope="col">Type</th>
               <th scope="col">Status</th>
+              {hasIngestion && <th scope="col">Provider coverage</th>}
             </tr>
           </thead>
           <tbody>
             {sources.slice(0, 8).map((source) => {
-              const tone = presentValue(source.status, { active: 'info', degraded: 'caution' }).tone
+              const tone = presentValue(source.status, { active: 'info', degraded: 'caution', offline: 'critical' }).tone
               return (
                 <tr key={source.id}>
                   <td className="truncate" title={source.name || source.id}>
@@ -374,6 +384,13 @@ export function SystemsPage() {
                       <span>{source.status.toUpperCase()}</span>
                     </span>
                   </td>
+                  {hasIngestion && <td>
+                    {source.ingestion ? <span>
+                      <strong>{source.ingestion.state.toUpperCase()}</strong>
+                      {source.ingestion.lastSuccessAt && <span> · last query {formatRelative(source.ingestion.lastSuccessAt)}</span>}
+                      {source.ingestion.pendingPublications > 0 && <span> · {source.ingestion.pendingPublications} awaiting publication</span>}
+                    </span> : 'Not admitted'}
+                  </td>}
                 </tr>
               )
             })}
@@ -858,3 +875,5 @@ export function SystemsPage() {
     </Page>
   )
 }
+
+export function SystemsPage() { const {session}=useWorkspace(); const [operations,setOperations]=useState(false); if(session.resource.partition==='PUBLIC_EVIDENCE')return <PublicSystemsWorkspace/>; return <div className="flex h-full min-h-0 flex-col">{session.resource.partition==='EXERCISE_OBSERVATION'&&<div className="flex shrink-0 gap-2 border-b border-edge bg-panel px-4 py-2"><button className="ux-button" aria-pressed={!operations} onClick={()=>setOperations(false)}>Simulation systems</button><button className="ux-button" aria-pressed={operations} onClick={()=>setOperations(true)}>Operations diagnostics</button></div>}<div className="min-h-0 flex-1">{operations&&session.resource.partition==='EXERCISE_OBSERVATION'?<LegacySystemsPage/>:<SimulationSystemsWorkspace/>}</div></div> }

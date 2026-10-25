@@ -13,6 +13,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 )
 
@@ -145,6 +146,7 @@ func (d *Dispatcher) Subscribe(topic string, handler Handler) {
 // Publish delivers ev to all subscribers of its topic in registration order.
 // A panicking handler cannot take down the publisher or block other handlers.
 func (d *Dispatcher) Publish(ctx context.Context, ev Event) {
+	ctx = access.Projection(ctx)
 	if ev == nil {
 		return
 	}
@@ -193,6 +195,8 @@ func (SourceUpdated) Topic() string { return TopicSourceUpdated }
 
 // ObservationReceived is published after an observation is durably stored.
 type ObservationReceived struct {
+	SemanticKind  string
+	GeometryRole  string
 	At            time.Time
 	ObservationID string
 	SourceID      string

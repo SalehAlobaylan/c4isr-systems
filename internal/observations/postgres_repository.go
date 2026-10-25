@@ -6,15 +6,15 @@ import (
 	"errors"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 )
 
 // ErrDuplicateID is returned when a client-supplied observation id exists.
@@ -33,6 +33,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 // Create inserts an observation, distinguishing duplicate ids.
 func (r *PostgresRepository) Create(ctx context.Context, obs Observation) (Observation, error) {
 	params := dbgen.CreateObservationParams{
+		SemanticKind: SemanticKind(obs.SemanticKind, obs.Type, obs.Area != nil), GeometryRole: obs.GeometryRole,
 		ID:              obs.ID,
 		SourceID:        obs.SourceID,
 		ObservationType: obs.Type,
@@ -41,6 +42,12 @@ func (r *PostgresRepository) Create(ctx context.Context, obs Observation) (Obser
 		ProcessedAt:     tsOrNull(obs.ProcessedAt),
 		Payload:         pgconv.JSONB(obs.Payload),
 		TrackHint:       pgconv.TextPtr(obs.TrackHint),
+	}
+	if params.GeometryRole == "" {
+		params.GeometryRole = "reported_location"
+		if obs.Area != nil {
+			params.GeometryRole = "reported_extent"
+		}
 	}
 	if obs.Position != nil {
 		params.HasPosition = true
@@ -57,7 +64,7 @@ func (r *PostgresRepository) Create(ctx context.Context, obs Observation) (Obser
 		params.AreaKind = &kind
 	}
 
-	row, err := dbgen.New(r.pool).CreateObservation(ctx, params)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CreateObservation(ctx, params)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return Observation{}, ErrDuplicateID
@@ -72,7 +79,7 @@ func (r *PostgresRepository) Create(ctx context.Context, obs Observation) (Obser
 
 // Get loads an observation by id.
 func (r *PostgresRepository) Get(ctx context.Context, id string) (Observation, error) {
-	row, err := dbgen.New(r.pool).GetObservation(ctx, id)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).GetObservation(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Observation{}, apperr.NotFound("observation", id)
@@ -85,7 +92,7 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Observation, e
 // List returns observations newest first, optionally filtered by track or by
 // area.
 func (r *PostgresRepository) List(ctx context.Context, filter ListFilter, limit, offset int) ([]Observation, int, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	params := dbgen.ListObservationsParams{LimitCount: int32(limit), OffsetCount: int32(offset)}
 
 	if filter.TrackID != "" {
@@ -146,7 +153,7 @@ func (r *PostgresRepository) List(ctx context.Context, filter ListFilter, limit,
 
 // MarkProcessed records that the platform processed the observation.
 func (r *PostgresRepository) MarkProcessed(ctx context.Context, id string) error {
-	return dbgen.New(r.pool).MarkObservationProcessed(ctx, id)
+	return dbgen.New(platformdb.Scoped(r.pool)).MarkObservationProcessed(ctx, id)
 }
 
 // observationRow normalizes the generated row shapes (identical columns across
@@ -163,6 +170,8 @@ type observationRow struct {
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
 	AreaKind        *string
+	SemanticKind    string
+	GeometryRole    string
 	HasPosition     bool
 	Lat             float64
 	Lng             float64
@@ -198,6 +207,7 @@ func fromRow(row observationRow) Observation {
 		position = &geo.Point{Lat: row.Lat, Lng: row.Lng}
 	}
 	return Observation{
+		SemanticKind: row.SemanticKind, GeometryRole: row.GeometryRole,
 		ID:          row.ID,
 		SourceID:    row.SourceID,
 		Type:        row.ObservationType,

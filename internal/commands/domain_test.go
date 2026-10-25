@@ -25,6 +25,7 @@ func TestCanTransition(t *testing.T) {
 			StateCancelled:    true,
 		},
 		StateAcknowledged: {
+			StateTimedOut:  true,
 			StateCompleted: true,
 			StateFailed:    true,
 			StateCancelled: true,

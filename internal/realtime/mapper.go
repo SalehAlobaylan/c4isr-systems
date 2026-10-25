@@ -188,9 +188,7 @@ func MapEnvelope(ev events.Event) Envelope {
 
 	case events.ScenarioRunStarted:
 		env.Data = map[string]any{
-			"runId":        e.RunID,
-			"scenarioName": e.ScenarioName,
-			"seed":         e.Seed,
+			"runId": e.RunID,
 		}
 	case events.ScenarioRunUpdated:
 		env.Data = map[string]any{"runId": e.RunID, "status": e.Status}

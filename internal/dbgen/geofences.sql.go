@@ -138,9 +138,17 @@ type GetGeofenceStateParams struct {
 	TrackID    string
 }
 
-func (q *Queries) GetGeofenceState(ctx context.Context, arg GetGeofenceStateParams) (GeofenceState, error) {
+type GetGeofenceStateRow struct {
+	GeofenceID string
+	TrackID    string
+	Inside     bool
+	Since      pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) GetGeofenceState(ctx context.Context, arg GetGeofenceStateParams) (GetGeofenceStateRow, error) {
 	row := q.db.QueryRow(ctx, getGeofenceState, arg.GeofenceID, arg.TrackID)
-	var i GeofenceState
+	var i GetGeofenceStateRow
 	err := row.Scan(
 		&i.GeofenceID,
 		&i.TrackID,
@@ -214,15 +222,23 @@ FROM geofence_states
 WHERE track_id = $1
 `
 
-func (q *Queries) ListGeofenceStatesByTrack(ctx context.Context, trackID string) ([]GeofenceState, error) {
+type ListGeofenceStatesByTrackRow struct {
+	GeofenceID string
+	TrackID    string
+	Inside     bool
+	Since      pgtype.Timestamptz
+	UpdatedAt  pgtype.Timestamptz
+}
+
+func (q *Queries) ListGeofenceStatesByTrack(ctx context.Context, trackID string) ([]ListGeofenceStatesByTrackRow, error) {
 	rows, err := q.db.Query(ctx, listGeofenceStatesByTrack, trackID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []GeofenceState{}
+	items := []ListGeofenceStatesByTrackRow{}
 	for rows.Next() {
-		var i GeofenceState
+		var i ListGeofenceStatesByTrackRow
 		if err := rows.Scan(
 			&i.GeofenceID,
 			&i.TrackID,

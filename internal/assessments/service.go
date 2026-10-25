@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
 )
 
@@ -28,6 +29,10 @@ func NewService(repo Repository, bus *events.Dispatcher) *Service {
 
 // Create records an assessment and publishes assessment.created.
 func (s *Service) Create(ctx context.Context, in CreateInput) (Assessment, error) {
+	if scopeErr := access.Require(ctx, "assessments.create"); scopeErr != nil {
+		return Assessment{}, scopeErr
+	}
+
 	in.Normalize()
 	if err := in.Validate(); err != nil {
 		return Assessment{}, err
@@ -70,11 +75,19 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Assessment, error
 
 // Get returns an assessment by id.
 func (s *Service) Get(ctx context.Context, id string) (Assessment, error) {
+	if scopeErr := access.Require(ctx, "assessments.read"); scopeErr != nil {
+		return Assessment{}, scopeErr
+	}
+
 	return s.repo.Get(ctx, id)
 }
 
 // List returns assessments matching an optional subject, newest first.
 func (s *Service) List(ctx context.Context, subjectType, subjectID string, limit, offset int) ([]Assessment, int, error) {
+	if scopeErr := access.Require(ctx, "assessments.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	limit = clampLimit(limit)
 	if offset < 0 {
 		offset = 0

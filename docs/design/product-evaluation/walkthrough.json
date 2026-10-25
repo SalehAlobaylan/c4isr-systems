@@ -1,0 +1,15 @@
+{
+  "capturedAt": "2026-10-25T10:24:32.616Z",
+  "defaultView": {
+    "scope": "World\n›\nWorld · configured evidence",
+    "time": "All retained dates",
+    "navigation": "Map\nSystems\nImagery\nAssessments\nContext packages"
+  },
+  "exportFlow": {
+    "selectedScope": "World\n›\nSaudi Arabia",
+    "selectedRegionId": "geoedition_c4a85c9db4f8946ba2d1786e261af1ed:country:SAU",
+    "exportAOI": "39.144,21.464,39.216,21.536",
+    "downloadFormat": "JSON context bundle",
+    "intelligenceTabs": "Image comparison\nScene catalogue\nAnalysis & processing\nAssessment review\nContext packages"
+  }
+}

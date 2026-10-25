@@ -13,7 +13,13 @@ func TestPermissionForOperationalRoutes(t *testing.T) {
 		path   string
 		want   string
 	}{
+		{http.MethodGet, "/api/v1/simulation-assets/models", "sim.scenarios.author"},
+		{http.MethodGet, "/api/v1/simulation-assets/models/id/manifest", "sim.scenarios.author"},
 		{http.MethodGet, "/api/v1/tracks", "tracks.read"},
+		{http.MethodGet, "/api/v1/public-context/records", "sources.read"},
+		{http.MethodGet, "/api/v1/public-context/records/id/history", "sources.read"},
+		{http.MethodGet, "/api/v1/assessments/reports", "assessments.read"},
+		{http.MethodPost, "/api/v1/assessments/report-proposals", "assessments.create"},
 		{http.MethodPost, "/api/v1/alerts/alr_1/acknowledge", "alerts.acknowledge"},
 		{http.MethodPost, "/api/v1/incidents", "incidents.create"},
 		{http.MethodPost, "/api/v1/commands/cmd_1/transition", "commands.transition"},
@@ -32,7 +38,14 @@ func TestPolicyFailsClosedAndRespectsPathSegments(t *testing.T) {
 		method string
 		path   string
 	}{
+		{http.MethodDelete, "/api/v1/simulation-assets/models/id"},
+		{http.MethodGet, "/api/v1/simulation-assets/models/id/truth"},
 		{http.MethodGet, "/api/v1/unknown"},
+		{http.MethodGet, "/api/v1/reference-datasets/example/unknown"},
+		{http.MethodPost, "/api/v1/reference-datasets/example/overwrite"},
+		{http.MethodGet, "/api/v1/public-events/example/truth"},
+		{http.MethodGet, "/api/v1/public-context/records/example/truth"},
+		{http.MethodPost, "/api/v1/public-context/records"},
 		{http.MethodDelete, "/api/v1/tracks/track-1"},
 		{http.MethodGet, "/api/v1/sources-admin"},
 		{http.MethodGet, "/api/v1//sources"},

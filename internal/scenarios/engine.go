@@ -15,12 +15,15 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/assets"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/classifications"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/commands"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/contextpackage"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/exerciseingest"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/geospatial"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/incidents"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/observations"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/sources"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/telemetry"
@@ -30,6 +33,8 @@ import (
 // EngineDeps are the application services the runner feeds. The runner uses
 // exactly the same ingestion boundaries as future external systems.
 type EngineDeps struct {
+	Ingress         *exerciseingest.Service
+	ContextPackages *contextpackage.Service
 	Sources         *sources.Service
 	Assets          *assets.Service
 	Observations    *observations.Service
@@ -119,19 +124,28 @@ func (m *entityMotion) lastAt() int64 {
 // the sequence of emitted facts is deterministic even under pause or speed
 // changes; wall-clock time is used only to pace the run and timestamp inputs.
 type engine struct {
-	runID  string
-	scope  RunScope
-	sc     *Scenario
-	deps   EngineDeps
-	repo   Repository
-	logger *slog.Logger
-	rng    *rand.Rand
+	contextBundles []contextpackage.Bundle
+	versionID      string
+	lastSequence   int
+	contacts       map[string]string
+	messages       map[string]exerciseingest.Stamp
+	messageIDs     map[string]string
+	epoch          time.Time
+	runID          string
+	scope          RunScope
+	sc             *Scenario
+	deps           EngineDeps
+	repo           Repository
+	logger         *slog.Logger
+	rng            *rand.Rand
 
 	assetIDs     map[string]bool
 	trackRefs    map[string]bool
 	incidentRefs map[string]string
 
+	actionMu      sync.Mutex
 	mu            sync.Mutex
+	executing     bool
 	paused        bool
 	stopped       bool
 	speed         float64
@@ -170,13 +184,15 @@ func newEngine(runID string, scope RunScope, sc *Scenario, seed int64, speed flo
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &engine{
+	eng := &engine{
+		contacts: map[string]string{}, messages: map[string]exerciseingest.Stamp{}, messageIDs: map[string]string{},
+		epoch:             defaultClock().Epoch,
 		runID:             runID,
 		scope:             scope,
 		sc:                sc,
 		deps:              deps,
 		repo:              repo,
-		logger:            logger.With("run_id", runID, "scenario", sc.Name),
+		logger:            logger.With("run_id", runID),
 		rng:               rand.New(rand.NewSource(seed)),
 		assetIDs:          map[string]bool{},
 		trackRefs:         map[string]bool{},
@@ -192,6 +208,10 @@ func newEngine(runID string, scope RunScope, sc *Scenario, seed int64, speed flo
 		seq:               map[string]int{},
 		onProgress:        onProgress,
 	}
+	for _, actor := range sc.Tracks {
+		eng.contacts[actor.ID] = scope.Track(ids.New("contact"))
+	}
+	return eng
 }
 
 type engineSnapshot struct {
@@ -239,6 +259,10 @@ func (e *engine) ownsAsset(assetID string) bool {
 
 // build precomputes the entire deterministic timeline.
 func (e *engine) build() error {
+	anchors, err := e.contextPositions()
+	if err != nil {
+		return err
+	}
 	for _, a := range e.sc.Assets {
 		e.assetIDs[e.scope.Asset(a.ID)] = true
 	}
@@ -270,6 +294,11 @@ func (e *engine) build() error {
 	}
 	for _, t := range e.sc.Tracks {
 		m := ensureMotion("track:" + t.ID)
+		if point, ok := anchors[t.ID]; ok {
+			m.start = point
+			m.hasStart = true
+			continue
+		}
 		if t.Start != nil {
 			m.start = t.Start.Point()
 			m.hasStart = true
@@ -286,6 +315,9 @@ func (e *engine) build() error {
 	var actions []scheduledAction
 	seq := 0
 	add := func(atMs int64, name string, run func(context.Context) error) (int, error) {
+		if atMs < 0 || atMs > maxRunMs {
+			return 0, apperr.Validation("scenario action exceeds the 31-day virtual horizon")
+		}
 		if len(actions) >= maxScheduledActions {
 			return 0, apperr.Validation("scenario schedules too many actions")
 		}
@@ -443,8 +475,9 @@ func (e *engine) build() error {
 				}
 				e.seq[trackRef]++
 				seqNo := e.seq[trackRef]
+				sourceAt := e.epoch.Add(time.Duration(at) * time.Millisecond)
 				if _, err := add(observationAt, "observe."+trackRef, func(ctx context.Context) error {
-					return e.emitObservation(ctx, ev, trackRef, point, seqNo)
+					return e.emitObservation(ctx, ev, trackRef, point, seqNo, sourceAt)
 				}); err != nil {
 					return err
 				}
@@ -454,7 +487,7 @@ func (e *engine) build() error {
 						return apperr.Validation("duplicate observation timeline is too large")
 					}
 					if _, err := add(duplicateAt, "observe.duplicate."+trackRef, func(ctx context.Context) error {
-						return e.emitObservation(ctx, ev, trackRef, point, seqNo)
+						return e.emitObservation(ctx, ev, trackRef, point, seqNo, sourceAt)
 					}); err != nil {
 						return err
 					}
@@ -630,16 +663,28 @@ func (e *engine) run(ctx context.Context) error {
 			}
 			return nil
 		}
+		e.actionMu.Lock()
+		e.mu.Lock()
+		paused := e.paused
+		stopped := e.stopped
+		e.mu.Unlock()
+		if paused || stopped {
+			e.actionMu.Unlock()
+			continue
+		}
 		next = e.popNext(next.Seq)
 		if next == nil {
+			e.actionMu.Unlock()
 			// A dynamic action may have been inserted ahead of the action we
 			// were waiting for. Re-select the head so virtual-time ordering
 			// remains authoritative under concurrent command injection.
 			continue
 		}
 		e.mu.Lock()
+		e.executing = true
 		e.virtualBaseMs = float64(next.AtMs)
 		e.lastResume = time.Now()
+		e.lastSequence = next.Seq
 		e.lastAction = next.Name
 		e.lastActionAt = next.AtMs
 		e.actionError = ""
@@ -649,16 +694,17 @@ func (e *engine) run(ctx context.Context) error {
 		}
 		e.mu.Unlock()
 		if err := e.persistEvent(ctx, next.Seq, EventRunning, ""); err != nil {
-			e.logger.Error("persist scenario action start", "sequence", next.Seq, "error", err)
+			e.logger.Error("persist scenario action start", "sequence", next.Seq, "error_code", apperr.CodeOf(err))
 			e.markFinished()
 			e.skipPending(ctx, err.Error())
+			e.actionMu.Unlock()
 			return err
 		}
 
 		actionErr := next.Run(ctx)
 		fatalActionErr := false
 		if actionErr != nil {
-			e.logger.Warn("scenario action failed", "action", next.Name, "error", actionErr)
+			e.logger.Warn("scenario action failed", "sequence", next.Seq, "error_code", apperr.CodeOf(actionErr))
 			e.mu.Lock()
 			e.actionError = actionErr.Error()
 			if item, ok := e.eventStates[next.Seq]; ok {
@@ -670,6 +716,7 @@ func (e *engine) run(ctx context.Context) error {
 			if err := e.persistEvent(ctx, next.Seq, EventFailed, actionErr.Error()); err != nil {
 				e.markFinished()
 				e.skipPending(ctx, err.Error())
+				e.actionMu.Unlock()
 				return err
 			}
 			fatalActionErr = apperr.Is(actionErr, apperr.CodeInternal)
@@ -693,20 +740,28 @@ func (e *engine) run(ctx context.Context) error {
 			if err := e.persistEvent(ctx, next.Seq, EventCompleted, ""); err != nil {
 				e.markFinished()
 				e.skipPending(ctx, err.Error())
+				e.actionMu.Unlock()
 				return err
 			}
 		}
 		if err := e.persistCursor(ctx, virtualTime, lastAction, lastActionAt, actionError); err != nil {
 			e.markFinished()
 			e.skipPending(ctx, err.Error())
+			e.actionMu.Unlock()
 			return err
 		}
 		e.reportProgress(false)
 		if fatalActionErr {
 			e.markFinished()
 			e.skipPending(ctx, actionErr.Error())
+			e.actionMu.Unlock()
 			return actionErr
 		}
+		e.mu.Lock()
+		e.executing = false
+		e.lastResume = time.Now()
+		e.mu.Unlock()
+		e.actionMu.Unlock()
 	}
 }
 
@@ -798,6 +853,11 @@ func (e *engine) scheduleAfterMany(ctx context.Context, actions []dynamicAction)
 			return apperr.Validation("dynamic action time is too large")
 		}
 		at := base + item.DelayMs
+		if at > maxRunMs {
+			e.reserved -= len(actions)
+			e.mu.Unlock()
+			return apperr.Validation("dynamic action exceeds the 31-day virtual horizon")
+		}
 		action := scheduledAction{AtMs: at, Seq: e.nextSeq, Name: item.Name, Run: item.Run}
 		reserved = append(reserved, action)
 		newEvents = append(newEvents, EventInspection{Sequence: action.Seq, AtMs: at, Name: action.Name, Status: EventPending})
@@ -902,7 +962,7 @@ func (e *engine) skipPending(ctx context.Context, errorMessage string) {
 		if err := e.withPersistence(ctx, func(persistCtx context.Context) error {
 			return e.repo.SkipPendingEvents(persistCtx, e.runID, errorMessage)
 		}); err != nil {
-			e.logger.Error("persist skipped scenario actions", "error", err)
+			e.logger.Error("persist skipped scenario actions", "error_code", apperr.CodeOf(err))
 		}
 	}
 	e.failPendingCommands(ctx, "scenario run ended before simulated command outcome")
@@ -940,13 +1000,15 @@ func (e *engine) failPendingCommands(ctx context.Context, reason string) {
 			_, commandErr := e.deps.Commands.Fail(persistCtx, commandID, reason, e.scope.Actor())
 			return commandErr
 		}); err != nil {
-			e.logger.Warn("fail simulated command after scenario termination", "command_id", commandID, "error", err)
+			e.logger.Warn("fail simulated command after scenario termination", "command_id", commandID, "error_code", apperr.CodeOf(err))
 		}
 	}
 }
 
 // Pause freezes virtual time.
 func (e *engine) Pause() {
+	e.actionMu.Lock()
+	defer e.actionMu.Unlock()
 	e.mu.Lock()
 	if !e.paused && !e.stopped && !e.finished {
 		e.virtualBaseMs = e.currentVirtualLocked()
@@ -991,6 +1053,9 @@ func (e *engine) SetSpeed(speed float64) {
 // Stop terminates the run.
 func (e *engine) Stop() {
 	e.mu.Lock()
+	if !e.stopped && !e.finished {
+		e.virtualBaseMs = e.currentVirtualLocked()
+	}
 	e.stopped = true
 	e.mu.Unlock()
 	e.signal()
@@ -1018,11 +1083,20 @@ func (e *engine) IsStopped() bool {
 }
 
 func (e *engine) currentVirtualLocked() float64 {
-	if e.paused || e.stopped {
+	if e.paused || e.stopped || e.finished || e.executing {
 		return e.virtualBaseMs
 	}
 	elapsedMs := float64(time.Since(e.lastResume)) / float64(time.Millisecond)
 	value := e.virtualBaseMs + elapsedMs*e.speed
+	// Do not run the information clock past an event that has not executed.
+	// Database/service processing latency is wall time, not simulation progress.
+	if e.nextStatic < len(e.static) && value > float64(e.static[e.nextStatic].AtMs) {
+		value = float64(e.static[e.nextStatic].AtMs)
+	}
+	if len(e.pending) > 0 && value > float64(e.pending[0].AtMs) {
+		value = float64(e.pending[0].AtMs)
+	}
+
 	if math.IsNaN(value) || value < 0 {
 		return 0
 	}
@@ -1114,11 +1188,11 @@ func (e *engine) jitter(p geo.Point, jitterM float64) geo.Point {
 	return geo.Point{Lat: p.Lat + latOffset, Lng: p.Lng + lngOffset}
 }
 
-func (e *engine) emitObservation(ctx context.Context, ev EventSpec, trackRef string, position *geo.Point, seqNo int) error {
+func (e *engine) emitObservation(ctx context.Context, ev EventSpec, trackRef string, position *geo.Point, seqNo int, sourceAt time.Time) error {
 	if e.deps.Observations == nil {
 		return apperr.Internal(fmt.Errorf("scenario observation dependency is not configured"))
 	}
-	observedAt := time.Now().UTC()
+	observedAt := sourceAt
 	if staleMs, _ := ParseDurationMs(ev.StaleFor); staleMs > 0 {
 		observedAt = observedAt.Add(-time.Duration(staleMs) * time.Millisecond)
 	} else if ev.Fault == "stale" {
@@ -1129,8 +1203,6 @@ func (e *engine) emitObservation(ctx context.Context, ev EventSpec, trackRef str
 		"scenario":          e.sc.Name,
 		"scenarioRunId":     e.scope.RunID,
 		"resourceNamespace": e.scope.ResourceNamespace,
-		"trackRef":          trackRef,
-		"qualifiedTrackRef": e.scope.Track(trackRef),
 	}
 	for key, value := range ev.Payload {
 		payload[key] = value
@@ -1138,21 +1210,28 @@ func (e *engine) emitObservation(ctx context.Context, ev EventSpec, trackRef str
 	if ev.Fault != "" {
 		payload["fault"] = ev.Fault
 	}
-	result, err := e.deps.Observations.Ingest(ctx, observations.CreateInput{
-		ID:         e.scope.Observation(fmt.Sprintf("%s__%d", trackRef, seqNo)),
+	input := observations.CreateInput{
+		ID:         e.messageID("observation", fmt.Sprintf("%s__%d", trackRef, seqNo)),
 		SourceID:   e.scope.Source(ev.Source),
 		Type:       "track.observation",
 		ObservedAt: observedAt,
 		Position:   position,
-		TrackHint:  e.scope.Track(trackRef),
+		TrackHint:  e.contacts[trackRef],
 		Payload:    payload,
 		Quality:    ev.Quality,
-	})
+	}
+	var result observations.IngestResult
+	var err error
+	if e.deps.Ingress != nil {
+		result, err = e.deps.Ingress.Observation(ctx, e.stamp(input.ID), trackRef, e.contacts[trackRef], input)
+	} else {
+		result, err = e.deps.Observations.Ingest(ctx, input)
+	}
 	if err != nil {
 		return err
 	}
 	if result.Duplicate {
-		e.logger.Debug("scenario emitted duplicate observation", "track", trackRef, "observation_id", result.Observation.ID)
+		e.logger.Debug("scenario emitted duplicate observation", "run_id", e.runID)
 	}
 	e.mu.Lock()
 	e.observationIDs[trackRef] = result.Observation.ID
@@ -1170,15 +1249,20 @@ func (e *engine) emitTelemetry(ctx context.Context, assetID string, position *ge
 		"resourceNamespace": e.scope.ResourceNamespace,
 		"logicalAssetId":    assetID,
 	}
-	_, err := e.deps.Telemetry.Ingest(ctx, telemetry.CreateInput{
-		ID:              e.scope.Telemetry(fmt.Sprintf("%s__%d", assetID, sequence)),
+	input := telemetry.CreateInput{
+		ID:              e.messageID("telemetry", fmt.Sprintf("%s__%d", assetID, sequence)),
 		AssetID:         e.scope.Asset(assetID),
-		ObservedAt:      time.Now().UTC(),
+		ObservedAt:      e.scenarioInstant(),
 		Position:        position,
 		ConnectionState: connectionState,
 		Health:          health,
 		Payload:         payload,
-	})
+	}
+	if e.deps.Ingress != nil {
+		_, err := e.deps.Ingress.Telemetry(ctx, e.stamp(input.ID), assetID, input)
+		return err
+	}
+	_, err := e.deps.Telemetry.Ingest(ctx, input)
 	return err
 }
 
@@ -1186,10 +1270,10 @@ func (e *engine) emitClassification(ctx context.Context, ev EventSpec) error {
 	if e.deps.Tracks == nil || e.deps.Classifications == nil {
 		return apperr.Internal(fmt.Errorf("scenario classification dependencies are not configured"))
 	}
-	track, err := e.deps.Tracks.FindByExternalRef(ctx, e.scope.Track(ev.Track))
+	track, err := e.deps.Tracks.FindByExternalRef(ctx, e.contacts[ev.Track])
 	if err != nil {
 		if apperr.Is(err, apperr.CodeNotFound) {
-			e.logger.Warn("classification skipped: track not observed yet", "track", ev.Track)
+			e.logger.Warn("classification skipped: track not observed yet", "run_id", e.runID)
 			return nil
 		}
 		return err
@@ -1228,7 +1312,7 @@ func (e *engine) emitArea(ctx context.Context, ev EventSpec, seqNo int) error {
 		Polygon: ring,
 	}
 
-	observedAt := time.Now().UTC()
+	observedAt := e.scenarioInstant()
 	if staleMs, _ := ParseDurationMs(ev.StaleFor); staleMs > 0 {
 		observedAt = observedAt.Add(-time.Duration(staleMs) * time.Millisecond)
 	}
@@ -1242,15 +1326,20 @@ func (e *engine) emitArea(ctx context.Context, ev EventSpec, seqNo int) error {
 		payload[key] = value
 	}
 
-	_, err := e.deps.Observations.Ingest(ctx, observations.CreateInput{
-		ID:         e.scope.Observation(fmt.Sprintf("%s__%s__%d", ev.AreaKind, ev.Source, seqNo)),
+	input := observations.CreateInput{
+		ID:         e.messageID("observation", fmt.Sprintf("%s__%s__%d", ev.AreaKind, ev.Source, seqNo)),
 		SourceID:   e.scope.Source(ev.Source),
 		Type:       firstNonEmpty(ev.Type, "area."+ev.AreaKind),
 		ObservedAt: observedAt,
 		Area:       &area,
 		Payload:    payload,
 		Quality:    ev.Quality,
-	})
+	}
+	if e.deps.Ingress != nil {
+		_, err := e.deps.Ingress.Observation(ctx, e.stamp(input.ID), "area:"+ev.AreaKind+":"+ev.Source, "", input)
+		return err
+	}
+	_, err := e.deps.Observations.Ingest(ctx, input)
 	return err
 }
 
@@ -1260,12 +1349,27 @@ func (e *engine) emitAssessment(ctx context.Context, ev EventSpec) error {
 	}
 	evidence := make([]assessments.Evidence, 0, len(ev.Evidence))
 	for _, item := range ev.Evidence {
+		id := e.qualifyReference(item.Type, item.ID)
+		if item.Type == "track" {
+			track, err := e.deps.Tracks.FindByExternalRef(ctx, id)
+			if err != nil {
+				return err
+			}
+			id = track.ID
+		}
 		evidence = append(evidence, assessments.Evidence{
 			Type: assessments.EvidenceType(item.Type),
-			ID:   e.qualifyReference(item.Type, item.ID),
+			ID:   id,
 		})
 	}
 	subjectID := e.qualifyReference(ev.SubjectType, ev.SubjectID)
+	if ev.SubjectType == "track" {
+		track, err := e.deps.Tracks.FindByExternalRef(ctx, subjectID)
+		if err != nil {
+			return err
+		}
+		subjectID = track.ID
+	}
 	_, err := e.deps.Assessments.Create(ctx, assessments.CreateInput{
 		SubjectType: assessments.SubjectType(ev.SubjectType),
 		SubjectID:   subjectID,
@@ -1293,7 +1397,7 @@ func (e *engine) qualifyReference(kind, logicalID string) string {
 	case "asset":
 		return e.scope.Asset(logicalID)
 	case "track":
-		return e.scope.Track(logicalID)
+		return e.contacts[logicalID]
 	case "observation":
 		if id := e.observationIDs[logicalID]; id != "" {
 			return id
@@ -1472,7 +1576,7 @@ func (e *engine) failCapacity(ctx context.Context, commandID, actor string, caus
 		_, commandErr := e.deps.Commands.Fail(persistCtx, commandID, reason, actor)
 		return commandErr
 	}); err != nil {
-		e.logger.Error("fail command after scenario capacity exhaustion", "command_id", commandID, "cause", cause, "error", err)
+		e.logger.Error("fail command after scenario capacity exhaustion", "command_id", commandID, "cause", cause, "error_code", apperr.CodeOf(err))
 	}
 }
 
@@ -1488,4 +1592,34 @@ func addMilliseconds(base, delta int64) (int64, bool) {
 		return 0, false
 	}
 	return base + delta, true
+}
+
+// Emissions use the scheduled action instant, never pacing/processing latency.
+func (e *engine) scenarioInstant() time.Time {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	return e.epoch.Add(time.Duration(e.lastActionAt) * time.Millisecond)
+}
+
+// Correlation and message identities are opaque per run; they do not encode an actor name.
+func (e *engine) messageID(kind, key string) string {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	key = kind + ":" + key
+	if id := e.messageIDs[key]; id != "" {
+		return id
+	}
+	id := e.scope.ID(kind, ids.New("synthetic"))
+	e.messageIDs[key] = id
+	return id
+}
+func (e *engine) stamp(id string) exerciseingest.Stamp {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if stamp, ok := e.messages[id]; ok {
+		return stamp
+	}
+	stamp := exerciseingest.Stamp{Schema: "emad.synthetic.v1", RunID: e.runID, ScenarioVersionID: e.versionID, RuntimeVersion: RuntimeVersion, RuntimeBuild: runtimeBuild(), ProducerID: "yaml-adapter", Sequence: e.lastSequence, ElapsedMs: e.lastActionAt}
+	e.messages[id] = stamp
+	return stamp
 }

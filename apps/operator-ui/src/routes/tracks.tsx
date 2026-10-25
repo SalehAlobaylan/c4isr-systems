@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@/lib/scopedQueries'
+
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo } from 'react'
@@ -8,10 +9,10 @@ import { DataTable } from '@/components/shared/data-table'
 import { FreshnessBadge, TrackStatusBadge } from '@/components/shared/badges'
 import { ErrorState } from '@/components/shared/states'
 import { Select } from '@/components/ui/select'
-import { api, type Track } from '@/lib/api'
+import { useAPI, type Track } from '@/lib/api'
 import { isActionable } from '@/lib/freshness'
 import { formatCoord, formatRelative, formatSpeed, formatTimestamp } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 
 const TRACK_FILTERS = { limit: 200 }
 
@@ -23,6 +24,8 @@ const STATUS_OPTIONS = [
 ]
 
 export function TracksPage() {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const search = useSearch({ from: '/tracks' })
   const navigate = useNavigate()
 

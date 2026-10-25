@@ -108,8 +108,14 @@ ORDER BY o.observed_at DESC
 LIMIT @limit_count;
 
 -- name: ListIncidentAssessments :many
-SELECT a.id, a.subject_type, a.subject_id, a.type, a.conclusion, a.confidence, a.method, a.created_by, a.created_at
+SELECT a.id, a.subject_type, a.subject_id, a.type,
+       COALESCE(v.document->>'conclusion',a.conclusion)::text AS conclusion,
+       a.confidence, (v.document->'confidence')::jsonb AS review_confidence,
+       COALESCE(v.document->>'method',a.method)::text AS method, a.created_by, a.created_at,
+       COALESCE(v.status,'')::text AS review_status,COALESCE(h.latest_id,'')::text AS revision_id,COALESCE(h.published_id,'')::text AS published_revision_id
 FROM assessments a
 JOIN incident_assessments ia ON ia.assessment_id = a.id
+LEFT JOIN assessment_review_heads h ON h.assessment_id=a.id AND h.scope_id=a.scope_id
+LEFT JOIN assessment_revisions v ON v.id=h.latest_id AND v.scope_id=h.scope_id
 WHERE ia.incident_id = @incident_id
 ORDER BY a.created_at DESC;

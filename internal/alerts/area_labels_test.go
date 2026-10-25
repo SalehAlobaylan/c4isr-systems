@@ -1,13 +1,13 @@
 package alerts
 
 import (
-	"context"
 	"io"
 	"log/slog"
 	"testing"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 func TestAreaSubjectNamesThePhenomenon(t *testing.T) {
@@ -70,7 +70,7 @@ func TestAreaOverlapAlertLinksTheObservationNotATrack(t *testing.T) {
 	bus := events.NewDispatcher(slog.New(slog.NewTextHandler(io.Discard, nil)))
 	svc := NewServiceWithClassifier(repo, bus, nil)
 
-	svc.HandleAreaGeofenceOverlapped(context.Background(), events.AreaGeofenceOverlapped{
+	svc.HandleAreaGeofenceOverlapped(testsupport.Context(), events.AreaGeofenceOverlapped{
 		ObservationID: "obs_fire_1",
 		SourceID:      "firms",
 		AreaKind:      "hazard",
@@ -139,7 +139,7 @@ func TestAreaOverlapSuppressesRepeatForTheSameObservation(t *testing.T) {
 	repo := &fakeRepository{areaUnresolved: &existing}
 	svc, _ := newTestService(repo)
 
-	svc.HandleAreaGeofenceOverlapped(context.Background(), events.AreaGeofenceOverlapped{
+	svc.HandleAreaGeofenceOverlapped(testsupport.Context(), events.AreaGeofenceOverlapped{
 		ObservationID: "obs_fire_1",
 		GeofenceID:    "geo_1",
 		GeofenceName:  "Restricted Zone A",
@@ -159,7 +159,7 @@ func TestAreaOverlapStillAlertsAfterResolution(t *testing.T) {
 	repo := &fakeRepository{}
 	svc, _ := newTestService(repo)
 
-	svc.HandleAreaGeofenceOverlapped(context.Background(), events.AreaGeofenceOverlapped{
+	svc.HandleAreaGeofenceOverlapped(testsupport.Context(), events.AreaGeofenceOverlapped{
 		ObservationID: "obs_fire_1",
 		GeofenceID:    "geo_1",
 		GeofenceName:  "Restricted Zone A",
@@ -182,7 +182,7 @@ func TestAreaOverlapDoesNotCollideWithATrackBreach(t *testing.T) {
 	}}
 	svc, _ := newTestService(repo)
 
-	svc.HandleAreaGeofenceOverlapped(context.Background(), events.AreaGeofenceOverlapped{
+	svc.HandleAreaGeofenceOverlapped(testsupport.Context(), events.AreaGeofenceOverlapped{
 		ObservationID: "obs_fire_1",
 		GeofenceID:    "geo_1",
 		GeofenceName:  "Restricted Zone A",

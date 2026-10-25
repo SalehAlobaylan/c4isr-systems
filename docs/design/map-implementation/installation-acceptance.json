@@ -1,0 +1,125 @@
+{
+  "schema": "emad.map-installation-acceptance.v1",
+  "capturedAt": "2026-10-24T13:48:42.398456+00:00",
+  "installation": "Persistent default/local after supported supervisor restart",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "catalogue": {
+    "features": 196,
+    "countries": 177,
+    "regions": 13,
+    "places": 5,
+    "studies": 1
+  },
+  "saudi": {
+    "earthquakes": {
+      "total": 5,
+      "displayFeatures": 5,
+      "state": "latest",
+      "unlocated": 0,
+      "responseMs": {
+        "min": 6.51,
+        "median": 23.9,
+        "max": 30.21
+      }
+    },
+    "thermal": {
+      "total": 0,
+      "displayFeatures": 0,
+      "state": "latest",
+      "unlocated": 0,
+      "responseMs": {
+        "min": 5.48,
+        "median": 6.27,
+        "max": 20.03
+      }
+    },
+    "weather": {
+      "total": 26,
+      "displayFeatures": 26,
+      "state": "latest_retained",
+      "unlocated": 0,
+      "responseMs": {
+        "min": 11.26,
+        "median": 11.62,
+        "max": 34.27
+      }
+    },
+    "bulletins": {
+      "total": 0,
+      "displayFeatures": 0,
+      "state": "latest_retained",
+      "unlocated": 0,
+      "responseMs": {
+        "min": 5.51,
+        "median": 6.64,
+        "max": 30.71
+      }
+    },
+    "imagery": {
+      "total": 2,
+      "displayFeatures": 2,
+      "state": "latest_retained",
+      "unlocated": 0,
+      "responseMs": {
+        "min": 5.69,
+        "median": 6.26,
+        "max": 29.0
+      }
+    },
+    "findings": {
+      "total": 1,
+      "displayFeatures": 1,
+      "state": "latest_retained",
+      "unlocated": 0,
+      "responseMs": {
+        "min": 8.56,
+        "median": 22.67,
+        "max": 27.21
+      }
+    },
+    "aircraft": {
+      "total": 0,
+      "displayFeatures": 0,
+      "state": "latest_retained",
+      "unlocated": 0,
+      "responseMs": {
+        "min": 6.48,
+        "median": 7.03,
+        "max": 29.25
+      }
+    },
+    "vessels": {
+      "total": 0,
+      "displayFeatures": 0,
+      "state": "latest_retained",
+      "unlocated": 0,
+      "responseMs": {
+        "min": 6.82,
+        "median": 30.84,
+        "max": 32.66
+      }
+    }
+  },
+  "timingMethod": "Five sequential loopback API requests per family, warm service, no load. Windows desktop; not a production load or frame-rate benchmark.",
+  "referenceVersions": 24,
+  "editions": [
+    {
+      "id": "geoedition_c4a85c9db4f8946ba2d1786e261af1ed",
+      "label": "World countries \u00b7 Natural Earth 1:110m",
+      "features": 177,
+      "sha256": "9f3bf42795f655196172352ce4ac1ef3e3ebc18fd412ed1a30af599b54642060"
+    },
+    {
+      "id": "geoedition_04cda2fdb546420ba6d169f36fdc4872",
+      "label": "Saudi administrative navigation \u00b7 Natural Earth",
+      "features": 14,
+      "sha256": "d5aac078c88a88da8ca3b03219c59080aeae448234e35dd4958c5a294ce84b01"
+    },
+    {
+      "id": "geoedition_7c8e42230d158ed63ada97a03e5f3669",
+      "label": "Saudi populated places \u00b7 Natural Earth",
+      "features": 5,
+      "sha256": "13a0af089c079660f7576aa308fe9c66ef2d305f683e2033112ab8c96c4860b9"
+    }
+  ]
+}

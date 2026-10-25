@@ -1,0 +1,4 @@
+{
+  "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson",
+  "transformation": "Retain first feature and set metadata count to 1; corrected/withdrawn/invalid files are deliberate test mutations, not historical USGS revisions"
+}

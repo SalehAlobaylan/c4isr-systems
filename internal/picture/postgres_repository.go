@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // PostgresRepository reconstructs the picture from the evidence tables.
@@ -24,7 +24,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 // TracksAt returns every track that existed at the requested instant, with the
 // last state each had recorded by then.
 func (r *PostgresRepository) TracksAt(ctx context.Context, at time.Time, scopePrefix string) ([]Track, error) {
-	rows, err := dbgen.New(r.pool).TracksAt(ctx, dbgen.TracksAtParams{
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).TracksAt(ctx, dbgen.TracksAtParams{
 		At:          pgconv.TS(at),
 		ScopePrefix: scopePrefix,
 	})
@@ -53,7 +53,7 @@ func (r *PostgresRepository) TracksAt(ctx context.Context, at time.Time, scopePr
 
 // AssetsAt returns every asset with telemetry recorded by the requested instant.
 func (r *PostgresRepository) AssetsAt(ctx context.Context, at time.Time, scopePrefix string) ([]Asset, error) {
-	rows, err := dbgen.New(r.pool).AssetsAt(ctx, dbgen.AssetsAtParams{
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).AssetsAt(ctx, dbgen.AssetsAtParams{
 		At:          pgconv.TS(at),
 		ScopePrefix: scopePrefix,
 	})
@@ -83,7 +83,7 @@ func (r *PostgresRepository) AssetsAt(ctx context.Context, at time.Time, scopePr
 
 // AlertsAt returns the alerts that had already been raised by the instant.
 func (r *PostgresRepository) AlertsAt(ctx context.Context, at time.Time, limit int) ([]Alert, error) {
-	rows, err := dbgen.New(r.pool).AlertsAt(ctx, dbgen.AlertsAtParams{
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).AlertsAt(ctx, dbgen.AlertsAtParams{
 		At:         pgconv.TS(at),
 		LimitCount: int32(limit),
 	})
@@ -111,7 +111,7 @@ func (r *PostgresRepository) AlertsAt(ctx context.Context, at time.Time, limit i
 
 // GeofencesAt returns the zones in force, which replay does not alter.
 func (r *PostgresRepository) GeofencesAt(ctx context.Context, limit int) ([]Geofence, error) {
-	rows, err := dbgen.New(r.pool).GeofencesAt(ctx, int32(limit))
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).GeofencesAt(ctx, int32(limit))
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +131,7 @@ func (r *PostgresRepository) GeofencesAt(ctx context.Context, limit int) ([]Geof
 
 // Window reports the span of evidence a scrubber can traverse.
 func (r *PostgresRepository) Window(ctx context.Context, scopePrefix string) (Window, error) {
-	row, err := dbgen.New(r.pool).TrackHistoryWindow(ctx, scopePrefix)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).TrackHistoryWindow(ctx, scopePrefix)
 	if err != nil {
 		return Window{}, err
 	}

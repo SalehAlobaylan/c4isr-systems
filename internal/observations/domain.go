@@ -117,13 +117,15 @@ func (a Area) Validate() error {
 
 // Observation is a timestamped statement from a source.
 type Observation struct {
-	ID          string
-	SourceID    string
-	Type        string
-	ObservedAt  time.Time
-	ReceivedAt  time.Time
-	ProcessedAt *time.Time
-	Position    *geo.Point
+	SemanticKind string
+	GeometryRole string
+	ID           string
+	SourceID     string
+	Type         string
+	ObservedAt   time.Time
+	ReceivedAt   time.Time
+	ProcessedAt  *time.Time
+	Position     *geo.Point
 	// Area is set for event observations that describe a footprint rather than
 	// a moving object. Area and TrackHint are mutually exclusive: an area is
 	// not correlated into a track, so attaching one would be contradictory.
@@ -140,6 +142,8 @@ func (o Observation) IsArea() bool { return o.Area != nil }
 
 // CreateInput is the application input for observation ingestion.
 type CreateInput struct {
+	SemanticKind string
+	GeometryRole string
 	// ID is an optional client-supplied idempotency key. Re-submitting the
 	// same id returns the stored observation instead of creating a new one.
 	ID         string
@@ -158,6 +162,13 @@ type CreateInput struct {
 func (in *CreateInput) Normalize() {
 	in.SourceID = trimmed(in.SourceID)
 	in.Type = trimmed(in.Type)
+	in.SemanticKind = SemanticKind(in.SemanticKind, in.Type, in.Area != nil)
+	if in.GeometryRole == "" {
+		in.GeometryRole = "reported_location"
+		if in.Area != nil {
+			in.GeometryRole = "reported_extent"
+		}
+	}
 	in.TrackHint = trimmed(in.TrackHint)
 	if in.ID == "" {
 		in.ID = ids.New("obs")
@@ -179,6 +190,40 @@ func (in *CreateInput) Normalize() {
 
 // Validate checks the observation against domain rules at time now.
 func (in CreateInput) Validate(now time.Time) error {
+	in.SemanticKind = SemanticKind(in.SemanticKind, in.Type, in.Area != nil)
+	if in.GeometryRole == "" {
+		in.GeometryRole = "reported_location"
+		if in.Area != nil {
+			in.GeometryRole = "reported_extent"
+		}
+	}
+	if in.SemanticKind != Moving && in.SemanticKind != PointEvent && in.SemanticKind != AreaEvent {
+		return apperr.Validation("invalid semanticKind")
+	}
+	if SemanticKind("", in.Type, in.Area != nil) == PointEvent && in.SemanticKind == Moving {
+		return apperr.Validation("event and detection types cannot be moving observations")
+	}
+	if in.SemanticKind != Moving && in.TrackHint != "" {
+		return apperr.Validation("non-moving observations cannot carry trackHint")
+	}
+	if (in.SemanticKind == AreaEvent) != (in.Area != nil) {
+		return apperr.Validation("area semantics require area geometry")
+	}
+	if in.SemanticKind == PointEvent && in.Position == nil {
+		return apperr.Validation("point events require a reported location")
+	}
+	switch in.GeometryRole {
+	case "reported_location":
+		if in.Area != nil {
+			return apperr.Validation("area cannot be a reported point")
+		}
+	case "reported_extent", "measurement_footprint", "derived_buffer", "phenomenon_boundary":
+		if in.Area == nil {
+			return apperr.Validation("footprint role requires area")
+		}
+	default:
+		return apperr.Validation("invalid geometryRole")
+	}
 	if in.SourceID == "" {
 		return apperr.Validation("sourceId is required")
 	}

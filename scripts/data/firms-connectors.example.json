@@ -1,0 +1,11 @@
+[
+  {
+    "id": "firms-noaa20-region",
+    "sourceId": "REPLACE_WITH_REGISTERED_SOURCE_ID",
+    "resource": { "workspaceId": "public-context", "environmentId": "world", "partition": "PUBLIC_EVIDENCE" },
+    "url": "https://firms.modaps.eosdis.nasa.gov/api/area/csv/",
+    "adapter": "firms-viirs-noaa20-v1",
+    "authTokenEnv": "FIRMS_MAP_KEY",
+    "maxRequestsPerDay": 100
+  }
+]

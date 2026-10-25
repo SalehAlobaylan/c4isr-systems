@@ -46,7 +46,7 @@ INSERT INTO audit_events (
     $1, $2, $3, $4, $5,
     $6, $7, $8, $9, now()
 )
-RETURNING id, occurred_at, actor_type, actor_id, action, subject_type, subject_id, correlation_id, data, created_at
+RETURNING id, occurred_at, actor_type, actor_id, action, subject_type, subject_id, correlation_id, data, created_at, scope_id
 `
 
 type CreateAuditEventParams struct {
@@ -85,12 +85,13 @@ func (q *Queries) CreateAuditEvent(ctx context.Context, arg CreateAuditEventPara
 		&i.CorrelationID,
 		&i.Data,
 		&i.CreatedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const listAuditEvents = `-- name: ListAuditEvents :many
-SELECT id, occurred_at, actor_type, actor_id, action, subject_type, subject_id, correlation_id, data, created_at FROM audit_events
+SELECT id, occurred_at, actor_type, actor_id, action, subject_type, subject_id, correlation_id, data, created_at, scope_id FROM audit_events
 WHERE ($1::text IS NULL OR subject_type = $1)
   AND ($2::text IS NULL OR subject_id = $2)
   AND ($3::text IS NULL OR action = $3)
@@ -135,6 +136,7 @@ func (q *Queries) ListAuditEvents(ctx context.Context, arg ListAuditEventsParams
 			&i.CorrelationID,
 			&i.Data,
 			&i.CreatedAt,
+			&i.ScopeID,
 		); err != nil {
 			return nil, err
 		}

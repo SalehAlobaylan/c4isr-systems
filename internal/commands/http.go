@@ -31,6 +31,7 @@ func (h *Handler) Mount(r chi.Router) {
 }
 
 type issueRequest struct {
+	RequestKey    string         `json:"requestKey"`
 	AssetID       string         `json:"assetId"`
 	MissionID     string         `json:"missionId"`
 	IncidentID    string         `json:"incidentId"`
@@ -74,6 +75,7 @@ func (h *Handler) issue(w http.ResponseWriter, r *http.Request) {
 		correlationID = httpx.GetRequestID(r.Context())
 	}
 	command, err := h.svc.Issue(r.Context(), IssueInput{
+		RequestKey:    req.RequestKey,
 		AssetID:       req.AssetID,
 		MissionID:     req.MissionID,
 		IncidentID:    req.IncidentID,

@@ -2,14 +2,15 @@ package scenarios
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // PostgresRepository stores scenario runs in PostgreSQL.
@@ -24,8 +25,10 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 // Create inserts a scenario run.
 func (r *PostgresRepository) Create(ctx context.Context, run Run) (Run, error) {
-	row, err := dbgen.New(r.pool).CreateScenarioRun(ctx, dbgen.CreateScenarioRunParams{
+	frozen, _ := json.Marshal(run.Frozen)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CreateScenarioRun(ctx, dbgen.CreateScenarioRunParams{
 		ID:            run.ID,
+		FrozenRun:     frozen,
 		ScenarioName:  run.ScenarioName,
 		Seed:          run.Seed,
 		Status:        run.Status,
@@ -39,7 +42,7 @@ func (r *PostgresRepository) Create(ctx context.Context, run Run) (Run, error) {
 
 // Get loads a scenario run by id.
 func (r *PostgresRepository) Get(ctx context.Context, id string) (Run, error) {
-	row, err := dbgen.New(r.pool).GetScenarioRun(ctx, id)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).GetScenarioRun(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Run{}, apperr.NotFound("scenario run", id)
@@ -51,7 +54,7 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Run, error) {
 
 // List returns scenario runs newest first.
 func (r *PostgresRepository) List(ctx context.Context, limit, offset int) ([]Run, int, error) {
-	queries := dbgen.New(r.pool)
+	queries := dbgen.New(platformdb.Scoped(r.pool))
 	rows, err := queries.ListScenarioRuns(ctx, dbgen.ListScenarioRunsParams{
 		LimitCount:  int32(limit),
 		OffsetCount: int32(offset),
@@ -79,7 +82,7 @@ func (r *PostgresRepository) List(ctx context.Context, limit, offset int) ([]Run
 
 // UpdateStatus transitions a run's lifecycle status.
 func (r *PostgresRepository) UpdateStatus(ctx context.Context, id, status, errorMessage string) (Run, error) {
-	row, err := dbgen.New(r.pool).UpdateScenarioRunStatus(ctx, dbgen.UpdateScenarioRunStatusParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).UpdateScenarioRunStatus(ctx, dbgen.UpdateScenarioRunStatusParams{
 		ID:     id,
 		Status: status,
 		Error:  pgconv.TextPtr(errorMessage),
@@ -95,7 +98,7 @@ func (r *PostgresRepository) UpdateStatus(ctx context.Context, id, status, error
 
 // UpdateSpeed changes playback speed.
 func (r *PostgresRepository) UpdateSpeed(ctx context.Context, id string, speed float64) (Run, error) {
-	row, err := dbgen.New(r.pool).UpdateScenarioRunSpeed(ctx, dbgen.UpdateScenarioRunSpeedParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).UpdateScenarioRunSpeed(ctx, dbgen.UpdateScenarioRunSpeedParams{
 		ID:            id,
 		PlaybackSpeed: speed,
 	})
@@ -110,7 +113,7 @@ func (r *PostgresRepository) UpdateSpeed(ctx context.Context, id string, speed f
 
 // UpdateProgress records the run's virtual time.
 func (r *PostgresRepository) UpdateProgress(ctx context.Context, id string, virtualTimeMs int64) error {
-	return dbgen.New(r.pool).UpdateScenarioRunProgress(ctx, dbgen.UpdateScenarioRunProgressParams{
+	return dbgen.New(platformdb.Scoped(r.pool)).UpdateScenarioRunProgress(ctx, dbgen.UpdateScenarioRunProgressParams{
 		ID:            id,
 		VirtualTimeMs: virtualTimeMs,
 	})
@@ -119,7 +122,7 @@ func (r *PostgresRepository) UpdateProgress(ctx context.Context, id string, virt
 // UpdateCursor persists the latest virtual-time/action cursor used by GetRun
 // after the live engine has been released.
 func (r *PostgresRepository) UpdateCursor(ctx context.Context, id string, virtualTimeMs int64, lastAction string, lastActionAt int64, actionError string) error {
-	_, err := dbgen.New(r.pool).UpdateScenarioRunCursor(ctx, dbgen.UpdateScenarioRunCursorParams{
+	_, err := dbgen.New(platformdb.Scoped(r.pool)).UpdateScenarioRunCursor(ctx, dbgen.UpdateScenarioRunCursorParams{
 		ID:             id,
 		VirtualTimeMs:  virtualTimeMs,
 		LastAction:     pgconv.TextPtr(lastAction),
@@ -131,7 +134,7 @@ func (r *PostgresRepository) UpdateCursor(ctx context.Context, id string, virtua
 
 // CreateEvent persists or idempotently refreshes one scheduled action.
 func (r *PostgresRepository) CreateEvent(ctx context.Context, runID string, event EventInspection) error {
-	return dbgen.New(r.pool).CreateScenarioRunEvent(ctx, dbgen.CreateScenarioRunEventParams{
+	return dbgen.New(platformdb.Scoped(r.pool)).CreateScenarioRunEvent(ctx, dbgen.CreateScenarioRunEventParams{
 		RunID:         runID,
 		Sequence:      int32(event.Sequence),
 		VirtualTimeMs: event.AtMs,
@@ -143,7 +146,7 @@ func (r *PostgresRepository) CreateEvent(ctx context.Context, runID string, even
 
 // UpdateEvent changes one action's durable lifecycle state.
 func (r *PostgresRepository) UpdateEvent(ctx context.Context, runID string, sequence int, status, errorMessage string) error {
-	return dbgen.New(r.pool).UpdateScenarioRunEvent(ctx, dbgen.UpdateScenarioRunEventParams{
+	return dbgen.New(platformdb.Scoped(r.pool)).UpdateScenarioRunEvent(ctx, dbgen.UpdateScenarioRunEventParams{
 		RunID:    runID,
 		Sequence: int32(sequence),
 		Status:   status,
@@ -153,7 +156,7 @@ func (r *PostgresRepository) UpdateEvent(ctx context.Context, runID string, sequ
 
 // ListEvents returns events in virtual-time/sequence order.
 func (r *PostgresRepository) ListEvents(ctx context.Context, runID string) ([]EventInspection, error) {
-	rows, err := dbgen.New(r.pool).ListScenarioRunEvents(ctx, runID)
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).ListScenarioRunEvents(ctx, runID)
 	if err != nil {
 		return nil, err
 	}
@@ -173,15 +176,18 @@ func (r *PostgresRepository) ListEvents(ctx context.Context, runID string) ([]Ev
 // SkipPendingEvents makes unexecuted actions visible after cancellation or a
 // failed run instead of leaving them indefinitely pending.
 func (r *PostgresRepository) SkipPendingEvents(ctx context.Context, runID, errorMessage string) error {
-	return dbgen.New(r.pool).SkipPendingScenarioRunEvents(ctx, dbgen.SkipPendingScenarioRunEventsParams{
+	return dbgen.New(platformdb.Scoped(r.pool)).SkipPendingScenarioRunEvents(ctx, dbgen.SkipPendingScenarioRunEventsParams{
 		RunID: runID,
 		Error: pgconv.TextPtr(errorMessage),
 	})
 }
 
 func toDomain(row dbgen.ScenarioRun) Run {
+	var frozen FrozenRun
+	_ = json.Unmarshal(row.FrozenRun, &frozen)
 	scope := NewRunScope(row.ID)
 	return Run{
+		Frozen:            frozen,
 		ID:                row.ID,
 		ResourceNamespace: scope.ResourceNamespace,
 		ScenarioName:      row.ScenarioName,

@@ -1,0 +1,317 @@
+{
+  "date": "2026-10-22",
+  "tasks": {
+    "S3.2": "complete",
+    "S3.3": "complete",
+    "S4.1": "complete"
+  },
+  "scope": "S4.1 explicitly selected by the user: reusable sensor-quality presets",
+  "original32TaskBacklog": "complete within each documented acceptance scope",
+  "next": "Select and bound the next S4 scenario; remaining long-term S4 capabilities are not complete",
+  "milestone": {
+    "M6": "accepted for recorded abstract native perception/tasking with the prior reference/synthetic-terrain scene proof"
+  },
+  "migrations": [
+    37,
+    38
+  ],
+  "userDatabaseMigrated": false,
+  "requiredRuntime": "rebuild and admit exact native runtime hash; start apps/emad-recordings with separate input-environment service identity",
+  "checks": {
+    "integration": {
+      "passed": 79,
+      "topLevel": 55,
+      "subcases": 24,
+      "skipped": [
+        "TestCDSEAuthorizedLiveCatalogueSmoke",
+        "TestFIRMSAuthorizedLiveSmoke",
+        "TestUSGSAuthorizedLiveSmoke",
+        "TestWorkspaceBrowserCompatibilityGate"
+      ]
+    },
+    "realBackendBrowser": {
+      "passed": 15
+    },
+    "browserRegression": {
+      "passed": 74,
+      "intentionalProjectSkips": 50
+    },
+    "goTest": "passed",
+    "goVet": "passed",
+    "linuxAffectedPackageRace": "passed",
+    "uiProductionBuild": "passed; existing large-chunk advisory",
+    "openapiLint": "passed",
+    "generatedContracts": "regenerated and checked",
+    "sqlc": "regenerated and checked",
+    "protectedBaselineFilesUnchanged": 38
+  },
+  "measurementProfile": {
+    "os": "Windows amd64",
+    "cpu": "AMD Ryzen 9 7900X; 24 logical processors",
+    "storage": "disposable PostGIS and private S3",
+    "gpu": "not required for archive/evaluation; no new rendering workload"
+  },
+  "measurements": {
+    "actors": 3,
+    "archiveMs": 34.498,
+    "controlledAssets": 1,
+    "durationVirtualMs": 8000,
+    "evaluation": {
+      "elapsedMs": 8000,
+      "limitations": [
+        "Abstract scheduled observers only; no physical sensor validation or weapon effectiveness claim.",
+        "Expected slots include active actors whose configured delivery time falls within the recorded interval; scheduled misses are included and reported separately.",
+        "Lateness threshold is configured delivery plus 1000 virtual ms; gateway publication may add delay at accelerated clock scales.",
+        "Position error uses zero-order held sealed snapshots at or before sample time; error is unavailable unless sample and snapshot times match exactly.",
+        "Track errors count recorded merge/fragmentation relationships, not semantic classification correctness. Missing denominators are null, never zero scores.",
+        "Scenario completion means runtime COMPLETED; workflow completion counts command outcomes independently. Cancelled/failed runs remain partial exercises."
+      ],
+      "metrics": [
+        {
+          "definition": "Commands with recorded final state COMPLETED.",
+          "denominator": 1,
+          "name": "command_completed",
+          "numerator": 1,
+          "unit": "fraction",
+          "value": 1
+        },
+        {
+          "definition": "Commands ending COMPLETED, REJECTED, FAILED, TIMED_OUT or CANCELLED.",
+          "denominator": 1,
+          "name": "command_terminal",
+          "numerator": 1,
+          "unit": "fraction",
+          "value": 1
+        },
+        {
+          "definition": "Repeated exact sample IDs in accepted sealed batches; rejected gateway retries are not new accepted events.",
+          "denominator": 21,
+          "name": "duplicate_samples",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Observed actors associated with more than one recorded track.",
+          "denominator": 3,
+          "name": "fragmented_actors",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Published observations received by the COP more than 1000 virtual ms after configured delivery.",
+          "denominator": 12,
+          "name": "late_observations",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Mean first runtime acknowledgment elapsed time minus command issue time; no-ACK commands excluded.",
+          "denominator": 1,
+          "name": "mean_command_ack",
+          "numerator": 1,
+          "unit": "virtual_ms",
+          "value": 1584
+        },
+        {
+          "definition": "Mean runtime completion elapsed time minus command issue time for completed commands.",
+          "denominator": 1,
+          "name": "mean_command_completion",
+          "numerator": 1,
+          "unit": "virtual_ms",
+          "value": 2083
+        },
+        {
+          "definition": "Mean local horizontal error only where a sealed active snapshot exists at the exact sample millisecond.",
+          "denominator": 3,
+          "name": "mean_horizontal_error",
+          "numerator": 3,
+          "unit": "m",
+          "value": 8.83610076285521
+        },
+        {
+          "definition": "Mean COP publication virtual time minus original sample time.",
+          "denominator": 12,
+          "name": "mean_observation_delay",
+          "numerator": 12,
+          "unit": "virtual_ms",
+          "value": 1168.75
+        },
+        {
+          "definition": "Recorded tracks containing observations from more than one sealed actor.",
+          "denominator": 3,
+          "name": "merged_tracks",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Expected active actor/sensor slots due by final virtual time without a recorded published observation; includes configured scheduled misses.",
+          "denominator": 24,
+          "name": "missed_observations",
+          "numerator": 12,
+          "unit": "fraction",
+          "value": 0.5
+        },
+        {
+          "definition": "Run reached declared duration with runtime status COMPLETED.",
+          "denominator": 1,
+          "name": "scenario_completed",
+          "numerator": 1,
+          "unit": "fraction",
+          "value": 1
+        },
+        {
+          "definition": "Frozen dropEvery slots among expected slots.",
+          "denominator": 24,
+          "name": "scheduled_misses",
+          "numerator": 12,
+          "unit": "fraction",
+          "value": 0.5
+        }
+      ],
+      "operatorHash": "c0bdc3a77e5c8a73281be4ebd1b78cc2432718938c027d937ac8f9f290c69a17",
+      "runStatus": "COMPLETED",
+      "timeBasis": "integer virtual milliseconds; received_at is independent wall receipt time",
+      "truthHash": "2347509d1adbdd15a7ff58459b204b676ebbf23c2f3f7ea631fed73f2f12cc00",
+      "version": "emad.abstract-evaluation.v1"
+    },
+    "finalFrameMs": 10.74,
+    "observations": 12,
+    "observers": 1,
+    "operatorManifest": {
+      "checkpoint": {
+        "bytes": 5285,
+        "first": 0,
+        "last": 0,
+        "sha256": "4accb5598060e4f7710d8cb76ed2fc862173a0429ec775b78569b2c827b11b40"
+      },
+      "chunks": [
+        {
+          "bytes": 73597,
+          "first": 1,
+          "last": 132,
+          "sha256": "c0bdc3a77e5c8a73281be4ebd1b78cc2432718938c027d937ac8f9f290c69a17"
+        }
+      ],
+      "contentSha256": "c0bdc3a77e5c8a73281be4ebd1b78cc2432718938c027d937ac8f9f290c69a17",
+      "createdAt": "2026-10-22T13:43:13.1730541Z",
+      "elapsedMs": 8000,
+      "epoch": "2025-01-01T03:00:00+03:00",
+      "events": 132,
+      "partition": "EXERCISE_OBSERVATION",
+      "projectionSettled": true,
+      "replayGuarantee": "Ordered recorded output at virtual milliseconds and journal sequence; no command execution or re-simulation. Checkpoints restore selected recorded state only.",
+      "retainUntil": "2027-01-20T16:43:12.377048+03:00",
+      "runId": "rt_5b79d3505d543de7f5d89e7a2e32c10e7bbec11868d5e5383cffb5e33922d1df",
+      "runStatus": "COMPLETED",
+      "schema": "emad.recording.v1"
+    },
+    "scale": 2
+  },
+  "limitations": [
+    "Fixture performance is not a maximum-scale benchmark.",
+    "Checkpoint compatibility restores selected recorded output; no runtime lease takeover or process restoration.",
+    "Public replay requires current unrestricted source and full COP read grants for the exact run; truth needs separate current grants.",
+    "Capture/serialization/checkpoint/identity-history budgets fail visibly; one final archive and three worker attempts per run.",
+    "90-day archive read window; no physical deletion daemon is claimed. Immutable evidence and released summaries follow administrative backup/retention.",
+    "Virtual-time seek renders at most 200 rows per layer and at most 8 MiB per frame, with explicit truncation and paged complete event history.",
+    "Historical identity changes retain wall time, with a final virtual archive anchor; migration baselines do not invent earlier entitlement times.",
+    "Perception/workflow models remain abstract; no physical sensor, specialist physics or hardware-control claim.",
+    "Further S4 work remains backlog."
+  ],
+  "proofs": [
+    "Compiled native process; permitted reference/context; frozen scene; synthetic perception; mission-linked HOLD completion; classification history.",
+    "Separate scoped output/truth journals, hashed archives and selected-state checkpoints; exact denominator/sample/association checks.",
+    "Frame reads preserve original evidence/commands and ignore post-archive COP edits.",
+    "Interrupted archive retry, corrupted content, source-restricted/cross-run/revoked/expired reads, heartbeat deduplication, checkpoint incompatibility.",
+    "Explicit evaluator authorization/audit; bounded private identity history excludes credential hashes; deliberate idempotent numeric release.",
+    "Local evaluator grants require explicit CLI flag; ordinary administration remains denied by default.",
+    "Preset save/reapply/freeze/edit, immutable revision identity and unchanged seeded sampling baseline.",
+    "Real-backend desktop/mobile workflows without mocked domain APIs."
+  ],
+  "evidence": [
+    {
+      "path": "tmp/s3-s4/integration-final.jsonl",
+      "sha256": "198d41454e4659630e6776c913f4cee79fd33672aa61b50db708a30ba931e504",
+      "bytes": 268668
+    },
+    {
+      "path": "tmp/s3-s4/final-m6-and-provisioning.log",
+      "sha256": "caf1cbf79fd464cb49d65339edea4b3ba669285ccc40df71b7551985fa244173",
+      "bytes": 8515
+    },
+    {
+      "path": "tmp/s3-s4/browser.log",
+      "sha256": "6aed367cfdcce1d56e320c30a3838d437864380385939ef57b8c450a8dfe3594",
+      "bytes": 5396
+    },
+    {
+      "path": "tmp/s3-s4/browser-regressions.log",
+      "sha256": "1822e5c8204af846d435c2a802d2a1c220a6b70e1abbd08afc32c2f112e58ab9",
+      "bytes": 48255
+    },
+    {
+      "path": "tmp/s3-s4/linux-race.log",
+      "sha256": "eb816203facb8605e44c369b5bae0b3a670d407fdbabd1da7e633262bab13394",
+      "bytes": 456
+    },
+    {
+      "path": "tmp/s3-s4/go-tests.log",
+      "sha256": "b3fc15e75e068416020f20ba0e5beec0278b6f47bdd27cdcc1ebe4dc811653b2",
+      "bytes": 5036
+    },
+    {
+      "path": "tmp/s3-s4/go-vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tmp/s3-s4/ui-build.log",
+      "sha256": "e91c5a13f24dacad5288f872434860811e127ed4a43e736909f29348ffdefad0",
+      "bytes": 3224
+    },
+    {
+      "path": "tmp/s3-s4/openapi-lint.log",
+      "sha256": "8b827ea87fc0f3fdd2ad8e76566c76fb8ce64d01089b44a106bcaee20cc651b9",
+      "bytes": 225
+    },
+    {
+      "path": "tmp/s3-s4/contracts.log",
+      "sha256": "365c649e9672c75acee4eb0fe36f26bcf0f95086c1422373965fe8de700dc7b2",
+      "bytes": 301
+    },
+    {
+      "path": "tmp/s3-s4/sqlc.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tmp/s3-s4/replay-desktop.png",
+      "sha256": "92b20667e94bb634f71fc4089fba2768ba18ded8c63db35d234d86f8bf7d4a8f",
+      "bytes": 73810
+    },
+    {
+      "path": "tmp/s3-s4/replay-mobile.png",
+      "sha256": "c6f6b1effa7f62774805ca914ba0d62c24b08503db011f6af3cb16203d967074",
+      "bytes": 52594
+    },
+    {
+      "path": "tmp/s3-s4/evaluation-mobile.png",
+      "sha256": "cdb86f60c7692a8b5dd8fef9af02ed77fd08cb73ba03f40076ebcddbd09e00bb",
+      "bytes": 57468
+    },
+    {
+      "path": "db/migrations/00037_simulation_recordings.sql",
+      "sha256": "6244a836bc7adc4a70b6c011fc16ce3e9b379f27e16b74d825d6e361d883865d",
+      "bytes": 12370
+    },
+    {
+      "path": "db/migrations/00038_sensor_quality_presets.sql",
+      "sha256": "a9805d185d6bf0e8d08f66407ce8f7b64330d10f87d75e5ec16845788b01401e",
+      "bytes": 1130
+    }
+  ]
+}

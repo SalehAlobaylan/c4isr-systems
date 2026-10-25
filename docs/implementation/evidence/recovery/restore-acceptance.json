@@ -1,0 +1,24 @@
+{
+  "schema": "emad.restore-acceptance.v1",
+  "acceptedAt": "2026-10-23T12:43:27.649791+00:00",
+  "backupManifestSha256": "db5ddf776dd9c47754e1ceea4fcd784146866d3f4a8d2d8b263f148eedcb79f5",
+  "objectsVerified": 192,
+  "objectBytesVerified": 543546226,
+  "referenceVersions": 24,
+  "imageryCaptures": 4,
+  "modelsAndEnvironmentVerified": 7,
+  "recordings": [
+    {
+      "runId": "rt_78ca58ec0353b9b835a720a9611f5b45336067243d8d83255f88b6b7293ce524",
+      "events": 124,
+      "frameSequence": 124
+    },
+    {
+      "runId": "rt_891e4456aa9e306e0114dff6d08d6f85407e5d7794ad3067670840213c5a31b2",
+      "events": 73259,
+      "frameSequence": 43
+    }
+  ],
+  "isolation": "New randomly named PostgreSQL and Garage containers/volumes; loopback ephemeral ports. Original installation was not modified.",
+  "reproducedAnalysisSha256": "54bfa7ffdef774485bbcb2d83d3edadceeeb1a4a21d70a4c79827c259a2ff975"
+}

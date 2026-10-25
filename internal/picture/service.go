@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 )
@@ -56,11 +57,15 @@ func (r Request) effectiveAt(now time.Time) time.Time {
 // was current then, and painting it in today's colours would splice two
 // different moments into one picture.
 //
-// An instant outside the evidence window is clamped rather than refused. The
+// A historical instant outside the evidence window is clamped rather than refused. The
 // operator asked for a moment that does not exist in the data; returning the
 // nearest real one with an honest At is more useful than an error, and is
 // visible in the interface rather than silently substituted.
 func (s *Service) Snapshot(ctx context.Context, req Request) (Snapshot, error) {
+	if scopeErr := access.Require(ctx, "operational.read"); scopeErr != nil {
+		return Snapshot{}, scopeErr
+	}
+
 	if req.Limit <= 0 {
 		req.Limit = DefaultLimit
 	}
@@ -68,7 +73,7 @@ func (s *Service) Snapshot(ctx context.Context, req Request) (Snapshot, error) {
 		req.Limit = MaxLimit
 	}
 
-	now := s.now()
+	now := freshness.Now(ctx, s.now())
 	window, err := s.repo.Window(ctx, req.ScopePrefix)
 	if err != nil {
 		return Snapshot{}, err
@@ -77,6 +82,12 @@ func (s *Service) Snapshot(ctx context.Context, req Request) (Snapshot, error) {
 	requested := req.effectiveAt(now)
 	live := req.Live || requested.Equal(now)
 	at := window.Clamp(requested)
+	if live {
+		// Silence ages against the information clock even when no new sample
+		// extends the recording window. Clamping live time would keep an old
+		// contact fresh forever. Only historical scrubber requests are clamped.
+		at = now
+	}
 
 	tracks, err := s.repo.TracksAt(ctx, at, req.ScopePrefix)
 	if err != nil {
@@ -139,6 +150,10 @@ func (s *Service) Snapshot(ctx context.Context, req Request) (Snapshot, error) {
 
 // Window returns the span of evidence available for scrubbing.
 func (s *Service) Window(ctx context.Context, scopePrefix string) (Window, error) {
+	if scopeErr := access.Require(ctx, "operational.read"); scopeErr != nil {
+		return Window{}, scopeErr
+	}
+
 	window, err := s.repo.Window(ctx, scopePrefix)
 	if err != nil {
 		return Window{}, err

@@ -8,6 +8,7 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type fakeRepository struct {
@@ -69,7 +70,7 @@ func TestSnapshotReconstructsFromEvidenceNotCurrentState(t *testing.T) {
 	svc := NewService(repo, testPolicy())
 	svc.now = func() time.Time { return base.Add(5 * time.Minute) }
 
-	snapshot, err := svc.Snapshot(context.Background(), Request{At: base.Add(30 * time.Second)})
+	snapshot, err := svc.Snapshot(testsupport.Context(), Request{At: base.Add(30 * time.Second)})
 	if err != nil {
 		t.Fatalf("Snapshot() error = %v", err)
 	}
@@ -96,7 +97,7 @@ func TestFreshnessIsDerivedFromTheRequestedInstant(t *testing.T) {
 	// Replaying to T+30s: the observation is 10s old *at that moment*, so the
 	// track was live then even though it is an hour stale now. Computing
 	// freshness against the wall clock would repaint history.
-	snapshot, err := svc.Snapshot(context.Background(), Request{At: base.Add(30 * time.Second)})
+	snapshot, err := svc.Snapshot(testsupport.Context(), Request{At: base.Add(30 * time.Second)})
 	if err != nil {
 		t.Fatalf("Snapshot() error = %v", err)
 	}
@@ -106,7 +107,7 @@ func TestFreshnessIsDerivedFromTheRequestedInstant(t *testing.T) {
 
 	// The same track, judged now, is a different question and gets a different
 	// answer.
-	now, err := svc.Snapshot(context.Background(), Request{Live: true})
+	now, err := svc.Snapshot(testsupport.Context(), Request{Live: true})
 	if err != nil {
 		t.Fatalf("Snapshot() error = %v", err)
 	}
@@ -126,7 +127,7 @@ func TestClampsAnInstantOutsideTheEvidenceWindow(t *testing.T) {
 	svc.now = func() time.Time { return base.Add(time.Hour) }
 
 	// Before the window: the earliest moment that actually exists.
-	before, err := svc.Snapshot(context.Background(), Request{At: base})
+	before, err := svc.Snapshot(testsupport.Context(), Request{At: base})
 	if err != nil {
 		t.Fatalf("Snapshot() error = %v", err)
 	}
@@ -135,7 +136,7 @@ func TestClampsAnInstantOutsideTheEvidenceWindow(t *testing.T) {
 	}
 
 	// After the window: the latest.
-	after, err := svc.Snapshot(context.Background(), Request{At: base.Add(10 * time.Hour)})
+	after, err := svc.Snapshot(testsupport.Context(), Request{At: base.Add(10 * time.Hour)})
 	if err != nil {
 		t.Fatalf("Snapshot() error = %v", err)
 	}
@@ -158,7 +159,7 @@ func TestSnapshotWithoutARequestIsTheLivePicture(t *testing.T) {
 	svc := NewService(repo, testPolicy())
 	svc.now = func() time.Time { return now }
 
-	snapshot, err := svc.Snapshot(context.Background(), Request{})
+	snapshot, err := svc.Snapshot(testsupport.Context(), Request{})
 	if err != nil {
 		t.Fatalf("Snapshot() error = %v", err)
 	}
@@ -170,12 +171,35 @@ func TestSnapshotWithoutARequestIsTheLivePicture(t *testing.T) {
 	}
 }
 
+func TestLiveExerciseFreshnessAdvancesPastLastRecordedSample(t *testing.T) {
+	repo := &fakeRepository{window: Window{Earliest: base, Latest: base}, tracks: []Track{{ID: "silent", Status: "active", ObservedAt: base}}}
+	svc := NewService(repo, testPolicy())
+	wall := base.Add(365 * 24 * time.Hour)
+	svc.now = func() time.Time { return wall }
+	virtual := base.Add(10 * time.Minute)
+	ctx := freshness.WithClock(testsupport.Context(), func(context.Context, time.Time) time.Time { return virtual })
+	first, err := svc.Snapshot(ctx, Request{})
+	if err != nil || first.Tracks[0].Freshness != freshness.StateStale || !first.At.Equal(virtual) {
+		t.Fatalf("quiet exercise did not age: %+v %v", first, err)
+	}
+	wall = wall.Add(time.Hour)
+	paused, err := svc.Snapshot(ctx, Request{})
+	if err != nil || paused.Tracks[0].Freshness != first.Tracks[0].Freshness || !paused.At.Equal(first.At) {
+		t.Fatal("paused exercise followed wall time")
+	}
+	virtual = base.Add(40 * time.Minute)
+	resumed, err := svc.Snapshot(ctx, Request{})
+	if err != nil || resumed.Tracks[0].Freshness != freshness.StateUnavailable {
+		t.Fatal("resumed virtual time did not age contact")
+	}
+}
+
 func TestSnapshotReturnsEmptyCollectionsNotNulls(t *testing.T) {
 	repo := &fakeRepository{window: Window{Earliest: base, Latest: base.Add(time.Minute)}}
 	svc := NewService(repo, testPolicy())
 	svc.now = func() time.Time { return base.Add(time.Minute) }
 
-	snapshot, err := svc.Snapshot(context.Background(), Request{})
+	snapshot, err := svc.Snapshot(testsupport.Context(), Request{})
 	if err != nil {
 		t.Fatalf("Snapshot() error = %v", err)
 	}
@@ -198,7 +222,7 @@ func TestSnapshotPropagatesRepositoryFailure(t *testing.T) {
 		tracksErr: errors.New("database unavailable"),
 	}, testPolicy())
 
-	if _, err := svc.Snapshot(context.Background(), Request{}); err == nil {
+	if _, err := svc.Snapshot(testsupport.Context(), Request{}); err == nil {
 		t.Fatal("a failed reconstruction must not return an empty picture that looks real")
 	}
 }
@@ -208,7 +232,7 @@ func TestSnapshotScopeIsPassedThrough(t *testing.T) {
 	svc := NewService(repo, testPolicy())
 	svc.now = func() time.Time { return base.Add(time.Minute) }
 
-	if _, err := svc.Snapshot(context.Background(), Request{ScopePrefix: "run_1__"}); err != nil {
+	if _, err := svc.Snapshot(testsupport.Context(), Request{ScopePrefix: "run_1__"}); err != nil {
 		t.Fatalf("Snapshot() error = %v", err)
 	}
 	if repo.scope != "run_1__" {
@@ -229,7 +253,7 @@ func TestPositionSurvivesReconstruction(t *testing.T) {
 	svc := NewService(repo, testPolicy())
 	svc.now = func() time.Time { return base.Add(time.Minute) }
 
-	snapshot, err := svc.Snapshot(context.Background(), Request{At: base.Add(30 * time.Second)})
+	snapshot, err := svc.Snapshot(testsupport.Context(), Request{At: base.Add(30 * time.Second)})
 	if err != nil {
 		t.Fatalf("Snapshot() error = %v", err)
 	}

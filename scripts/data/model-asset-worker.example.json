@@ -1,0 +1,15 @@
+{
+  "id": "model-asset-importer",
+  "kind": "service",
+  "name": "Bounded simulation model import worker",
+  "resource": {
+    "workspaceId": "default",
+    "environmentId": "local",
+    "partition": "EXERCISE_INPUT"
+  },
+  "permissions": [
+    "operational.read",
+    "sim.assets.import"
+  ],
+  "sourceIds": []
+}

@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
+	"github.com/go-chi/chi/v5"
 )
 
 // Handler exposes scenario definitions and run control over HTTP.
@@ -27,6 +27,9 @@ func (h *Handler) Mount(r chi.Router) {
 		r.Get("/runs", h.listRuns)
 		r.Get("/runs/{id}", h.getRun)
 		r.Get("/runs/{id}/events", h.events)
+		r.Get("/runs/{id}/manifest", h.manifest)
+		r.Get("/runs/{id}/synthetic-messages", h.syntheticMessages)
+		r.Get("/runs/{id}/version", h.version)
 		r.Post("/runs/{id}/pause", h.pause)
 		r.Post("/runs/{id}/resume", h.resume)
 		r.Post("/runs/{id}/stop", h.stop)
@@ -51,6 +54,7 @@ type speedRequest struct {
 }
 
 type runResponse struct {
+	Frozen            FrozenRun  `json:"frozen"`
 	ID                string     `json:"id"`
 	ResourceNamespace string     `json:"resourceNamespace"`
 	ScenarioName      string     `json:"scenarioName"`
@@ -69,7 +73,7 @@ type runResponse struct {
 }
 
 func (h *Handler) listScenarios(w http.ResponseWriter, r *http.Request) {
-	summaries, err := h.svc.ListScenarios()
+	summaries, err := h.svc.ListScenarios(r.Context())
 	if err != nil {
 		httpx.Error(w, err)
 		return
@@ -78,7 +82,7 @@ func (h *Handler) listScenarios(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getScenario(w http.ResponseWriter, r *http.Request) {
-	sc, err := h.svc.GetScenario(chi.URLParam(r, "name"))
+	sc, err := h.svc.GetScenario(r.Context(), chi.URLParam(r, "name"))
 	if err != nil {
 		httpx.Error(w, err)
 		return
@@ -194,6 +198,7 @@ func (h *Handler) setSpeed(w http.ResponseWriter, r *http.Request) {
 
 func toRunResponse(run Run) runResponse {
 	return runResponse{
+		Frozen:            run.Frozen,
 		ID:                run.ID,
 		ResourceNamespace: run.ResourceNamespace,
 		ScenarioName:      run.ScenarioName,
@@ -210,4 +215,34 @@ func toRunResponse(run Run) runResponse {
 		EndedAt:           run.EndedAt,
 		Error:             run.Error,
 	}
+}
+
+func (h *Handler) manifest(w http.ResponseWriter, r *http.Request) {
+	v, err := h.svc.Manifest(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		httpx.Error(w, err)
+		return
+	}
+	httpx.JSON(w, 200, v)
+}
+func (h *Handler) version(w http.ResponseWriter, r *http.Request) {
+	v, err := h.svc.Version(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		httpx.Error(w, err)
+		return
+	}
+	httpx.JSON(w, 200, v)
+}
+
+func (h *Handler) syntheticMessages(w http.ResponseWriter, r *http.Request) {
+	if h.svc.deps.Ingress == nil {
+		httpx.Error(w, apperr.Conflict("synthetic ingress unavailable"))
+		return
+	}
+	items, err := h.svc.deps.Ingress.Receipts(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		httpx.Error(w, err)
+		return
+	}
+	httpx.JSON(w, 200, map[string]any{"items": items, "total": len(items), "truncated": len(items) == 1000})
 }

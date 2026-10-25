@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@/lib/scopedQueries'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo } from 'react'
@@ -9,9 +10,9 @@ import { SeverityBadge, AlertStateBadge } from '@/components/shared/badges'
 import { ErrorState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
-import { api, type Alert } from '@/lib/api'
+import { useAPI, type Alert } from '@/lib/api'
 import { formatRelative, formatTimestamp, truncateId } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { toast } from '@/stores/toasts'
 
 const STATE_OPTIONS = [
@@ -50,6 +51,8 @@ function alertProvenance(alert: Alert) {
 }
 
 export function AlertsPage() {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const search = useSearch({ from: '/alerts' })
   const navigate = useNavigate()
   const queryClient = useQueryClient()

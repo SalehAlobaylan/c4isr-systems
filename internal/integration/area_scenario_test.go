@@ -1,10 +1,11 @@
 package integration
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 // The area scenario is the demonstration of the event/area path: it must run
@@ -17,7 +18,7 @@ import (
 // filter would find no hazards at all.
 func TestAreaFilterReturnsOnlyFootprints(t *testing.T) {
 	h := newHarness(t)
-	ctx := context.Background()
+	ctx := testsupport.Context()
 	h.createSource("firms")
 
 	// A hazard footprint.
@@ -107,7 +108,7 @@ func TestAreaFilterReturnsOnlyFootprints(t *testing.T) {
 
 func TestAreaScenarioRunsAndRaisesFootprintAlerts(t *testing.T) {
 	h := newHarness(t)
-	ctx := context.Background()
+	ctx := testsupport.Context()
 
 	run := h.startScenario(t, "area-hazard-intrusion")
 	runID := run["id"].(string)
@@ -170,7 +171,7 @@ func TestAreaScenarioRunsAndRaisesFootprintAlerts(t *testing.T) {
 		// that does not exist is an unusable trail.
 		var evidence int
 		if err := h.pool.QueryRow(ctx,
-			`SELECT count(*) FROM observations WHERE id = $1 AND area IS NOT NULL`, observationID).Scan(&evidence); err != nil {
+			`SELECT count(*) FROM observations WHERE (id = $1 OR public_id=$1) AND area IS NOT NULL`, observationID).Scan(&evidence); err != nil {
 			t.Fatalf("resolve alert evidence: %v", err)
 		}
 		if evidence != 1 {
@@ -236,7 +237,7 @@ func TestAreaScenarioReplaysIdentically(t *testing.T) {
 // areaGeometriesForRun returns the run's footprints in emission order.
 func areaGeometriesForRun(t *testing.T, h *harness, runID string) []string {
 	t.Helper()
-	rows, err := h.pool.Query(context.Background(), `
+	rows, err := h.pool.Query(testsupport.Context(), `
 		SELECT ST_AsGeoJSON(area::geometry)::text
 		FROM observations
 		WHERE payload->>'scenarioRunId' = $1 AND area IS NOT NULL

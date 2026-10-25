@@ -3,6 +3,8 @@ package assessments
 import (
 	"strings"
 	"testing"
+
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 func validInput() CreateInput {
@@ -150,7 +152,7 @@ func TestServiceCreate(t *testing.T) {
 	bus, published := testBus()
 	svc := NewService(repo, bus)
 
-	created, err := svc.Create(t.Context(), validInput())
+	created, err := svc.Create(testsupport.Context(), validInput())
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -181,7 +183,7 @@ func TestServiceCreateRejectsInvalidInput(t *testing.T) {
 
 	in := validInput()
 	in.SubjectType = "planet"
-	if _, err := svc.Create(t.Context(), in); err == nil {
+	if _, err := svc.Create(testsupport.Context(), in); err == nil {
 		t.Fatal("Create() = nil error, want validation error")
 	}
 	if len(repo.created) != 0 {
@@ -194,7 +196,7 @@ func TestServiceListClamps(t *testing.T) {
 	bus, _ := testBus()
 	svc := NewService(repo, bus)
 
-	if _, _, err := svc.List(t.Context(), "track", "trk_1", -1, -1); err != nil {
+	if _, _, err := svc.List(testsupport.Context(), "track", "trk_1", -1, -1); err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
 	if repo.listLimit != DefaultLimit || repo.listOffset != 0 {
@@ -210,7 +212,7 @@ func TestServiceListFiltersAreTrimmed(t *testing.T) {
 	bus, _ := testBus()
 	svc := NewService(repo, bus)
 
-	if _, _, err := svc.List(t.Context(), "  track ", "  trk_1  ", 10, 20); err != nil {
+	if _, _, err := svc.List(testsupport.Context(), "  track ", "  trk_1  ", 10, 20); err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
 	if repo.listSubjectType != "track" || repo.listSubjectID != "trk_1" {

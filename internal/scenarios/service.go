@@ -10,9 +10,12 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/assets"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/contextpackage"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/geospatial"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
@@ -27,18 +30,22 @@ const (
 
 // StartOptions overrides scenario defaults at launch.
 type StartOptions struct {
-	Speed float64
-	Seed  *int64
+	Speed          float64
+	Seed           *int64
+	frozen         *FrozenRun
+	definition     *Scenario
+	contextBundles []contextpackage.Bundle
 }
 
 // Service is the application layer for scenario control. The runner itself is
 // an external source of information; runs are supervised and controllable but
 // never bypass domain services.
 type Service struct {
-	repo   Repository
-	loader *Loader
-	deps   EngineDeps
-	bus    *events.Dispatcher
+	NativeRun func(context.Context, string) (Run, error)
+	repo      Repository
+	loader    *Loader
+	deps      EngineDeps
+	bus       *events.Dispatcher
 
 	mu sync.Mutex
 	// lifecycleMu serializes startup and shutdown. Without it, a Start that is
@@ -74,18 +81,28 @@ func NewService(repo Repository, loader *Loader, deps EngineDeps, bus *events.Di
 }
 
 // ListScenarios returns the scenario definitions available on disk.
-func (s *Service) ListScenarios() ([]Summary, error) {
+func (s *Service) ListScenarios(ctx context.Context) ([]Summary, error) {
+	if err := access.Require(ctx, "sim.scenarios.author"); err != nil {
+		return nil, err
+	}
 	return s.loader.List()
 }
 
 // GetScenario returns one parsed scenario definition.
-func (s *Service) GetScenario(name string) (*Scenario, error) {
+func (s *Service) GetScenario(ctx context.Context, name string) (*Scenario, error) {
+	if err := access.Require(ctx, "sim.scenarios.author"); err != nil {
+		return nil, err
+	}
 	return s.loader.Load(name)
 }
 
 // Start registers scenario entities through the normal application services,
 // then begins executing the deterministic timeline.
 func (s *Service) Start(ctx context.Context, name string, opts StartOptions) (Run, error) {
+	if scopeErr := access.Require(ctx, "scenarios.control"); scopeErr != nil {
+		return Run{}, scopeErr
+	}
+
 	s.lifecycleMu.Lock()
 	defer s.lifecycleMu.Unlock()
 	return s.startLocked(ctx, name, opts)
@@ -98,9 +115,13 @@ func (s *Service) startLocked(ctx context.Context, name string, opts StartOption
 		return Run{}, apperr.Conflict("scenario service is closed")
 	}
 	s.mu.Unlock()
-	sc, err := s.loader.Load(name)
-	if err != nil {
-		return Run{}, err
+	sc := opts.definition
+	var err error
+	if sc == nil {
+		sc, err = s.loader.Load(name)
+		if err != nil {
+			return Run{}, err
+		}
 	}
 
 	seed := sc.Seed
@@ -118,9 +139,62 @@ func (s *Service) startLocked(ctx context.Context, name string, opts StartOption
 		speed = opts.Speed
 	}
 
+	clock := defaultClock()
+	if sc.Clock != nil {
+		clock = *sc.Clock
+	}
+	frozen := FrozenRun{RuntimeBuild: runtimeBuild(), Schema: "emad.run.v1", Runtime: RuntimeVersion, Seed: seed, InitialScale: speed, Clock: clock}
+	if opts.frozen != nil {
+		frozen = *opts.frozen
+		frozen.InitialScale = speed
+		seed = frozen.Seed
+		clock = frozen.Clock
+	}
+	frozenBundles := opts.contextBundles
+	if frozen.VersionID == "" {
+		repo, ok := s.repo.(versionRepository)
+		if !ok {
+			return Run{}, apperr.Internal(fmt.Errorf("version repository unavailable"))
+		}
+		bundles := []contextpackage.Bundle{}
+		if len(sc.ContextPackages) > 0 {
+			if s.deps.ContextPackages == nil {
+				return Run{}, apperr.Conflict("context package store unavailable")
+			}
+			resource, _ := access.ResourceFrom(ctx)
+			resource.Partition = access.PublicEvidence
+			resource.RunID = ""
+			publicCtx, err := access.Rebind(ctx, resource)
+			if err != nil {
+				return Run{}, err
+			}
+			for _, id := range sc.ContextPackages {
+				b, err := s.deps.ContextPackages.Load(publicCtx, id)
+				if err != nil {
+					return Run{}, err
+				}
+				if err = b.Validate(time.Now(), true); err != nil {
+					return Run{}, apperr.Validation(err.Error())
+				}
+				bundles = append(bundles, b)
+			}
+		}
+		frozenBundles = bundles
+		frozen.ContextPackageIDs = append([]string{}, sc.ContextPackages...)
+		id, err := repo.SaveVersion(ctx, Version{RuntimeBuild: runtimeBuild(), Schema: "emad.scenario.v1", Definition: sc, Runtime: RuntimeVersion, Context: bundles})
+		if err != nil {
+			return Run{}, err
+		}
+		frozen.VersionID = id
+	}
 	runID := ids.New("scn")
 	scope := NewRunScope(runID)
+	ctx, err = access.NewRun(ctx, runID)
+	if err != nil {
+		return Run{}, err
+	}
 	run, err := s.repo.Create(ctx, Run{
+		Frozen:            frozen,
 		ID:                runID,
 		ResourceNamespace: scope.ResourceNamespace,
 		ScenarioName:      sc.Name,
@@ -131,7 +205,9 @@ func (s *Service) startLocked(ctx context.Context, name string, opts StartOption
 	if err != nil {
 		return Run{}, err
 	}
-	scopedCtx := runctx.WithScope(ctx, runctx.Scope{RunID: scope.RunID, ResourceNamespace: scope.ResourceNamespace})
+	resource, _ := access.ResourceFrom(ctx)
+	scopedCtx := runctx.WithScope(access.Internal(ctx, resource, "scenario-runner"), runctx.Scope{RunID: scope.RunID, ResourceNamespace: scope.ResourceNamespace})
+	scopedCtx = freshness.WithClock(scopedCtx, s.ClockNow)
 	s.bus.Publish(scopedCtx, events.ScenarioRunStarted{
 		At:           time.Now().UTC(),
 		RunID:        run.ID,
@@ -145,11 +221,14 @@ func (s *Service) startLocked(ctx context.Context, name string, opts StartOption
 	}
 
 	progress := func(ms int64) {
-		updateCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		updateCtx, cancel := context.WithTimeout(context.WithoutCancel(scopedCtx), 2*time.Second)
 		defer cancel()
 		_ = s.repo.UpdateProgress(updateCtx, run.ID, ms)
 	}
 	eng := newEngine(run.ID, scope, sc, seed, speed, s.deps, s.repo, progress)
+	eng.epoch = clock.Epoch
+	eng.versionID = frozen.VersionID
+	eng.contextBundles = frozenBundles
 	if err := eng.build(); err != nil {
 		s.failRun(scopedCtx, run.ID, scope, err)
 		return Run{}, err
@@ -161,7 +240,7 @@ func (s *Service) startLocked(ctx context.Context, name string, opts StartOption
 
 	// The run outlives the HTTP request that starts it; it is controlled via
 	// pause/resume/speed/stop and cancelled on process shutdown.
-	runCtx, cancel := context.WithCancel(context.Background())
+	runCtx, cancel := context.WithCancel(context.WithoutCancel(scopedCtx))
 	runCtx = runctx.WithScope(runCtx, runctx.Scope{RunID: scope.RunID, ResourceNamespace: scope.ResourceNamespace})
 	s.mu.Lock()
 	s.engines[run.ID] = eng
@@ -197,11 +276,18 @@ func (s *Service) startLocked(ctx context.Context, name string, opts StartOption
 	run.ResourceNamespace = scope.ResourceNamespace
 	run.EventsRun = snapshot.EventsRun
 	run.EventsTotal = snapshot.EventsTotal
+	if err := access.Activate(ctx); err != nil {
+		return Run{}, err
+	}
 	return run, nil
 }
 
 // Pause freezes a running scenario.
 func (s *Service) Pause(ctx context.Context, runID string) (Run, error) {
+	if scopeErr := access.Require(ctx, "scenarios.control"); scopeErr != nil {
+		return Run{}, scopeErr
+	}
+
 	s.lifecycleMu.Lock()
 	defer s.lifecycleMu.Unlock()
 	guard := s.runLock(runID)
@@ -214,7 +300,7 @@ func (s *Service) Pause(ctx context.Context, runID string) (Run, error) {
 	if terminalStatus(run.Status) {
 		return Run{}, apperr.Conflict("scenario run is terminal")
 	}
-	eng, err := s.activeEngine(runID)
+	eng, err := s.activeEngine(ctx, runID)
 	if err != nil {
 		return Run{}, err
 	}
@@ -223,12 +309,19 @@ func (s *Service) Pause(ctx context.Context, runID string) (Run, error) {
 		return Run{}, err
 	}
 	eng.Pause()
+	if err := s.repo.UpdateProgress(ctx, runID, eng.VirtualTimeMs()); err != nil {
+		return Run{}, err
+	}
 	s.bus.Publish(runctx.WithScope(ctx, runctx.Scope{RunID: runID, ResourceNamespace: NewRunScope(runID).ResourceNamespace}), events.ScenarioRunUpdated{At: time.Now().UTC(), RunID: runID, Status: run.Status})
 	return s.responseRun(ctx, run), nil
 }
 
 // Resume continues a paused scenario.
 func (s *Service) Resume(ctx context.Context, runID string) (Run, error) {
+	if scopeErr := access.Require(ctx, "scenarios.control"); scopeErr != nil {
+		return Run{}, scopeErr
+	}
+
 	s.lifecycleMu.Lock()
 	defer s.lifecycleMu.Unlock()
 	guard := s.runLock(runID)
@@ -241,7 +334,7 @@ func (s *Service) Resume(ctx context.Context, runID string) (Run, error) {
 	if terminalStatus(run.Status) {
 		return Run{}, apperr.Conflict("scenario run is terminal")
 	}
-	eng, err := s.activeEngine(runID)
+	eng, err := s.activeEngine(ctx, runID)
 	if err != nil {
 		return Run{}, err
 	}
@@ -256,6 +349,10 @@ func (s *Service) Resume(ctx context.Context, runID string) (Run, error) {
 
 // SetSpeed changes playback speed.
 func (s *Service) SetSpeed(ctx context.Context, runID string, speed float64) (Run, error) {
+	if scopeErr := access.Require(ctx, "scenarios.control"); scopeErr != nil {
+		return Run{}, scopeErr
+	}
+
 	if speed <= 0 || math.IsNaN(speed) || math.IsInf(speed, 0) {
 		return Run{}, apperr.Validation("speed must be positive")
 	}
@@ -271,7 +368,7 @@ func (s *Service) SetSpeed(ctx context.Context, runID string, speed float64) (Ru
 	if terminalStatus(run.Status) {
 		return Run{}, apperr.Conflict("scenario run is terminal")
 	}
-	eng, err := s.activeEngine(runID)
+	eng, err := s.activeEngine(ctx, runID)
 	if err != nil {
 		return Run{}, err
 	}
@@ -286,6 +383,10 @@ func (s *Service) SetSpeed(ctx context.Context, runID string, speed float64) (Ru
 
 // Stop cancels a running scenario.
 func (s *Service) Stop(ctx context.Context, runID string) (Run, error) {
+	if scopeErr := access.Require(ctx, "scenarios.control"); scopeErr != nil {
+		return Run{}, scopeErr
+	}
+
 	s.lifecycleMu.Lock()
 	defer s.lifecycleMu.Unlock()
 	guard := s.runLock(runID)
@@ -319,7 +420,14 @@ func (s *Service) Stop(ctx context.Context, runID string) (Run, error) {
 
 // GetRun returns persisted run state merged with live engine state.
 func (s *Service) GetRun(ctx context.Context, runID string) (Run, error) {
+	if scopeErr := access.Require(ctx, "scenarios.read"); scopeErr != nil {
+		return Run{}, scopeErr
+	}
+
 	run, err := s.repo.Get(ctx, runID)
+	if apperr.Is(err, apperr.CodeNotFound) && s.NativeRun != nil {
+		return s.NativeRun(ctx, runID)
+	}
 	if err != nil {
 		return Run{}, err
 	}
@@ -355,6 +463,10 @@ func (s *Service) responseRun(ctx context.Context, run Run) Run {
 // stopped runs the persisted lifecycle status is used to provide a useful
 // terminal summary even after the in-memory engine has been released.
 func (s *Service) InspectEvents(ctx context.Context, runID string) ([]EventInspection, error) {
+	if scopeErr := access.Require(ctx, "sim.scenarios.author"); scopeErr != nil {
+		return nil, scopeErr
+	}
+
 	run, err := s.repo.Get(ctx, runID)
 	if err != nil {
 		return nil, err
@@ -368,7 +480,8 @@ func (s *Service) InspectEvents(ctx context.Context, runID string) ([]EventInspe
 	if persisted, err := s.repo.ListEvents(ctx, runID); err == nil && len(persisted) > 0 {
 		return persisted, nil
 	}
-	sc, err := s.loader.Load(run.ScenarioName)
+	version, err := s.Version(ctx, run.ID)
+	sc := version.Definition
 	if err != nil {
 		return nil, err
 	}
@@ -391,6 +504,10 @@ func (s *Service) InspectEvents(ctx context.Context, runID string) ([]EventInspe
 // scenario and seed. A new run id makes replay lineage explicit in audit and
 // prevents mutable state from masquerading as a replay.
 func (s *Service) Restart(ctx context.Context, runID string) (Run, error) {
+	if scopeErr := access.Require(ctx, "scenarios.control"); scopeErr != nil {
+		return Run{}, scopeErr
+	}
+
 	s.lifecycleMu.Lock()
 	defer s.lifecycleMu.Unlock()
 	s.mu.Lock()
@@ -405,6 +522,20 @@ func (s *Service) Restart(ctx context.Context, runID string) (Run, error) {
 	previous, err := s.repo.Get(ctx, runID)
 	if err != nil {
 		return Run{}, err
+	}
+	if previous.Frozen.VersionID == "" {
+		return Run{}, apperr.Conflict("legacy run has no frozen inputs; start a new scenario explicitly")
+	}
+	repo, ok := s.repo.(versionRepository)
+	if !ok {
+		return Run{}, apperr.Internal(fmt.Errorf("version repository unavailable"))
+	}
+	version, err := repo.LoadVersion(ctx, previous.Frozen.VersionID)
+	if err != nil {
+		return Run{}, err
+	}
+	if version.Runtime != RuntimeVersion || version.RuntimeBuild != runtimeBuild() {
+		return Run{}, apperr.Conflict("re-simulation requires the original runtime build; recorded evidence remains available")
 	}
 	s.mu.Lock()
 	_, active := s.engines[runID]
@@ -430,14 +561,17 @@ func (s *Service) Restart(ctx context.Context, runID string) (Run, error) {
 			return Run{}, err
 		}
 	}
-	return s.startLocked(ctx, previous.ScenarioName, StartOptions{
-		Speed: previous.PlaybackSpeed,
-		Seed:  &previous.Seed,
-	})
+	frozen := previous.Frozen
+	frozen.RestartOf = previous.ID
+	return s.startLocked(ctx, previous.ScenarioName, StartOptions{Speed: previous.PlaybackSpeed, Seed: &previous.Seed, frozen: &frozen, definition: version.Definition, contextBundles: version.Context})
 }
 
 // ListRuns returns scenario runs newest first.
 func (s *Service) ListRuns(ctx context.Context, limit, offset int) ([]Run, int, error) {
+	if scopeErr := access.Require(ctx, "scenarios.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	if limit <= 0 {
 		limit = DefaultLimit
 	}
@@ -447,17 +581,42 @@ func (s *Service) ListRuns(ctx context.Context, limit, offset int) ([]Run, int, 
 	if offset < 0 {
 		offset = 0
 	}
-	return s.repo.List(ctx, limit, offset)
+	items, total, err := s.repo.List(ctx, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	if len(items) == 0 && s.NativeRun != nil {
+		r, _ := access.ResourceFrom(ctx)
+		run, e := s.NativeRun(ctx, r.RunID)
+		if e == nil {
+			if offset > 0 {
+				return []Run{}, 1, nil
+			}
+			return []Run{run}, 1, nil
+		}
+		if !apperr.Is(e, apperr.CodeNotFound) {
+			return nil, 0, e
+		}
+	}
+	for i := range items {
+		s.mu.Lock()
+		active := s.engines[items[i].ID] != nil
+		s.mu.Unlock()
+		if active && !terminalStatus(items[i].Status) {
+			items[i] = s.responseRun(ctx, items[i])
+		}
+	}
+	return items, total, nil
 }
 
-func (s *Service) activeEngine(runID string) (*engine, error) {
+func (s *Service) activeEngine(ctx context.Context, runID string) (*engine, error) {
 	s.mu.Lock()
 	eng, ok := s.engines[runID]
 	s.mu.Unlock()
 	if ok {
 		return eng, nil
 	}
-	if _, err := s.repo.Get(context.Background(), runID); err != nil {
+	if _, err := s.repo.Get(ctx, runID); err != nil {
 		return nil, err
 	}
 	return nil, apperr.Conflict("scenario run is not active")
@@ -623,6 +782,14 @@ func (s *Service) finalizeRunLocked(ctx context.Context, runID string, scope Run
 		}
 		return current, nil
 	}
+	s.mu.Lock()
+	eng := s.engines[runID]
+	s.mu.Unlock()
+	if eng != nil {
+		if err := s.repo.UpdateProgress(finalizeCtx, runID, eng.VirtualTimeMs()); err != nil {
+			return Run{}, err
+		}
+	}
 	if err := s.repo.SkipPendingEvents(finalizeCtx, runID, message); err != nil {
 		return Run{}, err
 	}
@@ -653,6 +820,10 @@ func countExecutedEvents(items []EventInspection) int {
 // Close stops all active engines and waits for their terminal persistence to
 // finish. App.Close calls this before closing the database pool.
 func (s *Service) Close(ctx context.Context) error {
+	if scopeErr := access.Require(ctx, "platform.maintenance"); scopeErr != nil {
+		return scopeErr
+	}
+
 	s.lifecycleMu.Lock()
 	defer s.lifecycleMu.Unlock()
 	s.mu.Lock()

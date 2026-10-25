@@ -1,0 +1,232 @@
+{
+  "capturedAt": "2026-10-24T07:41:54.445Z",
+  "browser": "153.0.8010.12",
+  "installation": "Persistent local installation",
+  "screens": [
+    {
+      "name": "home",
+      "width": 1440,
+      "height": 1000,
+      "file": "home-desktop.png",
+      "sha256": "a72db3b8d56a90f4c53a97417f16c38f00ebe76b09555dee100f7e47ac6a9f1a"
+    },
+    {
+      "name": "systems",
+      "width": 1440,
+      "height": 1000,
+      "file": "systems-desktop.png",
+      "sha256": "050df2f2e623dfd42ad78f05ef14db840dd01b20548e35f52c39d68ced56065e"
+    },
+    {
+      "name": "map",
+      "width": 1440,
+      "height": 1000,
+      "file": "map-desktop.png",
+      "sha256": "79a589ad3f7fe9b4037306512bbfb5f9b17719e3a8f54512cff0602dae3ede3d"
+    },
+    {
+      "name": "imagery",
+      "width": 1440,
+      "height": 1000,
+      "file": "imagery-desktop.png",
+      "sha256": "e7fccad76ecfdb4b80326df3ce8724f8029938680b291ff3a11f809613942b69"
+    },
+    {
+      "name": "catalogue",
+      "width": 1440,
+      "height": 1000,
+      "file": "catalogue-desktop.png",
+      "sha256": "6e8990c646e26fcbcdc76b7c2415f3ac085aab445b9f6c1616d808c53bad348e"
+    },
+    {
+      "name": "analysis",
+      "width": 1440,
+      "height": 1000,
+      "file": "analysis-desktop.png",
+      "sha256": "133d1da40c24f5508b48dc49e5a2f515e206bc078f183993d2f6f27ea4658876"
+    },
+    {
+      "name": "review",
+      "width": 1440,
+      "height": 1000,
+      "file": "review-desktop.png",
+      "sha256": "b23864d0cb7006550a05e3b4503089cc8f4cd67ae0e906a36b8748f6ad5215f7"
+    },
+    {
+      "name": "context",
+      "width": 1440,
+      "height": 1000,
+      "file": "context-desktop.png",
+      "sha256": "1c0a19208a34190f2cb44321ef78719bbd6cce0cefe19e83dd3732273bc9a9cf"
+    },
+    {
+      "name": "weather",
+      "width": 1440,
+      "height": 1000,
+      "file": "weather-desktop.png",
+      "sha256": "cb72ea2f3dcbf60e64c478d8119b0a12be4ac921a8a6cbf61797534f70796d55"
+    },
+    {
+      "name": "tracks",
+      "width": 1440,
+      "height": 1000,
+      "file": "tracks-desktop.png",
+      "sha256": "3b3d9c7fc2d62ac373ec2f4ddc67087c043c754c4830d156a06507366dc8c216"
+    },
+    {
+      "name": "assets",
+      "width": 1440,
+      "height": 1000,
+      "file": "assets-desktop.png",
+      "sha256": "42392acb2757ea274502b20dc5b205e2bc5fb8c8982a1d2fc03571f476c7b1f9"
+    },
+    {
+      "name": "studio",
+      "width": 1440,
+      "height": 1000,
+      "file": "studio-desktop.png",
+      "sha256": "8265d01c8f6f98345d4a75ee347799d706587e02c3c9c3c1b30bbc27bd16876f"
+    },
+    {
+      "name": "studio-actor-focus",
+      "width": 1440,
+      "height": 1000,
+      "file": "studio-actor-focus-desktop.png",
+      "sha256": "619a3c55b110ca46ab7af3760ba0a91cfe548a7445766154619f4ceda4f9e2c0"
+    },
+    {
+      "name": "replay",
+      "width": 1440,
+      "height": 1000,
+      "file": "replay-desktop.png",
+      "sha256": "574a2d317425022d5049acdc2c5e60d7a4d208c6f92feef48ca5a13297f82044"
+    },
+    {
+      "name": "sources",
+      "width": 1440,
+      "height": 1000,
+      "file": "sources-desktop.png",
+      "sha256": "cf9530df8f1d46b90d2b545cb6dddc0161e4c6bd8a2e62386dc54ee57175dcfd"
+    },
+    {
+      "name": "map-layers",
+      "width": 1440,
+      "height": 1000,
+      "file": "map-layers-desktop.png",
+      "sha256": "38dd325e5888c464e85581a2019f89b8a5cf9d6f7c8266d66985435d6e357118"
+    },
+    {
+      "name": "assets-definitions",
+      "width": 1440,
+      "height": 1000,
+      "file": "assets-definitions-desktop.png",
+      "sha256": "508089843b1e2744f6b4de5de2bd0857855ebacb8c47b3b294d86e74b58943e1"
+    },
+    {
+      "name": "assets-import",
+      "width": 1440,
+      "height": 1000,
+      "file": "assets-import-desktop.png",
+      "sha256": "32c08da961cb58d3dd3b09c3c165fefcf78ae5169e58d5715b644e3fe636fe01"
+    },
+    {
+      "name": "home",
+      "width": 390,
+      "height": 844,
+      "file": "home-mobile.png",
+      "sha256": "c69b953285671616ccc0de2a775a9700213b2a6ce0d228421d4b2bf989c756c1"
+    },
+    {
+      "name": "systems",
+      "width": 390,
+      "height": 844,
+      "file": "systems-mobile.png",
+      "sha256": "a7a356d6216fb1857994b9a64a6aeea3f54ef7d53c713cfee9050d057b5895bf"
+    },
+    {
+      "name": "map",
+      "width": 390,
+      "height": 844,
+      "file": "map-mobile.png",
+      "sha256": "30568654512775b17c236bf13929b4a60d121a4cbe7c01d342b22fa87a2468b1"
+    },
+    {
+      "name": "imagery",
+      "width": 390,
+      "height": 844,
+      "file": "imagery-mobile.png",
+      "sha256": "c2636158bad7f896115e1f9491e5f4478b4c8ccf8a8ed8182fd4865c4f91e87d"
+    },
+    {
+      "name": "catalogue",
+      "width": 390,
+      "height": 844,
+      "file": "catalogue-mobile.png",
+      "sha256": "1698211cbae0281c5e90d7590babb3deecde38a712aa3ce310a2ffb89eb14c83"
+    },
+    {
+      "name": "analysis",
+      "width": 390,
+      "height": 844,
+      "file": "analysis-mobile.png",
+      "sha256": "9ddbe7c0ff204f411308cd60c56be749959cf83a68942385749c3d02e85d696d"
+    },
+    {
+      "name": "review",
+      "width": 390,
+      "height": 844,
+      "file": "review-mobile.png",
+      "sha256": "680789e18fd5f0e1c4f800236d10153b42af323b19d769f2fa3cb9f05277bc06"
+    },
+    {
+      "name": "context",
+      "width": 390,
+      "height": 844,
+      "file": "context-mobile.png",
+      "sha256": "03c4356511354875d558c30c69e2972c0e31a190fbb48e6c1ed65b7464be575a"
+    },
+    {
+      "name": "weather",
+      "width": 390,
+      "height": 844,
+      "file": "weather-mobile.png",
+      "sha256": "7eed74c2355ed9f6b79222f45341ab23d32853c3f2a074ea22b7fd2e878d9f66"
+    },
+    {
+      "name": "tracks",
+      "width": 390,
+      "height": 844,
+      "file": "tracks-mobile.png",
+      "sha256": "855fd21f1d4e1e5d2dd2ca28d6e5d4b6eb6ddde9272f9aba6c535f1a74140c9b"
+    },
+    {
+      "name": "assets",
+      "width": 390,
+      "height": 844,
+      "file": "assets-mobile.png",
+      "sha256": "7284d9c1931569340295c0d555c56cbddd1b0ab54bd006cca9b67d4bc0d96ad9"
+    },
+    {
+      "name": "studio",
+      "width": 390,
+      "height": 844,
+      "file": "studio-mobile.png",
+      "sha256": "6d583463d3c883560d3d24d145ec75f2ffff229651555ce5f687090ec3b2c4e6"
+    },
+    {
+      "name": "studio-run",
+      "width": 390,
+      "height": 844,
+      "file": "studio-run-mobile.png",
+      "sha256": "78da62e529c18d6fc271e610c76fcc6adfa28301b990a6a7ea94469f08e83bee"
+    },
+    {
+      "name": "replay",
+      "width": 390,
+      "height": 844,
+      "file": "replay-mobile.png",
+      "sha256": "f2b987d116ffbefd4fcc26d4e6b41f849f270f0d791bc777f7e06c1ea25a9eb5"
+    }
+  ],
+  "errors": []
+}

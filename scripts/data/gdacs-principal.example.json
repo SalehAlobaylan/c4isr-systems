@@ -1,0 +1,18 @@
+{
+  "id": "gdacs-connector",
+  "kind": "service",
+  "name": "gdacs bounded context connector",
+  "resource": {
+    "workspaceId": "public-context",
+    "environmentId": "world",
+    "partition": "PUBLIC_EVIDENCE"
+  },
+  "permissions": [
+    "operational.read",
+    "sources.read",
+    "connectors.execute"
+  ],
+  "sourceIds": [
+    "REPLACE_WITH_REGISTERED_GDACS_SOURCE_ID"
+  ]
+}

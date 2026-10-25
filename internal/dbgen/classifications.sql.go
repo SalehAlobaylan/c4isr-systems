@@ -15,7 +15,7 @@ INSERT INTO classifications (
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, now()
 )
-RETURNING id, track_id, label, confidence, method, source_reference, created_by, created_at
+RETURNING id, track_id, label, confidence, method, source_reference, created_by, created_at, scope_id
 `
 
 type CreateClassificationParams struct {
@@ -48,12 +48,13 @@ func (q *Queries) CreateClassification(ctx context.Context, arg CreateClassifica
 		&i.SourceReference,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const getClassification = `-- name: GetClassification :one
-SELECT id, track_id, label, confidence, method, source_reference, created_by, created_at FROM classifications WHERE id = $1
+SELECT id, track_id, label, confidence, method, source_reference, created_by, created_at, scope_id FROM classifications WHERE id = $1
 `
 
 func (q *Queries) GetClassification(ctx context.Context, id string) (Classification, error) {
@@ -68,12 +69,13 @@ func (q *Queries) GetClassification(ctx context.Context, id string) (Classificat
 		&i.SourceReference,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const latestClassificationForTrack = `-- name: LatestClassificationForTrack :one
-SELECT id, track_id, label, confidence, method, source_reference, created_by, created_at FROM classifications
+SELECT id, track_id, label, confidence, method, source_reference, created_by, created_at, scope_id FROM classifications
 WHERE track_id = $1
 ORDER BY created_at DESC
 LIMIT 1
@@ -91,12 +93,13 @@ func (q *Queries) LatestClassificationForTrack(ctx context.Context, trackID stri
 		&i.SourceReference,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const listClassificationsByTrack = `-- name: ListClassificationsByTrack :many
-SELECT id, track_id, label, confidence, method, source_reference, created_by, created_at FROM classifications
+SELECT id, track_id, label, confidence, method, source_reference, created_by, created_at, scope_id FROM classifications
 WHERE track_id = $1
 ORDER BY created_at DESC
 LIMIT $3 OFFSET $2
@@ -126,6 +129,7 @@ func (q *Queries) ListClassificationsByTrack(ctx context.Context, arg ListClassi
 			&i.SourceReference,
 			&i.CreatedBy,
 			&i.CreatedAt,
+			&i.ScopeID,
 		); err != nil {
 			return nil, err
 		}

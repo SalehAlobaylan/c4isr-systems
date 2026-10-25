@@ -1,5 +1,4 @@
 /* Must come first: it fixes the cascade layer order for the whole document. */
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { RouterProvider } from '@tanstack/react-router'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
@@ -23,6 +22,7 @@ import '@fontsource/ibm-plex-mono/latin-400.css'
 import '@fontsource/ibm-plex-mono/latin-500.css'
 import '@fontsource/ibm-plex-mono/latin-600.css'
 
+import { WorkspaceProvider } from '@/components/WorkspaceProvider'
 import { RealtimeProvider } from '@/realtime/RealtimeProvider'
 import { router } from '@/router'
 
@@ -33,25 +33,15 @@ import { router } from '@/router'
  */
 import '@/index.css'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 10_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-})
-
 const rootElement = document.getElementById('root')
 if (!rootElement) throw new Error('Root element #root not found')
 
 createRoot(rootElement).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
+    <WorkspaceProvider>
       <RealtimeProvider>
         <RouterProvider router={router} />
       </RealtimeProvider>
-    </QueryClientProvider>
+    </WorkspaceProvider>
   </StrictMode>,
 )

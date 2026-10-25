@@ -1,21 +1,58 @@
 # C4ISR Systems
 
-A C4ISR-oriented operational software platform. The first implementation milestone is a working **C2 + Operational Awareness** core: sources and observations become a traceable operational picture of assets and tracks, PostGIS evaluates geographic rules, and operators can acknowledge alerts, open incidents, assign assets, and issue auditable commands.
+> **Current product phase:** A map-centered Public Context and Intelligence system for the **Middle East and the rest of the world**. Simulation is deferred for a separate design discussion; current preparation is limited to reusable geographic environments. Read the [current scope](EMAD_CURRENT_SCOPE.md) and [map-first gap report](docs/implementation/MAP_FIRST_GAP_REPORT_2026_10_25.md). Existing simulation code and the historical instructions below do not make further simulation work part of this phase. This reporting update does not change application startup or remove existing data.
 
-The system is designed C4ISR-aware but C2-first: the information model (sources, observations, provenance, uncertainty, assessments) is in place from the beginning so future ISR, intelligence, AI, and hardware integrations do not require a redesign.
+EMAD is a C4ISR-inspired software platform evolving toward **Public Context & Intelligence** and **3D Modeling & Simulation**. Existing C2 and operational-awareness modules provide exercise-support infrastructure: sources and observations become a traceable picture, PostGIS evaluates geographic rules, and operators can acknowledge alerts, open incidents, assign exercise assets, and issue simulated commands.
 
-## Status
+The forward roadmap is [EMAD Implementation Plan v2](EMAD_IMPLEMENTATION_PLAN_v2.md), based on [Architecture and Direction v2](EMAD_ARCHITECTURE_AND_DIRECTION_v2.md) and [Final Data Strategy v2](EMAD_FINAL_DATA_STRATEGY_v2.md). The v2 design proposals define direction; the plan and review record the delivered scope and its acceptance limits. Controlled Operations supports exercises; live hardware and engagement control are outside the roadmap. The first Studio viewport now uses the evaluated Three.js adapter; a separate native Go runtime owns abstract actor state and virtual time. Future specialist physics/native GPU engines remain workload-specific decisions.
 
-| Phase | Scope | State |
+**Bounded delivery recovery installed — 2026-10-23:** Public Context contains retained real Saudi/Jeddah geography, evidence and Sentinel imagery. Studio launches the native exercise, automatic recording, 3D replay and privileged evaluation. See the [recovery acceptance](docs/implementation/DELIVERY_RECOVERY_ACCEPTANCE.md) and [delivery ledger](docs/implementation/RECOVERY_STATUS.json). [OpenSky](docs/implementation/OPENSKY_ACTIVATION.md) and [FIRMS](docs/implementation/FIRMS_ACTIVATION.md) are activated; FIRMS is backfilling its initial lookback. AIS remains externally gated. Real intelligence awaits human review, and advanced S4 remains future work. The original audit is preserved as history.
+
+[Latest implementation increment: S3.2, S3.3 and S4.1](docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md) adds bounded recording/replay/evaluation and reusable sensor-quality presets. Its [acceptance evidence](docs/implementation/evidence/S3_2_S3_3_S4_1_ACCEPTANCE.json) describes the declared abstract test profile; it is not proof that those services, identities, assets or archives are installed for the user.
+
+## Start the populated local installation
+
+```powershell
+task local:setup
+task dev
+```
+
+Open **http://127.0.0.1:5173/**. Use `task local:doctor` for diagnostics and `task local:stop` for supported shutdown. Setup preserves the database and volumes. The [operations guide](docs/implementation/RECOVERY_OPERATIONS.md) covers accounts, private credentials, restricted providers, paired backup/restore and staging packaging. The separate API/web commands do not assemble this installation.
+
+## Documented baseline status
+
+The historical implementation plan reports the following status. [F0.1 baseline verification](docs/implementation/F0_1_BASELINE.md) records subsequently executed checks and the migration inventory; it does not certify the planned v2 scope boundaries.
+
+| Phase | Scope | Historical implementation/profile evidence; see current delivery audit |
 | --- | --- | --- |
 | 0-6 | Tooling, modular skeleton, sources, observations, assets, telemetry, WebSocket | Done |
 | 7-12 | Scenario runner v1, tracks, classifications, PostGIS geofences, alerts, audit | Done |
 | 13-16 | Incidents, missions, commands, assessments | Done |
 | 21 | Unit, integration (Testcontainers + PostGIS), and acceptance tests | Done |
 | 17-20 | Authentication/RBAC, scenario runner v2, OpenAPI/gRPC contracts, OpenTelemetry | Done |
-| 22-26 | ISR expansion, intelligence, AI assistance, external integrations, edge/hardware | Later |
+| F0 | Baseline verification, identity, scope isolation, and workspace separation | Complete; F0/M0 gate passed |
+| P1 | Public source admission, provenance, reference data, and events | Complete; P1.1–P1.6 and M1 accepted |
+| S0 | Simulation contracts and frozen inputs | Complete; S0.1–S0.4 and M2 accepted |
+| P2 | Imagery intelligence and approved context export | Complete; P2.1-P2.4 and M3 accepted with synthetic spectral fixtures |
+| P3 | Bounded moving sources, weather and reports | P3.1-P3.3 implemented/accepted; live feeds require approved access |
+| S1 | Model pipeline and georeferenced 3D proof | S1.1–S1.3 complete; M4 accepted for reference/synthetic terrain |
+| S2 | Native runtime, synthetic sensing and Exercise COP | Complete within the declared abstract profile; M5 accepted |
+| S3 | Exercise operations, recording/replay and evaluation | S3.1–S3.3 complete; M6 accepted for the abstract native profile |
+| S4 | Sustained simulation expansion | S4.1 reusable sensor-quality presets delivered; further increments remain backlog |
+
+[F0.2–F0.4 implementation and rollout](docs/implementation/F0_2_4_IMPLEMENTATION.md) adds persisted human/service principals, scoped ownership and legacy quarantine, and application/query isolation. [F0.5 realtime and disclosure protection](docs/implementation/F0_5_REALTIME.md) adds scoped version 2 delivery and random observation publication references. [F0.6 workspace separation and compatibility acceptance](docs/implementation/F0_6_WORKSPACES.md) adds explicit Public Context/Exercise COP navigation, scoped caches and connections, and a real-backend browser gate. The implemented F0/M0 gate has passed.
+
+[P1.1 source admission and durable evidence](docs/implementation/P1_1_PUBLIC_INGESTION.md) adds reviewed source/rights versions, service-bound bounded retrieval, persistent quotas/backoff/checkpoints, immutable evidence revisions, recoverable catalog publication, and provider coverage in Systems.
+
+[P1.2–P1.4 public events, reference snapshots, and USGS](docs/implementation/P1_2_4_PUBLIC_CONTEXT.md) adds point/area/moving semantics, revision/withdrawal-aware event projections and PostGIS alerts, a versioned Natural Earth/NOAA reference catalogue, and a native bounded USGS adapter. MapLibre shows reported events and selected reference versions with attribution and original/revision inspection. Apply migrations through **version 34** before starting the updated server. A disposable authorized live USGS smoke passed; permanent retrieval remains off by default. [S0.1–S0.3 simulation foundations](docs/implementation/S0_1_3_SIMULATION_FOUNDATIONS.md) now freeze scenario versions, seed/runtime/clock configuration and retained context packages, with renderer-independent WGS84/ECEF/ENU transforms and explicit fidelity. Restart uses the frozen definition; offline packages validate with `go run ./apps/emad-context <bundle.json>`. [S0.4 and P1.5–P1.6](docs/implementation/S0_4_P1_5_6_ADAPTER_AND_PUBLIC_HISTORY.md) now add authorized synthetic ingress with protected actor mappings, a retained-context headless fixture, NOAA-20 VIIRS thermal detections, exact CSV originals, and bounded public filters with separately labeled provider-effective and EMAD-publication history. M1/M2 acceptance gates pass. FIRMS retrieval remains off until a server map key, source binding and human admission are configured. [P2.1–P2.3 imagery intelligence](docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md) adds private S3-compatible immutable artifacts, bounded native Copernicus catalogue discovery, an independent queued NDVI worker, local raster subset preparation, aligned comparison panels and versioned independent assessment review. Live catalogue acceptance passed; numerical/browser acceptance uses clearly labeled synthetic pixels, not an observed environmental-change claim. Configure the optional private object store and source-bound worker before processing subsets. P2.4 export and M3 are now accepted within the documented fixture scope; see the latest delivery above.
 
 The first product milestone is covered end to end by `internal/integration/acceptance_test.go`: scenario source -> observation -> track -> geofence breach -> alert -> operator acknowledgement -> incident -> mission -> command -> audit, including a deterministic replay check. Phase 17–20 additions are covered by focused unit tests and contract generation checks.
+
+## COP workspace selection
+
+The persistent context bar selects Public Context or Exercise COP, then an authorized workspace/environment/run. `GET /api/v1/auth/me` offers existing ordinary COP resources from live grants; no input/truth scope is offered. Configured legacy operators initially have exercise access only. Trusted provisioning must grant public access explicitly. Starting a scenario selects its run; switching clears selection, replay, requests, cache, and realtime state. The context bar keeps source mode and time basis visible.
+
+Run `task test:browser:integration` to build and verify the production UI against the real Go API and disposable PostGIS/S3 (Docker and installed Playwright Chromium required). CI runs this separately from the mocked presentation suites.
 
 ## Architecture at a glance
 
@@ -26,7 +63,7 @@ Operator UI (React + Vite + MapLibre)
 Go C4ISR Core (modular monolith)
   sources · observations · assets · telemetry · tracks · classifications
   geospatial · alerts · incidents · missions · commands · assessments
-  audit · realtime · scenarios
+  audit · realtime · scenarios · publicingest · publicevents · reference
         │  pgx + sqlc
         ▼
 PostgreSQL + PostGIS
@@ -44,7 +81,7 @@ Key rules preserved by the implementation:
 - **PostGIS is authoritative** — containment, proximity, and distance decisions run in SQL (`ST_Contains`, `ST_DWithin`, `ST_Distance`).
 - **Scenarios are deterministic** — fixed seed, fixed ordering, replayable via the same application boundaries real integrations will use.
 
-See `ARCHITECTURE.md`, `PRODUCT.md`, and `IMPLEMENTATION_PLAN.md` for the full design. Material implementation decisions are recorded in `docs/decisions.md`.
+Use the [v2 implementation plan](EMAD_IMPLEMENTATION_PLAN_v2.md) for forward development. `ARCHITECTURE.md`, `PRODUCT.md`, and `IMPLEMENTATION_PLAN.md` retain earlier design and implementation history where compatible with the v2 direction. Material implementation decisions are recorded in `docs/decisions.md`.
 
 ## Repository layout
 
@@ -119,6 +156,12 @@ task scenario:run NAME=restricted-area-intrusion SPEED=1
 ```
 
 Open http://localhost:5173.
+
+Start on **Home** to see the two product pillars and your account's access. The
+default development operator initially opens only the legacy exercise workspace;
+migrations do not enable public sources or prepare a 3D scene. Follow
+[local workspace setup](docs/implementation/LOCAL_STARTUP.md) to create an explicit
+analyst/author account, configure data and assets, or resolve an API port conflict.
 
 ## Windows notes
 
@@ -445,3 +488,26 @@ The Docker Compose file uses `imresamu/postgis:17-3.5`, a community multi-arch b
 ## Deferred by design
 
 Kafka, NATS, Redis, Kubernetes, TimescaleDB, Elasticsearch, MQTT, MAVLink, Rust edge agents, dedicated telemetry microservices, API gateways, and full sensor fusion are intentionally not part of this implementation. Each requires a concrete requirement first.
+
+
+## S1.2-S1.3 / S2.1 delivery update
+
+The first Simulation Studio viewport uses measured Three.js rendering over immutable georeferenced authoring scenes. A separate native Go executable owns abstract actor kinematics, virtual time and authenticated runtime lifecycle. Authoring, latest sealed runtime truth and ordinary operator perception remain separate. Migration 35 is required. M4 is accepted within the documented reference/synthetic-terrain visual-only scope; native sensing and Exercise COP integration remain S2.2-S2.3. See [engine comparison and decision](docs/implementation/S1_2_ENGINE_DECISION.md) and [implementation, acceptance and rollout](docs/implementation/S1_3_S2_1_STUDIO_AND_NATIVE_RUNTIME.md).
+
+
+## S2.2-S2.3 / S3.1 delivery update
+
+Native scenes now freeze abstract synthetic observer profiles and explicit controlled actors. The independent runtime publishes lease-bound private batches through a durable scoped gateway, and the existing observation/track/PostGIS/telemetry pipeline supplies the Exercise COP without hidden actor identities. Exercise operations reuse incident-linked missions, commands, operators and audit for virtual HOLD/RESUME_ROUTE actions with bounded deadlines, ACK/completion/rejection/failure/timeout, cancellation and idempotent retry. Migration **36** is required after 35. M5 was accepted for this abstract profile. The subsequent delivery below also completes S3.2 recording/replay and M6 within its declared scope. See [implementation, acceptance and rollout](docs/implementation/S2_2_S2_3_S3_1_PERCEPTION_AND_TASKING.md).
+
+## S3.2-S3.3 / S4.1 delivery update
+
+The original F0–S3 task backlog is complete within its recorded acceptance scopes. Native exercises now retain separate operator/truth journals and private content-addressed archives with selected-state checkpoints. Recorded output can be sought by virtual time and sequence without reissuing commands or consulting current COP state. Audited evaluators receive defined perception/workflow metrics; numeric operator summaries require an explicit human release. Studio also saves and pins reusable abstract sensor-quality presets. Apply migrations **37 then 38**, rebuild/admit the runtime binary, and run `apps/emad-recordings` with a separate environment-bound service credential. M6 is accepted for the documented abstract/reference/synthetic-terrain profile; further S4 expansion remains backlog. [Implementation, limits, verification and rollout](docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md).
+
+
+## Implementation review closeout
+
+The [review-readiness closeout](docs/implementation/IMPLEMENTATION_REVIEW_READINESS.md) completes recording-worker recovery, durable retry visibility and evaluation v2 mean operands. Migrations 1–38 are preserved; no additional migration is needed. `task build:all` builds the Go API, tools, workers and runtime. Rebuild/restart the API, UI and recording worker before reviewing the updated behavior.
+
+The [full implementation-plan review](docs/implementation/PLAN_REVIEW.md) traces all 32 tasks and S4.1 to their implementation, records the authorization/replay/reproducibility and UI fixes, and links the final verification evidence.
+
+[Commit readiness](docs/implementation/PRECOMMIT_READINESS.md) records clean-export verification, private build-context exclusions and detached-checkout CI compatibility.

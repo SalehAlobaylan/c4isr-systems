@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@/lib/scopedQueries'
+
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useEffect, useMemo, useState } from 'react'
@@ -11,9 +12,9 @@ import { Button } from '@/components/ui/button'
 import { Select } from '@/components/ui/select'
 import { IncidentFormDialog } from '@/features/incidents/IncidentFormDialog'
 import { PlusIcon } from '@/components/icons'
-import { api, type Incident } from '@/lib/api'
+import { useAPI, type Incident } from '@/lib/api'
 import { formatRelative, formatTimestamp } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All statuses' },
@@ -26,6 +27,8 @@ const STATUS_OPTIONS = [
 ]
 
 export function IncidentsPage() {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const search = useSearch({ from: '/incidents' })
   const navigate = useNavigate()
   const [dialogOpen, setDialogOpen] = useState(false)

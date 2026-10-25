@@ -1,0 +1,71 @@
+{
+  "id": "ctx_7c4dd8a5bf53d9969d05f1aef21e06832972af0dbae1d189b77e01386840b1fe",
+  "manifest": {
+    "schema": "emad.context.v1",
+    "aoi": {
+      "west": 39,
+      "south": 21,
+      "east": 40,
+      "north": 22
+    },
+    "timeWindow": {
+      "from": "2025-01-01T00:00:00Z",
+      "to": "2025-01-02T00:00:00Z"
+    },
+    "createdAt": "2025-01-01T00:00:00Z",
+    "creator": "fixture-author",
+    "approval": {
+      "by": "fixture-reviewer",
+      "at": "2025-01-01T00:00:00Z",
+      "statement": "Approved solely for contract testing"
+    },
+    "transformVersion": "wgs84-ecef-enu-v1",
+    "processingVersion": "reference-snapshot-v1",
+    "geometryQuality": "Authored coordinate test only",
+    "imageryQuality": "not_included",
+    "reproduction": "retained_offline",
+    "syntheticDerived": false,
+    "assets": [
+      {
+        "kind": "vector",
+        "datasetAoi": {
+          "west": 39,
+          "south": 21,
+          "east": 40,
+          "north": 22
+        },
+        "datasetId": "fixture-geography-v1",
+        "sourceId": "fixture-author",
+        "datasetKey": "authored-geography",
+        "version": "1",
+        "originalProducer": "EMAD test fixture",
+        "reference": "https://example.invalid/emad/fixture",
+        "retrievedAt": "2025-01-01T00:00:00Z",
+        "sha256": "af217933c90612a6cfd8bcd9254f7227735a60c9b156015f787299f8c07a9e4d",
+        "bytes": 194,
+        "crs": "EPSG:4326",
+        "verticalDatum": "not_applicable",
+        "resolution": {
+          "value": 1,
+          "unit": "metres"
+        },
+        "quality": "Synthetic coordinate fixture; not surveyed geography",
+        "validity": "Timeless authored test input",
+        "processing": "Hand-authored GeoJSON; no external dependency",
+        "rights": {
+          "id": "fixture-rights-v1",
+          "legalBasis": "Project-owned authored test data",
+          "termsUrl": "https://example.invalid/emad/fixture-terms",
+          "attribution": "EMAD authored test fixture",
+          "retainRaw": true,
+          "allowAnalysis": true,
+          "allowSimulationExport": true
+        },
+        "retention": "retained"
+      }
+    ]
+  },
+  "assets": {
+    "af217933c90612a6cfd8bcd9254f7227735a60c9b156015f787299f8c07a9e4d": "eyJ0eXBlIjoiRmVhdHVyZUNvbGxlY3Rpb24iLCJmZWF0dXJlcyI6W3sidHlwZSI6IkZlYXR1cmUiLCJpZCI6ImF1dGhvcmVkLXBvaW50IiwiZ2VvbWV0cnkiOnsidHlwZSI6IlBvaW50IiwiY29vcmRpbmF0ZXMiOlszOS41LDIxLjVdfSwicHJvcGVydGllcyI6eyJsYWJlbCI6IkhhbmQtYXV0aG9yZWQgY29vcmRpbmF0ZSBmaXh0dXJlIn19XX0="
+  }
+}

@@ -22,15 +22,16 @@ func (q *Queries) CountScenarioRuns(ctx context.Context) (int64, error) {
 
 const createScenarioRun = `-- name: CreateScenarioRun :one
 INSERT INTO scenario_runs (
-    id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, created_at
+    id, frozen_run, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, created_at
 ) VALUES (
-    $1, $2, $3, $4, $5, 0, now(), now()
+    $1, $2, $3, $4, $5, $6, 0, now(), now()
 )
-RETURNING id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error
+RETURNING id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error, scope_id, frozen_run
 `
 
 type CreateScenarioRunParams struct {
 	ID            string
+	FrozenRun     []byte
 	ScenarioName  string
 	Seed          int64
 	Status        string
@@ -40,6 +41,7 @@ type CreateScenarioRunParams struct {
 func (q *Queries) CreateScenarioRun(ctx context.Context, arg CreateScenarioRunParams) (ScenarioRun, error) {
 	row := q.db.QueryRow(ctx, createScenarioRun,
 		arg.ID,
+		arg.FrozenRun,
 		arg.ScenarioName,
 		arg.Seed,
 		arg.Status,
@@ -60,12 +62,14 @@ func (q *Queries) CreateScenarioRun(ctx context.Context, arg CreateScenarioRunPa
 		&i.LastAction,
 		&i.LastActionAtMs,
 		&i.ActionError,
+		&i.ScopeID,
+		&i.FrozenRun,
 	)
 	return i, err
 }
 
 const getScenarioRun = `-- name: GetScenarioRun :one
-SELECT id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error FROM scenario_runs WHERE id = $1
+SELECT id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error, scope_id, frozen_run FROM scenario_runs WHERE id = $1
 `
 
 func (q *Queries) GetScenarioRun(ctx context.Context, id string) (ScenarioRun, error) {
@@ -85,12 +89,14 @@ func (q *Queries) GetScenarioRun(ctx context.Context, id string) (ScenarioRun, e
 		&i.LastAction,
 		&i.LastActionAtMs,
 		&i.ActionError,
+		&i.ScopeID,
+		&i.FrozenRun,
 	)
 	return i, err
 }
 
 const listActiveScenarioRuns = `-- name: ListActiveScenarioRuns :many
-SELECT id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error FROM scenario_runs WHERE status IN ('RUNNING', 'PAUSED') ORDER BY started_at DESC
+SELECT id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error, scope_id, frozen_run FROM scenario_runs WHERE status IN ('RUNNING', 'PAUSED') ORDER BY started_at DESC
 `
 
 func (q *Queries) ListActiveScenarioRuns(ctx context.Context) ([]ScenarioRun, error) {
@@ -116,6 +122,8 @@ func (q *Queries) ListActiveScenarioRuns(ctx context.Context) ([]ScenarioRun, er
 			&i.LastAction,
 			&i.LastActionAtMs,
 			&i.ActionError,
+			&i.ScopeID,
+			&i.FrozenRun,
 		); err != nil {
 			return nil, err
 		}
@@ -128,7 +136,7 @@ func (q *Queries) ListActiveScenarioRuns(ctx context.Context) ([]ScenarioRun, er
 }
 
 const listScenarioRuns = `-- name: ListScenarioRuns :many
-SELECT id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error FROM scenario_runs
+SELECT id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error, scope_id, frozen_run FROM scenario_runs
 ORDER BY started_at DESC
 LIMIT $2 OFFSET $1
 `
@@ -161,6 +169,8 @@ func (q *Queries) ListScenarioRuns(ctx context.Context, arg ListScenarioRunsPara
 			&i.LastAction,
 			&i.LastActionAtMs,
 			&i.ActionError,
+			&i.ScopeID,
+			&i.FrozenRun,
 		); err != nil {
 			return nil, err
 		}
@@ -192,7 +202,7 @@ const updateScenarioRunSpeed = `-- name: UpdateScenarioRunSpeed :one
 UPDATE scenario_runs
 SET playback_speed = $1
 WHERE id = $2
-RETURNING id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error
+RETURNING id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error, scope_id, frozen_run
 `
 
 type UpdateScenarioRunSpeedParams struct {
@@ -217,6 +227,8 @@ func (q *Queries) UpdateScenarioRunSpeed(ctx context.Context, arg UpdateScenario
 		&i.LastAction,
 		&i.LastActionAtMs,
 		&i.ActionError,
+		&i.ScopeID,
+		&i.FrozenRun,
 	)
 	return i, err
 }
@@ -227,7 +239,7 @@ SET status = $1,
     error = $2,
     ended_at = CASE WHEN $1 IN ('COMPLETED', 'STOPPED', 'FAILED') THEN now() ELSE ended_at END
 WHERE id = $3
-RETURNING id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error
+RETURNING id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error, scope_id, frozen_run
 `
 
 type UpdateScenarioRunStatusParams struct {
@@ -253,6 +265,8 @@ func (q *Queries) UpdateScenarioRunStatus(ctx context.Context, arg UpdateScenari
 		&i.LastAction,
 		&i.LastActionAtMs,
 		&i.ActionError,
+		&i.ScopeID,
+		&i.FrozenRun,
 	)
 	return i, err
 }

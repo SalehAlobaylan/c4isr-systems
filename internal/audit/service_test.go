@@ -11,6 +11,7 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type fakeRepository struct {
@@ -220,7 +221,7 @@ func TestHandleMapsEventToEntry(t *testing.T) {
 			repo := &fakeRepository{}
 			_, bus := testService(repo)
 
-			bus.Publish(context.Background(), tt.event)
+			bus.Publish(testsupport.Context(), tt.event)
 
 			if len(repo.appended) != 1 {
 				t.Fatalf("appended entries = %d, want 1", len(repo.appended))
@@ -256,7 +257,7 @@ func TestHandleRecordsBreachPosition(t *testing.T) {
 	_, bus := testService(repo)
 	position := geo.Point{Lat: -33.5, Lng: 151.25}
 
-	bus.Publish(context.Background(), events.GeofenceBreached{
+	bus.Publish(testsupport.Context(), events.GeofenceBreached{
 		At:         time.Now().UTC(),
 		GeofenceID: "gef_1",
 		TrackID:    "trk_9",
@@ -284,7 +285,7 @@ func TestHandleSwallowsRepositoryErrors(t *testing.T) {
 	repo := &failingRepository{}
 	_, bus := testService(repo)
 
-	bus.Publish(context.Background(), events.TrackClosed{At: time.Now().UTC(), TrackID: "trk_1"})
+	bus.Publish(testsupport.Context(), events.TrackClosed{At: time.Now().UTC(), TrackID: "trk_1"})
 
 	if repo.calls != 1 {
 		t.Fatalf("repo calls = %d, want 1", repo.calls)
@@ -295,7 +296,7 @@ func TestAppendFillsIdentity(t *testing.T) {
 	repo := &fakeRepository{}
 	svc, _ := testService(repo)
 
-	entry, err := svc.Append(context.Background(), Entry{
+	entry, err := svc.Append(testsupport.Context(), Entry{
 		ActorType:   ActorOperator,
 		ActorID:     "opr_9",
 		Action:      events.TopicAlertAcknowledged,

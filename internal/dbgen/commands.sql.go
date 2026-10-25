@@ -31,13 +31,13 @@ func (q *Queries) CountCommands(ctx context.Context, arg CountCommandsParams) (i
 
 const createCommand = `-- name: CreateCommand :one
 INSERT INTO commands (
-    id, asset_id, mission_id, incident_id, type, payload, state,
+    id, asset_id, mission_id, incident_id, type, payload, state, request_key, request_owner,
     created_by, correlation_id, created_at, updated_at
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7,
-    $8, $9, now(), now()
+    $1, $2, $3, $4, $5, $6, $7, $8, $9,
+    $10, $11, now(), now()
 )
-RETURNING id, asset_id, mission_id, incident_id, type, payload, state, created_by, correlation_id, created_at, updated_at, queued_at, sent_at, acknowledged_at, completed_at, failure_reason
+RETURNING id, asset_id, mission_id, incident_id, type, payload, state, created_by, correlation_id, created_at, updated_at, queued_at, sent_at, acknowledged_at, completed_at, failure_reason, scope_id, request_key, request_owner
 `
 
 type CreateCommandParams struct {
@@ -48,6 +48,8 @@ type CreateCommandParams struct {
 	Type          string
 	Payload       []byte
 	State         string
+	RequestKey    *string
+	RequestOwner  string
 	CreatedBy     *string
 	CorrelationID *string
 }
@@ -61,6 +63,8 @@ func (q *Queries) CreateCommand(ctx context.Context, arg CreateCommandParams) (C
 		arg.Type,
 		arg.Payload,
 		arg.State,
+		arg.RequestKey,
+		arg.RequestOwner,
 		arg.CreatedBy,
 		arg.CorrelationID,
 	)
@@ -82,12 +86,15 @@ func (q *Queries) CreateCommand(ctx context.Context, arg CreateCommandParams) (C
 		&i.AcknowledgedAt,
 		&i.CompletedAt,
 		&i.FailureReason,
+		&i.ScopeID,
+		&i.RequestKey,
+		&i.RequestOwner,
 	)
 	return i, err
 }
 
 const getCommand = `-- name: GetCommand :one
-SELECT id, asset_id, mission_id, incident_id, type, payload, state, created_by, correlation_id, created_at, updated_at, queued_at, sent_at, acknowledged_at, completed_at, failure_reason FROM commands WHERE id = $1
+SELECT id, asset_id, mission_id, incident_id, type, payload, state, created_by, correlation_id, created_at, updated_at, queued_at, sent_at, acknowledged_at, completed_at, failure_reason, scope_id, request_key, request_owner FROM commands WHERE id = $1
 `
 
 func (q *Queries) GetCommand(ctx context.Context, id string) (Command, error) {
@@ -110,12 +117,15 @@ func (q *Queries) GetCommand(ctx context.Context, id string) (Command, error) {
 		&i.AcknowledgedAt,
 		&i.CompletedAt,
 		&i.FailureReason,
+		&i.ScopeID,
+		&i.RequestKey,
+		&i.RequestOwner,
 	)
 	return i, err
 }
 
 const listCommands = `-- name: ListCommands :many
-SELECT id, asset_id, mission_id, incident_id, type, payload, state, created_by, correlation_id, created_at, updated_at, queued_at, sent_at, acknowledged_at, completed_at, failure_reason FROM commands
+SELECT id, asset_id, mission_id, incident_id, type, payload, state, created_by, correlation_id, created_at, updated_at, queued_at, sent_at, acknowledged_at, completed_at, failure_reason, scope_id, request_key, request_owner FROM commands
 WHERE ($1::text IS NULL OR asset_id = $1)
   AND ($2::text IS NULL OR state = $2)
   AND ($3::text IS NULL OR mission_id = $3)
@@ -163,6 +173,9 @@ func (q *Queries) ListCommands(ctx context.Context, arg ListCommandsParams) ([]C
 			&i.AcknowledgedAt,
 			&i.CompletedAt,
 			&i.FailureReason,
+			&i.ScopeID,
+			&i.RequestKey,
+			&i.RequestOwner,
 		); err != nil {
 			return nil, err
 		}
@@ -185,7 +198,7 @@ SET state = $1,
     failure_reason = CASE WHEN $1::text IN ('REJECTED', 'FAILED', 'TIMED_OUT')
                           THEN $2 ELSE failure_reason END
 WHERE id = $3 AND state = $4
-RETURNING id, asset_id, mission_id, incident_id, type, payload, state, created_by, correlation_id, created_at, updated_at, queued_at, sent_at, acknowledged_at, completed_at, failure_reason
+RETURNING id, asset_id, mission_id, incident_id, type, payload, state, created_by, correlation_id, created_at, updated_at, queued_at, sent_at, acknowledged_at, completed_at, failure_reason, scope_id, request_key, request_owner
 `
 
 type TransitionCommandParams struct {
@@ -220,6 +233,9 @@ func (q *Queries) TransitionCommand(ctx context.Context, arg TransitionCommandPa
 		&i.AcknowledgedAt,
 		&i.CompletedAt,
 		&i.FailureReason,
+		&i.ScopeID,
+		&i.RequestKey,
+		&i.RequestOwner,
 	)
 	return i, err
 }

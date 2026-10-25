@@ -10,6 +10,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type fakeRepository struct {
@@ -139,7 +140,7 @@ func TestIngestRejectsUnknownAsset(t *testing.T) {
 	repo := &fakeRepository{}
 	svc, log := newTestService(repo, fakeRegistry{exists: false})
 
-	_, err := svc.Ingest(context.Background(), testInput(now.Add(-time.Minute)))
+	_, err := svc.Ingest(testsupport.Context(), testInput(now.Add(-time.Minute)))
 	if !apperr.Is(err, apperr.CodeValidation) {
 		t.Fatalf("err = %v, want validation error", err)
 	}
@@ -156,7 +157,7 @@ func TestIngestDuplicatePublishesNothing(t *testing.T) {
 	repo := &fakeRepository{createErr: ErrDuplicateMessage}
 	svc, log := newTestService(repo, fakeRegistry{exists: true})
 
-	result, err := svc.Ingest(context.Background(), testInput(now.Add(-time.Minute)))
+	result, err := svc.Ingest(testsupport.Context(), testInput(now.Add(-time.Minute)))
 	if err != nil {
 		t.Fatalf("err = %v, want nil", err)
 	}
@@ -185,7 +186,7 @@ func TestIngestStaleSampleKeepsState(t *testing.T) {
 	svc, log := newTestService(repo, fakeRegistry{exists: true})
 	svc.now = func() time.Time { return now }
 
-	result, err := svc.Ingest(context.Background(), testInput(now.Add(-time.Minute)))
+	result, err := svc.Ingest(testsupport.Context(), testInput(now.Add(-time.Minute)))
 	if err != nil {
 		t.Fatalf("err = %v, want nil", err)
 	}
@@ -223,7 +224,7 @@ func TestIngestOutOfOrderOlderSampleIsStale(t *testing.T) {
 
 	older := testInput(now.Add(-5 * time.Minute))
 	older.Position = &geo.Point{Lat: 10, Lng: 20}
-	result, err := svc.Ingest(context.Background(), older)
+	result, err := svc.Ingest(testsupport.Context(), older)
 	if err != nil {
 		t.Fatalf("err = %v, want nil", err)
 	}
@@ -258,7 +259,7 @@ func TestIngestNewerSampleAppliesStateAndPublishes(t *testing.T) {
 
 	in := testInput(observedAt)
 	in.Position = &next
-	result, err := svc.Ingest(context.Background(), in)
+	result, err := svc.Ingest(testsupport.Context(), in)
 	if err != nil {
 		t.Fatalf("err = %v, want nil", err)
 	}
@@ -311,7 +312,7 @@ func TestIngestConcurrentStateWinnerSuppressesProjectionEvents(t *testing.T) {
 	svc, log := newTestService(repo, fakeRegistry{exists: true})
 	svc.now = func() time.Time { return now }
 
-	result, err := svc.Ingest(context.Background(), testInput(now.Add(-time.Second)))
+	result, err := svc.Ingest(testsupport.Context(), testInput(now.Add(-time.Second)))
 	if err != nil {
 		t.Fatalf("err = %v, want nil", err)
 	}
@@ -348,7 +349,7 @@ func TestIngestRetriesKinematicsFromTheWinningPredecessor(t *testing.T) {
 	in := testInput(t2)
 	in.Position = &p2
 
-	result, err := svc.Ingest(context.Background(), in)
+	result, err := svc.Ingest(testsupport.Context(), in)
 	if err != nil {
 		t.Fatalf("err = %v, want nil", err)
 	}
@@ -440,7 +441,7 @@ func TestFreshnessMonitorPublishesFirstClassification(t *testing.T) {
 	}}
 
 	monitor, log := newTestMonitor(t, repo, &staleObserver{}, now)
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 
@@ -466,7 +467,7 @@ func TestFreshnessMonitorReportsOnlyTransitions(t *testing.T) {
 	repo := &fakeRepository{freshnessSignals: signals}
 	monitor, log := newTestMonitor(t, repo, &staleObserver{}, now)
 
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("first Reconcile() error = %v", err)
 	}
 	first := len(freshnessEvents(log))
@@ -475,7 +476,7 @@ func TestFreshnessMonitorReportsOnlyTransitions(t *testing.T) {
 	}
 
 	log.reset()
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("second Reconcile() error = %v", err)
 	}
 	if got := len(freshnessEvents(log)); got != 0 {
@@ -493,7 +494,7 @@ func TestFreshnessMonitorPublishesRecovery(t *testing.T) {
 	repo := &fakeRepository{freshnessSignals: signals}
 	monitor, log := newTestMonitor(t, repo, &staleObserver{}, now)
 
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("first Reconcile() error = %v", err)
 	}
 	if got := freshnessEvents(log)[0].Freshness; got != string(freshness.StateStale) {
@@ -506,7 +507,7 @@ func TestFreshnessMonitorPublishesRecovery(t *testing.T) {
 		{AssetID: "ast_1", Status: "available", ConnectionState: "connected", LastSeenAt: &fresh},
 	}
 	log.reset()
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("second Reconcile() error = %v", err)
 	}
 
@@ -534,7 +535,7 @@ func TestFreshnessMonitorClassifiesTracks(t *testing.T) {
 	}
 	observer := &staleObserver{}
 	monitor, log := newTestMonitor(t, repo, observer, now)
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 
@@ -591,7 +592,7 @@ func TestFreshnessMonitorSeparatesAssetAndTrackWithTheSameID(t *testing.T) {
 	}
 	observer := &staleObserver{}
 	monitor, _ := newTestMonitor(t, repo, observer, now)
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 
@@ -627,7 +628,7 @@ func TestFreshnessMonitorRebuildsTheGaugeAfterRestart(t *testing.T) {
 	// accumulated gauge, first tick is the only chance to report.
 	observer := &staleObserver{}
 	monitor, _ := newTestMonitor(t, repo, observer, now)
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 
@@ -648,7 +649,7 @@ func TestFreshnessMonitorClearsGaugeForRemovedAsset(t *testing.T) {
 	observer := &staleObserver{}
 	monitor, _ := newTestMonitor(t, repo, observer, now)
 
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("first Reconcile() error = %v", err)
 	}
 	if len(observer.stale) != 1 {
@@ -656,7 +657,7 @@ func TestFreshnessMonitorClearsGaugeForRemovedAsset(t *testing.T) {
 	}
 
 	repo.freshnessSignals = nil
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("second Reconcile() error = %v", err)
 	}
 	if got := monitor.Snapshot(); len(got) != 0 {
@@ -672,14 +673,14 @@ func TestFreshnessMonitorHandlesDeclaredLossWithoutAge(t *testing.T) {
 	}}
 	observer := &transitionObserver{}
 	monitor, log := newTestMonitor(t, repo, observer, now)
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 
 	repo.freshnessSignals = []FreshnessSignal{
 		{AssetID: "ast_1", Status: "offline", ConnectionState: "connected", LastSeenAt: &fresh},
 	}
-	if err := monitor.Reconcile(context.Background()); err != nil {
+	if err := monitor.Reconcile(testsupport.Context()); err != nil {
 		t.Fatalf("Reconcile() error = %v", err)
 	}
 	transitions := freshnessEvents(log)

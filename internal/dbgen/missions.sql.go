@@ -45,7 +45,7 @@ INSERT INTO missions (
 ) VALUES (
     $1, $2, $3, $4, $5, $6, now(), now()
 )
-RETURNING id, name, objective, priority, status, incident_id, created_at, updated_at, started_at, ended_at
+RETURNING id, name, objective, priority, status, incident_id, created_at, updated_at, started_at, ended_at, scope_id
 `
 
 type CreateMissionParams struct {
@@ -78,6 +78,7 @@ func (q *Queries) CreateMission(ctx context.Context, arg CreateMissionParams) (M
 		&i.UpdatedAt,
 		&i.StartedAt,
 		&i.EndedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
@@ -148,7 +149,7 @@ func (q *Queries) CreateMissionTask(ctx context.Context, arg CreateMissionTaskPa
 }
 
 const getMission = `-- name: GetMission :one
-SELECT id, name, objective, priority, status, incident_id, created_at, updated_at, started_at, ended_at FROM missions WHERE id = $1
+SELECT id, name, objective, priority, status, incident_id, created_at, updated_at, started_at, ended_at, scope_id FROM missions WHERE id = $1
 `
 
 func (q *Queries) GetMission(ctx context.Context, id string) (Mission, error) {
@@ -165,6 +166,7 @@ func (q *Queries) GetMission(ctx context.Context, id string) (Mission, error) {
 		&i.UpdatedAt,
 		&i.StartedAt,
 		&i.EndedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
@@ -293,7 +295,7 @@ func (q *Queries) ListMissionTasks(ctx context.Context, missionID string) ([]Lis
 }
 
 const listMissions = `-- name: ListMissions :many
-SELECT id, name, objective, priority, status, incident_id, created_at, updated_at, started_at, ended_at FROM missions
+SELECT id, name, objective, priority, status, incident_id, created_at, updated_at, started_at, ended_at, scope_id FROM missions
 WHERE ($1::text IS NULL OR status = $1)
 ORDER BY created_at DESC
 LIMIT $3 OFFSET $2
@@ -325,6 +327,7 @@ func (q *Queries) ListMissions(ctx context.Context, arg ListMissionsParams) ([]M
 			&i.UpdatedAt,
 			&i.StartedAt,
 			&i.EndedAt,
+			&i.ScopeID,
 		); err != nil {
 			return nil, err
 		}
@@ -337,7 +340,7 @@ func (q *Queries) ListMissions(ctx context.Context, arg ListMissionsParams) ([]M
 }
 
 const listMissionsForAsset = `-- name: ListMissionsForAsset :many
-SELECT m.id, m.name, m.objective, m.priority, m.status, m.incident_id, m.created_at, m.updated_at, m.started_at, m.ended_at FROM missions m
+SELECT m.id, m.name, m.objective, m.priority, m.status, m.incident_id, m.created_at, m.updated_at, m.started_at, m.ended_at, m.scope_id FROM missions m
 JOIN mission_assets ma ON ma.mission_id = m.id
 WHERE ma.asset_id = $1
 ORDER BY m.created_at DESC
@@ -363,6 +366,7 @@ func (q *Queries) ListMissionsForAsset(ctx context.Context, assetID string) ([]M
 			&i.UpdatedAt,
 			&i.StartedAt,
 			&i.EndedAt,
+			&i.ScopeID,
 		); err != nil {
 			return nil, err
 		}
@@ -382,7 +386,7 @@ SET status = $1,
     ended_at = CASE WHEN $1::text IN ('COMPLETED', 'ABORTED') THEN now() ELSE ended_at END
 WHERE id = $2
   AND status = $3
-RETURNING id, name, objective, priority, status, incident_id, created_at, updated_at, started_at, ended_at
+RETURNING id, name, objective, priority, status, incident_id, created_at, updated_at, started_at, ended_at, scope_id
 `
 
 type UpdateMissionStatusParams struct {
@@ -405,6 +409,7 @@ func (q *Queries) UpdateMissionStatus(ctx context.Context, arg UpdateMissionStat
 		&i.UpdatedAt,
 		&i.StartedAt,
 		&i.EndedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }

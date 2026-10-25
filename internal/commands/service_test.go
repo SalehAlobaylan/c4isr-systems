@@ -9,6 +9,7 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type fakeRepo struct {
@@ -77,7 +78,7 @@ func testBus() *events.Dispatcher {
 
 func issueCommand(t *testing.T, svc *Service) Command {
 	t.Helper()
-	command, err := svc.Issue(context.Background(), IssueInput{
+	command, err := svc.Issue(testsupport.Context(), IssueInput{
 		AssetID: "ast_1",
 		Type:    "hold",
 		Actor:   "op_1",
@@ -110,7 +111,7 @@ func TestIssuePublishesCommandIssued(t *testing.T) {
 
 func TestIssueRejectsUnknownAsset(t *testing.T) {
 	svc := NewService(newFakeRepo(), fakeRegistry{}, testBus())
-	_, err := svc.Issue(context.Background(), IssueInput{AssetID: "ast_missing", Type: "hold"})
+	_, err := svc.Issue(testsupport.Context(), IssueInput{AssetID: "ast_missing", Type: "hold"})
 	if !apperr.Is(err, apperr.CodeValidation) {
 		t.Fatalf("err = %v, want validation error", err)
 	}
@@ -125,7 +126,7 @@ func TestTransitionPublishesCommandStatusChanged(t *testing.T) {
 	svc := NewService(newFakeRepo(), fakeRegistry{known: map[string]bool{"ast_1": true}}, bus)
 	command := issueCommand(t, svc)
 
-	updated, err := svc.Acknowledge(context.Background(), command.ID, "op_2")
+	updated, err := svc.Acknowledge(testsupport.Context(), command.ID, "op_2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,7 +150,7 @@ func TestTransitionRejectsInvalidTransition(t *testing.T) {
 	svc := NewService(newFakeRepo(), fakeRegistry{known: map[string]bool{"ast_1": true}}, bus)
 	command := issueCommand(t, svc)
 
-	if _, err := svc.Complete(context.Background(), command.ID, "op_2"); !apperr.Is(err, apperr.CodeConflict) {
+	if _, err := svc.Complete(testsupport.Context(), command.ID, "op_2"); !apperr.Is(err, apperr.CodeConflict) {
 		t.Fatalf("err = %v, want conflict error", err)
 	}
 	if changed != 0 {
@@ -161,17 +162,17 @@ func TestTransitionRejectsTerminalState(t *testing.T) {
 	svc := NewService(newFakeRepo(), fakeRegistry{known: map[string]bool{"ast_1": true}}, testBus())
 	command := issueCommand(t, svc)
 
-	if _, err := svc.Acknowledge(context.Background(), command.ID, "op_2"); err != nil {
+	if _, err := svc.Acknowledge(testsupport.Context(), command.ID, "op_2"); err != nil {
 		t.Fatal(err)
 	}
-	completed, err := svc.Complete(context.Background(), command.ID, "op_2")
+	completed, err := svc.Complete(testsupport.Context(), command.ID, "op_2")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !IsTerminal(completed.State) {
 		t.Fatalf("state = %s, want terminal", completed.State)
 	}
-	if _, err := svc.Fail(context.Background(), command.ID, "late failure", "op_2"); !apperr.Is(err, apperr.CodeConflict) {
+	if _, err := svc.Fail(testsupport.Context(), command.ID, "late failure", "op_2"); !apperr.Is(err, apperr.CodeConflict) {
 		t.Fatalf("err = %v, want conflict error", err)
 	}
 }
@@ -180,7 +181,7 @@ func TestFailUsesDefaultReason(t *testing.T) {
 	svc := NewService(newFakeRepo(), fakeRegistry{known: map[string]bool{"ast_1": true}}, testBus())
 	command := issueCommand(t, svc)
 
-	failed, err := svc.Fail(context.Background(), command.ID, "", "op_2")
+	failed, err := svc.Fail(testsupport.Context(), command.ID, "", "op_2")
 	if err != nil {
 		t.Fatal(err)
 	}

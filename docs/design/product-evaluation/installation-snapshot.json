@@ -1,0 +1,396 @@
+{
+  "capturedAt": "2026-10-25T10:18:56.813Z",
+  "resources": {
+    "EXERCISE_OBSERVATION": 41,
+    "PUBLIC_EVIDENCE": 1
+  },
+  "exerciseStates": {
+    "unavailable": 2,
+    "STOPPED": 34,
+    "FAILED": 2,
+    "COMPLETED": 3
+  },
+  "sources": [
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-ais",
+      "name": "External vessel observations · AISStream",
+      "status": "offline",
+      "ingestion": {
+        "state": "not_admitted",
+        "pendingPublications": 0
+      }
+    },
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-opensky",
+      "name": "External aircraft observations · OpenSky",
+      "status": "active",
+      "ingestion": {
+        "state": "current",
+        "lastSuccessAt": "2026-10-25T13:18:53.626743+03:00",
+        "lastAttemptAt": "2026-10-25T13:18:53.012217+03:00",
+        "nextAttemptAt": "2026-10-25T13:33:53.626743+03:00",
+        "coverageFrom": "2026-10-25T13:13:53.012217+03:00",
+        "coverageTo": "2026-10-25T13:18:53.012217+03:00",
+        "pendingPublications": 0
+      }
+    },
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-firms",
+      "name": "NASA FIRMS · NOAA-20 thermal detections",
+      "status": "active",
+      "ingestion": {
+        "state": "current",
+        "lastSuccessAt": "2026-10-25T11:48:41.336652+03:00",
+        "lastAttemptAt": "2026-10-25T12:48:42.243477+03:00",
+        "nextAttemptAt": "2026-10-25T13:48:43.461427+03:00",
+        "coverageFrom": "2026-10-22T01:06:23.761736+03:00",
+        "coverageTo": "2026-10-25T01:06:23.761736+03:00",
+        "pendingPublications": 0
+      }
+    },
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-earthsearch",
+      "name": "Sentinel-2 Collection 1 · Earth Search",
+      "status": "active",
+      "ingestion": {
+        "state": "unavailable",
+        "lastSuccessAt": "2026-10-23T11:09:05.372343+03:00",
+        "lastAttemptAt": "2026-10-25T09:48:36.601071+03:00",
+        "nextAttemptAt": "2026-10-25T15:48:36.653624+03:00",
+        "coverageFrom": "2025-03-01T03:00:00+03:00",
+        "coverageTo": "2025-04-01T02:59:59+03:00",
+        "pendingPublications": 0
+      }
+    },
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-cdse",
+      "name": "Copernicus Data Space · Sentinel-2 catalogue",
+      "status": "active",
+      "ingestion": {
+        "state": "current",
+        "lastSuccessAt": "2026-10-25T12:48:47.117624+03:00",
+        "lastAttemptAt": "2026-10-25T12:48:45.276931+03:00",
+        "nextAttemptAt": "2026-10-25T13:48:47.117624+03:00",
+        "coverageFrom": "2026-09-24T12:48:45.276931+03:00",
+        "coverageTo": "2026-10-25T12:48:45.276931+03:00",
+        "pendingPublications": 0
+      }
+    },
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-gdacs",
+      "name": "Official natural-hazard bulletins · GDACS",
+      "status": "active",
+      "ingestion": {
+        "state": "stale",
+        "lastSuccessAt": "2026-10-23T14:38:49.343765+03:00",
+        "lastAttemptAt": "2026-10-25T09:48:36.592832+03:00",
+        "nextAttemptAt": "2026-10-25T15:48:38.777752+03:00",
+        "coverageFrom": "2026-10-16T14:38:48.188219+03:00",
+        "coverageTo": "2026-10-23T14:38:48.188219+03:00",
+        "pendingPublications": 0
+      }
+    },
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-metar",
+      "name": "Official station weather · Saudi region",
+      "status": "active",
+      "ingestion": {
+        "state": "current",
+        "lastSuccessAt": "2026-10-25T13:04:16.629253+03:00",
+        "lastAttemptAt": "2026-10-25T13:04:14.603716+03:00",
+        "nextAttemptAt": "2026-10-25T13:19:16.629253+03:00",
+        "coverageFrom": "2026-10-25T07:04:14.603716+03:00",
+        "coverageTo": "2026-10-25T13:04:14.603716+03:00",
+        "pendingPublications": 0
+      }
+    },
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-usgs-history",
+      "name": "USGS retained March 2025 · historical context",
+      "status": "active",
+      "ingestion": {
+        "state": "unavailable",
+        "lastSuccessAt": "2026-10-23T10:08:45.096888+03:00",
+        "lastAttemptAt": "2026-10-23T10:08:44.430846+03:00",
+        "nextAttemptAt": "2026-10-23T11:08:45.096888+03:00",
+        "coverageFrom": "2025-03-01T03:00:00+03:00",
+        "coverageTo": "2025-04-01T02:59:59+03:00",
+        "pendingPublications": 0
+      }
+    },
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-usgs",
+      "name": "USGS earthquakes · Saudi region",
+      "status": "active",
+      "ingestion": {
+        "state": "current",
+        "lastSuccessAt": "2026-10-25T12:48:40.257378+03:00",
+        "lastAttemptAt": "2026-10-25T12:48:39.615846+03:00",
+        "nextAttemptAt": "2026-10-25T13:48:40.257378+03:00",
+        "coverageFrom": "2026-10-18T12:48:39.615846+03:00",
+        "coverageTo": "2026-10-25T12:48:39.615846+03:00",
+        "pendingPublications": 0
+      }
+    },
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-dem",
+      "name": "Jeddah surface elevation · Copernicus DEM",
+      "status": "active",
+      "ingestion": {
+        "state": "not_admitted",
+        "pendingPublications": 0
+      }
+    },
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-osm",
+      "name": "Jeddah roads and buildings · OpenStreetMap",
+      "status": "active",
+      "ingestion": {
+        "state": "not_admitted",
+        "pendingPublications": 0
+      }
+    },
+    {
+      "id": "scoped_cc8a43409a82eaa8647ac38c__source__local-naturalearth",
+      "name": "Saudi geographic reference · Natural Earth",
+      "status": "active",
+      "ingestion": {
+        "state": "not_admitted",
+        "pendingPublications": 0
+      }
+    }
+  ],
+  "referenceVersions": 24,
+  "events": {
+    "total": 16,
+    "returned": 16,
+    "byType": {
+      "event.earthquake": 16
+    },
+    "observedFrom": "2025-03-01T15:11:55.112Z",
+    "observedTo": "2026-10-16T15:41:31.935Z"
+  },
+  "context": {
+    "total": 51,
+    "returned": 51,
+    "byKind": {
+      "WEATHER": 51
+    }
+  },
+  "imagery": {
+    "catalogueRevisions": 19,
+    "captures": 4,
+    "captureStates": {
+      "SUCCEEDED": 4
+    },
+    "distinctDates": [
+      "2025-03-01T08:04:32.082Z",
+      "2025-03-31T08:04:30.193Z"
+    ]
+  },
+  "jobs": {
+    "NDVI_CHANGE / SUCCEEDED": 1,
+    "PREPARE / SUCCEEDED": 2
+  },
+  "assessments": [
+    {
+      "id": "asm_01m5m90qd2wc2vxq82jdqct6fk",
+      "status": "PUBLISHED",
+      "method": "ALGORITHM",
+      "version": 3,
+      "conclusion": "DEVELOPMENT WORKFLOW TEST. This record proves account separation and export behavior only; it is not a reviewed intelligence assessment or evidence of review by two actual people."
+    },
+    {
+      "id": "asm_01m5kt9vafp7px1663kb2ehdyy",
+      "status": "PROPOSED",
+      "method": "ALGORITHM",
+      "version": 1,
+      "conclusion": "Real retained Sentinel-2 environmental indicator prepared for human interpretation. Change pixels and masks require analyst review; this is not a verified claim of vegetation loss."
+    }
+  ],
+  "contextPackages": 2,
+  "readiness": {
+    "checkedAt": "2026-10-25T10:18:56.2177051Z",
+    "resource": {
+      "workspaceId": "default",
+      "environmentId": "local",
+      "partition": "PUBLIC_EVIDENCE"
+    },
+    "features": [
+      {
+        "id": "reference",
+        "state": "AVAILABLE",
+        "count": 24,
+        "nextAction": ""
+      },
+      {
+        "id": "imagery",
+        "state": "AVAILABLE",
+        "count": 19,
+        "nextAction": ""
+      },
+      {
+        "id": "imagery-captures",
+        "state": "AVAILABLE",
+        "count": 4,
+        "nextAction": ""
+      },
+      {
+        "id": "evidence",
+        "state": "AVAILABLE",
+        "count": 3194,
+        "nextAction": ""
+      },
+      {
+        "id": "artifact-storage",
+        "state": "AVAILABLE",
+        "count": 0,
+        "nextAction": ""
+      }
+    ],
+    "workers": [
+      {
+        "feature": "connectors",
+        "lastSeenAt": "2026-10-25T13:18:56.050583+03:00",
+        "state": "READY"
+      },
+      {
+        "feature": "connectors",
+        "lastSeenAt": "2026-10-25T13:18:55.70911+03:00",
+        "state": "READY"
+      },
+      {
+        "feature": "connectors",
+        "lastSeenAt": "2026-10-25T13:18:55.872751+03:00",
+        "state": "READY"
+      },
+      {
+        "feature": "connectors",
+        "lastSeenAt": "2026-10-25T13:18:55.740044+03:00",
+        "state": "READY"
+      },
+      {
+        "feature": "connectors",
+        "lastSeenAt": "2026-10-25T13:18:55.901694+03:00",
+        "state": "READY"
+      },
+      {
+        "feature": "connectors",
+        "lastSeenAt": "2026-10-25T13:18:55.872762+03:00",
+        "state": "READY"
+      },
+      {
+        "feature": "connectors",
+        "lastSeenAt": "2026-10-25T13:18:55.680969+03:00",
+        "state": "READY"
+      },
+      {
+        "feature": "imagery",
+        "lastSeenAt": "2026-10-25T13:18:54.110475+03:00",
+        "state": "READY"
+      },
+      {
+        "feature": "preparation",
+        "lastSeenAt": "2026-10-25T13:18:56.663211+03:00",
+        "state": "READY"
+      }
+    ]
+  },
+  "saudi": {
+    "earthquakes": {
+      "total": 5,
+      "state": "latest"
+    },
+    "thermal": {
+      "total": 0,
+      "state": "latest"
+    },
+    "weather": {
+      "total": 26,
+      "state": "latest_retained"
+    },
+    "bulletins": {
+      "total": 0,
+      "state": "latest_retained"
+    },
+    "aircraft": {
+      "total": 0,
+      "state": "latest_retained"
+    },
+    "vessels": {
+      "total": 0,
+      "state": "latest_retained"
+    },
+    "imagery": {
+      "total": 2,
+      "state": "latest_retained"
+    },
+    "findings": {
+      "total": 1,
+      "state": "latest_retained"
+    }
+  },
+  "simulation": {
+    "scenes": [
+      {
+        "name": "Acceptance · one-hour bounded abstract exercise",
+        "id": "scene_f48db6aa06b442860e22729975d946f80cf9f237f5b7f947e3ff2c00f131543a"
+      },
+      {
+        "name": "Jeddah coastal context exercise",
+        "id": "scene_2a5c03b344e80f44ade7f3034f7be48a2abee651afc7dea4294d87e35e17b8de"
+      }
+    ],
+    "runs": {
+      "STOPPED": 34,
+      "FAILED": 2,
+      "COMPLETED": 1
+    },
+    "readiness": {
+      "checkedAt": "2026-10-25T10:18:56.8453332Z",
+      "resource": {
+        "workspaceId": "default",
+        "environmentId": "local",
+        "partition": "EXERCISE_INPUT"
+      },
+      "features": [
+        {
+          "id": "models",
+          "state": "AVAILABLE",
+          "count": 7,
+          "nextAction": ""
+        },
+        {
+          "id": "scenes",
+          "state": "AVAILABLE",
+          "count": 2,
+          "nextAction": ""
+        },
+        {
+          "id": "artifact-storage",
+          "state": "AVAILABLE",
+          "count": 0,
+          "nextAction": ""
+        }
+      ],
+      "workers": [
+        {
+          "feature": "assets",
+          "lastSeenAt": "2026-10-25T13:18:54.449887+03:00",
+          "state": "READY"
+        },
+        {
+          "feature": "recordings",
+          "lastSeenAt": "2026-10-25T13:18:55.117712+03:00",
+          "state": "READY"
+        },
+        {
+          "feature": "runtime",
+          "lastSeenAt": "2026-10-25T13:18:56.275695+03:00",
+          "state": "READY",
+          "runtimeBuild": "cd0160a46aefc3287cc5efaa6f495c40cf6bfa54ecfcc82c98c5b5415b5ea827"
+        }
+      ]
+    }
+  }
+}

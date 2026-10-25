@@ -9,6 +9,7 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type fakeRepo struct {
@@ -110,7 +111,7 @@ func testBus() *events.Dispatcher {
 
 func TestCreateRejectsUnknownAsset(t *testing.T) {
 	svc := NewService(newFakeRepo(), fakeRegistry{known: map[string]bool{"ast_1": true}}, testBus())
-	_, err := svc.Create(context.Background(), CreateInput{Name: "Patrol", Assets: []string{"ast_missing"}})
+	_, err := svc.Create(testsupport.Context(), CreateInput{Name: "Patrol", Assets: []string{"ast_missing"}})
 	if !apperr.Is(err, apperr.CodeValidation) {
 		t.Fatalf("err = %v, want validation error", err)
 	}
@@ -124,7 +125,7 @@ func TestCreatePublishesMissionCreated(t *testing.T) {
 	})
 	svc := NewService(newFakeRepo(), fakeRegistry{known: map[string]bool{"ast_1": true}}, bus)
 
-	mission, err := svc.Create(context.Background(), CreateInput{
+	mission, err := svc.Create(testsupport.Context(), CreateInput{
 		Name:   "Patrol",
 		Assets: []string{"ast_1"},
 		Tasks:  []TaskInput{{Type: "recon"}},
@@ -143,22 +144,22 @@ func TestCreatePublishesMissionCreated(t *testing.T) {
 
 func TestUpdateStatusRejectsInvalidTransition(t *testing.T) {
 	svc := NewService(newFakeRepo(), fakeRegistry{known: map[string]bool{"ast_1": true}}, testBus())
-	mission, err := svc.Create(context.Background(), CreateInput{Name: "Patrol"})
+	mission, err := svc.Create(testsupport.Context(), CreateInput{Name: "Patrol"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.UpdateStatus(context.Background(), mission.ID, StatusCompleted, "op_1"); !apperr.Is(err, apperr.CodeConflict) {
+	if _, err := svc.UpdateStatus(testsupport.Context(), mission.ID, StatusCompleted, "op_1"); !apperr.Is(err, apperr.CodeConflict) {
 		t.Fatalf("err = %v, want conflict error", err)
 	}
 }
 
 func TestUpdateTaskStatusRejectsInvalidStatus(t *testing.T) {
 	svc := NewService(newFakeRepo(), fakeRegistry{known: map[string]bool{"ast_1": true}}, testBus())
-	mission, err := svc.Create(context.Background(), CreateInput{Name: "Patrol"})
+	mission, err := svc.Create(testsupport.Context(), CreateInput{Name: "Patrol"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.UpdateTaskStatus(context.Background(), mission.ID, "tsk_1", TaskStatus("BOGUS"), "op_1"); !apperr.Is(err, apperr.CodeValidation) {
+	if _, err := svc.UpdateTaskStatus(testsupport.Context(), mission.ID, "tsk_1", TaskStatus("BOGUS"), "op_1"); !apperr.Is(err, apperr.CodeValidation) {
 		t.Fatalf("err = %v, want validation error", err)
 	}
 }
@@ -166,19 +167,19 @@ func TestUpdateTaskStatusRejectsInvalidStatus(t *testing.T) {
 func TestUpdateTaskStatusScopesTaskToParentMission(t *testing.T) {
 	repo := newFakeRepo()
 	svc := NewService(repo, fakeRegistry{known: map[string]bool{}}, testBus())
-	first, err := svc.Create(context.Background(), CreateInput{Name: "First"})
+	first, err := svc.Create(testsupport.Context(), CreateInput{Name: "First"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := svc.Create(context.Background(), CreateInput{Name: "Second"})
+	second, err := svc.Create(testsupport.Context(), CreateInput{Name: "Second"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	task, err := repo.CreateTask(context.Background(), Task{ID: "tsk-2", MissionID: second.ID, Type: "recon", Status: TaskPending})
+	task, err := repo.CreateTask(testsupport.Context(), Task{ID: "tsk-2", MissionID: second.ID, Type: "recon", Status: TaskPending})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.UpdateTaskStatus(context.Background(), first.ID, task.ID, TaskActive, "op-1"); !apperr.Is(err, apperr.CodeNotFound) {
+	if _, err := svc.UpdateTaskStatus(testsupport.Context(), first.ID, task.ID, TaskActive, "op-1"); !apperr.Is(err, apperr.CodeNotFound) {
 		t.Fatalf("err = %v, want not found for a task owned by another mission", err)
 	}
 	if repo.tasks[task.ID].Status != TaskPending {

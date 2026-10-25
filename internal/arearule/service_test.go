@@ -9,6 +9,7 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type fakeOverlaps struct {
@@ -65,7 +66,7 @@ func TestAreaOverlapPublishesForEveryIntersectingZone(t *testing.T) {
 	}}
 	svc, log := newTestService(t, overlaps)
 
-	svc.HandleObservationReceived(context.Background(), areaObservation())
+	svc.HandleObservationReceived(testsupport.Context(), areaObservation())
 
 	if len(log.events) != 2 {
 		t.Fatalf("published %d events, want one per intersecting zone", len(log.events))
@@ -108,7 +109,7 @@ func TestPointObservationsAreNotEvaluatedByTheAreaRule(t *testing.T) {
 	// A point observation belongs to the track pipeline. Evaluating it here as
 	// well would re-derive a track's containment from its source observation and
 	// raise a duplicate breach for the same movement.
-	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+	svc.HandleObservationReceived(testsupport.Context(), events.ObservationReceived{
 		ObservationID: "obs_point_1",
 		SourceID:      "radar-01",
 		Position:      &geo.Point{Lat: 24.7, Lng: 46.6},
@@ -128,7 +129,7 @@ func TestDuplicateReplayDoesNotReannounceAnOverlap(t *testing.T) {
 
 	replayed := areaObservation()
 	replayed.Duplicate = true
-	svc.HandleObservationReceived(context.Background(), replayed)
+	svc.HandleObservationReceived(testsupport.Context(), replayed)
 
 	if len(log.events) != 0 {
 		t.Fatalf("duplicate re-announced %d events, want none", len(log.events))
@@ -144,7 +145,7 @@ func TestRetryReplaysAPreviouslyFailedOverlap(t *testing.T) {
 	retry := areaObservation()
 	retry.Duplicate = true
 	retry.Retry = true
-	svc.HandleObservationReceived(context.Background(), retry)
+	svc.HandleObservationReceived(testsupport.Context(), retry)
 
 	if len(log.events) != 1 {
 		t.Fatalf("retry published %d events, want 1", len(log.events))
@@ -155,7 +156,7 @@ func TestNoOverlapPublishesNothing(t *testing.T) {
 	overlaps := &fakeOverlaps{zones: nil}
 	svc, log := newTestService(t, overlaps)
 
-	svc.HandleObservationReceived(context.Background(), areaObservation())
+	svc.HandleObservationReceived(testsupport.Context(), areaObservation())
 
 	if len(log.events) != 0 {
 		t.Fatalf("published %d events for an area overlapping nothing", len(log.events))
@@ -171,7 +172,7 @@ func TestSpatialFailurePublishesNothingRatherThanGuessing(t *testing.T) {
 	svc, log := newTestService(t, overlaps)
 	svc.SetFailureObserver(failures)
 
-	svc.HandleObservationReceived(context.Background(), areaObservation())
+	svc.HandleObservationReceived(testsupport.Context(), areaObservation())
 
 	// A failed containment query is not evidence of no overlap. Publishing
 	// nothing leaves the operator with silence; guessing would be worse.
@@ -191,7 +192,7 @@ func TestSuccessfulEvaluationDoesNotReportAFailure(t *testing.T) {
 	svc, _ := newTestService(t, overlaps)
 	svc.SetFailureObserver(failures)
 
-	svc.HandleObservationReceived(context.Background(), areaObservation())
+	svc.HandleObservationReceived(testsupport.Context(), areaObservation())
 
 	// A counter that fires on success is a counter nobody trusts.
 	if failures.count != 0 {
@@ -207,7 +208,7 @@ func TestAreaWithoutGeometryIsIgnored(t *testing.T) {
 	// submit an empty polygon to PostGIS and produce a confusing error.
 	ev := areaObservation()
 	ev.AreaGeoJSON = ""
-	svc.HandleObservationReceived(context.Background(), ev)
+	svc.HandleObservationReceived(testsupport.Context(), ev)
 
 	if len(log.events) != 0 {
 		t.Fatalf("published %d events for an area with no geometry", len(log.events))
@@ -221,7 +222,7 @@ func TestOverlappingZoneIsPassedThroughWithItsMetadata(t *testing.T) {
 	}}
 	svc, log := newTestService(t, overlaps)
 
-	svc.HandleObservationReceived(context.Background(), areaObservation())
+	svc.HandleObservationReceived(testsupport.Context(), areaObservation())
 
 	// A fractional overlap proves the value survived as a float rather than
 	// being truncated to an int somewhere in the adapter.
@@ -234,7 +235,7 @@ func TestMissingOverlapMetadataReadsAsZero(t *testing.T) {
 	overlaps := &fakeOverlaps{zones: []Geofence{{ID: "geo_1", Name: "Zone"}}}
 	svc, log := newTestService(t, overlaps)
 
-	svc.HandleObservationReceived(context.Background(), areaObservation())
+	svc.HandleObservationReceived(testsupport.Context(), areaObservation())
 
 	// A zone with no recorded overlap must not panic; zero is honest.
 	if got := log.events[0].OverlapM2; got != 0 {

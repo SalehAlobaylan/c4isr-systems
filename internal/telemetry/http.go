@@ -1,6 +1,7 @@
 package telemetry
 
 import (
+	"context"
 	"net/http"
 	"strconv"
 	"time"
@@ -110,7 +111,7 @@ func (h *Handler) ingest(w http.ResponseWriter, r *http.Request) {
 		httpx.JSON(w, http.StatusOK, sampleResponse{Duplicate: true})
 		return
 	}
-	httpx.JSON(w, http.StatusCreated, h.toResponse(result.Sample, result.Stale))
+	httpx.JSON(w, http.StatusCreated, h.toResponseWithContext(r.Context(), result.Sample, result.Stale))
 }
 
 func (h *Handler) listByAsset(w http.ResponseWriter, r *http.Request) {
@@ -127,7 +128,7 @@ func (h *Handler) listByAsset(w http.ResponseWriter, r *http.Request) {
 		Total: total,
 	}
 	for _, item := range items {
-		resp.Items = append(resp.Items, h.toResponse(item, false))
+		resp.Items = append(resp.Items, h.toResponseWithContext(r.Context(), item, false))
 	}
 	httpx.JSON(w, http.StatusOK, resp)
 }
@@ -158,4 +159,13 @@ func (h *Handler) toResponse(sample Sample, rejectedStale bool) sampleResponse {
 		Freshness:       string(state),
 		FreshnessLabel:  state.Label(),
 	}
+}
+
+func (h *Handler) toResponseWithContext(ctx context.Context, s Sample, rejected bool) sampleResponse {
+	r := h.toResponse(s, rejected)
+	state := h.fresh.ForAsset(freshness.AssetSignal{LastSeenAt: &s.ObservedAt, ConnectionState: s.ConnectionState}, freshness.Now(ctx, h.nowFunc()))
+	r.Freshness = string(state)
+	r.FreshnessLabel = state.Label()
+	r.Stale = rejected || !state.Trustworthy()
+	return r
 }

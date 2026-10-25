@@ -1,0 +1,38 @@
+{
+  "analystQuestion": "Which official earthquake bulletins and station weather contextualize USGS/FIRMS evidence in the selected AOI?",
+  "originalProducer": "Originating official station network (record relevant station agencies)",
+  "upstreamProvider": "NOAA Aviation Weather Center",
+  "connectorId": "metar-region",
+  "connectorPrincipalId": "metar-connector",
+  "dataset": "noaa-awc-metar",
+  "productVersion": "v1",
+  "coverageDescription": "Selected Jeddah coastal AOI. Station samples/event centroids do not assert area coverage or absence.",
+  "revisionPolicy": "content_hash",
+  "enabled": false,
+  "rights": {
+    "id": "REPLACE_WITH_REVIEWED_RIGHTS_VERSION",
+    "legalBasis": "REPLACE: review station/provider and upstream terms, attribution, archive retention and analysis permissions before enabling",
+    "termsUrl": "https://www.weather.gov/disclaimer",
+    "attribution": "REPLACE_WITH_REQUIRED_ATTRIBUTION",
+    "retainRaw": false,
+    "allowAnalysis": false,
+    "allowSimulationExport": false
+  },
+  "policy": {
+    "aoi": {
+      "west": 39.1,
+      "south": 21.3,
+      "east": 39.4,
+      "north": 21.7
+    },
+    "lookbackSeconds": 21600,
+    "freshForSeconds": 3600,
+    "unavailableAfterSeconds": 7200,
+    "minIntervalSeconds": 900,
+    "timeoutSeconds": 10,
+    "maxPages": 1,
+    "maxRecordsPerPage": 400,
+    "maxResponseBytes": 1048576,
+    "maxRequestsPerDay": 96
+  }
+}

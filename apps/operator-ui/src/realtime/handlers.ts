@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 
 import type { RealtimeEnvelope } from '@/lib/api'
-import { queryKeys } from '@/lib/queryKeys'
+import { createQueryKeys } from '@/lib/queryKeys'
 import { toast } from '@/stores/toasts'
 
 /**
@@ -15,9 +15,11 @@ export function applyRealtimeEvent(
   // reconstruction of recorded evidence. Applying present-day events to it
   // would splice two moments together into a picture that never existed, so
   // the event is dropped rather than partially applied.
+  prefix: readonly unknown[],
   suspended = false,
 ): void {
   if (suspended) return
+  const queryKeys = createQueryKeys(prefix)
   const data = envelope.data ?? {}
 
   const invalidate = (queryKey: readonly unknown[]) => {

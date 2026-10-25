@@ -1,5 +1,7 @@
 # Data Requirements
 
+> **Historical source analysis:** This document predates the area-observation path and the v2 product direction. Its track-only alert assumptions are no longer a complete description of the code. Use [Final Data Strategy v2](../EMAD_FINAL_DATA_STRATEGY_v2.md), [Implementation Plan v2](../EMAD_IMPLEMENTATION_PLAN_v2.md), and the [F0.1 baseline inventory](implementation/F0_1_BASELINE.md) for current data semantics and planned work.
+
 What data the platform needs to become genuinely useful, with particular attention to **publicly available** sources.
 
 Scope: derived from the actual ingest contracts in `internal/`, not from assumption. Written because the answer determines whether this system can ever run on real feeds rather than seeded scenarios.
@@ -118,3 +120,13 @@ Global ADS-B runs at tens of thousands of messages per second. Serving that from
 **Staleness is not optional here.** Public data has *known* latency characteristics. Labelling it honestly in the UI (see `product-evaluation.md` §4.1) is a prerequisite for using these feeds at all — otherwise the operator cannot distinguish a live intrusion from an hour-old fire hotspot.
 
 **Discipline.** Do not start a data-acquisition project. Start from the three questions an operator must answer, then admit only the feeds that change an answer.
+
+
+## P3.3 delivery update
+
+P3.3 retains METAR station samples and GDACS structured EQ bulletin evidence with original fields, cited interval/location assumptions, extraction method and common upstream lineage. Retained-analysis rights, bounded query/byte/record/archive limits and a human-reviewed analyst question gate activation. Copies/revisions do not infer independent corroboration or analyst confidence. See [implementation, acceptance and rollout](implementation/P3_3_WEATHER_AND_REPORTS.md).
+
+
+## S1.1 delivery update
+
+S1.1 requires model source/import revision, SHA-256, reviewed perpetual archive/simulation rights, attribution, importer/validator/build identity, declared visual fidelity, actual scene bounds and units/axes. Embedded texture decoding, primitive/instance budgets and private artifact quotas are explicit. Actor templates, visual environment frames, runtime actor references and real-world tracks remain different record types. See [implementation, acceptance and rollout](implementation/S1_1_MODEL_ASSET_REGISTRY.md).

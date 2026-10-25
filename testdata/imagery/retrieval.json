@@ -1,0 +1,6 @@
+{
+  "source": "https://stac.dataspace.copernicus.eu/v1/search?collections=sentinel-2-l2a&bbox=39.15,21.45,39.2,21.5&datetime=2025-02-01T00:00:00Z/2025-02-28T23:59:59Z&limit=2&filter-lang=cql2-text&filter=eo%3Acloud_cover%20%3C%3D%2030%20AND%20platform%20%3D%20%27sentinel-2b%27",
+  "retrievedAt": "2026-10-21T14:10:56.853579+00:00",
+  "sha256": "da86a9cdf3d1995d1d9d5af333be215e2aea96689af336cac8edcf083d2f4089",
+  "note": "Exact public CDSE STAC response. Only catalogue metadata retained; no upstream raster credentials or raster download. Synthetic subset pixel fixtures are separate."
+}

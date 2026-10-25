@@ -1,0 +1,15 @@
+services:
+  garage:
+    image: dxflrs/garage:v2.4.1@sha256:9c96caa2612d3411acc5b0e6701fb238dbfba33e533a6d7d3d811a4b12d0d020
+    container_name: emad-garage
+    command: ["/garage", "server", "--single-node", "--default-bucket"]
+    restart: unless-stopped
+    env_file: ../private/local/garage.env
+    ports: ["127.0.0.1:3900:3900"]
+    volumes:
+      - ../private/local/garage.toml:/etc/garage.toml:ro
+      - emad-garage-meta:/var/lib/garage/meta
+      - emad-garage-data:/var/lib/garage/data
+volumes:
+  emad-garage-meta:
+  emad-garage-data:

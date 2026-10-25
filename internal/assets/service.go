@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 )
@@ -44,18 +45,23 @@ func NewServiceWithFreshness(repo Repository, bus *events.Dispatcher, policy fre
 // classify stamps the freshness state derived from signals already present on
 // the asset. It never touches the database, which is why a stale asset cannot
 // be persisted as fresh or vice versa.
-func (s *Service) classify(asset Asset) Asset {
+func (s *Service) classify(ctx context.Context, asset Asset) Asset {
 	asset.Freshness = s.fresh.ForAsset(freshness.AssetSignal{
 		LastSeenAt:      asset.LastSeenAt,
 		ConnectionState: asset.ConnectionState,
 		Status:          string(asset.Status),
-	}, s.now())
+	}, freshness.Now(ctx, s.now()))
 	return asset
 }
 
 // Create registers a new asset and publishes asset.created.
 func (s *Service) Create(ctx context.Context, in CreateInput) (Asset, error) {
+	if scopeErr := access.Require(ctx, "assets.manage"); scopeErr != nil {
+		return Asset{}, scopeErr
+	}
+
 	in.Normalize()
+	in.ID = access.ResourceID(ctx, "asset", in.ID)
 	if err := in.Validate(); err != nil {
 		return Asset{}, err
 	}
@@ -78,19 +84,24 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Asset, error) {
 		Name:    created.Name,
 		Type:    created.Type,
 	})
-	return s.classify(created), nil
+	return s.classify(ctx, created), nil
 }
 
 // Ensure idempotently registers an asset, returning whether it was created.
 func (s *Service) Ensure(ctx context.Context, in CreateInput) (Asset, bool, error) {
+	if scopeErr := access.Require(ctx, "assets.manage"); scopeErr != nil {
+		return Asset{}, false, scopeErr
+	}
+
 	in.Normalize()
+	in.ID = access.ResourceID(ctx, "asset", in.ID)
 	if err := in.Validate(); err != nil {
 		return Asset{}, false, err
 	}
 
 	existing, err := s.repo.Get(ctx, in.ID)
 	if err == nil {
-		return s.classify(existing), false, nil
+		return s.classify(ctx, existing), false, nil
 	}
 	if !apperr.Is(err, apperr.CodeNotFound) {
 		return Asset{}, false, err
@@ -105,26 +116,38 @@ func (s *Service) Ensure(ctx context.Context, in CreateInput) (Asset, bool, erro
 
 // Get returns an asset with its current state by id.
 func (s *Service) Get(ctx context.Context, id string) (Asset, error) {
+	if scopeErr := access.Require(ctx, "assets.read"); scopeErr != nil {
+		return Asset{}, scopeErr
+	}
+
 	asset, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return Asset{}, err
 	}
-	return s.classify(asset), nil
+	return s.classify(ctx, asset), nil
 }
 
 // Exists reports whether an asset is registered. Other modules use this to
 // validate references without importing asset internals.
 func (s *Service) Exists(ctx context.Context, id string) (bool, error) {
+	if scopeErr := access.Require(ctx, "assets.read"); scopeErr != nil {
+		return false, scopeErr
+	}
+
 	return s.repo.Exists(ctx, id)
 }
 
 // List returns assets with their current state.
 func (s *Service) List(ctx context.Context, limit, offset int) ([]Asset, int, error) {
+	if scopeErr := access.Require(ctx, "assets.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	items, total, err := s.repo.List(ctx, clampLimit(limit), max(offset, 0))
 	if err != nil {
 		return nil, 0, err
 	}
-	now := s.now()
+	now := freshness.Now(ctx, s.now())
 	for i := range items {
 		items[i].Freshness = s.fresh.ForAsset(freshness.AssetSignal{
 			LastSeenAt:      items[i].LastSeenAt,
@@ -137,6 +160,10 @@ func (s *Service) List(ctx context.Context, limit, offset int) ([]Asset, int, er
 
 // UpdateStatus changes availability and publishes asset.updated.
 func (s *Service) UpdateStatus(ctx context.Context, id string, status Status) (Asset, error) {
+	if scopeErr := access.Require(ctx, "assets.manage"); scopeErr != nil {
+		return Asset{}, scopeErr
+	}
+
 	if !validStatus(status) {
 		return Asset{}, apperr.Validation("asset status must be one of available, assigned, unavailable, offline, maintenance")
 	}
@@ -150,7 +177,7 @@ func (s *Service) UpdateStatus(ctx context.Context, id string, status Status) (A
 		AssetID: updated.ID,
 		Status:  string(updated.Status),
 	})
-	return s.classify(updated), nil
+	return s.classify(ctx, updated), nil
 }
 
 func clampLimit(limit int) int {

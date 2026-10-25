@@ -1,8 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
+import { useWorkspace } from '@/lib/workspaceContext'
+import { useQuery } from '@/lib/scopedQueries'
+
 import { Link } from '@tanstack/react-router'
 
-import { api } from '@/lib/api'
-import { queryKeys } from '@/lib/queryKeys'
+import { useAPI } from '@/lib/api'
+import { useQueryKeys } from '@/lib/queryKeys'
 
 /**
  * The chain of custody, read live.
@@ -35,6 +37,9 @@ const STAGES = [
 const LIST_LIMIT = 1
 
 export function ChainRibbon() {
+  const publicContext = useWorkspace().session.resource.partition === 'PUBLIC_EVIDENCE'
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const sources = useQuery({
     queryKey: queryKeys.sources.list({ limit: LIST_LIMIT }),
     queryFn: () => api.listSources({ limit: LIST_LIMIT }),
@@ -84,7 +89,7 @@ export function ChainRibbon() {
 
   return (
     <nav className="aegis-chain-ribbon" aria-label="Chain of custody">
-      {STAGES.map((stage, index) => {
+      {STAGES.filter((stage) => !publicContext || stage.key !== 'commands').map((stage, index) => {
         const count = counts[stage.key]
         // A count of one reads as one. "1 observations" is a defect in the
         // number, not in the wording.

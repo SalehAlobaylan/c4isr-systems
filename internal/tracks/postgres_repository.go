@@ -5,16 +5,15 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // PostgresRepository stores tracks in PostgreSQL.
@@ -29,7 +28,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 // Create inserts a track.
 func (r *PostgresRepository) Create(ctx context.Context, track Track) (Track, error) {
-	row, err := dbgen.New(r.pool).CreateTrack(ctx, dbgen.CreateTrackParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CreateTrack(ctx, dbgen.CreateTrackParams{
 		ID:          track.ID,
 		ExternalRef: pgconv.TextPtr(track.ExternalRef),
 		Status:      string(track.Status),
@@ -50,7 +49,7 @@ func (r *PostgresRepository) Create(ctx context.Context, track Track) (Track, er
 // Get loads a track by id, including its observation count and supporting
 // source ids.
 func (r *PostgresRepository) Get(ctx context.Context, id string) (Track, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	row, err := q.GetTrackDetail(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -73,7 +72,7 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Track, error) 
 
 // FindByExternalRef loads the track carrying an external correlation hint.
 func (r *PostgresRepository) FindByExternalRef(ctx context.Context, ref string) (Track, error) {
-	row, err := dbgen.New(r.pool).FindTrackByExternalRef(ctx, pgconv.TextPtr(ref))
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).FindTrackByExternalRef(ctx, pgconv.TextPtr(ref))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Track{}, apperr.NotFound("track", ref)
@@ -87,7 +86,7 @@ func (r *PostgresRepository) FindByExternalRef(ctx context.Context, ref string) 
 // Retry events use this durable evidence link so an unhinted observation is
 // replayed into its original track instead of creating a second track.
 func (r *PostgresRepository) FindByObservationID(ctx context.Context, observationID string) (Track, error) {
-	row, err := dbgen.New(r.pool).FindTrackByObservationID(ctx, observationID)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).FindTrackByObservationID(ctx, observationID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Track{}, apperr.NotFound("track for observation", observationID)
@@ -99,7 +98,7 @@ func (r *PostgresRepository) FindByObservationID(ctx context.Context, observatio
 
 // List returns tracks ordered by last seen descending with a total count.
 func (r *PostgresRepository) List(ctx context.Context, limit, offset int) ([]Track, int, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	rows, err := q.ListTrackDetails(ctx, dbgen.ListTrackDetailsParams{
 		LimitCount:  int32(limit),
 		OffsetCount: int32(offset),
@@ -135,7 +134,7 @@ func (r *PostgresRepository) ApplyObservation(ctx context.Context, update StateU
 		params.Lat = update.Position.Lat
 		params.Lng = update.Position.Lng
 	}
-	return dbgen.New(r.pool).ApplyTrackObservation(ctx, params)
+	return dbgen.New(platformdb.Scoped(r.pool)).ApplyTrackObservation(ctx, params)
 }
 
 // ApplyObservationWithHistory commits a projection, its history point, and
@@ -186,7 +185,7 @@ func (r *PostgresRepository) ApplyObservationWithHistory(ctx context.Context, up
 
 // Touch advances the last-seen watermark without regressing it.
 func (r *PostgresRepository) Touch(ctx context.Context, id string, observedAt time.Time) error {
-	return dbgen.New(r.pool).TouchTrack(ctx, dbgen.TouchTrackParams{
+	return dbgen.New(platformdb.Scoped(r.pool)).TouchTrack(ctx, dbgen.TouchTrackParams{
 		ObservedAt: pgconv.TS(observedAt),
 		ID:         id,
 	})
@@ -194,7 +193,7 @@ func (r *PostgresRepository) Touch(ctx context.Context, id string, observedAt ti
 
 // Close marks a track closed.
 func (r *PostgresRepository) Close(ctx context.Context, id string) (Track, error) {
-	row, err := dbgen.New(r.pool).CloseTrack(ctx, id)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CloseTrack(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Track{}, apperr.NotFound("track", id)
@@ -216,13 +215,13 @@ func (r *PostgresRepository) UpsertState(ctx context.Context, update StateUpdate
 		params.Lat = update.Position.Lat
 		params.Lng = update.Position.Lng
 	}
-	return dbgen.New(r.pool).UpsertTrackState(ctx, params)
+	return dbgen.New(platformdb.Scoped(r.pool)).UpsertTrackState(ctx, params)
 }
 
 // AttachObservation links evidence to a track. It returns false when the
 // observation was already attached.
 func (r *PostgresRepository) AttachObservation(ctx context.Context, trackID, observationID string) (bool, error) {
-	affected, err := dbgen.New(r.pool).AttachObservationToTrack(ctx, dbgen.AttachObservationToTrackParams{
+	affected, err := dbgen.New(platformdb.Scoped(r.pool)).AttachObservationToTrack(ctx, dbgen.AttachObservationToTrackParams{
 		TrackID:       trackID,
 		ObservationID: observationID,
 	})
@@ -246,12 +245,12 @@ func (r *PostgresRepository) AddHistoryEntry(ctx context.Context, entry HistoryP
 		params.Lat = entry.Position.Lat
 		params.Lng = entry.Position.Lng
 	}
-	return dbgen.New(r.pool).CreateTrackHistoryEntry(ctx, params)
+	return dbgen.New(platformdb.Scoped(r.pool)).CreateTrackHistoryEntry(ctx, params)
 }
 
 // ListHistory returns a track's history oldest first.
 func (r *PostgresRepository) ListHistory(ctx context.Context, trackID string, limit int) ([]HistoryPoint, error) {
-	rows, err := dbgen.New(r.pool).ListTrackHistory(ctx, dbgen.ListTrackHistoryParams{
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).ListTrackHistory(ctx, dbgen.ListTrackHistoryParams{
 		TrackID:    trackID,
 		LimitCount: int32(limit),
 	})
@@ -277,7 +276,7 @@ func (r *PostgresRepository) ListHistory(ctx context.Context, trackID string, li
 
 // CountObservations returns how many observations support a track.
 func (r *PostgresRepository) CountObservations(ctx context.Context, trackID string) (int, error) {
-	total, err := dbgen.New(r.pool).CountTrackObservations(ctx, trackID)
+	total, err := dbgen.New(platformdb.Scoped(r.pool)).CountTrackObservations(ctx, trackID)
 	if err != nil {
 		return 0, err
 	}
@@ -287,7 +286,7 @@ func (r *PostgresRepository) CountObservations(ctx context.Context, trackID stri
 // CountObservationsBySource groups a track's supporting observations by
 // source.
 func (r *PostgresRepository) CountObservationsBySource(ctx context.Context, trackID string) ([]SourceCount, error) {
-	rows, err := dbgen.New(r.pool).CountObservationsBySourceForTrack(ctx, trackID)
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).CountObservationsBySourceForTrack(ctx, trackID)
 	if err != nil {
 		return nil, err
 	}

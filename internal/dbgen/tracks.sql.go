@@ -93,7 +93,7 @@ const closeTrack = `-- name: CloseTrack :one
 UPDATE tracks
 SET status = 'closed', closed_at = now(), updated_at = now()
 WHERE id = $1
-RETURNING id, external_ref, status, first_seen_at, last_seen_at, metadata, created_at, updated_at, closed_at
+RETURNING id, external_ref, status, first_seen_at, last_seen_at, metadata, created_at, updated_at, closed_at, scope_id, external_source_id
 `
 
 func (q *Queries) CloseTrack(ctx context.Context, id string) (Track, error) {
@@ -109,6 +109,8 @@ func (q *Queries) CloseTrack(ctx context.Context, id string) (Track, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ClosedAt,
+		&i.ScopeID,
+		&i.ExternalSourceID,
 	)
 	return i, err
 }
@@ -171,7 +173,7 @@ func (q *Queries) CountTracks(ctx context.Context) (int64, error) {
 const createTrack = `-- name: CreateTrack :one
 INSERT INTO tracks (id, external_ref, status, first_seen_at, last_seen_at, metadata, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, now(), now())
-RETURNING id, external_ref, status, first_seen_at, last_seen_at, metadata, created_at, updated_at, closed_at
+RETURNING id, external_ref, status, first_seen_at, last_seen_at, metadata, created_at, updated_at, closed_at, scope_id, external_source_id
 `
 
 type CreateTrackParams struct {
@@ -203,6 +205,8 @@ func (q *Queries) CreateTrack(ctx context.Context, arg CreateTrackParams) (Track
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.ClosedAt,
+		&i.ScopeID,
+		&i.ExternalSourceID,
 	)
 	return i, err
 }

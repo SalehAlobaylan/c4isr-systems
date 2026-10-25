@@ -1,9 +1,9 @@
 -- name: CreateCommand :one
 INSERT INTO commands (
-    id, asset_id, mission_id, incident_id, type, payload, state,
+    id, asset_id, mission_id, incident_id, type, payload, state, request_key, request_owner,
     created_by, correlation_id, created_at, updated_at
 ) VALUES (
-    @id, @asset_id, @mission_id, @incident_id, @type, @payload, @state,
+    @id, @asset_id, @mission_id, @incident_id, @type, @payload, @state, sqlc.narg('request_key'), @request_owner,
     @created_by, @correlation_id, now(), now()
 )
 RETURNING *;

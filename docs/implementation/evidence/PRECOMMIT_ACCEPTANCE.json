@@ -1,0 +1,207 @@
+{
+  "date": "2026-10-22",
+  "status": "ready to stage and commit within the delivered scope",
+  "commitCreated": false,
+  "pushPerformed": false,
+  "userStagingContentsChanged": false,
+  "testedSnapshot": {
+    "tree": "9a8c2ed60cca5d4e75d7b12a9bb8b8d0ec2e2039",
+    "candidateFiles": 689,
+    "applicationFilesComparedToFinalWorkingTree": 573,
+    "applicationGitBlobsUnchanged": true,
+    "lineEndingBasis": "Git-clean archive bytes; native checkout endings can differ for Windows scripts",
+    "newMigrationsIntroduced": [],
+    "all38AppliedMigrationsUnchanged": true,
+    "protectedFilesUnchanged": 40
+  },
+  "finalFixes": [
+    "Exclude private credentials, environment files and local Python caches from Docker build contexts while retaining example configuration.",
+    "Resolve the Protobuf baseline commit so compatibility checks work in detached checkouts without local main."
+  ],
+  "checks": {
+    "cleanFrozenLockfileInstall": "passed",
+    "cleanGoTests": "passed",
+    "cleanGoVet": "passed",
+    "cleanAllGoExecutableBuilds": "passed",
+    "cleanLinuxGoTests": "passed",
+    "cleanIntegration": {
+      "passed": 84,
+      "topLevel": 56,
+      "subcases": 28,
+      "skipped": [
+        "TestCDSEAuthorizedLiveCatalogueSmoke",
+        "TestFIRMSAuthorizedLiveSmoke",
+        "TestUSGSAuthorizedLiveSmoke",
+        "TestWorkspaceBrowserCompatibilityGate"
+      ]
+    },
+    "cleanRealBackendBrowser": {
+      "passed": 16
+    },
+    "cleanBrowserRegressions": {
+      "passed": 76,
+      "intentionalProjectSkips": 50
+    },
+    "cleanUIProductionBuild": "passed; existing bundle-size advisory",
+    "cleanModelValidator": {
+      "passed": 6
+    },
+    "cleanGeneratedTypes": "reproduced exactly",
+    "node20LinuxUIDockerBuild": "passed",
+    "privateDockerContext": "passed actual marker exclusion/inclusion check",
+    "detachedCheckoutProtobuf": "old command failed; corrected command passed",
+    "candidateLocalMarkdownLinks": "passed",
+    "credentialPatternMatches": 0,
+    "executableModes": "existing shell executable modes preserved",
+    "commitTemplateAndTrailerConfiguration": "none found",
+    "activeCommitHooks": "none found",
+    "configuredAuthorIdentity": "present",
+    "userIndex": "no staged-content changes"
+  },
+  "packagingSources": [
+    {
+      "path": ".dockerignore",
+      "gitBlob": "5c72f0ec02bf926c6493212374ba3b408fb986db",
+      "gitCleanSHA256": "56c58e9ee6ee964c662fec015aa892cf625920ea2b26c42ab609cd914cff0493",
+      "gitCleanBytes": 372
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "gitBlob": "e32693b287485977dda434d82d812b06c3e1ab2b",
+      "gitCleanSHA256": "4516aa9df559d566e420c15d9e688988de9664ee6083cf2bebe17424b0a158ac",
+      "gitCleanBytes": 3391
+    },
+    {
+      "path": "Taskfile.yml",
+      "gitBlob": "d22169b9438d9a87219b36330ddf31941c83dc1f",
+      "gitCleanSHA256": "79d44540d3537ef9d7b8e997efc97d81dfc418a47f2cd1d742ac6f64f5232c82",
+      "gitCleanBytes": 10027
+    }
+  ],
+  "evidence": [
+    {
+      "path": "tmp/precommit/candidate.json",
+      "sha256": "c63592723f901974bcc4a4166d9dfb033c0f3e4bd2ca55e8caa185063deb2c26",
+      "bytes": 122655
+    },
+    {
+      "path": "tmp/precommit/export.log",
+      "sha256": "f9627ab1e6954076e52792d5cc9ba10e46013b00582842d192f09de36e7bb31e",
+      "bytes": 3154
+    },
+    {
+      "path": "tmp/precommit/tested-application-manifest.json",
+      "sha256": "253ca0c0d93efafcef08677744c07c46bc18354512348c754071225356ab5ed2",
+      "bytes": 73323
+    },
+    {
+      "path": "tmp/precommit/secret-patterns.json",
+      "sha256": "46b4a42753488b7f8dad91eb4d1b49592fd89fc3bd783ea210a6b34d66a55b89",
+      "bytes": 204
+    },
+    {
+      "path": "tmp/precommit/markdown-links.json",
+      "sha256": "7e55063731340c369d41a98b011f08c8b08be9b631cf9edc9ab5df2b58db5782",
+      "bytes": 23
+    },
+    {
+      "path": "tmp/precommit/clean-install.log",
+      "sha256": "5d929c81fe6b1948e8303b81350497625870a5b5d7722575dc4d22ace401b537",
+      "bytes": 1067
+    },
+    {
+      "path": "tmp/precommit/clean-go-test.log",
+      "sha256": "3d9aa9306be7d03ea2af3b2a7f195197662804412515736e96a924e264599b82",
+      "bytes": 4735
+    },
+    {
+      "path": "tmp/precommit/clean-go-vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tmp/precommit/clean-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tmp/precommit/clean-linux-go-test.log",
+      "sha256": "fd9eb8f8c73dee623205442e709742ddf67e2c01ae678872b9d80ea627608c0c",
+      "bytes": 6769
+    },
+    {
+      "path": "tmp/precommit/clean-integration.jsonl",
+      "sha256": "35a084beb7c5617b5dddae58188c77bc8188eef232b029b3c742a1c6740a1df6",
+      "bytes": 277986
+    },
+    {
+      "path": "tmp/precommit/clean-browser.log",
+      "sha256": "7718474566a124310bb8f8224cf58b2136fd780b45726986b3553735b22ab485",
+      "bytes": 5894
+    },
+    {
+      "path": "tmp/precommit/clean-browser-regressions.log",
+      "sha256": "e2f75d7ad9c05f0f171f0e7f027ebbc4e54d6edc0ed0155906ab5f833d5edd0e",
+      "bytes": 52400
+    },
+    {
+      "path": "tmp/precommit/clean-ui-build.log",
+      "sha256": "f0cc33a7ff458758e28491b905976244270af42799bccd366926e33038dcdf6c",
+      "bytes": 3250
+    },
+    {
+      "path": "tmp/precommit/clean-model-validator.log",
+      "sha256": "fef466c740fbf62752f459858d269bebe5e6b7be80ec91ddbfdc43f3127eaad5",
+      "bytes": 827
+    },
+    {
+      "path": "tmp/precommit/clean-contracts.log",
+      "sha256": "ca12cba32f20287883e83fcf5f52a30fbf111a1dee9b44f8546f00ed32235b61",
+      "bytes": 326
+    },
+    {
+      "path": "tmp/precommit/docker-ui-build.log",
+      "sha256": "64409613a642fd2c6a426313d0b2c4a273c4d808ea29059786e79ccdcd0b32c3",
+      "bytes": 13625
+    },
+    {
+      "path": "tmp/precommit/context-check.log",
+      "sha256": "b2e3303f1f31e25d6138508a482c486ab6b1821993946166c924504842033c74",
+      "bytes": 611
+    },
+    {
+      "path": "tmp/precommit/context-check.json",
+      "sha256": "797d80081c0a6d6842c59b6bba798d9d14b799c433ba4a21a3052f404260858c",
+      "bytes": 261
+    },
+    {
+      "path": "tmp/precommit/ci-proto.json",
+      "sha256": "0efaf76ba67461f7eec94b0738ca231775a491dee23c240fac08a9161cee42bf",
+      "bytes": 244
+    },
+    {
+      "path": "tmp/precommit/ci-proto-old_branch.log",
+      "sha256": "22f5251fb246c22619762f5515931b55c2ca73ada16798497cf835349f146a52",
+      "bytes": 106
+    },
+    {
+      "path": "tmp/precommit/ci-proto-resolved_commit.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tmp/precommit/task-proto-dry-run.log",
+      "sha256": "e571839339a1f24096d625a4aabd88dc49ed52be7b305c6aeab51cfc4bdc4cc0",
+      "bytes": 327
+    },
+    {
+      "path": "tmp/precommit/diff-check.log",
+      "sha256": "206eecc009ce30e96b4473029d157133c5cb85a3e6561a89175286ae4ab6e332",
+      "bytes": 495
+    }
+  ],
+  "existingScopeLimits": [
+    "Provider activation requires the already documented credentials, agreements, rights and admissions.",
+    "Future S4 and deployment activation remain separate from the delivered commit scope."
+  ]
+}

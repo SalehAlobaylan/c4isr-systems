@@ -20,6 +20,27 @@ service TelemetryIngestionService {
   rpc IngestTelemetry(IngestTelemetryRequest) returns (IngestTelemetryResponse);
 }
 
+// ResourceContext selects a resource; it is not an identity or grant. A future
+// gRPC adapter must authenticate metadata, validate server-owned grants, and bind
+// the same application context as REST before invoking domain services. The
+// current server has no gRPC listener. Omission is only permitted when the adapter
+// has a credential-bound default; payload metadata can never supply ownership.
+message ResourceContext {
+  uint32 version = 1; // Must be 1 when this message is supplied.
+  string workspace_id = 2;
+  string environment_id = 3;
+  DataPartition partition = 4;
+  string run_id = 5;
+}
+
+enum DataPartition {
+  DATA_PARTITION_UNSPECIFIED = 0;
+  DATA_PARTITION_PUBLIC_EVIDENCE = 1;
+  DATA_PARTITION_EXERCISE_INPUT = 2;
+  DATA_PARTITION_EXERCISE_OBSERVATION = 3;
+  DATA_PARTITION_EXERCISE_TRUTH = 4;
+}
+
 message Point {
   double latitude = 1;
   double longitude = 2;
@@ -34,6 +55,7 @@ message IngestObservationRequest {
   google.protobuf.Struct payload = 6;
   google.protobuf.Struct quality = 7;
   string track_hint = 8;
+  ResourceContext resource = 9;
 }
 
 message IngestTelemetryRequest {
@@ -47,6 +69,7 @@ message IngestTelemetryRequest {
   string health = 8;
   string connection_state = 9;
   google.protobuf.Struct payload = 10;
+  ResourceContext resource = 11;
 }
 
 message IngestObservationResponse {

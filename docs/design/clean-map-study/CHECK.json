@@ -1,0 +1,25 @@
+{
+  "schema": "emad.layout-study-check.v1",
+  "checkedAt": "2026-10-23T17:51:52.076Z",
+  "artifact": "docs/design/EMAD_MAP_LAYOUT_STUDY.html",
+  "status": "PASS",
+  "scope": "Self-contained conceptual interaction study only. No application backend or live workflow was exercised.",
+  "desktop": {
+    "width": 1440,
+    "height": 1000,
+    "cleanMapWidth": 1330
+  },
+  "checks": [
+    "Clean default has no large panel",
+    "Inspector docks outside map instead of covering it",
+    "Unpinned tools share one expanded-panel budget",
+    "Layer choice and search draft survive minimization",
+    "Explicit two-pane pinning respects available width",
+    "Clean map and restore preserve panels, selection and schematic camera",
+    "Systems round trip preserves map state",
+    "Narrow laptop refuses two panes",
+    "Phone has no horizontal overflow",
+    "No JavaScript page errors or external network requests"
+  ],
+  "screenshots": 6
+}

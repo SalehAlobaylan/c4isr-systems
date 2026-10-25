@@ -44,13 +44,14 @@ type updateStatusRequest struct {
 }
 
 type sourceResponse struct {
-	ID        string         `json:"id"`
-	Name      string         `json:"name"`
-	Type      string         `json:"type"`
-	Status    string         `json:"status"`
-	Metadata  map[string]any `json:"metadata"`
-	CreatedAt time.Time      `json:"createdAt"`
-	UpdatedAt time.Time      `json:"updatedAt"`
+	Ingestion *IngestionSummary `json:"ingestion,omitempty"`
+	ID        string            `json:"id"`
+	Name      string            `json:"name"`
+	Type      string            `json:"type"`
+	Status    string            `json:"status"`
+	Metadata  map[string]any    `json:"metadata"`
+	CreatedAt time.Time         `json:"createdAt"`
+	UpdatedAt time.Time         `json:"updatedAt"`
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
@@ -122,6 +123,7 @@ func toResponse(s Source) sourceResponse {
 		metadata = map[string]any{}
 	}
 	return sourceResponse{
+		Ingestion: s.Ingestion,
 		ID:        s.ID,
 		Name:      s.Name,
 		Type:      string(s.Type),

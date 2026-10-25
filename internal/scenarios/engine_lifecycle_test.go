@@ -2,6 +2,7 @@ package scenarios
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -13,18 +14,21 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type memoryScenarioRepository struct {
-	mu     sync.Mutex
-	runs   map[string]Run
-	events map[string]map[int]EventInspection
+	mu       sync.Mutex
+	versions map[string][]byte
+	runs     map[string]Run
+	events   map[string]map[int]EventInspection
 }
 
 func newMemoryScenarioRepository() *memoryScenarioRepository {
 	return &memoryScenarioRepository{
-		runs:   map[string]Run{},
-		events: map[string]map[int]EventInspection{},
+		versions: map[string][]byte{},
+		runs:     map[string]Run{},
+		events:   map[string]map[int]EventInspection{},
 	}
 }
 
@@ -191,7 +195,7 @@ func TestEngineFailedActionIsCountedAndPendingActionsAreSkipped(t *testing.T) {
 	repo := newMemoryScenarioRepository()
 	scope := NewRunScope("run-test")
 	runID := "run-test"
-	if _, err := repo.Create(context.Background(), Run{ID: runID, ScenarioName: "failure", Status: StatusRunning}); err != nil {
+	if _, err := repo.Create(testsupport.Context(), Run{ID: runID, ScenarioName: "failure", Status: StatusRunning}); err != nil {
 		t.Fatal(err)
 	}
 	engine := newEngine(runID, scope, &Scenario{
@@ -204,17 +208,17 @@ func TestEngineFailedActionIsCountedAndPendingActionsAreSkipped(t *testing.T) {
 	if err := engine.build(); err != nil {
 		t.Fatal(err)
 	}
-	if err := engine.persistStaticEvents(context.Background()); err != nil {
+	if err := engine.persistStaticEvents(testsupport.Context()); err != nil {
 		t.Fatal(err)
 	}
-	if err := engine.run(context.Background()); err == nil {
+	if err := engine.run(testsupport.Context()); err == nil {
 		t.Fatal("run should fail when the incident dependency is missing")
 	}
 	snapshot := engine.snapshot()
 	if snapshot.EventsRun != 1 || snapshot.EventsRun > snapshot.EventsTotal {
 		t.Fatalf("snapshot = %#v, want one executed action and bounded totals", snapshot)
 	}
-	items, err := repo.ListEvents(context.Background(), runID)
+	items, err := repo.ListEvents(testsupport.Context(), runID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -226,14 +230,14 @@ func TestEngineFailedActionIsCountedAndPendingActionsAreSkipped(t *testing.T) {
 func TestEngineDynamicActionsArePersistedAndOrdered(t *testing.T) {
 	repo := newMemoryScenarioRepository()
 	runID := "run-dynamic"
-	if _, err := repo.Create(context.Background(), Run{ID: runID, ScenarioName: "dynamic", Status: StatusRunning}); err != nil {
+	if _, err := repo.Create(testsupport.Context(), Run{ID: runID, ScenarioName: "dynamic", Status: StatusRunning}); err != nil {
 		t.Fatal(err)
 	}
 	engine := newEngine(runID, NewRunScope(runID), &Scenario{Name: "dynamic"}, 1, 1000, EngineDeps{}, repo, nil)
 	engine.lastResume = time.Now()
 	var order []string
 	var orderMu sync.Mutex
-	if err := engine.scheduleAfterMany(context.Background(), []dynamicAction{
+	if err := engine.scheduleAfterMany(testsupport.Context(), []dynamicAction{
 		{Name: "first", DelayMs: 0, Run: func(context.Context) error {
 			orderMu.Lock()
 			order = append(order, "first")
@@ -249,7 +253,7 @@ func TestEngineDynamicActionsArePersistedAndOrdered(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if err := engine.run(context.Background()); err != nil {
+	if err := engine.run(testsupport.Context()); err != nil {
 		t.Fatal(err)
 	}
 	if want := []string{"first", "second"}; len(order) != len(want) || order[0] != want[0] || order[1] != want[1] {
@@ -259,7 +263,7 @@ func TestEngineDynamicActionsArePersistedAndOrdered(t *testing.T) {
 	if snapshot.EventsTotal != 2 || snapshot.EventsRun != 2 || snapshot.EventsRun > snapshot.EventsTotal {
 		t.Fatalf("snapshot = %#v, want two executed dynamic actions", snapshot)
 	}
-	items, err := repo.ListEvents(context.Background(), runID)
+	items, err := repo.ListEvents(testsupport.Context(), runID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -287,32 +291,32 @@ func TestScenarioRestartUsesFreshNamespaceAndCloseFinalizesOnce(t *testing.T) {
 		endedMu.Unlock()
 	})
 	service := NewService(repo, NewLoader(dir), EngineDeps{}, bus)
-	first, err := service.Start(context.Background(), "lifecycle", StartOptions{})
+	first, err := service.Start(testsupport.Context(), "lifecycle", StartOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	second, err := service.Restart(context.Background(), first.ID)
+	second, err := service.Restart(testsupport.Context(), first.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if first.ID == second.ID || first.ResourceNamespace == second.ResourceNamespace {
 		t.Fatalf("restart reused run identity: first=%#v second=%#v", first, second)
 	}
-	old, err := repo.Get(context.Background(), first.ID)
+	old, err := repo.Get(testsupport.Context(), first.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if old.Status != StatusStopped {
 		t.Fatalf("old run status = %s, want STOPPED", old.Status)
 	}
-	oldEvents, err := repo.ListEvents(context.Background(), first.ID)
+	oldEvents, err := repo.ListEvents(testsupport.Context(), first.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(oldEvents) != 1 || oldEvents[0].Status != EventSkipped {
 		t.Fatalf("old events = %#v, want one skipped event", oldEvents)
 	}
-	if err := service.Close(context.Background()); err != nil {
+	if err := service.Close(testsupport.Context()); err != nil {
 		t.Fatal(err)
 	}
 	endedMu.Lock()
@@ -320,7 +324,7 @@ func TestScenarioRestartUsesFreshNamespaceAndCloseFinalizesOnce(t *testing.T) {
 	if ended[first.ID] != 1 || ended[second.ID] != 1 {
 		t.Fatalf("terminal events = %#v, want exactly one per run", ended)
 	}
-	newRun, err := repo.Get(context.Background(), second.ID)
+	newRun, err := repo.Get(testsupport.Context(), second.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -340,16 +344,16 @@ func TestScenarioStartAndCloseCannotLeaveRunningRun(t *testing.T) {
 		service := NewService(repo, NewLoader(dir), EngineDeps{}, events.NewDispatcher(nil))
 		startDone := make(chan struct{})
 		go func() {
-			_, _ = service.Start(context.Background(), "race", StartOptions{})
+			_, _ = service.Start(testsupport.Context(), "race", StartOptions{})
 			close(startDone)
 		}()
 		closeDone := make(chan error, 1)
-		go func() { closeDone <- service.Close(context.Background()) }()
+		go func() { closeDone <- service.Close(testsupport.Context()) }()
 		<-startDone
 		if err := <-closeDone; err != nil {
 			t.Fatal(err)
 		}
-		items, _, err := repo.List(context.Background(), 100, 0)
+		items, _, err := repo.List(testsupport.Context(), 100, 0)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -363,7 +367,7 @@ func TestScenarioStartAndCloseCannotLeaveRunningRun(t *testing.T) {
 
 func TestScenarioControlsReturnStableLifecycleErrors(t *testing.T) {
 	repo := newMemoryScenarioRepository()
-	if _, err := repo.Create(context.Background(), Run{ID: "terminal", ScenarioName: "terminal", Status: StatusCompleted}); err != nil {
+	if _, err := repo.Create(testsupport.Context(), Run{ID: "terminal", ScenarioName: "terminal", Status: StatusCompleted}); err != nil {
 		t.Fatal(err)
 	}
 	service := NewService(repo, NewLoader(t.TempDir()), EngineDeps{}, events.NewDispatcher(nil))
@@ -372,10 +376,10 @@ func TestScenarioControlsReturnStableLifecycleErrors(t *testing.T) {
 		name string
 		call func() error
 	}{
-		{name: "pause", call: func() error { _, err := service.Pause(context.Background(), "terminal"); return err }},
-		{name: "resume", call: func() error { _, err := service.Resume(context.Background(), "terminal"); return err }},
-		{name: "speed", call: func() error { _, err := service.SetSpeed(context.Background(), "terminal", 2); return err }},
-		{name: "stop", call: func() error { _, err := service.Stop(context.Background(), "terminal"); return err }},
+		{name: "pause", call: func() error { _, err := service.Pause(testsupport.Context(), "terminal"); return err }},
+		{name: "resume", call: func() error { _, err := service.Resume(testsupport.Context(), "terminal"); return err }},
+		{name: "speed", call: func() error { _, err := service.SetSpeed(testsupport.Context(), "terminal", 2); return err }},
+		{name: "stop", call: func() error { _, err := service.Stop(testsupport.Context(), "terminal"); return err }},
 	}
 	for _, control := range terminalControls {
 		t.Run(control.name+" terminal", func(t *testing.T) {
@@ -389,10 +393,10 @@ func TestScenarioControlsReturnStableLifecycleErrors(t *testing.T) {
 		name string
 		call func() error
 	}{
-		{name: "pause", call: func() error { _, err := service.Pause(context.Background(), "missing"); return err }},
-		{name: "resume", call: func() error { _, err := service.Resume(context.Background(), "missing"); return err }},
-		{name: "speed", call: func() error { _, err := service.SetSpeed(context.Background(), "missing", 2); return err }},
-		{name: "stop", call: func() error { _, err := service.Stop(context.Background(), "missing"); return err }},
+		{name: "pause", call: func() error { _, err := service.Pause(testsupport.Context(), "missing"); return err }},
+		{name: "resume", call: func() error { _, err := service.Resume(testsupport.Context(), "missing"); return err }},
+		{name: "speed", call: func() error { _, err := service.SetSpeed(testsupport.Context(), "missing", 2); return err }},
+		{name: "stop", call: func() error { _, err := service.Stop(testsupport.Context(), "missing"); return err }},
 	}
 	for _, control := range missingControls {
 		t.Run(control.name+" missing", func(t *testing.T) {
@@ -426,15 +430,23 @@ func TestScenarioRestartFinalizesOrphanedRunBeforeStartingFreshNamespace(t *test
 		t.Fatal(err)
 	}
 	repo := newMemoryScenarioRepository()
-	if _, err := repo.Create(context.Background(), Run{ID: "orphaned", ScenarioName: "orphan", Status: StatusRunning}); err != nil {
-		t.Fatal(err)
-	}
-	service := NewService(repo, NewLoader(dir), EngineDeps{}, events.NewDispatcher(nil))
-	fresh, err := service.Restart(context.Background(), "orphaned")
+	definition, err := NewLoader(dir).Load("orphan")
 	if err != nil {
 		t.Fatal(err)
 	}
-	old, err := repo.Get(context.Background(), "orphaned")
+	versionID, err := repo.SaveVersion(testsupport.Context(), Version{RuntimeBuild: runtimeBuild(), Schema: "emad.scenario.v1", Runtime: RuntimeVersion, Definition: definition})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := repo.Create(testsupport.Context(), Run{ID: "orphaned", ScenarioName: "orphan", Status: StatusRunning, Frozen: FrozenRun{Schema: "emad.run.v1", VersionID: versionID, Runtime: RuntimeVersion, Clock: defaultClock(), Seed: 9, InitialScale: 1}}); err != nil {
+		t.Fatal(err)
+	}
+	service := NewService(repo, NewLoader(dir), EngineDeps{}, events.NewDispatcher(nil))
+	fresh, err := service.Restart(testsupport.Context(), "orphaned")
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, err := repo.Get(testsupport.Context(), "orphaned")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -444,7 +456,23 @@ func TestScenarioRestartFinalizesOrphanedRunBeforeStartingFreshNamespace(t *test
 	if fresh.ID == old.ID || fresh.ResourceNamespace == old.ResourceNamespace {
 		t.Fatalf("restart reused orphan namespace: old=%#v fresh=%#v", old, fresh)
 	}
-	if err := service.Close(context.Background()); err != nil {
+	if err := service.Close(testsupport.Context()); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func (r *memoryScenarioRepository) SaveVersion(_ context.Context, v Version) (string, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	b, err := json.Marshal(v)
+	id := string(b)
+	r.versions[id] = b
+	return id, err
+}
+func (r *memoryScenarioRepository) LoadVersion(_ context.Context, id string) (Version, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	var v Version
+	err := json.Unmarshal(r.versions[id], &v)
+	return v, err
 }

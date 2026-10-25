@@ -109,7 +109,7 @@ INSERT INTO incidents (
 ) VALUES (
     $1, $2, $3, $4, $5, $6, now(), now()
 )
-RETURNING id, title, description, priority, status, assigned_operator, created_at, updated_at, resolved_at, closed_at
+RETURNING id, title, description, priority, status, assigned_operator, created_at, updated_at, resolved_at, closed_at, scope_id
 `
 
 type CreateIncidentParams struct {
@@ -142,12 +142,13 @@ func (q *Queries) CreateIncident(ctx context.Context, arg CreateIncidentParams) 
 		&i.UpdatedAt,
 		&i.ResolvedAt,
 		&i.ClosedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const getIncident = `-- name: GetIncident :one
-SELECT id, title, description, priority, status, assigned_operator, created_at, updated_at, resolved_at, closed_at FROM incidents WHERE id = $1
+SELECT id, title, description, priority, status, assigned_operator, created_at, updated_at, resolved_at, closed_at, scope_id FROM incidents WHERE id = $1
 `
 
 func (q *Queries) GetIncident(ctx context.Context, id string) (Incident, error) {
@@ -164,12 +165,13 @@ func (q *Queries) GetIncident(ctx context.Context, id string) (Incident, error) 
 		&i.UpdatedAt,
 		&i.ResolvedAt,
 		&i.ClosedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const listIncidentAlerts = `-- name: ListIncidentAlerts :many
-SELECT a.id, a.type, a.severity, a.state, a.title, a.message, a.source_reference, a.track_id, a.asset_id, a.geofence_id, a.incident_id, a.created_at, a.updated_at, a.acknowledged_at, a.acknowledged_by, a.resolved_at, a.resolved_by FROM alerts a
+SELECT a.id, a.type, a.severity, a.state, a.title, a.message, a.source_reference, a.track_id, a.asset_id, a.geofence_id, a.incident_id, a.created_at, a.updated_at, a.acknowledged_at, a.acknowledged_by, a.resolved_at, a.resolved_by, a.scope_id FROM alerts a
 JOIN incident_alerts ia ON ia.alert_id = a.id
 WHERE ia.incident_id = $1
 ORDER BY a.created_at DESC
@@ -202,6 +204,7 @@ func (q *Queries) ListIncidentAlerts(ctx context.Context, incidentID string) ([]
 			&i.AcknowledgedBy,
 			&i.ResolvedAt,
 			&i.ResolvedBy,
+			&i.ScopeID,
 		); err != nil {
 			return nil, err
 		}
@@ -214,22 +217,44 @@ func (q *Queries) ListIncidentAlerts(ctx context.Context, incidentID string) ([]
 }
 
 const listIncidentAssessments = `-- name: ListIncidentAssessments :many
-SELECT a.id, a.subject_type, a.subject_id, a.type, a.conclusion, a.confidence, a.method, a.created_by, a.created_at
+SELECT a.id, a.subject_type, a.subject_id, a.type,
+       COALESCE(v.document->>'conclusion',a.conclusion)::text AS conclusion,
+       a.confidence, (v.document->'confidence')::jsonb AS review_confidence,
+       COALESCE(v.document->>'method',a.method)::text AS method, a.created_by, a.created_at,
+       COALESCE(v.status,'')::text AS review_status,COALESCE(h.latest_id,'')::text AS revision_id,COALESCE(h.published_id,'')::text AS published_revision_id
 FROM assessments a
 JOIN incident_assessments ia ON ia.assessment_id = a.id
+LEFT JOIN assessment_review_heads h ON h.assessment_id=a.id AND h.scope_id=a.scope_id
+LEFT JOIN assessment_revisions v ON v.id=h.latest_id AND v.scope_id=h.scope_id
 WHERE ia.incident_id = $1
 ORDER BY a.created_at DESC
 `
 
-func (q *Queries) ListIncidentAssessments(ctx context.Context, incidentID string) ([]Assessment, error) {
+type ListIncidentAssessmentsRow struct {
+	ID                  string
+	SubjectType         string
+	SubjectID           string
+	Type                string
+	Conclusion          string
+	Confidence          *float64
+	ReviewConfidence    []byte
+	Method              string
+	CreatedBy           *string
+	CreatedAt           pgtype.Timestamptz
+	ReviewStatus        string
+	RevisionID          string
+	PublishedRevisionID string
+}
+
+func (q *Queries) ListIncidentAssessments(ctx context.Context, incidentID string) ([]ListIncidentAssessmentsRow, error) {
 	rows, err := q.db.Query(ctx, listIncidentAssessments, incidentID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []Assessment{}
+	items := []ListIncidentAssessmentsRow{}
 	for rows.Next() {
-		var i Assessment
+		var i ListIncidentAssessmentsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.SubjectType,
@@ -237,9 +262,13 @@ func (q *Queries) ListIncidentAssessments(ctx context.Context, incidentID string
 			&i.Type,
 			&i.Conclusion,
 			&i.Confidence,
+			&i.ReviewConfidence,
 			&i.Method,
 			&i.CreatedBy,
 			&i.CreatedAt,
+			&i.ReviewStatus,
+			&i.RevisionID,
+			&i.PublishedRevisionID,
 		); err != nil {
 			return nil, err
 		}
@@ -458,7 +487,7 @@ func (q *Queries) ListIncidentTracks(ctx context.Context, incidentID string) ([]
 }
 
 const listIncidents = `-- name: ListIncidents :many
-SELECT id, title, description, priority, status, assigned_operator, created_at, updated_at, resolved_at, closed_at FROM incidents
+SELECT id, title, description, priority, status, assigned_operator, created_at, updated_at, resolved_at, closed_at, scope_id FROM incidents
 WHERE ($1::text IS NULL OR status = $1)
 ORDER BY created_at DESC
 LIMIT $3 OFFSET $2
@@ -490,6 +519,7 @@ func (q *Queries) ListIncidents(ctx context.Context, arg ListIncidentsParams) ([
 			&i.UpdatedAt,
 			&i.ResolvedAt,
 			&i.ClosedAt,
+			&i.ScopeID,
 		); err != nil {
 			return nil, err
 		}
@@ -506,7 +536,7 @@ UPDATE incidents
 SET title = $1, description = $2, priority = $3,
     assigned_operator = $4, updated_at = now()
 WHERE id = $5
-RETURNING id, title, description, priority, status, assigned_operator, created_at, updated_at, resolved_at, closed_at
+RETURNING id, title, description, priority, status, assigned_operator, created_at, updated_at, resolved_at, closed_at, scope_id
 `
 
 type UpdateIncidentParams struct {
@@ -537,6 +567,7 @@ func (q *Queries) UpdateIncident(ctx context.Context, arg UpdateIncidentParams) 
 		&i.UpdatedAt,
 		&i.ResolvedAt,
 		&i.ClosedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
@@ -549,7 +580,7 @@ SET status = $1,
     closed_at = CASE WHEN $1::text = 'CLOSED' THEN now() ELSE closed_at END
 WHERE id = $2
   AND status = $3
-RETURNING id, title, description, priority, status, assigned_operator, created_at, updated_at, resolved_at, closed_at
+RETURNING id, title, description, priority, status, assigned_operator, created_at, updated_at, resolved_at, closed_at, scope_id
 `
 
 type UpdateIncidentStatusParams struct {
@@ -572,6 +603,7 @@ func (q *Queries) UpdateIncidentStatus(ctx context.Context, arg UpdateIncidentSt
 		&i.UpdatedAt,
 		&i.ResolvedAt,
 		&i.ClosedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }

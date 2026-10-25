@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type fakeRepository struct {
@@ -85,7 +86,7 @@ func TestServiceCreateGeneratesID(t *testing.T) {
 	repo := newFakeRepository()
 	svc := NewService(repo)
 
-	operator, err := svc.Create(context.Background(), CreateInput{Name: "Ada"})
+	operator, err := svc.Create(testsupport.Context(), CreateInput{Name: "Ada"})
 	if err != nil {
 		t.Fatalf("Create() error = %v", err)
 	}
@@ -102,7 +103,7 @@ func TestServiceEnsureIsIdempotent(t *testing.T) {
 	svc := NewService(repo)
 	in := CreateInput{ID: "opr_default", Name: "Default Operator"}
 
-	created, isNew, err := svc.Ensure(context.Background(), in)
+	created, isNew, err := svc.Ensure(testsupport.Context(), in)
 	if err != nil {
 		t.Fatalf("Ensure() error = %v", err)
 	}
@@ -113,7 +114,7 @@ func TestServiceEnsureIsIdempotent(t *testing.T) {
 		t.Fatalf("Ensure() id = %q, want opr_default", created.ID)
 	}
 
-	existing, isNew, err := svc.Ensure(context.Background(), in)
+	existing, isNew, err := svc.Ensure(testsupport.Context(), in)
 	if err != nil {
 		t.Fatalf("Ensure() second call error = %v", err)
 	}
@@ -132,7 +133,7 @@ func TestServiceListClamps(t *testing.T) {
 	repo := newFakeRepository()
 	svc := NewService(repo)
 
-	if _, _, err := svc.List(context.Background(), -1, -1); err != nil {
+	if _, _, err := svc.List(testsupport.Context(), -1, -1); err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
 	if got := clampLimit(-1); got != DefaultLimit {

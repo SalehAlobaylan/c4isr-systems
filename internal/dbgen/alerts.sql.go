@@ -13,7 +13,7 @@ const acknowledgeAlert = `-- name: AcknowledgeAlert :one
 UPDATE alerts
 SET state = 'ACKNOWLEDGED', acknowledged_at = now(), acknowledged_by = $1, updated_at = now()
 WHERE id = $2 AND state = 'ACTIVE'
-RETURNING id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by
+RETURNING id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by, scope_id
 `
 
 type AcknowledgeAlertParams struct {
@@ -42,6 +42,7 @@ func (q *Queries) AcknowledgeAlert(ctx context.Context, arg AcknowledgeAlertPara
 		&i.AcknowledgedBy,
 		&i.ResolvedAt,
 		&i.ResolvedBy,
+		&i.ScopeID,
 	)
 	return i, err
 }
@@ -92,7 +93,7 @@ INSERT INTO alerts (
     $1, $2, $3, 'ACTIVE', $4, $5, $6,
     $7, $8, $9, $10, now(), now()
 )
-RETURNING id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by
+RETURNING id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by, scope_id
 `
 
 type CreateAlertParams struct {
@@ -140,12 +141,13 @@ func (q *Queries) CreateAlert(ctx context.Context, arg CreateAlertParams) (Alert
 		&i.AcknowledgedBy,
 		&i.ResolvedAt,
 		&i.ResolvedBy,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const findUnresolvedAlertForGeofenceTrack = `-- name: FindUnresolvedAlertForGeofenceTrack :one
-SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by FROM alerts
+SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by, scope_id FROM alerts
 WHERE geofence_id = $1 AND track_id = $2 AND state <> 'RESOLVED'
 ORDER BY created_at DESC
 LIMIT 1
@@ -177,12 +179,13 @@ func (q *Queries) FindUnresolvedAlertForGeofenceTrack(ctx context.Context, arg F
 		&i.AcknowledgedBy,
 		&i.ResolvedAt,
 		&i.ResolvedBy,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const findUnresolvedAlertForObservationGeofence = `-- name: FindUnresolvedAlertForObservationGeofence :one
-SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by FROM alerts
+SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by, scope_id FROM alerts
 WHERE type = 'geofence.area.overlap'
   AND geofence_id = $1
   AND source_reference->>'observationId'::text = $2::text
@@ -222,12 +225,13 @@ func (q *Queries) FindUnresolvedAlertForObservationGeofence(ctx context.Context,
 		&i.AcknowledgedBy,
 		&i.ResolvedAt,
 		&i.ResolvedBy,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const getAlert = `-- name: GetAlert :one
-SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by FROM alerts WHERE id = $1
+SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by, scope_id FROM alerts WHERE id = $1
 `
 
 func (q *Queries) GetAlert(ctx context.Context, id string) (Alert, error) {
@@ -251,12 +255,13 @@ func (q *Queries) GetAlert(ctx context.Context, id string) (Alert, error) {
 		&i.AcknowledgedBy,
 		&i.ResolvedAt,
 		&i.ResolvedBy,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const listAlerts = `-- name: ListAlerts :many
-SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by FROM alerts
+SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by, scope_id FROM alerts
 WHERE ($1::text IS NULL OR state = $1)
   AND ($2::text IS NULL OR severity = $2)
   AND ($3::text IS NULL OR track_id = $3)
@@ -308,6 +313,7 @@ func (q *Queries) ListAlerts(ctx context.Context, arg ListAlertsParams) ([]Alert
 			&i.AcknowledgedBy,
 			&i.ResolvedAt,
 			&i.ResolvedBy,
+			&i.ScopeID,
 		); err != nil {
 			return nil, err
 		}
@@ -320,7 +326,7 @@ func (q *Queries) ListAlerts(ctx context.Context, arg ListAlertsParams) ([]Alert
 }
 
 const listAlertsByIncident = `-- name: ListAlertsByIncident :many
-SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by FROM alerts WHERE incident_id = $1 ORDER BY created_at DESC
+SELECT id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by, scope_id FROM alerts WHERE incident_id = $1 ORDER BY created_at DESC
 `
 
 func (q *Queries) ListAlertsByIncident(ctx context.Context, incidentID *string) ([]Alert, error) {
@@ -350,6 +356,7 @@ func (q *Queries) ListAlertsByIncident(ctx context.Context, incidentID *string) 
 			&i.AcknowledgedBy,
 			&i.ResolvedAt,
 			&i.ResolvedBy,
+			&i.ScopeID,
 		); err != nil {
 			return nil, err
 		}
@@ -365,7 +372,7 @@ const resolveAlert = `-- name: ResolveAlert :one
 UPDATE alerts
 SET state = 'RESOLVED', resolved_at = now(), resolved_by = $1, updated_at = now()
 WHERE id = $2 AND state IN ('ACTIVE', 'ACKNOWLEDGED')
-RETURNING id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by
+RETURNING id, type, severity, state, title, message, source_reference, track_id, asset_id, geofence_id, incident_id, created_at, updated_at, acknowledged_at, acknowledged_by, resolved_at, resolved_by, scope_id
 `
 
 type ResolveAlertParams struct {
@@ -394,6 +401,7 @@ func (q *Queries) ResolveAlert(ctx context.Context, arg ResolveAlertParams) (Ale
 		&i.AcknowledgedBy,
 		&i.ResolvedAt,
 		&i.ResolvedBy,
+		&i.ScopeID,
 	)
 	return i, err
 }

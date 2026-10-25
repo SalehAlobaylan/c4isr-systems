@@ -197,34 +197,34 @@ test.describe('design tokens', () => {
     // the application is allowed to hardcode a colour, so this table is the
     // whole reviewable surface of the palette.
     const expected: Record<string, string> = {
-      '--emad-mineral-canvas': '#e3e9e2',
-      '--emad-ceramic-surface': '#f2f4ed',
-      '--emad-mist-surface': '#d4ded8',
+      '--emad-mineral-canvas': '#edf0f2',
+      '--emad-ceramic-surface': '#fbfcfd',
+      '--emad-mist-surface': '#e5eaed',
       '--emad-industrial-graphite': '#202b2d',
-      '--emad-graphite-ink': '#1d3030',
+      '--emad-graphite-ink': '#24343d',
       '--emad-energized-lime': '#b7d36b',
       '--emad-signal-teal': '#3c7780',
-      '--emad-structural-border': '#b4c4b9',
+      '--emad-structural-border': '#cdd6dc',
 
-      '--emad-text-primary': '#1d3030',
-      '--emad-text-secondary': '#4b6159',
+      '--emad-text-primary': '#24343d',
+      '--emad-text-secondary': '#536670',
       '--emad-text-on-dark': '#e9f2ea',
       '--emad-text-nav-muted': '#b7cac4',
       '--emad-link': '#2c626b',
       '--emad-lime-on-light': '#355a3f',
-      '--emad-surface-hover': '#e8eee7',
-      '--emad-surface-selected': '#c7d9c8',
-      '--emad-surface-input': '#f7f8f2',
+      '--emad-surface-hover': '#f0f5f6',
+      '--emad-surface-selected': '#e0eff0',
+      '--emad-surface-input': '#ffffff',
       '--emad-surface-nav': '#202b2d',
       '--emad-surface-nav-raised': '#304044',
-      '--emad-border-control': '#607f77',
+      '--emad-border-control': '#71858e',
 
       '--emad-status-positive': '#276645',
       '--emad-status-info': '#2a5b66',
       '--emad-status-caution': '#7e5319',
       '--emad-status-high': '#91451f',
       '--emad-status-critical': '#9a372f',
-      '--emad-status-neutral': '#4b6159',
+      '--emad-status-neutral': '#536670',
       '--emad-status-review': '#2c626b',
     }
     for (const [name, value] of Object.entries(expected)) {
@@ -456,36 +456,17 @@ test('the interface runs on the approved typeface at the approved body size', as
     }
   })
 
-  test('the graphite rail uses the dark focus indicator, not the light one', async ({ page }) => {
-    // The single easiest rule to miss in a two-surface identity: the workspace
-    // focus ring is teal, which is roughly 1.9:1 on graphite. A test that only
-    // ever inspects the light workspace passes while a keyboard user loses the
-    // caret on every navigation item.
-    await page.goto('/board')
-    const navItem = page.locator('.aegis-nav a').first()
-    await navItem.focus()
-    const rail = await navItem.evaluate((node) => {
-      const style = getComputedStyle(node)
-      return {
-        outline: style.outlineColor,
-        background: getComputedStyle(document.querySelector('.aegis-topbar')!).backgroundColor,
-      }
-    })
-    expect(hex(rail.outline)).toBe(hex(await token(page, '--emad-focus-dark')))
-    // And it has to clear 3:1 against the surface it actually sits on.
-    const ratio = contrast(rail.outline, rail.background)
-    expect(ratio, 'focus ring on graphite').toBeGreaterThanOrEqual(3)
-  })
+  test('the graphite header has a visible dark-surface focus indicator',async({page})=>{await page.goto('/board');const brand=page.locator('.workspace-brand');await brand.focus();const fg=await brand.evaluate(e=>getComputedStyle(e).outlineColor),bg=await page.locator('.workspace-header').evaluate(e=>getComputedStyle(e).backgroundColor);expect(hex(fg)).toBe(hex(await token(page,'--emad-focus-dark')));expect(contrast(fg,bg)).toBeGreaterThanOrEqual(3)})
 
   test('the navigation never clips a view label at a usable width', async ({ page }) => {
     for (const width of [1920, 1440, 1280, 1024]) {
       await page.setViewportSize({ width, height: 900 })
       await page.goto('/board')
-      await expect(page.locator('.aegis-nav a').first()).toBeVisible()
+      await expect(page.locator('.workspace-taskbar>nav a').first()).toBeVisible()
       // The fit is measured after mount and re-measured when the webfont
       // lands; one settle frame is enough for both.
       await page.waitForTimeout(150)
-      const clipped = await page.locator('.aegis-nav').evaluate((nav) => {
+      const clipped = await page.locator('.workspace-taskbar>nav').evaluate((nav) => {
         const bound = nav.getBoundingClientRect()
         return Array.from(nav.querySelectorAll('a'))
           .filter((link) => {
@@ -498,97 +479,20 @@ test('the interface runs on the approved typeface at the approved body size', as
     }
   })
 
-  test('the header is one row of three separated zones', async ({ page }) => {
-    await page.goto('/map')
-    const bar = (await page.locator('.aegis-topbar').boundingBox())!
-    const nav = (await page.locator('.aegis-nav').boundingBox())!
+  test('the header separates identity, product area and account within 56 pixels',async({page})=>{await page.goto('/map');const bar=(await page.locator('.workspace-header').boundingBox())!;expect(bar.height).toBeLessThanOrEqual(56);for(const selector of ['.workspace-brand','.workspace-area','.workspace-identity']){const b=(await page.locator(selector).boundingBox())!;expect(b.y).toBeGreaterThanOrEqual(bar.y);expect(b.y+b.height).toBeLessThanOrEqual(bar.y+bar.height+1)}const areas=(await page.locator('.workspace-area').boundingBox())!,account=(await page.locator('.workspace-identity').boundingBox())!;expect(areas.x+areas.width).toBeLessThan(account.x)})
 
-    // The nav is inside the header, not under it. A second row made the
-    // console look as though it had two levels of navigation.
-    expect(nav.y).toBeGreaterThanOrEqual(bar.y)
-    expect(nav.y + nav.height).toBeLessThanOrEqual(bar.y + bar.height + 1)
-    // The bar is the console's frame, not a surface. Every pixel of it comes
-    // out of the map below.
-    expect(bar.height).toBeLessThanOrEqual(56)
-    // The zones are separated, so the row reads as three things with
-    // different jobs rather than a brand on one side and a widget parked in
-    // the other corner.
-    await expect(page.locator('.aegis-vsep')).toHaveCount(2)
-  })
+  test('the connection label names event transport separately from source freshness',async({page})=>{await page.goto('/map');const state=page.locator('.workspace-connection');await expect(state).toHaveCount(1);await expect(state).toContainText(/Events (connecting|connected|reconnecting|disconnected)/);await expect(state).toHaveAttribute('title',/Source freshness is reported separately/);await expect(state).not.toHaveText('LIVE')})
 
-  test('the console state is one chip, in words', async ({ page }) => {
-    await page.goto('/map')
-    // One answer to "can I trust this console". The realtime link and the
-    // backend health used to be two blocks side by side, and a reader ends
-    // up reading the one they liked.
-    const state = page.locator('.aegis-console-state')
-    await expect(state).toHaveCount(1)
-    await expect(state).toContainText(
-      /NOT AUTHENTICATED|SYSTEM DOWN|LINK LOST|LINK RETRY|DEGRADED|LIVE|CHECKING/,
-    )
-  })
+  test('workspace navigation keeps Systems and Map prominent with a visible current route',async({page})=>{await page.goto('/map');const nav=page.getByRole('navigation',{name:'Workspace navigation'});for(const label of ['Map','Systems','Exercise','Replay'])await expect(nav.getByRole('link',{name:label,exact:true})).toBeVisible();const current=nav.locator('[aria-current=page]');await expect(current).toHaveCount(1);await expect(current).toHaveText('Map');expect(hex(await current.evaluate(e=>getComputedStyle(e).borderBottomColor))).toBe(hex(await token(page,'--emad-link')));await page.getByText('More',{exact:true}).click();for(const label of ['Operations board','Alerts','Incidents','Audit history','Controlled assets','Legacy scenarios'])await expect(page.getByRole('navigation',{name:'Supporting workspaces'}).getByRole('link',{name:label,exact:true})).toBeVisible();await page.keyboard.press('Escape');await expect(page.locator('.workspace-more')).not.toHaveAttribute('open','')})
 
-  test('the nav says which two views are primary, and shows it', async ({ page }) => {
-    await page.goto('/map')
-    const primary = page.locator('.aegis-nav-primary a')
-    await expect(primary).toHaveCount(2)
-    await expect(primary.nth(0)).toHaveText('Map')
-    await expect(primary.nth(1)).toHaveText('Systems')
+  test('supporting navigation opens its destination and closes after selection',async({page})=>{await page.goto('/map');await page.getByText('More',{exact:true}).click();await page.getByRole('navigation',{name:'Supporting workspaces'}).getByRole('link',{name:'Alerts',exact:true}).click();await expect(page).toHaveURL(/\/alerts$/);await expect(page.locator('.workspace-more')).not.toHaveAttribute('open','');await expect(page.getByRole('heading',{name:'Alert Center',exact:true})).toBeVisible()})
 
-    // The side features are one disclosure, and every one of them is in it —
-    // they are still views, still named, still reachable.
-    const more = page.getByRole('button', { name: /More|Side features/ })
-    await expect(more).toBeVisible()
-    await more.click()
-    const items = page.getByRole('menuitem')
-    await expect(items).toHaveCount(7)
-    for (const label of ['Board', 'Alerts', 'Incidents', 'Audit', 'Assets', 'Tracks', 'Scenarios']) {
-      await expect(page.getByRole('menuitem', { name: label })).toBeVisible()
-    }
-    await page.keyboard.press('Escape')
-
-    // The hierarchy is visible, not only announced: a primary tab is set
-    // larger than the disclosure that holds the tier below it, so the eye
-    // lands on the two views the console is for before it reads the rest.
-    const sizes = await page.evaluate(() => {
-      const size = (selector: string) =>
-        Number.parseFloat(getComputedStyle(document.querySelector(selector)!).fontSize)
-      return { primary: size('.aegis-nav-primary a'), side: size('.aegis-nav-more') }
-    })
-    expect(sizes.primary, 'primary tabs are set the same size as the side features').toBeGreaterThan(
-      sizes.side,
-    )
-
-    // The current page is marked as current, and it is shown as selected: a
-    // nav that says where you are only in colour is a nav that says it to
-    // nobody who cannot see the colour.
-    const current = page.locator('.aegis-nav a[aria-current="page"]')
-    await expect(current).toHaveCount(1)
-    await expect(current).toHaveText('Map')
-    const underline = await current.evaluate((node) => getComputedStyle(node).borderBottomColor)
-    expect(hex(underline)).toBe(hex(await token(page, '--emad-energized-lime')))
-  })
-
-  test('the disclosure names the side feature you are on', async ({ page }) => {
-    // A disclosure that hides seven views must not also hide where you are.
-    await page.goto('/alerts')
-    const more = page.locator('.aegis-nav-more')
-    await expect(more).toContainText('Alerts')
-    await expect(more).toHaveAttribute('aria-current', 'page')
-  })
-
-  test('the number keys follow the nav, in the order it reads', async ({ page }) => {
-    await page.goto('/map')
-    await page.keyboard.press('2')
-    await expect(page).toHaveURL(/\/systems/)
-    await page.keyboard.press('1')
-    await expect(page).toHaveURL(/\/map/)
-  })
+  test('workspace navigation is keyboard operable without global typing shortcuts',async({page})=>{await page.goto('/map');const nav=page.getByRole('navigation',{name:'Workspace navigation'});await nav.getByRole('link',{name:'Systems',exact:true}).focus();await page.keyboard.press('Enter');await expect(page).toHaveURL(/\/systems/);await nav.getByRole('link',{name:'Map',exact:true}).focus();await page.keyboard.press('Enter');await expect(page).toHaveURL(/\/map/)})
 
   test('reduced motion removes transitions and animation', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/map')
-    const duration = await page.locator('.aegis-nav a').first().evaluate((element) => {
+    const duration = await page.locator('.workspace-taskbar>nav a').first().evaluate((element) => {
       const style = getComputedStyle(element)
       return { transition: style.transitionDuration, animation: style.animationDuration }
     })
@@ -754,7 +658,7 @@ test.describe('operational picture', () => {
     // Graphite ink is the chrome channel under Alloy Pearl — §7.1 requires
     // selection to be readable without implying a domain state.
     const shadow = await card.locator('.inner').evaluate((node) => getComputedStyle(node).boxShadow)
-    expect(shadow).toContain('rgb(29, 48, 48)')
+    expect(shadow).toContain('rgb(36, 52, 61)')
   })
 })
 

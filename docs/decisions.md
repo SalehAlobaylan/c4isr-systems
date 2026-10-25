@@ -1,6 +1,8 @@
 # Implementation Decisions
 
-Material decisions made while implementing the C2 + Operational Awareness milestone. Each entry records the choice, the reason, and known limits. Architectural intent lives in `ARCHITECTURE.md`; this file records how that intent was realized.
+Material decisions made while implementing the C2 + Operational Awareness milestone. Each entry records the choice, the reason, and known limits. Current architectural intent lives in [Architecture and Direction v2](../EMAD_ARCHITECTURE_AND_DIRECTION_v2.md) and [Final Data Strategy v2](../EMAD_FINAL_DATA_STRATEGY_v2.md); this file records how the earlier foundation was realized.
+
+**v2 migration note:** Historical decisions remain implementation evidence. D5's default point-to-track behavior, D6's wall-clock scenario timestamps, and the original realtime/role boundaries require deliberate evolution under [Implementation Plan v2](../EMAD_IMPLEMENTATION_PLAN_v2.md). [F0.1](implementation/F0_1_BASELINE.md) records the verified starting point; it does not implement the replacement principal or data-scope model.
 
 ## D1. Modular monolith with a synchronous in-process dispatcher
 
@@ -129,3 +131,76 @@ Material decisions made while implementing the C2 + Operational Awareness milest
 **Why:** This provides useful local and CI diagnostics without introducing a broker, metrics daemon, or exporter-specific domain dependency. Deployments can install an OpenTelemetry provider/exporter later.
 
 **Limits:** Metrics reset on process restart and are intended for the current modular-monolith milestone; durable aggregation belongs to deployment infrastructure.
+
+## D20. Human/service principals and explicit resource grants
+
+**Decision:** F0.2 replaces configuration-only authorization with persisted human/service principals, hashed expiring/revocable credentials, and workspace/environment/partition/run grants. Configuration-backed operators remain an explicit compatibility path with live role ceilings. Source constraints and exact-run publication are separate from exercise control. Headers select existing authorized resources; they never grant access. Truth read/grant and privileged evaluation require explicit capabilities. Synchronous projections and ordinary administration do not imply them.
+
+**Contract:** Retain existing domain permission identifiers; add `sim.scenarios.author`, `sim.truth.read`, `sim.truth.grant`, and `sim.evaluation.read`. Reserved review/context/imagery capabilities introduce no new endpoints yet. OpenAPI documents selection headers and `/auth/me` principal/resource fields; Protobuf resource selectors are additive contracts for a future adapter, not an implemented listener. See [F0.2–F0.4 implementation and rollout](implementation/F0_2_4_IMPLEMENTATION.md).
+
+## D21. Ownership through transaction-local context and restricted-role RLS
+
+**Decision:** F0.3 adds indexed `scope_id` ownership to all 28 domain tables and keeps operators as platform identities. Same-scope FK/polymorphic evidence triggers protect relationships. Unresolved legacy records retain NULL ownership and remain invisible to application views. Recorded run/namespace/audit provenance and graph validation drive the repeatable backfill; unknown records are never presumed public or synthetic. Scoped uniqueness and canonical namespaced caller IDs preserve independent resource idempotency.
+
+**Decision:** F0.4 requires authorization at application-service entry and uses a restricted `emad_data` role plus transaction-local resource/source settings for every domain query or transaction. FORCE RLS enforces ownership even when the pool login owns tables or is a superuser. Pool reuse cannot retain another request's scope. Maintenance/control-plane access is explicit and separate. Missions, commands, controlled assets, and telemetry remain exercise-only.
+
+**Compatibility and operations:** Existing token clients use a stored default resource; authorized scenario start selects its run. Explicit run headers support concurrent clients. Migration 20 requires privileged maintenance authority, excludes concurrent writes during backfill, and refuses automatic rollback. Minimal same-resource hub routing is included to prevent a scoped-read bypass; F0.5 still owns payload/metadata and subscription lifecycle hardening. These decisions supersede D15's unvalidated-reference limitation and D16's configuration-only authorization description while preserving their historical context.
+
+## D22. Ordinary realtime is an authorized COP notification stream
+
+**Decision:** F0.5 introduces envelope version 2 with authenticated resource context, an explicit topic/permission/source catalogue, checks before enqueue and send, idle credential refresh, and bounded buffering. Input/truth and unknown event families are denied by the ordinary socket even for a truth-authorized identity. Ready/resync controls require authorized API snapshots; the stream has no replay cursor. Credential subprotocol offers and legacy query credentials are consumed before instrumentation and never echoed. See [F0.5 implementation and rollout](implementation/F0_5_REALTIME.md).
+
+## D23. Exercise publication references and disclosure are explicit
+
+**Decision:** Exercise transport uses a shared allowlist for extensible metadata and quality, suppresses raw correlation hints and private names/errors, and restricts scheduled scenario inspection to authors. Public evidence and stored originals remain intact. Migration 21 adds stable random immutable observation publication references, preserving original storage IDs and links. References resolve through the existing restricted-role database boundary, including typed evidence writes and legacy track references. Public hashes of predictable actor names are unsuitable for hiding identity. Full UI workspace/cache separation remains F0.6.
+
+
+## F0.6 — Explicit COP workspace lifetimes (2026-10-21)
+
+Public Context and Exercise COP share the existing application shell and domain APIs. The live identity response offers only authorized ordinary resources and an opaque access revision; neither input packages nor ground truth becomes a selectable COP. Each mounted workspace captures one API resource, network cancellation lifetime, query client/key prefix, and realtime resource. Switching or losing authority discards cached/selected/replay state. Scenario start explicitly selects the new run; omitted-header compatibility remains server-bound for older callers. The real-backend browser gate and negative authorization matrix are required in CI. See [F0.6 acceptance](implementation/F0_6_WORKSPACES.md).
+
+## D24. Public retrieval, immutable evidence, and catalog publication are separate
+
+**Decision:** P1.1 introduces `publicingest` inside the modular monolith with immutable human-reviewed admission versions, source-bound service execution, server-owned HTTPS locations, persistent request budgets/leases, frozen query windows, and atomic evidence/checkpoint commits. Rights snapshots, normalized content hashes, exact original-byte hashes, and shared producer keys preserve provenance independently of a connector run. A transactional receipt publishes catalog visibility only after evidence exists; projection recovery does not refetch the provider. All six new tables use scoped restricted-role RLS and same-resource/source foreign keys.
+
+**Scope:** Execution is a bounded service API invocation, with no polling daemon, external broker, or ML worker. Registration status and provider query coverage remain separate; an outage preserves existing evidence and never proves absence. Source-specific native adapters and event/area/moving projections remain subsequent tasks. No live provider is enabled. See [P1.1 implementation and operation](implementation/P1_1_PUBLIC_INGESTION.md).
+
+## D25. Reported event revisions and geographic reference are separate models
+
+**Decision:** P1.2 makes observation semantics explicit independently of geometry. Public reported-event revisions project from committed evidence, with a latest-known pointer, immutable history, explicit withdrawals, and PostGIS spatial matches. Event publication, its observation/current projection, corrected alerts, catalog visibility, and receipt acknowledgment share a transaction. Named events/detections cannot enter moving-track correlation. Original provider review/quality is not an EMAD-reviewed assessment.
+
+**Decision:** P1.3 stores small immutable reference artifacts and PostGIS features in the existing database, with EPSG:4326, explicit elevation datum/grid registration, rights, transformations and hashes. Public reference versions are eligible inputs to S0 only when their metadata/rights allow; they are not observations, actors, or a second context-package standard. Regional Natural Earth/NOAA artifacts and preparation/import helpers make the first version reproducible. P1.4 adds the vetted native USGS adapter on the existing bounded service boundary. See [P1.2–P1.4 implementation](implementation/P1_2_4_PUBLIC_CONTEXT.md).
+
+
+## D26. Frozen input versions, information clocks, and one context package contract
+
+**Decision:** S0.1–S0.3 retain YAML as mutable authoring and store immutable, exact serialized scenario input bytes in `EXERCISE_INPUT`. Run configuration freezes version/build/seed/clock/context identities, while progress/lifecycle stay mutable. Restart creates a fresh namespace from those retained inputs. Author permission gates full definitions; ordinary run responses contain no actor templates. Re-simulation requires the original executable identity; reading recorded evidence remains separate.
+
+**Decision:** Exercise information freshness and scheduled source instants follow the selected run clock; receipt, processing, audit, and delivery remain wall time. Public evidence uses public time semantics. Renderer-independent WGS84/ECEF/ENU transforms require resolved ellipsoidal height and recorded axes/units/orientation. Orthometric and AGL inputs are not relabeled. Component templates declare fidelity/version/simplifications without claiming physical validation.
+
+**Decision:** `emad.context.v1` is the single bounded geographic package format. Human `context.export` approval freezes reviewed source versions, provenance, hashes, coverage, datum, processing, rights, and original retained bytes. Reference-only packages explicitly weaken reproduction. Packages contain no authored actors, perform no network retrieval, and are immutable with forced scope/source RLS. PostgreSQL holds these small initial artifacts; a standalone validator loads retained bundles offline. S0.4/M2 and engine selection remain later work. See [S0.1–S0.3 implementation](implementation/S0_1_3_SIMULATION_FOUNDATIONS.md).
+
+## D27. Approved imagery exports extend the existing context contract
+
+**Decision:** P2.4 retains `emad.context.v1` and adds the `context-snapshot-v2` processing variant. A bounded source-restricted preview pins published assessment revisions, prepared subsets, result hashes, original/current rights and transformations. Human approval freezes that exact selection after live authorization and transactional dependency rechecks. Derived finding geometry is clipped in PostGIS and remains explicitly synthetic context. Public originals and simulator truth remain separate. Small enriched bundles use the existing S0 frozen loader; its total snapshot budget remains explicit.
+
+## D28. Moving public evidence projects source-bound hypotheses through native adapters
+
+**Decision:** P3.1-P3.2 reuse admission, durable evidence/outbox, observations, tracks, and history. Immutable association decisions retain late and quarantined reports without rewinding accepted state. Source-bound identity/motion gates do not verify identity, infer affiliation, merge providers, or create controllable assets. Restricted source visibility covers legacy track read endpoints too. Separate bounded connector processes add no scheduler to API startup.
+
+**Decision:** OpenSky is the initial ADS-B adapter because ADS-B.lol's public API is deprecated. Anonymous technical access does not authorize operational use; OpenSky's written agreement and approved archive rights are activation prerequisites. AISStream requires a server key, reviewed rights and compressed bounded captures with explicit gaps. No live provider activation is claimed from synthetic/local protocol acceptance. See [delivery, acceptance and limits](implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md).
+
+
+## P3.3 delivery update
+
+P3.3 selects NOAA METAR and GDACS EQ structured bulletins for a bounded, admission-specific analyst question. Native JSON bulletin features are the retained source documents; linked HTML is not collected. Common producer/event lineage is exposed without automatic corroboration counts. Reports reuse the established assessment review workflow, exact evidence hashes and original/current rights checks. Weather/report projections are immutable, scoped and distinct from tracks/operations. See [implementation, acceptance and rollout](implementation/P3_3_WEATHER_AND_REPORTS.md).
+
+
+## S1.1 delivery update
+
+S1.1 reuses the existing S3 artifact store with separate input-scoped metadata rather than weakening public imagery/source admission constraints. Immutable model versions pin source/version, rights, worker/importer/Khronos dependency hashes and exact validation manifests. Separate templates and S0 frames remain authored input, not runtime actors. The initial portable profile rejects external resources and unsupported compression; core glTF structure/data and actual bounded image payloads are validated only in an independent worker. Engine-native artifacts remain opaque and separately pinned until an engine integration is evaluated. See [implementation, acceptance and rollout](implementation/S1_1_MODEL_ASSET_REGISTRY.md).
+
+
+## S1.2-S1.3 / S2.1 delivery update
+
+The first Simulation Studio viewport uses measured Three.js rendering over immutable georeferenced authoring scenes. A separate native Go executable owns abstract actor kinematics, virtual time and authenticated runtime lifecycle. Authoring, latest sealed runtime truth and ordinary operator perception remain separate. Migration 35 is required. M4 is accepted within the documented reference/synthetic-terrain visual-only scope; native sensing and Exercise COP integration remain S2.2-S2.3. See [engine comparison and decision](implementation/S1_2_ENGINE_DECISION.md) and [implementation, acceptance and rollout](implementation/S1_3_S2_1_STUDIO_AND_NATIVE_RUNTIME.md).

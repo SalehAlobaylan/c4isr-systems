@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@/lib/scopedQueries'
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { useEffect } from 'react'
 
@@ -7,8 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, type SelectOption } from '@/components/ui/select'
-import { api } from '@/lib/api'
-import { queryKeys } from '@/lib/queryKeys'
+import { useAPI } from '@/lib/api'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { toast } from '@/stores/toasts'
 
 /**
@@ -63,6 +64,8 @@ export function AssessmentFormDialog({
   /** When set, the assessment is also attached to this incident. */
   incidentId?: string
 }) {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const queryClient = useQueryClient()
 
   const tracksQuery = useQuery({

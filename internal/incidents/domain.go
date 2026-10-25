@@ -88,14 +88,17 @@ type RelatedObservation struct {
 
 // RelatedAssessment is the assessment projection attached to an incident.
 type RelatedAssessment struct {
-	ID          string
-	SubjectType string
-	SubjectID   string
-	Type        string
-	Conclusion  string
-	Method      string
-	Confidence  *float64
-	CreatedAt   time.Time
+	ReviewStatus        string
+	RevisionID          string
+	PublishedRevisionID string
+	ID                  string
+	SubjectType         string
+	SubjectID           string
+	Type                string
+	Conclusion          string
+	Method              string
+	Confidence          *float64
+	CreatedAt           time.Time
 }
 
 // Detail is an incident together with its attached evidence.

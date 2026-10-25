@@ -1,0 +1,8 @@
+{
+  "id": "simulation-recording-worker",
+  "kind": "service",
+  "name": "Independent native recording and evaluation worker",
+  "resource": {"workspaceId": "default", "environmentId": "local", "partition": "EXERCISE_INPUT"},
+  "permissions": ["operational.read", "sim.recordings.execute"],
+  "sourceIds": []
+}

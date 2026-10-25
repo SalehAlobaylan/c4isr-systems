@@ -1,6 +1,7 @@
 package audit
 
 import (
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/presentation"
 	"net/http"
 	"strconv"
 	"time"
@@ -49,6 +50,14 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 		SubjectType: r.URL.Query().Get("subject_type"),
 		SubjectID:   r.URL.Query().Get("subject_id"),
 		Action:      r.URL.Query().Get("action"),
+	}
+	if filter.SubjectType == "observation" {
+		actual, err := presentation.ResolveObservation(r.Context(), filter.SubjectID)
+		if err != nil {
+			httpx.Error(w, err)
+			return
+		}
+		filter.SubjectID = actual
 	}
 	if raw := r.URL.Query().Get("since"); raw != "" {
 		since, err := time.Parse(time.RFC3339, raw)

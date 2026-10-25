@@ -1,12 +1,42 @@
 version: "3"
 
 vars:
-  TOOLBIN: "{{.HOME}}/go/bin"
+  # HOME is unset on Windows, so fall back to USERPROFILE for the Go tool bin.
+  TOOLBIN: '{{if .HOME}}{{.HOME}}{{else}}{{.USERPROFILE}}{{end}}/go/bin'
+  # Windows cannot exec a .sh file directly, so every ops script is run through a
+  # POSIX shell. Git for Windows ships one; override with C4ISR_SHELL_BIN if it
+  # lives elsewhere (for example "C:/tools/msys64/usr/bin/bash.exe").
+  SHELL_BIN: '{{if eq OS "windows"}}{{.C4ISR_SHELL_BIN | default (printf "%s/Git/bin/bash.exe" (replace "\\" "/" (.ProgramFiles | default "C:/Program Files")))}}{{else}}{{.C4ISR_SHELL_BIN | default "sh"}}{{end}}'
   DATABASE_URL: '{{.C4ISR_DATABASE_URL | default "postgres://c4isr:c4isr@localhost:5433/c4isr?sslmode=disable"}}'
   COMPOSE: docker compose -f deployments/docker-compose.yml
   STAGING_COMPOSE: docker compose --env-file deployments/staging/.env.staging -f deployments/staging/docker-compose.yml
+  RECOVERY_PYTHON: '{{if eq OS "windows"}}.venv-recovery/Scripts/python.exe{{else}}.venv-recovery/bin/python{{end}}'
 
 tasks:
+  local:setup:
+    desc: Install persistent EMAD development infrastructure, identities and real content
+    cmds:
+      - python scripts/ops/local.py setup
+  local:doctor:
+    desc: Diagnose scoped EMAD feature readiness without exposing credentials
+    cmds:
+      - python scripts/ops/local.py doctor
+  local:stop:
+    desc: Stop the supported development supervisor and workers, preserving database and storage
+    cmds:
+      - python scripts/ops/local.py stop
+  local:backup:
+    desc: Create and verify a paired private database and object backup (stop task dev first)
+    cmds:
+      - '"{{.RECOVERY_PYTHON}}" scripts/ops/paired_backup.py backup'
+  local:restore:test:
+    desc: Restore the latest paired backup into isolated containers and verify referenced content
+    cmds:
+      - '"{{.RECOVERY_PYTHON}}" scripts/ops/paired_backup.py restore-test'
+  dev:
+    desc: Start the complete local API, web application and scoped workers
+    cmds:
+      - python scripts/ops/local.py dev
   default:
     desc: List available tasks
     cmds:
@@ -43,7 +73,7 @@ tasks:
       C4ISR_DATABASE_URL: "{{.DATABASE_URL}}"
       GOOSE_BIN: "{{.TOOLBIN}}/goose"
     cmds:
-      - ./scripts/ops/migrate.sh up
+      - '"{{.SHELL_BIN}}" ./scripts/ops/migrate.sh up'
 
   db:rollback:
     desc: Roll back the most recent migration (production/staging require explicit approval)
@@ -51,7 +81,7 @@ tasks:
       C4ISR_DATABASE_URL: "{{.DATABASE_URL}}"
       GOOSE_BIN: "{{.TOOLBIN}}/goose"
     cmds:
-      - ./scripts/ops/migrate.sh down
+      - '"{{.SHELL_BIN}}" ./scripts/ops/migrate.sh down'
 
   db:status:
     desc: Show migration status
@@ -59,7 +89,7 @@ tasks:
       C4ISR_DATABASE_URL: "{{.DATABASE_URL}}"
       GOOSE_BIN: "{{.TOOLBIN}}/goose"
     cmds:
-      - ./scripts/ops/migrate.sh status
+      - '"{{.SHELL_BIN}}" ./scripts/ops/migrate.sh status'
 
   db:backup:
     desc: Create an encrypted-at-rest-ready custom PostgreSQL dump and checksum
@@ -68,9 +98,9 @@ tasks:
     cmds:
       - cmd: |
           if [ -n "{{.BACKUP | default ""}}" ]; then
-            ./scripts/ops/backup.sh "{{.BACKUP}}"
+            "{{.SHELL_BIN}}" ./scripts/ops/backup.sh "{{.BACKUP}}"
           else
-            ./scripts/ops/backup.sh
+            "{{.SHELL_BIN}}" ./scripts/ops/backup.sh
           fi
 
   db:restore:test:
@@ -80,16 +110,16 @@ tasks:
     env:
       C4ISR_DATABASE_URL: "{{.DATABASE_URL}}"
     cmds:
-      - ./scripts/ops/restore-test.sh "{{.BACKUP}}"
+      - '"{{.SHELL_BIN}}" ./scripts/ops/restore-test.sh "{{.BACKUP}}"'
 
   staging:backup:
     desc: Dump the staging database from inside the Compose network
     cmds:
       - cmd: |
           if [ -n "{{.BACKUP | default ""}}" ]; then
-            ./scripts/ops/staging-backup.sh "{{.BACKUP}}"
+            "{{.SHELL_BIN}}" ./scripts/ops/staging-backup.sh "{{.BACKUP}}"
           else
-            ./scripts/ops/staging-backup.sh
+            "{{.SHELL_BIN}}" ./scripts/ops/staging-backup.sh
           fi
 
   sqlc:
@@ -100,9 +130,15 @@ tasks:
 
   build:
     desc: Build the server binary
+    cmd: |
+      set -e
+      mkdir -p bin
+      go build -o bin/c4isr-server ./apps/c4isr-server
+
+  build:all:
+    desc: Build the API, provisioning tools, and independent Go workers/runtimes
     cmds:
-      - mkdir -p bin
-      - go build -o bin/c4isr-server ./apps/c4isr-server
+      - go build -o bin/ ./apps/...
 
   dev:api:
     desc: Run the Go C4ISR server on the host
@@ -111,6 +147,7 @@ tasks:
       C4ISR_ENV: development
       C4ISR_AUTH_REQUIRED: "true"
       C4ISR_AUTH_TOKENS: 'operator-01={{.C4ISR_API_TOKEN | default "dev-operator-token"}}'
+      C4ISR_HTTP_ADDR: '{{.C4ISR_HTTP_ADDR | default (printf ":%s" (.C4ISR_DEV_PORT | default "8080"))}}'
     cmds:
       - go run ./apps/c4isr-server
 
@@ -119,6 +156,7 @@ tasks:
     dir: apps/operator-ui
     env:
       VITE_API_TOKEN: '{{.C4ISR_API_TOKEN | default "dev-operator-token"}}'
+      VITE_API_PROXY_TARGET: '{{.C4ISR_API_PROXY_TARGET | default (printf "http://localhost:%s" (.C4ISR_DEV_PORT | default "8080"))}}'
     cmds:
       - pnpm dev
 
@@ -135,15 +173,24 @@ tasks:
   test:race:
     desc: Run concurrency-sensitive tests with the race detector
     cmds:
-      - go test -race ./internal/platform/httpx ./internal/platform/observability ./internal/scenarios ./internal/telemetry ./internal/tracks ./internal/geospatial ./internal/alerts ./internal/incidents ./internal/missions ./internal/commands
+      - go test -race ./internal/realtime ./internal/platform/presentation ./internal/platform/access ./internal/platform/httpx ./internal/platform/observability ./internal/scenarios ./internal/telemetry ./internal/tracks ./internal/geospatial ./internal/alerts ./internal/incidents ./internal/missions ./internal/commands ./internal/publicingest ./internal/publicevents ./internal/eventrules ./internal/reference ./internal/simulation ./internal/contextpackage ./internal/exerciseingest ./internal/observations ./internal/sources ./internal/artifacts ./internal/imagery ./internal/imageryanalysis ./internal/assessments ./internal/externaltracks ./internal/publiccontext ./internal/modelassets ./internal/simscene ./internal/simruntime ./internal/nativeexercise ./internal/recordings ./apps/emad-recordings
 
   test:e2e:
     desc: Run operator UI browser smoke tests (Chromium required)
     cmds:
       - pnpm --dir apps/operator-ui exec playwright test
 
+  test:browser:integration:
+    desc: Build the UI and verify public/exercise workflows with PostGIS/S3 (Docker and Chromium required)
+    env:
+      C4ISR_TEST_INTEGRATION: "1"
+      C4ISR_TEST_BROWSER: "1"
+    cmds:
+      - pnpm --dir apps/operator-ui build
+      - go test -count=1 -run TestWorkspaceBrowserCompatibilityGate -v ./internal/integration
+
   test:integration:
-    desc: Run integration tests against real PostgreSQL/PostGIS (Docker required)
+    desc: Run integration tests against real PostgreSQL/PostGIS and S3 (Docker required)
     env:
       C4ISR_TEST_INTEGRATION: "1"
     cmds:
@@ -152,12 +199,12 @@ tasks:
   ops:validate:
     desc: Validate staging Compose, secret mounts, and observability configuration
     cmds:
-      - ./scripts/ops/validate-staging.sh
+      - '"{{.SHELL_BIN}}" ./scripts/ops/validate-staging.sh'
 
   staging:init:
     desc: Generate ignored staging secret files and the local staging env file
     cmds:
-      - ./scripts/ops/init-staging.sh
+      - '"{{.SHELL_BIN}}" ./scripts/ops/init-staging.sh'
 
   staging:up:
     desc: Build and start the production-shaped local staging stack
@@ -178,7 +225,7 @@ tasks:
   staging:smoke:
     desc: Exercise the staged API, UI, database readiness, and observability endpoints
     cmds:
-      - ./scripts/ops/smoke-staging.sh
+      - '"{{.SHELL_BIN}}" ./scripts/ops/smoke-staging.sh'
 
   staging:logs:
     desc: Follow centralized staging logs through Docker
@@ -187,9 +234,14 @@ tasks:
 
   lint:
     desc: Vet and formatting checks
-    cmds:
-      - go vet ./...
-      - test -z "$(gofmt -l apps internal | tee /dev/stderr)"
+    cmd: |
+      set -e
+      go vet ./...
+      unformatted="$(gofmt -l apps internal)"
+      if [ -n "$unformatted" ]; then
+        echo "$unformatted"
+        exit 1
+      fi
 
   contracts:openapi:
     desc: Regenerate browser TypeScript types from the OpenAPI contract
@@ -206,7 +258,8 @@ tasks:
     cmds:
       - >-
         if git ls-tree -r --name-only origin/main -- api/proto | grep -q '\.proto$'; then
-        buf breaking api/proto --against '.git#branch=main,subdir=api/proto';
+        baseline="$(git rev-parse origin/main)";
+        buf breaking api/proto --against ".git#ref=$baseline,subdir=api/proto";
         else
         echo "No protobuf baseline exists on main; skipping the initial compatibility comparison.";
         fi
@@ -239,3 +292,30 @@ tasks:
         curl -sS http://localhost:8080/api/v1/scenarios/runs
         -H "Authorization: Bearer {{.C4ISR_API_TOKEN | default \"dev-operator-token\"}}"
         | python3 -m json.tool
+
+  assets:validate:test:
+    desc: Verify the bounded portable model import profile
+    cmds:
+      - pnpm --dir apps/emad-asset-validator test
+
+  simulation:runtime:build:
+    desc: Build the independent headless simulation runtime (use -describe to inspect its build)
+    cmds:
+      - go build -o bin/emad-runtime{{if eq OS "windows"}}.exe{{end}} ./apps/emad-runtime
+
+  simulation:recordings:build:
+    desc: Build the independent recording and evaluation worker
+    cmds:
+      - go build -o bin/emad-recordings{{if eq OS "windows"}}.exe{{end}} ./apps/emad-recordings
+
+  simulation:scene:test:
+    desc: Verify spatial, kinematic and no-GPU scene adapters
+    cmds:
+      - go test ./internal/simscene ./internal/simruntime
+      - node apps/operator-ui/scripts/evaluate-headless.mjs three
+      - node apps/operator-ui/scripts/evaluate-headless.mjs babylon
+
+  simulation:engine:evaluate:
+    desc: Compare the same bounded scene in both rendering candidates
+    cmds:
+      - node apps/operator-ui/scripts/evaluate-engines.mjs

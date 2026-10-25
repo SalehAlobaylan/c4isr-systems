@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 )
 
@@ -15,9 +16,14 @@ const (
 )
 
 // Service implements source registration and lookup.
+type Catalog interface {
+	Summaries(context.Context, []string) (map[string]IngestionSummary, error)
+}
+
 type Service struct {
-	repo Repository
-	bus  *events.Dispatcher
+	catalog Catalog
+	repo    Repository
+	bus     *events.Dispatcher
 }
 
 // NewService wires a source service.
@@ -25,9 +31,17 @@ func NewService(repo Repository, bus *events.Dispatcher) *Service {
 	return &Service{repo: repo, bus: bus}
 }
 
+// SetCatalog attaches the optional public-ingestion read port.
+func (s *Service) SetCatalog(c Catalog) { s.catalog = c }
+
 // Create registers a new source and publishes source.created.
 func (s *Service) Create(ctx context.Context, in CreateInput) (Source, error) {
+	if scopeErr := access.Require(ctx, "sources.manage"); scopeErr != nil {
+		return Source{}, scopeErr
+	}
+
 	in.Normalize()
+	in.ID = access.ResourceID(ctx, "source", in.ID)
 	if err := in.Validate(); err != nil {
 		return Source{}, err
 	}
@@ -56,7 +70,12 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Source, error) {
 // Ensure idempotently registers a source, returning whether it was created.
 // Scenario setup uses this so runs are repeatable.
 func (s *Service) Ensure(ctx context.Context, in CreateInput) (Source, bool, error) {
+	if scopeErr := access.Require(ctx, "sources.manage"); scopeErr != nil {
+		return Source{}, false, scopeErr
+	}
+
 	in.Normalize()
+	in.ID = access.ResourceID(ctx, "source", in.ID)
 	if err := in.Validate(); err != nil {
 		return Source{}, false, err
 	}
@@ -78,26 +97,86 @@ func (s *Service) Ensure(ctx context.Context, in CreateInput) (Source, bool, err
 
 // Get returns a source by id.
 func (s *Service) Get(ctx context.Context, id string) (Source, error) {
-	return s.repo.Get(ctx, id)
+	if scopeErr := access.Require(ctx, "sources.read"); scopeErr != nil {
+		return Source{}, scopeErr
+	}
+
+	source, err := s.repo.Get(ctx, id)
+	if err != nil {
+		return Source{}, err
+	}
+	if s.catalog != nil {
+		summaries, err := s.catalog.Summaries(ctx, []string{id})
+		if err != nil {
+			return Source{}, err
+		}
+		if info, ok := summaries[id]; ok {
+			source.Ingestion = &info
+		}
+	}
+	resource, _ := access.ResourceFrom(ctx)
+	if source.Ingestion == nil && resource.Partition == access.PublicEvidence && source.Type == TypeExternal {
+		source.Ingestion = &IngestionSummary{State: "not_admitted", Meaning: "No admitted retrieval; missing records are not evidence of absence."}
+	}
+	return source, nil
 }
 
 // Exists reports whether a source is registered. Other modules use this to
 // validate provenance without importing source internals.
 func (s *Service) Exists(ctx context.Context, id string) (bool, error) {
+	if scopeErr := access.Require(ctx, "sources.read"); scopeErr != nil {
+		return false, scopeErr
+	}
+
 	return s.repo.Exists(ctx, id)
 }
 
 // List returns sources newest first.
 func (s *Service) List(ctx context.Context, limit, offset int) ([]Source, int, error) {
+	if scopeErr := access.Require(ctx, "sources.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	limit = clampLimit(limit)
 	if offset < 0 {
 		offset = 0
 	}
-	return s.repo.List(ctx, limit, offset)
+	items, total, err := s.repo.List(ctx, limit, offset)
+	if err != nil {
+		return nil, 0, err
+	}
+	if s.catalog != nil {
+		keys := make([]string, 0, len(items))
+		for _, item := range items {
+			keys = append(keys, item.ID)
+		}
+		summaries, err := s.catalog.Summaries(ctx, keys)
+		if err != nil {
+			return nil, 0, err
+		}
+		for i := range items {
+			if info, ok := summaries[items[i].ID]; ok {
+				items[i].Ingestion = &info
+			}
+		}
+	}
+	resource, _ := access.ResourceFrom(ctx)
+	if resource.Partition == access.PublicEvidence {
+		for i := range items {
+			if items[i].Ingestion == nil && items[i].Type == TypeExternal {
+				items[i].Ingestion = &IngestionSummary{State: "not_admitted", Meaning: "No admitted retrieval; missing records are not evidence of absence."}
+			}
+		}
+	}
+	return items, total, nil
 }
 
 // UpdateStatus changes availability and publishes source.updated.
 func (s *Service) UpdateStatus(ctx context.Context, id string, status Status) (Source, error) {
+	if scopeErr := access.Require(ctx, "sources.manage"); scopeErr != nil {
+		return Source{}, scopeErr
+	}
+
 	switch status {
 	case StatusActive, StatusDegraded, StatusOffline:
 	default:

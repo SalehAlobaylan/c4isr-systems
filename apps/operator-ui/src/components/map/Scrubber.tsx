@@ -1,7 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@/lib/scopedQueries'
+import { useQueryKeys } from '@/lib/queryKeys'
+
 import { useEffect } from 'react'
 
-import { api } from '@/lib/api'
+import { useAPI } from '@/lib/api'
 import { formatDateTime, formatTimestamp } from '@/lib/format'
 import { useScrubStore } from '@/stores/scrub'
 
@@ -21,6 +23,8 @@ import { useScrubStore } from '@/stores/scrub'
  * moments together and produce a picture that never existed.
  */
 export function Scrubber() {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const live = useScrubStore((state) => state.live)
   const at = useScrubStore((state) => state.at)
   const earliest = useScrubStore((state) => state.earliest)
@@ -30,7 +34,7 @@ export function Scrubber() {
   const returnToLive = useScrubStore((state) => state.returnToLive)
 
   const windowQuery = useQuery({
-    queryKey: ['picture-window'],
+    queryKey: queryKeys.pictureWindow(),
     queryFn: () => api.getPictureWindow(),
     // The window only grows as evidence accrues, so refetching it on every
     // realtime event would be pure overhead.

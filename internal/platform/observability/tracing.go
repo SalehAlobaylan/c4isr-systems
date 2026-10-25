@@ -2,6 +2,9 @@ package observability
 
 import (
 	"context"
+	"errors"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -18,6 +21,17 @@ func StartSpan(ctx context.Context, name string, attrs ...attribute.KeyValue) (c
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if _, r, ok := access.From(ctx); ok && r.Partition == access.ExerciseObservation {
+		filtered := make([]attribute.KeyValue, 0, len(attrs))
+		for _, a := range attrs {
+			switch string(a.Key) {
+			case "observation.id", "source.id":
+				continue
+			}
+			filtered = append(filtered, a)
+		}
+		attrs = filtered
+	}
 	return domainTracer.Start(ctx, name, trace.WithAttributes(attrs...))
 }
 
@@ -27,8 +41,9 @@ func EndSpan(span trace.Span, err error) {
 		return
 	}
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
+		category := string(apperr.CodeOf(err))
+		span.RecordError(errors.New(category))
+		span.SetStatus(codes.Error, category)
 	}
 	span.End()
 }

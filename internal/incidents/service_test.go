@@ -9,6 +9,7 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type fakeRepo struct {
@@ -137,7 +138,7 @@ func testBus() *events.Dispatcher {
 
 func TestCreateValidatesRelationIDs(t *testing.T) {
 	svc := NewService(newFakeRepo(), testBus())
-	_, err := svc.Create(context.Background(), CreateInput{Title: "Fire", AlertIDs: []string{" "}})
+	_, err := svc.Create(testsupport.Context(), CreateInput{Title: "Fire", AlertIDs: []string{" "}})
 	if !apperr.Is(err, apperr.CodeValidation) {
 		t.Fatalf("err = %v, want validation error", err)
 	}
@@ -146,11 +147,11 @@ func TestCreateValidatesRelationIDs(t *testing.T) {
 func TestUpdateStatusRejectsInvalidTransition(t *testing.T) {
 	repo := newFakeRepo()
 	svc := NewService(repo, testBus())
-	created, err := svc.Create(context.Background(), CreateInput{Title: "Fire"})
+	created, err := svc.Create(testsupport.Context(), CreateInput{Title: "Fire"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := svc.UpdateStatus(context.Background(), created.ID, StatusResolved, "op_1"); !apperr.Is(err, apperr.CodeConflict) {
+	if _, err := svc.UpdateStatus(testsupport.Context(), created.ID, StatusResolved, "op_1"); !apperr.Is(err, apperr.CodeConflict) {
 		t.Fatalf("err = %v, want conflict error", err)
 	}
 }
@@ -162,11 +163,11 @@ func TestUpdateStatusPublishesIncidentUpdated(t *testing.T) {
 		updates = append(updates, ev.(events.IncidentUpdated))
 	})
 	svc := NewService(newFakeRepo(), bus)
-	created, err := svc.Create(context.Background(), CreateInput{Title: "Fire"})
+	created, err := svc.Create(testsupport.Context(), CreateInput{Title: "Fire"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	updated, err := svc.UpdateStatus(context.Background(), created.ID, StatusInvestigating, "op_7")
+	updated, err := svc.UpdateStatus(testsupport.Context(), created.ID, StatusInvestigating, "op_7")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +190,7 @@ func TestCreateAttachesRelationsAndPublishes(t *testing.T) {
 	})
 	repo := newFakeRepo()
 	svc := NewService(repo, bus)
-	incident, err := svc.Create(context.Background(), CreateInput{
+	incident, err := svc.Create(testsupport.Context(), CreateInput{
 		Title:    "Fire",
 		Priority: PriorityHigh,
 		AlertIDs: []string{"alt_1"},

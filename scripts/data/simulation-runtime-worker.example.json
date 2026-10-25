@@ -1,0 +1,8 @@
+{
+  "id": "simulation-runtime",
+  "kind": "service",
+  "name": "Independent abstract simulation runtime",
+  "resource": {"workspaceId": "default", "environmentId": "local", "partition": "EXERCISE_INPUT"},
+  "permissions": ["operational.read", "sim.runtime.execute"],
+  "sourceIds": []
+}

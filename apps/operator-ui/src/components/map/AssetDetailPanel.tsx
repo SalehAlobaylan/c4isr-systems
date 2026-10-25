@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@/lib/scopedQueries'
+
 
 import { AlertTriangleIcon } from '@/components/icons'
 import { ErrorState } from '@/components/shared/states'
 import { AssetStatusBadge, CommandStateBadge, ConnectionBadge, FreshnessBadge, HealthBadge, KindBadge } from '@/components/shared/badges'
-import { api, type Asset } from '@/lib/api'
+import { useAPI, type Asset } from '@/lib/api'
 import { freshnessWarning, isActionable } from '@/lib/freshness'
 import {
   formatCoord,
@@ -12,16 +13,18 @@ import {
   formatSpeed,
   formatTimestamp,
 } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { selectReplayAt, useScrubStore } from '@/stores/scrub'
 
 export function AssetDetailPanel({ assetId }: { assetId: string }) {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   // While the operator is scrubbed back in time, the panel must describe that
   // moment. Fetching the current asset here would put a present-day position
   // next to a replayed map marker and produce a detail view that never existed.
   const replayAt = useScrubStore(selectReplayAt)
   const replayQuery = useQuery({
-    queryKey: ['picture', replayAt ?? 'live'],
+    queryKey: queryKeys.picture(replayAt),
     queryFn: () =>
       replayAt ? api.getPicture({ at: replayAt }) : api.getPicture({ live: true }),
     enabled: Boolean(replayAt),

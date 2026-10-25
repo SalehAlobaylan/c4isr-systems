@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
 	"go.opentelemetry.io/otel/attribute"
@@ -54,7 +56,15 @@ type IngestResult struct {
 // acknowledged without side effects. Stale samples are retained as history but
 // never move the state projection backwards.
 func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, error) {
+	if scopeErr := access.Require(ctx, "telemetry.ingest"); scopeErr != nil {
+		return IngestResult{}, scopeErr
+	}
+
 	in.Normalize()
+	in.ID = access.ResourceID(ctx, "telemetry", in.ID)
+	if err := access.RequireSource(ctx, in.SourceID); err != nil {
+		return IngestResult{}, err
+	}
 	spanCtx, span := observability.StartSpan(ctx, "c4isr.telemetry.ingest",
 		attribute.String("telemetry.id", in.ID),
 		attribute.String("asset.id", in.AssetID),
@@ -65,7 +75,7 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 	defer func() { observability.EndSpan(span, spanErr) }()
 
 	now := s.now()
-	if err := in.Validate(now); err != nil {
+	if err := in.Validate(freshness.Now(ctx, now)); err != nil {
 		spanErr = err
 		return IngestResult{}, err
 	}
@@ -183,6 +193,10 @@ func (s *Service) Ingest(ctx context.Context, in CreateInput) (IngestResult, err
 
 // ListByAsset returns telemetry for an asset newest first.
 func (s *Service) ListByAsset(ctx context.Context, assetID string, limit, offset int) ([]Sample, int, error) {
+	if scopeErr := access.Require(ctx, "telemetry.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	return s.repo.ListByAsset(ctx, assetID, clampLimit(limit), max(offset, 0))
 }
 

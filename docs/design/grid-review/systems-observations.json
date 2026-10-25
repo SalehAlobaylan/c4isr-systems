@@ -1,0 +1,112 @@
+{
+  "capturedAt": "2026-10-23T18:39:49.163Z",
+  "route": "/systems",
+  "scope": "Authenticated analyst, installed application, read-only navigation",
+  "errors": [],
+  "headings": [
+    "Systems",
+    "Ingest & sources",
+    "Observation intake",
+    "Track correlation",
+    "Asset readiness",
+    "Alerts & incidents",
+    "Command dispatch",
+    "Active alerts requiring a decision",
+    "Command state",
+    "Open incidents"
+  ],
+  "cells": [
+    {
+      "title": "Ingest & sources",
+      "text": "01Ingest & sourcesOfflineSources12Current coverage3Needs attention9Standing attentionExternal vessel ob…1External aircraft …1NASA FIRMS · NOAA-…1Sentinel-2 Collect…1Official natural-h…1USGS retained Marc…1Registered sources and the state each is inDeviceTypeStatusProvider coverageExternal vessel observ…externalOFFLINENOT_ADMITTEDExternal aircraft obse…externalACTIVESTALE · last query 4m agoNASA FIRMS · NOAA-20 t…externalACTIVEUNKNOWNSentinel-2 Collection …externalACTIVEUNAVAILABLE · last query 10h agoCopernicus Data Space …externalACTIVECURRENT · last query 33m agoOfficial natural-hazar…externalACTIVESTALE · last query 7h agoOfficial station weath…externalACTIVECURRENT · last query 33s agoUSGS retained March 20…externalACTIVEUNAVAILABLE · last query 11h agoProvider query coverage; missing records do not prove absence.",
+      "box": {
+        "x": 36,
+        "y": 354,
+        "width": 445.328125,
+        "height": 835,
+        "top": 354,
+        "right": 481.328125,
+        "bottom": 1189,
+        "left": 36
+      }
+    },
+    {
+      "title": "Observation intake",
+      "text": "02Observation intakeAcceptingReceived16Duplicates0Median lag17 msNothing currently needs attention in this subsystem.median ingest lag 17 ms",
+      "box": {
+        "x": 497.328125,
+        "y": 354,
+        "width": 445.328125,
+        "height": 835,
+        "top": 354,
+        "right": 942.65625,
+        "bottom": 1189,
+        "left": 497.328125
+      }
+    },
+    {
+      "title": "Track correlation",
+      "text": "03Track correlationNo tracksActive0Lost0Not current0Nothing currently needs attention in this subsystem.no tracksOpen →",
+      "box": {
+        "x": 958.65625,
+        "y": 354,
+        "width": 445.34375,
+        "height": 835,
+        "top": 354,
+        "right": 1404,
+        "bottom": 1189,
+        "left": 958.65625
+      }
+    },
+    {
+      "title": "Asset readiness",
+      "text": "04Asset readinessNone registeredRegistered0Available0Unavailable0Nothing currently needs attention in this subsystem.0 tasked of 0Open →",
+      "box": {
+        "x": 36,
+        "y": 1205,
+        "width": 445.328125,
+        "height": 268,
+        "top": 1205,
+        "right": 481.328125,
+        "bottom": 1473,
+        "left": 36
+      }
+    },
+    {
+      "title": "Alerts & incidents",
+      "text": "05Alerts & incidentsQuietActive alerts0Critical0Open incidents0Nothing currently needs attention in this subsystem.0 open incidentsOpen →",
+      "box": {
+        "x": 497.328125,
+        "y": 1205,
+        "width": 445.328125,
+        "height": 268,
+        "top": 1205,
+        "right": 942.65625,
+        "bottom": 1473,
+        "left": 497.328125
+      }
+    },
+    {
+      "title": "Command dispatch",
+      "text": "06Command dispatchNone issuedIssued0Acknowledged0Completed0Nothing currently needs attention in this subsystem.no commands issuedOpen →",
+      "box": {
+        "x": 958.65625,
+        "y": 1205,
+        "width": 445.34375,
+        "height": 268,
+        "top": 1205,
+        "right": 1404,
+        "bottom": 1473,
+        "left": 958.65625
+      }
+    }
+  ],
+  "scrollContainers": [
+    {
+      "tag": "DIV",
+      "classes": "flex h-full min-h-0 flex-col aegis-listview",
+      "scrollHeight": 1849,
+      "clientHeight": 821
+    }
+  ]
+}

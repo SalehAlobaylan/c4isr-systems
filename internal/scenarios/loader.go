@@ -1,6 +1,7 @@
 package scenarios
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -45,8 +46,13 @@ func (l *Loader) Load(name string) (*Scenario, error) {
 		return nil, apperr.NotFound("scenario", name)
 	}
 
+	if len(raw) > 1024*1024 {
+		return nil, apperr.Validation("scenario authoring input exceeds 1 MiB")
+	}
 	var sc Scenario
-	if err := yaml.Unmarshal(raw, &sc); err != nil {
+	decoder := yaml.NewDecoder(bytes.NewReader(raw))
+	decoder.KnownFields(true)
+	if err := decoder.Decode(&sc); err != nil {
 		return nil, apperr.Validation("invalid scenario YAML: " + err.Error())
 	}
 	if err := sc.Validate(); err != nil {

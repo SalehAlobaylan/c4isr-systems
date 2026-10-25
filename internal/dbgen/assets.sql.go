@@ -36,7 +36,7 @@ func (q *Queries) CountAssets(ctx context.Context) (int64, error) {
 const createAsset = `-- name: CreateAsset :one
 INSERT INTO assets (id, name, type, status, capabilities, metadata, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, $6, now(), now())
-RETURNING id, name, type, status, capabilities, metadata, created_at, updated_at
+RETURNING id, name, type, status, capabilities, metadata, created_at, updated_at, scope_id
 `
 
 type CreateAssetParams struct {
@@ -67,6 +67,7 @@ func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
@@ -83,7 +84,7 @@ func (q *Queries) EnsureAssetState(ctx context.Context, assetID string) error {
 }
 
 const getAsset = `-- name: GetAsset :one
-SELECT id, name, type, status, capabilities, metadata, created_at, updated_at FROM assets WHERE id = $1
+SELECT id, name, type, status, capabilities, metadata, created_at, updated_at, scope_id FROM assets WHERE id = $1
 `
 
 func (q *Queries) GetAsset(ctx context.Context, id string) (Asset, error) {
@@ -98,6 +99,7 @@ func (q *Queries) GetAsset(ctx context.Context, id string) (Asset, error) {
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
@@ -245,7 +247,7 @@ func (q *Queries) ListAssetFreshnessSignals(ctx context.Context) ([]ListAssetFre
 }
 
 const listAssets = `-- name: ListAssets :many
-SELECT id, name, type, status, capabilities, metadata, created_at, updated_at FROM assets
+SELECT id, name, type, status, capabilities, metadata, created_at, updated_at, scope_id FROM assets
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $1
 `
@@ -273,6 +275,7 @@ func (q *Queries) ListAssets(ctx context.Context, arg ListAssetsParams) ([]Asset
 			&i.Metadata,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ScopeID,
 		); err != nil {
 			return nil, err
 		}
@@ -390,7 +393,7 @@ const updateAssetStatus = `-- name: UpdateAssetStatus :one
 UPDATE assets
 SET status = $1, updated_at = now()
 WHERE id = $2
-RETURNING id, name, type, status, capabilities, metadata, created_at, updated_at
+RETURNING id, name, type, status, capabilities, metadata, created_at, updated_at, scope_id
 `
 
 type UpdateAssetStatusParams struct {
@@ -410,6 +413,7 @@ func (q *Queries) UpdateAssetStatus(ctx context.Context, arg UpdateAssetStatusPa
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }

@@ -7,6 +7,8 @@ package dbgen
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const addAssessmentEvidence = `-- name: AddAssessmentEvidence :exec
@@ -50,7 +52,7 @@ INSERT INTO assessments (
 ) VALUES (
     $1, $2, $3, $4, $5, $6, $7, $8, now()
 )
-RETURNING id, subject_type, subject_id, type, conclusion, confidence, method, created_by, created_at
+RETURNING id, subject_type, subject_id, type, conclusion, confidence, method, created_by, created_at, scope_id, review_source_id
 `
 
 type CreateAssessmentParams struct {
@@ -86,12 +88,14 @@ func (q *Queries) CreateAssessment(ctx context.Context, arg CreateAssessmentPara
 		&i.Method,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.ScopeID,
+		&i.ReviewSourceID,
 	)
 	return i, err
 }
 
 const getAssessment = `-- name: GetAssessment :one
-SELECT id, subject_type, subject_id, type, conclusion, confidence, method, created_by, created_at FROM assessments WHERE id = $1
+SELECT id, subject_type, subject_id, type, conclusion, confidence, method, created_by, created_at, scope_id, review_source_id FROM assessments WHERE id = $1
 `
 
 func (q *Queries) GetAssessment(ctx context.Context, id string) (Assessment, error) {
@@ -107,6 +111,8 @@ func (q *Queries) GetAssessment(ctx context.Context, id string) (Assessment, err
 		&i.Method,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.ScopeID,
+		&i.ReviewSourceID,
 	)
 	return i, err
 }
@@ -118,15 +124,22 @@ WHERE assessment_id = $1
 ORDER BY added_at ASC
 `
 
-func (q *Queries) ListAssessmentEvidence(ctx context.Context, assessmentID string) ([]AssessmentEvidence, error) {
+type ListAssessmentEvidenceRow struct {
+	AssessmentID string
+	EvidenceType string
+	EvidenceID   string
+	AddedAt      pgtype.Timestamptz
+}
+
+func (q *Queries) ListAssessmentEvidence(ctx context.Context, assessmentID string) ([]ListAssessmentEvidenceRow, error) {
 	rows, err := q.db.Query(ctx, listAssessmentEvidence, assessmentID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []AssessmentEvidence{}
+	items := []ListAssessmentEvidenceRow{}
 	for rows.Next() {
-		var i AssessmentEvidence
+		var i ListAssessmentEvidenceRow
 		if err := rows.Scan(
 			&i.AssessmentID,
 			&i.EvidenceType,
@@ -144,7 +157,7 @@ func (q *Queries) ListAssessmentEvidence(ctx context.Context, assessmentID strin
 }
 
 const listAssessments = `-- name: ListAssessments :many
-SELECT id, subject_type, subject_id, type, conclusion, confidence, method, created_by, created_at FROM assessments
+SELECT id, subject_type, subject_id, type, conclusion, confidence, method, created_by, created_at, scope_id, review_source_id FROM assessments
 WHERE ($1::text IS NULL OR subject_type = $1)
   AND ($2::text IS NULL OR subject_id = $2)
 ORDER BY created_at DESC
@@ -182,6 +195,8 @@ func (q *Queries) ListAssessments(ctx context.Context, arg ListAssessmentsParams
 			&i.Method,
 			&i.CreatedBy,
 			&i.CreatedAt,
+			&i.ScopeID,
+			&i.ReviewSourceID,
 		); err != nil {
 			return nil, err
 		}

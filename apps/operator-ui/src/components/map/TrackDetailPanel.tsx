@@ -1,11 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@/lib/scopedQueries'
+
 import { useState } from 'react'
 
 import { AlertTriangleIcon } from '@/components/icons'
 import { ErrorState } from '@/components/shared/states'
 import { AlertStateBadge, FreshnessBadge, SeverityBadge, TrackStatusBadge } from '@/components/shared/badges'
 import { AssessmentFormDialog } from '@/features/incidents/AssessmentFormDialog'
-import { api, type Track } from '@/lib/api'
+import { useAPI, type Track } from '@/lib/api'
 import { freshnessWarning, isActionable } from '@/lib/freshness'
 import {
   formatConfidence,
@@ -15,11 +16,13 @@ import {
   formatSpeed,
   formatTimestamp,
 } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { selectReplayAt, useScrubStore } from '@/stores/scrub'
 import { useUiStore } from '@/stores/ui'
 
 export function TrackDetailPanel({ trackId }: { trackId: string }) {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const showHistory = useUiStore((state) => state.showTrackHistory)
   const toggleHistory = useUiStore((state) => state.toggleTrackHistory)
   const [assessmentOpen, setAssessmentOpen] = useState(false)
@@ -29,7 +32,7 @@ export function TrackDetailPanel({ trackId }: { trackId: string }) {
   // next to a replayed map marker.
   const replayAt = useScrubStore(selectReplayAt)
   const replayQuery = useQuery({
-    queryKey: ['picture', replayAt ?? 'live'],
+    queryKey: queryKeys.picture(replayAt),
     queryFn: () =>
       replayAt ? api.getPicture({ at: replayAt }) : api.getPicture({ live: true }),
     enabled: Boolean(replayAt),

@@ -4,15 +4,15 @@ import (
 	"context"
 	"errors"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 )
 
 // PostgresRepository stores missions in PostgreSQL.
@@ -27,7 +27,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 // Create inserts a mission.
 func (r *PostgresRepository) Create(ctx context.Context, mission Mission) (Mission, error) {
-	row, err := dbgen.New(r.pool).CreateMission(ctx, dbgen.CreateMissionParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CreateMission(ctx, dbgen.CreateMissionParams{
 		ID:         mission.ID,
 		Name:       mission.Name,
 		Objective:  mission.Objective,
@@ -46,7 +46,7 @@ func (r *PostgresRepository) Create(ctx context.Context, mission Mission) (Missi
 
 // Get loads a mission together with its assets and tasks.
 func (r *PostgresRepository) Get(ctx context.Context, id string) (Mission, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	row, err := q.GetMission(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -58,7 +58,7 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Mission, error
 }
 
 func (r *PostgresRepository) withRelations(ctx context.Context, mission Mission) (Mission, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	assets, err := q.ListMissionAssets(ctx, mission.ID)
 	if err != nil {
 		return Mission{}, err
@@ -82,7 +82,7 @@ func (r *PostgresRepository) withRelations(ctx context.Context, mission Mission)
 
 // List returns missions newest first with an optional status filter.
 func (r *PostgresRepository) List(ctx context.Context, status string, limit, offset int) ([]Mission, int, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	rows, err := q.ListMissions(ctx, dbgen.ListMissionsParams{
 		Status:      pgconv.TextPtr(status),
 		OffsetCount: int32(offset),
@@ -108,7 +108,7 @@ func (r *PostgresRepository) List(ctx context.Context, status string, limit, off
 
 // UpdateStatus changes mission lifecycle status.
 func (r *PostgresRepository) UpdateStatus(ctx context.Context, id string, status, expected Status) (Mission, error) {
-	row, err := dbgen.New(r.pool).UpdateMissionStatus(ctx, dbgen.UpdateMissionStatusParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).UpdateMissionStatus(ctx, dbgen.UpdateMissionStatusParams{
 		ID:             id,
 		Status:         string(status),
 		ExpectedStatus: string(expected),
@@ -127,7 +127,7 @@ func (r *PostgresRepository) UpdateStatus(ctx context.Context, id string, status
 
 // AssignAsset assigns an asset to a mission.
 func (r *PostgresRepository) AssignAsset(ctx context.Context, missionID, assetID string) error {
-	err := dbgen.New(r.pool).AssignAssetToMission(ctx, dbgen.AssignAssetToMissionParams{
+	err := dbgen.New(platformdb.Scoped(r.pool)).AssignAssetToMission(ctx, dbgen.AssignAssetToMissionParams{
 		MissionID: missionID,
 		AssetID:   assetID,
 	})
@@ -154,7 +154,7 @@ func (r *PostgresRepository) CreateTask(ctx context.Context, task Task) (Task, e
 		params.Lat = task.Target.Lat
 		params.Lng = task.Target.Lng
 	}
-	row, err := dbgen.New(r.pool).CreateMissionTask(ctx, params)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CreateMissionTask(ctx, params)
 	if err != nil {
 		if isForeignKeyViolation(err) {
 			return Task{}, apperr.BadRequest("unknown mission: " + task.MissionID)
@@ -166,7 +166,7 @@ func (r *PostgresRepository) CreateTask(ctx context.Context, task Task) (Task, e
 
 // ListTasks returns the tasks of a mission oldest first.
 func (r *PostgresRepository) ListTasks(ctx context.Context, missionID string) ([]Task, error) {
-	rows, err := dbgen.New(r.pool).ListMissionTasks(ctx, missionID)
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).ListMissionTasks(ctx, missionID)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +179,7 @@ func (r *PostgresRepository) ListTasks(ctx context.Context, missionID string) ([
 
 // UpdateTaskStatus changes a task's status.
 func (r *PostgresRepository) UpdateTaskStatus(ctx context.Context, missionID, taskID string, status TaskStatus) (Task, error) {
-	row, err := dbgen.New(r.pool).UpdateMissionTaskStatus(ctx, dbgen.UpdateMissionTaskStatusParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).UpdateMissionTaskStatus(ctx, dbgen.UpdateMissionTaskStatusParams{
 		ID:        taskID,
 		MissionID: missionID,
 		Status:    string(status),

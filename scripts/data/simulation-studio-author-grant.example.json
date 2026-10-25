@@ -1,0 +1,5 @@
+{
+  "id": "REPLACE_WITH_EXISTING_HUMAN_PRINCIPAL_ID",
+  "resource": {"workspaceId": "default", "environmentId": "local", "partition": "EXERCISE_INPUT"},
+  "permissions": ["operational.read", "sim.scenarios.author", "sim.runtime.control"]
+}

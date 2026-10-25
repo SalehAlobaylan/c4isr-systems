@@ -1,0 +1,138 @@
+{
+  "schema": "emad.exercise-measurement.v1",
+  "acceptedAt": "2026-10-23T11:31:42.524726+00:00",
+  "id": "rt_891e4456aa9e306e0114dff6d08d6f85407e5d7794ad3067670840213c5a31b2",
+  "elapsedMs": 3600000,
+  "actors": 4,
+  "models": 5,
+  "sensors": 2,
+  "runtimeBuild": "1e4231f36d0d98f3c4bc0083780c2e5d1c84ffdbe1e88bbdbe2c507df17ac7e4",
+  "wallSeconds": 644.356608,
+  "virtualDurationSeconds": 3600,
+  "scale": 20,
+  "timeMeaning": "One hour of virtual time at 20× acceleration, not a one-hour wall-clock soak.",
+  "copLatencyMs": {
+    "samples": 174,
+    "median": 15.99999999962165,
+    "p95": 31.9999999992433,
+    "max": 47.0000000022992
+  },
+  "operatorEvents": 73259,
+  "truthEvents": 702,
+  "archiveBytes": 54546436,
+  "projectionSettled": true,
+  "failures": [],
+  "platform": "Windows-11-10.0.26200-SP0",
+  "logicalCPUCount": 24,
+  "limitations": [
+    "Abstract kinematics; no validated flight or physical sensor model.",
+    "See separate populated-scene browser measurements for graphics performance."
+  ],
+  "metrics": [
+    {
+      "name": "command_completed",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "unit": "fraction",
+      "definition": "Commands with recorded final state COMPLETED."
+    },
+    {
+      "name": "command_terminal",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "unit": "fraction",
+      "definition": "Commands ending COMPLETED, REJECTED, FAILED, TIMED_OUT or CANCELLED."
+    },
+    {
+      "name": "duplicate_samples",
+      "value": 0,
+      "numerator": 0,
+      "denominator": 11700,
+      "unit": "fraction",
+      "definition": "Repeated exact sample IDs in accepted sealed batches; rejected gateway retries are not new accepted events."
+    },
+    {
+      "name": "fragmented_actors",
+      "value": 1,
+      "numerator": 4,
+      "denominator": 4,
+      "unit": "fraction",
+      "definition": "Observed actors associated with more than one recorded track."
+    },
+    {
+      "name": "late_observations",
+      "value": 0.9038383838383839,
+      "numerator": 8948,
+      "denominator": 9900,
+      "unit": "fraction",
+      "definition": "Published observations received by the COP more than 1000 virtual ms after configured delivery."
+    },
+    {
+      "name": "mean_command_ack",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "unit": "virtual_ms",
+      "definition": "Mean first runtime acknowledgment elapsed time minus command issue time; no-ACK commands excluded."
+    },
+    {
+      "name": "mean_command_completion",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "unit": "virtual_ms",
+      "definition": "Mean runtime completion elapsed time minus command issue time for completed commands."
+    },
+    {
+      "name": "mean_horizontal_error",
+      "value": 17.728441050205564,
+      "numerator": 141.8275284016445,
+      "denominator": 8,
+      "unit": "m",
+      "definition": "Mean local horizontal error only where a sealed active snapshot exists at the exact sample millisecond."
+    },
+    {
+      "name": "mean_observation_delay",
+      "value": 5656.077979797979,
+      "numerator": 55995172,
+      "denominator": 9900,
+      "unit": "virtual_ms",
+      "definition": "Mean COP publication virtual time minus original sample time."
+    },
+    {
+      "name": "merged_tracks",
+      "value": 0,
+      "numerator": 0,
+      "denominator": 8,
+      "unit": "fraction",
+      "definition": "Recorded tracks containing observations from more than one sealed actor."
+    },
+    {
+      "name": "missed_observations",
+      "value": 0.08333333333333333,
+      "numerator": 900,
+      "denominator": 10800,
+      "unit": "fraction",
+      "definition": "Expected active actor/sensor slots due by final virtual time without a recorded published observation; includes configured scheduled misses."
+    },
+    {
+      "name": "scenario_completed",
+      "value": 1,
+      "numerator": 1,
+      "denominator": 1,
+      "unit": "fraction",
+      "definition": "Run reached declared duration with runtime status COMPLETED."
+    },
+    {
+      "name": "scheduled_misses",
+      "value": 0.08333333333333333,
+      "numerator": 900,
+      "denominator": 10800,
+      "unit": "fraction",
+      "definition": "Frozen dropEvery slots among expected slots."
+    }
+  ],
+  "measurementConditions": "Virtual-hour test, requested scale 20; COP samples cover the resumed monitor interval. Concurrent browser regressions and image build. Not a one-hour wall-clock soak."
+}

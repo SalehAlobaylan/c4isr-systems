@@ -1,10 +1,11 @@
 package integration
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 // An area observation is the answer to a real modelling problem: weather, fire
@@ -15,7 +16,7 @@ import (
 // and it never becomes a track.
 func TestAreaObservationRaisesAlertOnOverlapWithoutCreatingATrack(t *testing.T) {
 	h := newHarness(t)
-	ctx := context.Background()
+	ctx := testsupport.Context()
 	h.createSource("firms")
 
 	// A restricted zone, and a hazard footprint that overlaps it partially.
@@ -249,7 +250,7 @@ func TestAreaObservationContradictionsAreRejected(t *testing.T) {
 
 	// Nothing contradictory may have reached the evidence layer.
 	var stored int
-	if err := h.pool.QueryRow(context.Background(),
+	if err := h.pool.QueryRow(testsupport.Context(),
 		`SELECT count(*) FROM observations WHERE area IS NOT NULL`).Scan(&stored); err != nil {
 		t.Fatalf("count area observations: %v", err)
 	}
@@ -276,7 +277,7 @@ func TestPointObservationsStillCorrelateWithTheAreaModelInPlace(t *testing.T) {
 	}
 
 	var areaCount int
-	if err := h.pool.QueryRow(context.Background(),
+	if err := h.pool.QueryRow(testsupport.Context(),
 		`SELECT count(*) FROM observations WHERE area IS NOT NULL`).Scan(&areaCount); err != nil {
 		t.Fatalf("count area observations: %v", err)
 	}

@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
@@ -67,6 +69,10 @@ func NewServiceWithFreshness(repo Repository, processor ObservationProcessor, bu
 // HandleObservationReceived correlates one observation into a track. It is
 // exported so tests and scenario tooling can drive correlation directly.
 func (s *Service) HandleObservationReceived(ctx context.Context, ev events.ObservationReceived) {
+	if scopeErr := access.Require(ctx, "tracks.project"); scopeErr != nil {
+		return
+	}
+
 	if ev.Duplicate && !ev.Retry {
 		return
 	}
@@ -75,7 +81,7 @@ func (s *Service) HandleObservationReceived(ctx context.Context, ev events.Obser
 	// speed derived from how the fire moved between reports - a number with no
 	// physical meaning that would then drive geofence containment and alerting.
 	// Area observations are routed to spatial rules instead.
-	if ev.AreaGeoJSON != "" {
+	if ev.AreaGeoJSON != "" || ev.SemanticKind == "point_event" || ev.SemanticKind == "area" || strings.HasPrefix(ev.Type, "event.") || strings.HasPrefix(ev.Type, "detection.") || ev.Type == "earthquake" || ev.Type == "thermal.detection" {
 		return
 	}
 	spanCtx, span := observability.StartSpan(ctx, "c4isr.track.update",
@@ -100,15 +106,15 @@ func (s *Service) HandleObservationReceived(ctx context.Context, ev events.Obser
 	track, err := s.correlate(ctx, update, now)
 	if err != nil {
 		spanErr = err
-		slog.Default().Error("correlate observation", "error", err, "observation_id", ev.ObservationID)
+		slog.Default().Error("correlate observation", "error_code", apperr.CodeOf(err), "observation_id", "redacted")
 		return
 	}
 
 	attached, err := s.repo.AttachObservation(ctx, track.ID, update.ObservationID)
 	if err != nil {
 		spanErr = err
-		slog.Default().Error("attach observation", "error", err,
-			"observation_id", update.ObservationID, "track_id", track.ID)
+		slog.Default().Error("attach observation", "error_code", apperr.CodeOf(err),
+			"observation_id", "redacted", "track_id", track.ID)
 		return
 	}
 	// A retry can find the evidence link already present when an earlier
@@ -120,8 +126,8 @@ func (s *Service) HandleObservationReceived(ctx context.Context, ev events.Obser
 	if !attached && ev.Retry {
 		owner, lookupErr := s.repo.FindByObservationID(ctx, update.ObservationID)
 		if lookupErr != nil {
-			slog.Default().Error("resolve duplicate observation owner", "error", lookupErr,
-				"observation_id", update.ObservationID)
+			slog.Default().Error("resolve duplicate observation owner", "error_code", apperr.CodeOf(lookupErr),
+				"observation_id", "redacted")
 			return
 		}
 		track = owner
@@ -164,7 +170,7 @@ func (s *Service) HandleObservationReceived(ctx context.Context, ev events.Obser
 			update.ObservedAt, track.LastSeenAt, history, update.ObservationID)
 		if err != nil {
 			spanErr = err
-			slog.Default().Error("apply track observation", "error", err, "track_id", track.ID)
+			slog.Default().Error("apply track observation", "error_code", apperr.CodeOf(err), "track_id", track.ID)
 			return
 		}
 		if applied {
@@ -174,7 +180,7 @@ func (s *Service) HandleObservationReceived(ctx context.Context, ev events.Obser
 		fresh, err := s.repo.Get(ctx, track.ID)
 		if err != nil {
 			spanErr = err
-			slog.Default().Error("reload track after concurrent update", "error", err, "track_id", track.ID)
+			slog.Default().Error("reload track after concurrent update", "error_code", apperr.CodeOf(err), "track_id", track.ID)
 			return
 		}
 		if !fresh.LastSeenAt.After(track.LastSeenAt) && !update.ObservedAt.After(fresh.LastSeenAt) {
@@ -187,7 +193,7 @@ func (s *Service) HandleObservationReceived(ctx context.Context, ev events.Obser
 		// A continuously moving track can exhaust the bounded retry window. The
 		// evidence remains attached, but this event must not publish a projection
 		// derived from a stale base state.
-		slog.Default().Warn("track update lost concurrent retries", "track_id", track.ID, "observation_id", update.ObservationID)
+		slog.Default().Warn("track update lost concurrent retries", "track_id", track.ID, "observation_id", "redacted")
 		s.markProcessed(ctx, update)
 		return
 	}
@@ -210,40 +216,52 @@ func (s *Service) HandleObservationReceived(ctx context.Context, ev events.Obser
 // classify stamps the freshness state derived from the track's own last-seen
 // time. It never touches the database, so freshness can never be persisted out
 // of step with the evidence behind it.
-func (s *Service) classify(track Track) Track {
+func (s *Service) classify(ctx context.Context, track Track) Track {
 	track.Freshness = s.fresh.ForTrack(freshness.TrackSignal{
 		LastSeenAt: track.LastSeenAt,
 		Status:     string(track.Status),
-	}, s.now())
+	}, freshness.Now(ctx, s.now()))
 	return track
 }
 
 // Get returns a track by id.
 func (s *Service) Get(ctx context.Context, id string) (Track, error) {
+	if scopeErr := access.Require(ctx, "tracks.read"); scopeErr != nil {
+		return Track{}, scopeErr
+	}
+
 	track, err := s.repo.Get(ctx, id)
 	if err != nil {
 		return Track{}, err
 	}
-	return s.classify(track), nil
+	return s.classify(ctx, track), nil
 }
 
 // FindByExternalRef resolves a scenario/operator supplied track reference to
 // the internal track identity.
 func (s *Service) FindByExternalRef(ctx context.Context, ref string) (Track, error) {
+	if scopeErr := access.Require(ctx, "tracks.read"); scopeErr != nil {
+		return Track{}, scopeErr
+	}
+
 	track, err := s.repo.FindByExternalRef(ctx, ref)
 	if err != nil {
 		return Track{}, err
 	}
-	return s.classify(track), nil
+	return s.classify(ctx, track), nil
 }
 
 // List returns tracks newest-seen first.
 func (s *Service) List(ctx context.Context, limit, offset int) ([]Track, int, error) {
+	if scopeErr := access.Require(ctx, "tracks.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	items, total, err := s.repo.List(ctx, clampLimit(limit), max(offset, 0))
 	if err != nil {
 		return nil, 0, err
 	}
-	now := s.now()
+	now := freshness.Now(ctx, s.now())
 	for i := range items {
 		items[i].Freshness = s.fresh.ForTrack(freshness.TrackSignal{
 			LastSeenAt: items[i].LastSeenAt,
@@ -255,11 +273,19 @@ func (s *Service) List(ctx context.Context, limit, offset int) ([]Track, int, er
 
 // History returns a track's state history oldest first.
 func (s *Service) History(ctx context.Context, id string, limit int) ([]HistoryPoint, error) {
+	if scopeErr := access.Require(ctx, "tracks.read"); scopeErr != nil {
+		return nil, scopeErr
+	}
+
 	return s.repo.ListHistory(ctx, id, clampLimit(limit))
 }
 
 // Close marks a terminal track state and publishes track.closed.
 func (s *Service) Close(ctx context.Context, id string) (Track, error) {
+	if scopeErr := access.Require(ctx, "tracks.project"); scopeErr != nil {
+		return Track{}, scopeErr
+	}
+
 	closed, err := s.repo.Close(ctx, id)
 	if err != nil {
 		return Track{}, err
@@ -269,6 +295,10 @@ func (s *Service) Close(ctx context.Context, id string) (Track, error) {
 }
 
 func (s *Service) correlate(ctx context.Context, update ObservationUpdate, now time.Time) (Track, error) {
+	if strings.HasPrefix(update.TrackHint, "public-moving/") {
+		return Track{}, apperr.Forbidden("native public tracks accept only admitted moving evidence")
+	}
+
 	if update.Duplicate {
 		track, err := s.repo.FindByObservationID(ctx, update.ObservationID)
 		if err == nil {
@@ -355,8 +385,8 @@ func (s *Service) markProcessed(ctx context.Context, update ObservationUpdate) {
 		return
 	}
 	if err := s.processor.MarkProcessed(ctx, update.ObservationID); err != nil {
-		slog.Default().Error("mark observation processed", "error", err,
-			"observation_id", update.ObservationID)
+		slog.Default().Error("mark observation processed", "error_code", apperr.CodeOf(err),
+			"observation_id", "redacted")
 	}
 }
 

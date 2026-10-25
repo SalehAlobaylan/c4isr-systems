@@ -1,0 +1,31 @@
+# Follow-up usability review
+
+The subsequent [map exploration implementation](EMAD_MAP_IMPLEMENTATION.md) adds selectable geography, simultaneous spatial evidence and in-map workbenches. It uses forward migration 44; the acceptance below remains the record of the earlier UI increment.
+
+24 October 2026. This review covers the implemented application, its secondary workspaces and narrow-screen interactions. The earlier layout-study HTML is historical. Review the running [Systems](http://127.0.0.1:5173/systems) and [Map](http://127.0.0.1:5173/map).
+
+## Findings and corrections
+
+- **Weather choices overlapped.** The flex column compressed buttons while their paragraphs retained full height. Record rows now retain their intrinsic height, with independent scrolling and a clear selected border. The regression checks text bounds inside every sampled row.
+- **Weather detail buried the conditions.** Observation time in UTC, position and retrieval state form a concise metadata row. Temperature, wind and visibility have readable metric groups. Raw reports, original bytes, uncertainty, attribution and revision history remain accessible.
+- **Navigation could show two active sections.** A retained assessment identifier caused Imagery and Assessments to appear active together. Explicit destinations now resolve the displayed workbench and exactly one active primary link. Narrow navigation brings its active destination into view.
+- **Review was a stack of long paragraphs.** A searchable, bounded assessment inbox now sits beside the selected conclusion, immutable revisions and authorized review actions. Current selection is explicit. Narrow screens place the bounded inbox above the reading pane.
+- **Context export had an unbounded checklist.** Region/time, retained inputs and reproduction limitations form three sections. A searchable layer picker retains selections across searches. The selection summary stays visible on desktop; validation precedes human approval. Invalid regions, intervals and empty selections receive actionable feedback before a request is sent.
+- **Asset cards dominated the library.** The library now uses four columns on wide screens and two on normal phone widths, with search, clickable model previews, concise dimensions and retained license identifiers. Full attribution, source bytes and template authoring remain in the model inspector. No-match states offer a clear recovery action.
+- **Analysis results were below all the setup work.** Retained results now occupy the main desktop reading surface beside inputs and bounded job history. Mobile places results first and provides links to inputs and processing. Flex children retain their height so navigation cannot collapse or intercept clicks incorrectly.
+- **Comparison controls consumed too much vertical space.** The retained before/after choices and comparison action share an aligned desktop toolbar, with a responsive stacked layout on phones.
+- **Catalogue discovery required scanning every card.** A local search now filters the retained catalogue by date, platform, tile, collection or catalogue identity without changing provider queries or conflating catalogue access with captured pixels.
+- **Mobile Studio repeated the desktop panel stack.** The viewport appears earlier. Actors/scenes, Properties and Run controls have explicit tool selectors below it. Exactly one mobile tool pane is shown; desktop retains simultaneous authoring panels. The viewport and panes cannot compress into each other. Frozen-scene downloads are available under Rights, provenance and fidelity.
+- **Mobile map controls wrapped into three rows.** Region/Locate and Time/Layers/Focus form two compact rows. The map keeps its dedicated layout space and its expandable horizontal/vertical preview dock.
+- **Empty external-track views left a blank inspection column.** A full-width availability state explains the empty query, reports actual provider states when authorized, and links to Systems and Public Context. Identity and coverage limitations remain available separately. An empty query is never labeled as an absence of aircraft or vessels.
+- **Source cards repeated diagnostics without a useful hierarchy.** Configuration and retrieval health now occupy separate labeled areas. Last success and the next step lead the card; detailed coverage windows, credit receipts and diagnostic explanations expand on demand. Historical records remain separately identified.
+- **Layer selection and authored definitions retained unfinished layouts.** The map layer sheet now has a searchable, bounded picker that preserves selection. Templates and environments have structured cards with declared behavior, speed, fidelity, geographic origin and an explicit path to the underlying validated model. Admission forms have consistent reading surfaces and spacing; exact import identities remain available in disclosures.
+- **A mapped analysis could appear as a blank frame while loading.** The comparison loads its own MapLibre styles, reports rendering progress and guards callbacks during teardown. Acceptance and screenshots wait for the retained cells to reach the map's rendered-ready state, including direct entry to the analysis route.
+
+## Verification and evidence
+
+The seven added persistent-installation tests exercise row containment, single active navigation, context-selection continuity, model inspection/search, result visibility, rendered analysis cells, mobile authoring panes and the source/layer/template secondary workflows. They complement the existing workspace, real-backend and persistent exercise suites. Exact evidence downloads, review independence, simulation behavior and truth authorization remain part of those suites.
+
+The [implementation record](EMAD_UX_IMPLEMENTATION.md) records completed verification. The [screenshot gallery](ux-implementation/README.md) includes desktop and mobile screens from the persistent installation. Screenshot time is distinct from source acquisition and observation time.
+
+This review does not certify every possible visual state or substitute for the user's aesthetic review. Existing source permissions, retained-content limitations, simulation fidelity and human-review requirements remain unchanged.

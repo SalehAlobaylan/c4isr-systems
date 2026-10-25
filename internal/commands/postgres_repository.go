@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 )
 
 // PostgresRepository stores commands in PostgreSQL.
@@ -25,8 +25,10 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 // Create inserts a command.
 func (r *PostgresRepository) Create(ctx context.Context, command Command) (Command, error) {
-	row, err := dbgen.New(r.pool).CreateCommand(ctx, dbgen.CreateCommandParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CreateCommand(ctx, dbgen.CreateCommandParams{
 		ID:            command.ID,
+		RequestKey:    pgconv.TextPtr(command.RequestKey),
+		RequestOwner:  command.RequestOwner,
 		AssetID:       command.AssetID,
 		MissionID:     pgconv.TextPtr(command.MissionID),
 		IncidentID:    pgconv.TextPtr(command.IncidentID),
@@ -37,6 +39,20 @@ func (r *PostgresRepository) Create(ctx context.Context, command Command) (Comma
 		CorrelationID: pgconv.TextPtr(command.CorrelationID),
 	})
 	if err != nil {
+		var pe *pgconn.PgError
+		if errors.As(err, &pe) && pe.Code == "23514" {
+			return Command{}, apperr.Conflict("native run, recipient, request key or mission task is not accepting this command")
+		}
+		if errors.As(err, &pe) && pe.Code == "23505" && command.RequestKey != "" {
+			old, e := r.FindRequest(ctx, command.RequestOwner, command.RequestKey)
+			if e != nil {
+				return Command{}, e
+			}
+			if !sameRequest(old, IssueInput{AssetID: command.AssetID, MissionID: command.MissionID, IncidentID: command.IncidentID, Type: command.Type, Payload: command.Payload}) {
+				return Command{}, apperr.Conflict("command request key reused with different task")
+			}
+			return old, nil
+		}
 		if isForeignKeyViolation(err) {
 			return Command{}, apperr.BadRequest("command references an unknown asset, mission, or incident")
 		}
@@ -51,7 +67,7 @@ func (r *PostgresRepository) Create(ctx context.Context, command Command) (Comma
 
 // Get loads a command by id.
 func (r *PostgresRepository) Get(ctx context.Context, id string) (Command, error) {
-	row, err := dbgen.New(r.pool).GetCommand(ctx, id)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).GetCommand(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Command{}, apperr.NotFound("command", id)
@@ -63,7 +79,7 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Command, error
 
 // List returns commands newest first with optional filters.
 func (r *PostgresRepository) List(ctx context.Context, filter ListFilter, limit, offset int) ([]Command, int, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	params := dbgen.ListCommandsParams{
 		AssetID:     pgconv.TextPtr(filter.AssetID),
 		State:       pgconv.TextPtr(filter.State),
@@ -92,7 +108,7 @@ func (r *PostgresRepository) List(ctx context.Context, filter ListFilter, limit,
 
 // Transition moves a command to a new state.
 func (r *PostgresRepository) Transition(ctx context.Context, id string, from, state State, failureReason string) (Command, error) {
-	row, err := dbgen.New(r.pool).TransitionCommand(ctx, dbgen.TransitionCommandParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).TransitionCommand(ctx, dbgen.TransitionCommandParams{
 		FromState:     string(from),
 		ID:            id,
 		State:         string(state),
@@ -117,6 +133,8 @@ func (r *PostgresRepository) Transition(ctx context.Context, id string, from, st
 func toDomain(row dbgen.Command) Command {
 	return Command{
 		ID:             row.ID,
+		RequestKey:     pgconv.Deref(row.RequestKey),
+		RequestOwner:   row.RequestOwner,
 		AssetID:        row.AssetID,
 		MissionID:      pgconv.Deref(row.MissionID),
 		IncidentID:     pgconv.Deref(row.IncidentID),
@@ -141,3 +159,21 @@ func isForeignKeyViolation(err error) bool {
 }
 
 var _ Repository = (*PostgresRepository)(nil)
+
+func (r *PostgresRepository) FindRequest(ctx context.Context, actor, key string) (Command, error) {
+	var id string
+	e := platformdb.Scoped(r.pool).QueryRow(ctx, `SELECT id FROM commands WHERE request_owner=$1 AND request_key=$2`, actor, key).Scan(&id)
+	if errors.Is(e, pgx.ErrNoRows) {
+		return Command{}, apperr.NotFound("command request", "unavailable")
+	}
+	if e != nil {
+		return Command{}, e
+	}
+	return r.Get(ctx, id)
+}
+
+func (r *PostgresRepository) Native(ctx context.Context) (bool, error) {
+	var exists bool
+	e := platformdb.Scoped(r.pool).QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM native_exercises)`).Scan(&exists)
+	return exists, e
+}

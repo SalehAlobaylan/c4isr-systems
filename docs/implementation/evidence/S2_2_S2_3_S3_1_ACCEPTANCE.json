@@ -1,0 +1,134 @@
+{
+  "date": "2026-10-22",
+  "tasks": [
+    "S2.2",
+    "S2.3",
+    "S3.1"
+  ],
+  "nextTask": "S3.2",
+  "migration": 36,
+  "userDatabaseMigrated": false,
+  "milestones": {
+    "M5": "accepted for abstract ENU kinematics, seeded uniform-XY synthetic observers and explicitly controlled virtual assets",
+    "M6": "pending S3.2 recording/replay and S3.3 privileged evaluation"
+  },
+  "integration": {
+    "passedCases": 78,
+    "topLevel": 54,
+    "subcases": 24,
+    "optInSkips": [
+      "TestCDSEAuthorizedLiveCatalogueSmoke",
+      "TestFIRMSAuthorizedLiveSmoke",
+      "TestUSGSAuthorizedLiveSmoke",
+      "TestWorkspaceBrowserCompatibilityGate"
+    ]
+  },
+  "finalNativeAndBrowser": {
+    "nativeGatePassed": true,
+    "realBackendBrowserPassed": 12,
+    "realAPI": true,
+    "disposablePostGIS": true,
+    "privateS3": true,
+    "compiledNativeProcess": true,
+    "publicFeedsDisabledForM5": true,
+    "finalTargetedRerunAfterRefinements": true
+  },
+  "mockedBrowser": {
+    "passed": 74,
+    "intentionalProjectSkips": 50
+  },
+  "checks": {
+    "goTestAll": true,
+    "goVetAll": true,
+    "linuxAffectedPackageRace": true,
+    "uiProductionBuild": true,
+    "openAPILint": true,
+    "contractGeneration": true,
+    "sqlcGeneration": true,
+    "preservedMigrations1To35AndMigrationScriptAndUserAttributes": true
+  },
+  "proofs": [
+    "evaluator sees sealed actors while paused virtual time withholds delayed operator observations",
+    "seeded noise, missing schedule, quality and separate contact/message identities",
+    "raw ordinary WebSocket frames, ordinary responses and native process logs exclude hidden identifiers and credentials",
+    "controlled telemetry maps only explicitly declared virtual assets",
+    "existing tracks, PostGIS alerts, incident evidence, mission tasks, commands and audit reused",
+    "private commit followed by forced projection failure, reconnect and identical retry without duplicate observations",
+    "principal-owned retry keys remain separate for principals sharing a human operator",
+    "changed/reordered sequences, wrong workers and foreign-run outcomes rejected",
+    "paused clock/tasking retained through resume",
+    "compiled native process completes at 20x clock scale and reports failure for despawned recipient",
+    "ACK deadline timeout, stopped-run rejection, pending cancellation and lease-loss isolation",
+    "oversized native command type/payload rejected before dispatch",
+    "complete bounded command roster, 32 active tasks, at most 64 outcomes per publication and cancellation memoization",
+    "display-only interpolation clamps accepted points, handles antimeridian and removal, preserves source snapshots, respects reduced motion",
+    "production Studio-to-COP mission flow, mobile layout and stopped-tasking checks"
+  ],
+  "limits": {
+    "observersPerScene": 2,
+    "actorsPerScene": 16,
+    "readingsPerRun": 20000,
+    "readingsPerHeartbeat": 512,
+    "outcomesPerHeartbeat": 64,
+    "batchBytes": 262144,
+    "commandsPerRun": 128,
+    "activeExecutionWindow": 32,
+    "commandTypeCharacters": 80,
+    "commandPayloadBytes": 8192,
+    "leaseSeconds": 6,
+    "retryWallSeconds": 5,
+    "tickHz": 20,
+    "normalPublicationHz": 2,
+    "commandDeadlineVirtualMs": "max(10000,ceil(scale*2000))"
+  },
+  "deferred": [
+    "validated specialist sensor/physics models",
+    "ordinary operator access to hidden runtime actors",
+    "per-asset ACL extension beyond the existing run grants",
+    "recording/checkpoint recovery, historical replay and after-action evaluation"
+  ],
+  "localEvidence": {
+    "integration-final.jsonl": {
+      "path": "tmp/s2-s3/integration-final.jsonl",
+      "sha256": "48a8442e21ce7d9d9e0a02e48b28f5635acd2864ac15a325115822b8d9a9af6e"
+    },
+    "final-native-browser.log": {
+      "path": "tmp/s2-s3/final-native-browser.log",
+      "sha256": "45909f87b0e63720214343ea2e9f8226dbc04ed5c52a61eb9039c55298e98795"
+    },
+    "mocked-browser.log": {
+      "path": "tmp/s2-s3/mocked-browser.log",
+      "sha256": "9b608bd529ecffb35a7d18761dd694519eb4bd8c9ac244aa9a62f9ce66828959"
+    },
+    "go-test.log": {
+      "path": "tmp/s2-s3/go-test.log",
+      "sha256": "c14c866ccc49619a6057666a415b229b2b744bd1c269fb66bbece335a6c538fa"
+    },
+    "go-vet.log": {
+      "path": "tmp/s2-s3/go-vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "linux-race.log": {
+      "path": "tmp/s2-s3/linux-race.log",
+      "sha256": "bcacec8cb3f241d3cb696d8e885bf18abdcf426beb67ecbbbeaa4bf033a5273e"
+    },
+    "openapi-lint.log": {
+      "path": "tmp/s2-s3/openapi-lint.log",
+      "sha256": "52e0fac3208d6cd0cea916a13cea232a5ee7581bcb36d0463a4d59e0af35de0e"
+    },
+    "ui-build.log": {
+      "path": "tmp/s2-s3/ui-build.log",
+      "sha256": "2857d88728c82ca9071f1152a0b5ad1ac2b59a01322110e27e7ee38459c02168"
+    }
+  },
+  "screenshots": {
+    "exercise-desktop.png": {
+      "path": "tmp/s2-s3/exercise-desktop.png",
+      "sha256": "82cb78e64b625dd035bfaec702b945608f265de87dc0f21d6319101d8b5316e4"
+    },
+    "exercise-mobile.png": {
+      "path": "tmp/s2-s3/exercise-mobile.png",
+      "sha256": "a2defd3f6387c228cd713bcff2ece561f9f4c818c3fb12b060f9e295580af542"
+    }
+  }
+}

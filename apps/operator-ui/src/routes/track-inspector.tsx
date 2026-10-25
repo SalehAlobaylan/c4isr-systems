@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@/lib/scopedQueries'
+import { useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 
@@ -13,7 +14,7 @@ import {
   TrackStatusBadge,
 } from '@/components/shared/badges'
 import { EmptyState, ErrorState, SectionTitle } from '@/components/shared/states'
-import { api } from '@/lib/api'
+import { useAPI } from '@/lib/api'
 import {
   formatConfidence,
   formatCoord,
@@ -25,7 +26,7 @@ import {
   truncateId,
 } from '@/lib/format'
 import type { SemanticTone } from '@/lib/operationalPresentation'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { toast } from '@/stores/toasts'
 
 const HISTORY_LIMIT = 60
@@ -133,6 +134,8 @@ function Row({
  * exists to show.
  */
 function ClassificationOverride({ trackId }: { trackId: string }) {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const queryClient = useQueryClient()
   const [label, setLabel] = useState('')
   const [confidence, setConfidence] = useState('')
@@ -237,6 +240,8 @@ function ClassificationOverride({ trackId }: { trackId: string }) {
 }
 
 export function TrackInspectorPage() {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const { id } = useParams({ from: '/tracks/$id' })
 
   const trackQuery = useQuery({

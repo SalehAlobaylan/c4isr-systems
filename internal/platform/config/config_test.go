@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -194,5 +195,24 @@ func TestLoadRejectsInlineAndFileSecretTogether(t *testing.T) {
 	t.Setenv("C4ISR_ENV", EnvironmentDevelopment)
 	if _, err := Load(); err == nil {
 		t.Fatal("inline and file-backed database secrets should not be accepted together")
+	}
+}
+
+func TestDeliveryStorageAndRuntimeAdmissionConfiguration(t *testing.T) {
+	cfg := Config{Environment: EnvironmentStaging, LogFormat: "json", AuthRequired: true, DatabaseAuth: true, ArtifactS3AllowHTTP: true, RuntimeBuilds: []string{strings.Repeat("a", 64)}}
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	cfg.Environment = EnvironmentProduction
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("production accepted the staging-only HTTP storage exception")
+	}
+	cfg.ArtifactS3AllowHTTP = false
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	cfg.RuntimeBuilds = []string{"arbitrary-program-name"}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("runtime admission accepted a non-hash identity")
 	}
 }

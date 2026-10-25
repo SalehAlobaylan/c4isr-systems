@@ -1,0 +1,37 @@
+{
+  "originalProducer": "AIS transmitters as relayed by AISStream",
+  "upstreamProvider": "aisstream",
+  "connectorId": "aisstream-region",
+  "connectorPrincipalId": "aisstream-connector",
+  "dataset": "aisstream-position-reports",
+  "productVersion": "v1",
+  "coverageDescription": "Bounded Jeddah coastal AOI; reception gaps and missing reports are not evidence of absence.",
+  "revisionPolicy": "content_hash",
+  "enabled": false,
+  "rights": {
+    "id": "REPLACE_WITH_REVIEWED_RIGHTS_VERSION",
+    "legalBasis": "REPLACE: record approved AISStream access, analysis and archive permissions",
+    "termsUrl": "https://aisstream.io/documentation",
+    "attribution": "REPLACE_WITH_REQUIRED_PROVIDER_ATTRIBUTION",
+    "retainRaw": false,
+    "allowAnalysis": false,
+    "allowSimulationExport": false
+  },
+  "policy": {
+    "aoi": {
+      "west": 39.1,
+      "south": 21.3,
+      "east": 39.4,
+      "north": 21.7
+    },
+    "lookbackSeconds": 300,
+    "freshForSeconds": 60,
+    "unavailableAfterSeconds": 180,
+    "minIntervalSeconds": 60,
+    "timeoutSeconds": 10,
+    "maxPages": 1,
+    "maxRecordsPerPage": 200,
+    "maxResponseBytes": 1048576,
+    "maxRequestsPerDay": 1000
+  }
+}

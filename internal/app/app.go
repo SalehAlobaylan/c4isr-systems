@@ -9,34 +9,50 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-
 	"github.com/SalehAlobaylan/c4isr-systems/internal/alerts"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/arearule"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/artifacts"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/assessments"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/assets"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/audit"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/classifications"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/commands"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/contextpackage"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/eventrules"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/exerciseingest"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/externaltracks"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/geospatial"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/imagery"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/incidents"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/missions"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/modelassets"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/nativeexercise"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/observations"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/operators"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/picture"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/config"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/readiness"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/publiccontext"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/publicevents"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/realtime"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/recordings"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/reference"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/scenarios"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/simruntime"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/simscene"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/sources"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/telemetry"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/tracks"
+	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // DefaultOperator is the local-development actor used when authentication is
@@ -54,9 +70,32 @@ type App struct {
 	staleMonitorDone   <-chan struct{}
 }
 
+type ingestionOptions struct {
+	artifactStore artifacts.Store
+	scenariosDir  string
+	locations     publicingest.Registry
+	fetcher       publicingest.Fetcher
+}
+type Option func(*ingestionOptions)
+
+func WithArtifactStore(store artifacts.Store) Option {
+	return func(o *ingestionOptions) { o.artifactStore = store }
+}
+
+// WithPublicIngestion supplies trusted adapters at the composition boundary.
+// Environment configuration always uses the restricted HTTPS fetcher.
+func WithPublicIngestion(locations publicingest.Registry, fetcher publicingest.Fetcher) Option {
+	return func(o *ingestionOptions) { o.locations = locations; o.fetcher = fetcher }
+}
+
+// WithScenariosDirectory supplies a trusted local fixture/authoring directory.
+func WithScenariosDirectory(dir string) Option {
+	return func(o *ingestionOptions) { o.scenariosDir = dir }
+}
+
 // New opens the database, verifies migrations, wires every module, and builds
 // the HTTP router.
-func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, error) {
+func New(ctx context.Context, cfg config.Config, logger *slog.Logger, options ...Option) (*App, error) {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -91,7 +130,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 	// stream and operator actions remain traceable.
 	auditSvc := audit.NewService(audit.NewPostgresRepository(pool), bus)
 	operatorSvc := operators.NewService(operators.NewPostgresRepository(pool))
-	if _, _, err := operatorSvc.Ensure(ctx, operators.CreateInput{
+	if _, _, err := operatorSvc.Ensure(access.Bootstrap(ctx), operators.CreateInput{
 		ID:   DefaultOperator,
 		Name: "Operator 01",
 		Role: operators.RoleOperator,
@@ -99,7 +138,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		return nil, fmt.Errorf("ensure default operator: %w", err)
 	}
 	lookupOperator := func(ctx context.Context, id string) (httpx.Identity, error) {
-		operator, err := operatorSvc.Get(ctx, id)
+		operator, err := operatorSvc.Get(access.Bootstrap(ctx), id)
 		if err != nil {
 			return httpx.Identity{}, err
 		}
@@ -110,11 +149,41 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		}, nil
 	}
 
+	identityStore := access.NewStore(pool)
+	if err := identityStore.LegacyCredentials(ctx, cfg.AuthTokens); err != nil {
+		return nil, fmt.Errorf("initialize identity credentials: %w", err)
+	}
+
 	// Freshness thresholds are resolved once here so the API, the realtime
 	// stream, and any future integration all classify trust identically.
 	freshnessPolicy := cfg.FreshnessPolicy()
 
 	sourceSvc := sources.NewService(sources.NewPostgresRepository(pool), bus)
+	locations, err := publicingest.LoadRegistry(cfg.PublicConnectorsFile)
+	if err != nil {
+		return nil, err
+	}
+	ingestion := ingestionOptions{locations: locations, fetcher: publicingest.NewHTTPFetcher()}
+	for _, option := range options {
+		option(&ingestion)
+	}
+	ingestionRepo := publicingest.NewRepository(pool)
+	var artifactStore artifacts.Store = artifacts.Unavailable{}
+	if cfg.ArtifactS3Endpoint != "" {
+		artifactStore, err = artifacts.NewS3(artifacts.S3Config{Endpoint: cfg.ArtifactS3Endpoint, Bucket: cfg.ArtifactS3Bucket, Region: cfg.ArtifactS3Region, AccessKey: cfg.ArtifactS3AccessKey, SecretKey: cfg.ArtifactS3SecretKey, AllowHTTP: cfg.ArtifactS3AllowHTTP || cfg.Environment == config.EnvironmentDevelopment || cfg.Environment == config.EnvironmentTest})
+		if err != nil {
+			return nil, err
+		}
+	}
+	if ingestion.artifactStore != nil {
+		artifactStore = ingestion.artifactStore
+	}
+	artifactSvc := artifacts.NewService(pool, artifactStore)
+	imagerySvc := imagery.NewService(pool, artifactSvc)
+	reviewSvc := assessments.NewReviews(pool, imagerySvc)
+	ingestionRepo.SetProjector(publiccontext.Projector{Next: externaltracks.Projector{Next: imagery.Projector{Next: publicevents.Projector{}}}})
+	ingestionSvc := publicingest.NewService(ingestionRepo, ingestion.locations, ingestion.fetcher, sourceSvc, identityStore)
+	sourceSvc.SetCatalog(ingestionRepo)
 	assetSvc := assets.NewServiceWithFreshness(assets.NewPostgresRepository(pool), bus, freshnessPolicy)
 	observationSvc := observations.NewService(observations.NewPostgresRepository(pool), sourceSvc, bus)
 	telemetrySvc := telemetry.NewService(telemetry.NewPostgresRepository(pool), assetSvc, bus)
@@ -127,6 +196,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 	areaRuleSvc := arearule.NewService(arearule.NewGeospatialAdapter(geofenceSvc), bus)
 	areaRuleSvc.SetObserver(metrics)
 	areaRuleSvc.SetFailureObserver(metrics)
+	eventrules.New(pool, bus)
 	// Alerts name their subject in operator language rather than by internal
 	// identifier, so the alert centre reads as prose an operator can act on.
 	alertSvc := alerts.NewServiceWithClassifier(alerts.NewPostgresRepository(pool), bus, classificationSvc)
@@ -141,8 +211,15 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 
 	scenarioSvc := scenarios.NewService(
 		scenarios.NewPostgresRepository(pool),
-		scenarios.NewLoader(cfg.ScenariosDir),
+		scenarios.NewLoader(func() string {
+			if ingestion.scenariosDir != "" {
+				return ingestion.scenariosDir
+			}
+			return cfg.ScenariosDir
+		}()),
 		scenarios.EngineDeps{
+			Ingress:         exerciseingest.NewService(pool, observationSvc, telemetrySvc),
+			ContextPackages: contextpackage.NewService(pool, artifactSvc),
 			Sources:         sourceSvc,
 			Assets:          assetSvc,
 			Observations:    observationSvc,
@@ -158,8 +235,33 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		bus,
 	)
 
-	router := buildRouter(cfg, logger, pool, metrics, lookupOperator, moduleHandlers{
+	native := &nativeexercise.Service{Pool: pool, Sources: sourceSvc, Assets: assetSvc, Observations: observationSvc, Telemetry: telemetrySvc, Commands: commandSvc, Missions: missionSvc}
+	scenarioSvc.NativeRun = native.GetRun
+	clock := func(ctx context.Context, wall time.Time) time.Time {
+		n := native.Clock(ctx, wall)
+		if n != wall {
+			return n
+		}
+		return scenarioSvc.ClockNow(ctx, wall)
+	}
+	studio := &simscene.Service{Pool: pool, Assets: modelassets.New(pool, artifactStore), Packages: contextpackage.NewService(pool, artifactSvc)}
+	recorder := &recordings.Service{Pool: pool, Store: artifactStore}
+	router := buildRouter(cfg, logger, pool, metrics, lookupOperator, identityStore, moduleHandlers{
+		blobStore:       artifactStore,
+		recordings:      recorder,
+		modelAssets:     studio.Assets,
+		studio:          studio,
+		runtime:         &simruntime.Broker{Pool: pool, Scenes: studio, Exercise: native, Recorder: recorder, AdmittedBuilds: cfg.RuntimeBuilds},
+		contextRecords:  publiccontext.Service{Pool: pool},
+		externalTracks:  externaltracks.Service{Pool: pool},
+		artifacts:       artifacts.Handler{Service: artifactSvc},
+		imagery:         imagery.Handler{Service: imagerySvc},
+		reviews:         reviewSvc,
 		sources:         sources.NewHandler(sourceSvc),
+		publicevents:    publicevents.NewHandler(pool),
+		reference:       reference.NewHandler(reference.NewService(pool)),
+		contextPackages: contextpackage.NewHandler(contextpackage.NewService(pool, artifactSvc)),
+		publicingest:    publicingest.NewHandler(ingestionSvc),
 		observations:    observations.NewHandler(observationSvc),
 		assets:          assets.NewHandler(assetSvc),
 		telemetry:       telemetry.NewHandlerWithFreshness(telemetrySvc, freshnessPolicy),
@@ -174,11 +276,12 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		audit:           audit.NewHandler(auditSvc),
 		operators:       operators.NewHandler(operatorSvc),
 		scenarios:       scenarios.NewHandler(scenarioSvc),
+		clock:           clock,
 		picture:         picture.NewHandler(picture.NewService(picture.NewPostgresRepository(pool), freshnessPolicy)),
 		hub:             hub,
 	})
 	freshnessMonitor := telemetry.NewFreshnessMonitor(telemetry.NewPostgresRepository(pool), bus, metrics, freshnessPolicy)
-	staleMonitorCancel, staleMonitorDone := startFreshnessMonitor(freshnessMonitor, freshnessPolicy, logger)
+	staleMonitorCancel, staleMonitorDone := startFreshnessMonitor(freshnessMonitor, freshnessPolicy, logger, identityStore, clock)
 
 	poolClosed = true
 	return &App{
@@ -215,7 +318,7 @@ func (a *App) Close() {
 		// bounds its terminal persistence operations; using a cancelable
 		// shutdown context here could otherwise close the pool while a runner
 		// still has an in-flight action that needs to persist its final state.
-		if err := a.scenarios.Close(context.Background()); err != nil && a.logger != nil {
+		if err := a.scenarios.Close(access.Bootstrap(context.Background())); err != nil && a.logger != nil {
 			a.logger.Error("close scenario service", "error", err)
 		}
 	}
@@ -230,7 +333,7 @@ func (a *App) Close() {
 // entity never sits visibly live for long after it should have been marked
 // aging. Freshness is still re-derived on every read; the monitor exists to
 // push transitions to clients that already hold a rendered picture.
-func startFreshnessMonitor(monitor *telemetry.FreshnessMonitor, policy freshness.Policy, logger *slog.Logger) (context.CancelFunc, <-chan struct{}) {
+func startFreshnessMonitor(monitor *telemetry.FreshnessMonitor, policy freshness.Policy, logger *slog.Logger, store *access.Store, clock freshness.Clock) (context.CancelFunc, <-chan struct{}) {
 	interval := policy.DelayedAfter / 2
 	if interval > time.Minute {
 		interval = time.Minute
@@ -238,13 +341,20 @@ func startFreshnessMonitor(monitor *telemetry.FreshnessMonitor, policy freshness
 	if interval < time.Second {
 		interval = time.Second
 	}
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(freshness.WithClock(context.Background(), clock))
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		reconcile := func() {
-			if err := monitor.Reconcile(ctx); err != nil && ctx.Err() == nil && logger != nil {
-				logger.Error("reconcile entity freshness", "error", err)
+			resources, err := store.ObservationResources(access.Bootstrap(ctx))
+			if err != nil {
+				logger.Error("list freshness resources", "error", err)
+				return
+			}
+			for _, resource := range resources {
+				if err := monitor.Reconcile(access.Internal(ctx, resource, "freshness")); err != nil && ctx.Err() == nil {
+					logger.Error("reconcile entity freshness", "error", err)
+				}
 			}
 		}
 		reconcile()
@@ -263,6 +373,21 @@ func startFreshnessMonitor(monitor *telemetry.FreshnessMonitor, policy freshness
 }
 
 type moduleHandlers struct {
+	blobStore       artifacts.Store
+	studio          *simscene.Service
+	runtime         *simruntime.Broker
+	recordings      *recordings.Service
+	modelAssets     *modelassets.Service
+	contextRecords  publiccontext.Service
+	externalTracks  externaltracks.Service
+	artifacts       artifacts.Handler
+	imagery         imagery.Handler
+	reviews         *assessments.Reviews
+	contextPackages *contextpackage.Handler
+	clock           freshness.Clock
+	reference       *reference.Handler
+	publicevents    *publicevents.Handler
+	publicingest    *publicingest.Handler
 	sources         *sources.Handler
 	observations    *observations.Handler
 	assets          *assets.Handler
@@ -282,7 +407,7 @@ type moduleHandlers struct {
 	hub             *realtime.Hub
 }
 
-func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, metrics *observability.Metrics, lookupOperator httpx.OperatorLookup, h moduleHandlers) http.Handler {
+func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, metrics *observability.Metrics, lookupOperator httpx.OperatorLookup, store *access.Store, h moduleHandlers) http.Handler {
 	router := chi.NewRouter()
 	router.Use(
 		httpx.RequestID,
@@ -290,6 +415,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 		httpx.LoggerWithMetrics(logger, metrics),
 		httpx.CORS(cfg.AllowedOrigins),
 		httpx.Authenticate(httpx.AuthOptions{
+			Resolve:         identityResolver(cfg, store, lookupOperator, pool),
 			Required:        cfg.AuthRequired,
 			Tokens:          cfg.AuthTokens,
 			DefaultOperator: DefaultOperator,
@@ -297,24 +423,73 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 			OnFailure:       metrics.ObserveAuthFailure,
 		}),
 		httpx.Authorization,
+		httpx.ResponseDisclosure,
+		func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				next.ServeHTTP(w, r.WithContext(freshness.WithClock(r.Context(), h.clock)))
+			})
+		},
 	)
 
 	router.Get("/health", healthHandler(pool, metrics))
 	router.Get("/metrics", metrics.Handler())
 
 	router.Route("/api/v1", func(r chi.Router) {
+		blobStore := h.blobStore
+		if blobStore == nil {
+			blobStore = artifacts.Unavailable{}
+		}
+		readiness.Service{Pool: pool, Store: blobStore, RuntimeBuilds: cfg.RuntimeBuilds}.Mount(r)
 		r.Get("/auth/me", func(w http.ResponseWriter, req *http.Request) {
+			resources, err := store.SelectableResources(req.Context())
+			if err != nil {
+				httpx.Error(w, err)
+				return
+			}
+			details, err := store.ResourceDetails(req.Context(), resources)
+			if err != nil {
+				httpx.Error(w, err)
+				return
+			}
 			identity := sessionOperator{
 				ID:   httpx.GetOperatorID(req.Context()),
 				Name: httpx.GetOperatorName(req.Context()),
 				Role: httpx.GetOperatorRole(req.Context()),
 			}
 			httpx.JSON(w, http.StatusOK, map[string]any{
-				"operator":    identity,
-				"permissions": permissionsForRole(identity.Role),
+				"operator":        identity,
+				"permissions":     access.EffectivePermissions(req.Context()),
+				"resources":       resources,
+				"resourceDetails": details,
+				"accessRevision":  access.AccessRevision(req.Context()),
+				"principal":       func() access.Principal { principal, _, _ := access.From(req.Context()); return principal }(),
+				"resource":        func() access.Resource { _, resource, _ := access.From(req.Context()); return resource }(),
 			})
 		})
+		if h.studio != nil {
+			h.studio.Mount(r)
+		}
+		if h.runtime != nil {
+			h.runtime.Mount(r)
+			if h.recordings != nil {
+				h.recordings.Mount(r)
+			}
+		}
+		if h.modelAssets != nil {
+			h.modelAssets.Mount(r)
+		}
+		h.contextRecords.Mount(r)
+		h.externalTracks.Mount(r)
+		h.artifacts.Mount(r)
+		h.imagery.Mount(r)
+		if h.reviews != nil {
+			h.reviews.Mount(r)
+		}
 		h.sources.Mount(r)
+		h.publicingest.Mount(r)
+		h.publicevents.Mount(r)
+		h.reference.Mount(r)
+		h.contextPackages.Mount(r)
 		h.observations.Mount(r)
 		h.assets.Mount(r)
 		h.telemetry.Mount(r)
@@ -336,7 +511,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 	// otelhttp uses the process-wide OpenTelemetry provider. With no exporter
 	// configured it is a cheap no-op; deployments can install a provider and
 	// exporter without changing the router or domain modules.
-	return otelhttp.NewHandler(router, "c4isr.http")
+	return httpx.ProtectRealtimeCredential(otelhttp.NewHandler(router, "c4isr.http"))
 }
 
 type sessionOperator struct {
@@ -381,7 +556,7 @@ func verifyDatabase(ctx context.Context, pool *pgxpool.Pool) error {
 	}
 
 	var table *string
-	if err := pool.QueryRow(ctx, "SELECT to_regclass('public.sources')::text").Scan(&table); err != nil {
+	if err := pool.QueryRow(ctx, "SELECT CASE WHEN to_regclass('public.simulation_sensor_presets') IS NOT NULL AND to_regclass('public.simulation_recording_events') IS NOT NULL AND to_regclass('public.native_exercises') IS NOT NULL AND to_regclass('public.native_task_dispatch') IS NOT NULL AND to_regclass('public.native_projection_batches') IS NOT NULL AND to_regclass('public.simulation_scenes') IS NOT NULL AND to_regclass('public.simulation_runtime_runs') IS NOT NULL AND to_regclass('public.simulation_runtime_events') IS NOT NULL AND to_regclass('public.simulation_runtime_truth') IS NOT NULL AND to_regclass('public.model_asset_versions') IS NOT NULL AND to_regclass('public.model_asset_uploads') IS NOT NULL AND to_regclass('public.public_context_records') IS NOT NULL AND to_regclass('public.external_track_segments') IS NOT NULL AND to_regclass('public.external_track_associations') IS NOT NULL AND to_regclass('public.context_export_previews') IS NOT NULL AND to_regclass('public.assessment_revisions') IS NOT NULL AND to_regclass('public.imagery_jobs') IS NOT NULL AND to_regclass('public.imagery_scenes') IS NOT NULL AND to_regclass('public.artifacts') IS NOT NULL AND to_regclass('public.exercise_messages') IS NOT NULL AND to_regclass('public.simulation_actor_mappings') IS NOT NULL AND to_regclass('public.simulation_versions') IS NOT NULL AND to_regclass('public.context_packages') IS NOT NULL AND EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='observations' AND column_name='semantic_kind') THEN 'reference_datasets' END").Scan(&table); err != nil {
 		return fmt.Errorf("check schema: %w", err)
 	}
 	if table == nil || *table == "" {

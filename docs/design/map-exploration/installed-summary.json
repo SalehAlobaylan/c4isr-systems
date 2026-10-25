@@ -1,0 +1,359 @@
+{
+  "capturedAt": "2026-10-24T08:28:34.786119+00:00",
+  "resource": {
+    "workspaceId": "default",
+    "environmentId": "local",
+    "partition": "PUBLIC_EVIDENCE"
+  },
+  "queryMeaning": "Authorized workspace queries without a country polygon filter; retained records, not evidence of current regional conditions.",
+  "referenceDatasets": 24,
+  "referenceFeatures": 4006,
+  "referenceKinds": {
+    "vector": 23,
+    "elevation": 1
+  },
+  "administrativeLevelsInstalled": [
+    "ADM0: Saudi Arabia only"
+  ],
+  "countryFeatureProperties": [
+    {
+      "adm0_a3": "SAU",
+      "datasetId": "ref_01m5kse7mdpfw4nbanmg8bz1cw",
+      "layer": "countries",
+      "meaning": "Generalized geographic reference",
+      "measured": false,
+      "name": "Saudi Arabia",
+      "name_en": "Saudi Arabia",
+      "producer": "Natural Earth",
+      "scalerank": 4,
+      "sov_a3": "SAU",
+      "type": "Sovereign country"
+    }
+  ],
+  "publicEvents": {
+    "total": 16,
+    "returned": 16,
+    "truncated": false,
+    "types": {
+      "event.earthquake": 16
+    },
+    "observationTimes": {
+      "from": "2025-03-01T15:11:55.112Z",
+      "to": "2026-10-16T15:41:31.935Z"
+    }
+  },
+  "contextRecords": {
+    "total": 51,
+    "returned": 51,
+    "truncated": false,
+    "kinds": {
+      "WEATHER": 51
+    },
+    "states": {
+      "current": 51
+    }
+  },
+  "imagery": {
+    "captureRecords": 4,
+    "successful": 4,
+    "distinctAcquisitions": [
+      "2025-03-01T08:04:32.082Z",
+      "2025-03-31T08:04:30.193Z"
+    ]
+  },
+  "externalTracks": {
+    "returned": 0,
+    "total": 0,
+    "truncated": false
+  },
+  "datasets": [
+    {
+      "label": "Jeddah Buildings 1",
+      "datasetKey": "jeddah-buildings-1",
+      "kind": "vector",
+      "featureCount": 250,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Buildings 2",
+      "datasetKey": "jeddah-buildings-2",
+      "kind": "vector",
+      "featureCount": 250,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Buildings 3",
+      "datasetKey": "jeddah-buildings-3",
+      "kind": "vector",
+      "featureCount": 250,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Buildings 4",
+      "datasetKey": "jeddah-buildings-4",
+      "kind": "vector",
+      "featureCount": 250,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Buildings 5",
+      "datasetKey": "jeddah-buildings-5",
+      "kind": "vector",
+      "featureCount": 250,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Buildings 6",
+      "datasetKey": "jeddah-buildings-6",
+      "kind": "vector",
+      "featureCount": 250,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Buildings 7",
+      "datasetKey": "jeddah-buildings-7",
+      "kind": "vector",
+      "featureCount": 250,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Buildings 8",
+      "datasetKey": "jeddah-buildings-8",
+      "kind": "vector",
+      "featureCount": 50,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Ellipsoid Terrain",
+      "datasetKey": "jeddah-ellipsoid-terrain",
+      "kind": "elevation",
+      "featureCount": 0,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Places 1",
+      "datasetKey": "jeddah-places-1",
+      "kind": "vector",
+      "featureCount": 100,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Roads 1",
+      "datasetKey": "jeddah-roads-1",
+      "kind": "vector",
+      "featureCount": 250,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Roads 2",
+      "datasetKey": "jeddah-roads-2",
+      "kind": "vector",
+      "featureCount": 250,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Jeddah Roads 3",
+      "datasetKey": "jeddah-roads-3",
+      "kind": "vector",
+      "featureCount": 250,
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      }
+    },
+    {
+      "label": "Saudi Coastline 1",
+      "datasetKey": "saudi-coastline-1",
+      "kind": "vector",
+      "featureCount": 12,
+      "aoi": {
+        "west": 34,
+        "south": 16,
+        "east": 56,
+        "north": 33
+      }
+    },
+    {
+      "label": "Saudi Countries 1",
+      "datasetKey": "saudi-countries-1",
+      "kind": "vector",
+      "featureCount": 1,
+      "aoi": {
+        "west": 34,
+        "south": 16,
+        "east": 56,
+        "north": 33
+      }
+    },
+    {
+      "label": "Saudi Major Roads 1",
+      "datasetKey": "saudi-major-roads-1",
+      "kind": "vector",
+      "featureCount": 180,
+      "aoi": {
+        "west": 34,
+        "south": 16,
+        "east": 56,
+        "north": 33
+      }
+    },
+    {
+      "label": "Saudi Major Roads 2",
+      "datasetKey": "saudi-major-roads-2",
+      "kind": "vector",
+      "featureCount": 180,
+      "aoi": {
+        "west": 34,
+        "south": 16,
+        "east": 56,
+        "north": 33
+      }
+    },
+    {
+      "label": "Saudi Major Roads 3",
+      "datasetKey": "saudi-major-roads-3",
+      "kind": "vector",
+      "featureCount": 180,
+      "aoi": {
+        "west": 34,
+        "south": 16,
+        "east": 56,
+        "north": 33
+      }
+    },
+    {
+      "label": "Saudi Major Roads 4",
+      "datasetKey": "saudi-major-roads-4",
+      "kind": "vector",
+      "featureCount": 180,
+      "aoi": {
+        "west": 34,
+        "south": 16,
+        "east": 56,
+        "north": 33
+      }
+    },
+    {
+      "label": "Saudi Major Roads 5",
+      "datasetKey": "saudi-major-roads-5",
+      "kind": "vector",
+      "featureCount": 180,
+      "aoi": {
+        "west": 34,
+        "south": 16,
+        "east": 56,
+        "north": 33
+      }
+    },
+    {
+      "label": "Saudi Major Roads 6",
+      "datasetKey": "saudi-major-roads-6",
+      "kind": "vector",
+      "featureCount": 180,
+      "aoi": {
+        "west": 34,
+        "south": 16,
+        "east": 56,
+        "north": 33
+      }
+    },
+    {
+      "label": "Saudi Major Roads 7",
+      "datasetKey": "saudi-major-roads-7",
+      "kind": "vector",
+      "featureCount": 180,
+      "aoi": {
+        "west": 34,
+        "south": 16,
+        "east": 56,
+        "north": 33
+      }
+    },
+    {
+      "label": "Saudi Major Roads 8",
+      "datasetKey": "saudi-major-roads-8",
+      "kind": "vector",
+      "featureCount": 61,
+      "aoi": {
+        "west": 34,
+        "south": 16,
+        "east": 56,
+        "north": 33
+      }
+    },
+    {
+      "label": "Saudi Places 1",
+      "datasetKey": "saudi-places-1",
+      "kind": "vector",
+      "featureCount": 22,
+      "aoi": {
+        "west": 34,
+        "south": 16,
+        "east": 56,
+        "north": 33
+      }
+    }
+  ]
+}

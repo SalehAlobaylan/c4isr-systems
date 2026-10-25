@@ -1,12 +1,12 @@
 package tracks
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 // An area observation must never become a track.
@@ -21,7 +21,7 @@ func TestAreaObservationIsNeverCorrelatedIntoATrack(t *testing.T) {
 	repo := newFakeRepository()
 	svc := NewService(repo, nil, testDispatcher())
 
-	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+	svc.HandleObservationReceived(testsupport.Context(), events.ObservationReceived{
 		ObservationID: "obs_fire_1",
 		SourceID:      "firms",
 		Type:          "hazard.fire",
@@ -52,7 +52,7 @@ func TestRetriedAreaObservationIsStillNotCorrelated(t *testing.T) {
 	repo := newFakeRepository()
 	svc := NewService(repo, nil, testDispatcher())
 
-	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+	svc.HandleObservationReceived(testsupport.Context(), events.ObservationReceived{
 		ObservationID: "obs_fire_1",
 		Duplicate:     true,
 		Retry:         true,
@@ -71,7 +71,7 @@ func TestPointObservationIsStillCorrelated(t *testing.T) {
 	repo := newFakeRepository()
 	svc := NewService(repo, nil, testDispatcher())
 
-	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+	svc.HandleObservationReceived(testsupport.Context(), events.ObservationReceived{
 		ObservationID: "obs_point_1",
 		SourceID:      "radar-01",
 		Type:          "track.observation",

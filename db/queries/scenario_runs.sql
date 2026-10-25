@@ -1,8 +1,8 @@
 -- name: CreateScenarioRun :one
 INSERT INTO scenario_runs (
-    id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, created_at
+    id, frozen_run, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, created_at
 ) VALUES (
-    @id, @scenario_name, @seed, @status, @playback_speed, 0, now(), now()
+    @id, @frozen_run, @scenario_name, @seed, @status, @playback_speed, 0, now(), now()
 )
 RETURNING *;
 

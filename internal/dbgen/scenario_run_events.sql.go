@@ -7,6 +7,8 @@ package dbgen
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createScenarioRunEvent = `-- name: CreateScenarioRunEvent :exec
@@ -51,15 +53,26 @@ WHERE run_id = $1
 ORDER BY virtual_time_ms, sequence
 `
 
-func (q *Queries) ListScenarioRunEvents(ctx context.Context, runID string) ([]ScenarioRunEvent, error) {
+type ListScenarioRunEventsRow struct {
+	RunID         string
+	Sequence      int32
+	VirtualTimeMs int64
+	ActionName    string
+	Status        string
+	Error         *string
+	CreatedAt     pgtype.Timestamptz
+	UpdatedAt     pgtype.Timestamptz
+}
+
+func (q *Queries) ListScenarioRunEvents(ctx context.Context, runID string) ([]ListScenarioRunEventsRow, error) {
 	rows, err := q.db.Query(ctx, listScenarioRunEvents, runID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ScenarioRunEvent{}
+	items := []ListScenarioRunEventsRow{}
 	for rows.Next() {
-		var i ScenarioRunEvent
+		var i ListScenarioRunEventsRow
 		if err := rows.Scan(
 			&i.RunID,
 			&i.Sequence,
@@ -105,7 +118,7 @@ SET virtual_time_ms = $1,
     last_action_at_ms = $3,
     action_error = $4
 WHERE id = $5
-RETURNING id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error
+RETURNING id, scenario_name, seed, status, playback_speed, virtual_time_ms, started_at, ended_at, error, created_at, last_action, last_action_at_ms, action_error, scope_id, frozen_run
 `
 
 type UpdateScenarioRunCursorParams struct {
@@ -139,6 +152,8 @@ func (q *Queries) UpdateScenarioRunCursor(ctx context.Context, arg UpdateScenari
 		&i.LastAction,
 		&i.LastActionAtMs,
 		&i.ActionError,
+		&i.ScopeID,
+		&i.FrozenRun,
 	)
 	return i, err
 }

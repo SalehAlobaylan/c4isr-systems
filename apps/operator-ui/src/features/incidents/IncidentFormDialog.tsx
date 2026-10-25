@@ -1,4 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useWorkspace } from '@/lib/workspaceContext'
+import { useMutation } from '@/lib/scopedQueries'
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { useEffect } from 'react'
 
@@ -7,9 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { api, type CreateIncidentInput, type Incident } from '@/lib/api'
+import { useAPI, type CreateIncidentInput, type Incident } from '@/lib/api'
 import { parseCommaList } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { toast } from '@/stores/toasts'
 
 const PRIORITY_OPTIONS = [
@@ -39,6 +41,9 @@ export function IncidentFormDialog({
   defaultAlertId?: string
   onCreated: (incident: Incident) => void
 }) {
+  const { signal } = useWorkspace()
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const queryClient = useQueryClient()
 
   const form = useForm({
@@ -62,6 +67,7 @@ export function IncidentFormDialog({
         assessmentIds: [],
       }
       const incident = await createMutation.mutateAsync(input)
+      if (signal.aborted) return
       onCreated(incident)
     },
   })

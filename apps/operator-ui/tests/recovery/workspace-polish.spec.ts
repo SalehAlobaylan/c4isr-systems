@@ -1,0 +1,151 @@
+import {mapControl,expectMapControlFocus} from './atlas-helpers'
+import {test,expect} from '@playwright/test'
+import {readFileSync} from 'node:fs'
+import path from 'node:path'
+
+test.skip(process.env.EMAD_RECOVERY_ACCEPTANCE!=='1','Requires the persistent installation and task dev')
+const root=path.resolve('../..')
+test.beforeEach(async({page})=>{await page.addInitScript(token=>sessionStorage.setItem('emad.session-token',token),readFileSync(path.join(root,'private/local/credentials/local-analyst.token'),'utf8').trim())})
+
+test('weather choices keep their text inside separate intrinsic rows',async({page})=>{
+  await page.goto('/weather-reports')
+  const rows=page.locator('.record-list>button')
+  await expect(rows.first()).toBeVisible()
+  for(const width of [1440,390]){
+    await page.setViewportSize({width,height:1000})
+    const geometry=await rows.evaluateAll(elements=>elements.slice(0,4).map(e=>({row:e.getBoundingClientRect().toJSON(),last:e.lastElementChild!.getBoundingClientRect().toJSON()})))
+    expect(geometry.length).toBeGreaterThan(1)
+    for(let i=0;i<geometry.length;i++){
+      expect(geometry[i].last.bottom).toBeLessThanOrEqual(geometry[i].row.bottom)
+      if(i)expect(geometry[i].row.top).toBeGreaterThanOrEqual(geometry[i-1].row.bottom)
+    }
+  }
+  await rows.first().click()
+  const detail=page.getByRole('article',{name:'Pinned context evidence'})
+  await expect(detail.locator('.weather-metrics')).toBeVisible()
+  await expect(detail.locator('.evidence-meta')).toContainText('UTC')
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy()
+})
+
+test('navigation has one active destination and Imagery clears a retained review view',async({page})=>{
+  await page.goto('/intelligence?view=review')
+  await expect(page.getByRole('article',{name:'Selected assessment review'})).toBeVisible()
+  const nav=page.getByRole('navigation',{name:'Workspace navigation'})
+  await expect(nav.locator('[aria-current=page]')).toHaveCount(1)
+  await expect(nav.locator('[aria-current=page]')).toHaveText('Assessments')
+  await nav.getByRole('link',{name:'Imagery',exact:true}).click()
+  await expect(page.getByRole('region',{name:'Real satellite imagery'})).toBeVisible()
+  await expect(nav.locator('[aria-current=page]')).toHaveCount(1)
+  await expect(nav.locator('[aria-current=page]')).toHaveText('Imagery')
+  await page.setViewportSize({width:320,height:700})
+  await nav.getByRole('link',{name:'Context packages',exact:true}).click()
+  await expect(nav.locator('[aria-current=page]')).toHaveCount(1)
+  const active=(await nav.locator('[aria-current=page]').boundingBox())!,viewport=(await nav.boundingBox())!
+  expect(active.x).toBeGreaterThanOrEqual(viewport.x-1)
+  expect(active.x+active.width).toBeLessThanOrEqual(viewport.x+viewport.width+1)
+})
+
+test('context layer search preserves selection and invalid input never queues an export',async({page})=>{
+  await page.goto('/intelligence?view=context')
+  const search=page.getByLabel('Find a reference layer'),picker=page.locator('.reference-picker'),summary=page.getByRole('complementary',{name:'Package selection summary'})
+  await expect(picker.getByRole('checkbox').first()).toBeVisible()
+  await search.fill('Buildings')
+  await expect(picker.getByRole('checkbox')).toHaveCount(8)
+  await picker.getByRole('checkbox').first().check()
+  await expect(summary.locator('dl>div').first()).toContainText('1')
+  await search.fill('roads')
+  await expect(summary.locator('dl>div').first()).toContainText('1')
+  await page.getByRole('button',{name:'Clear selection',exact:true}).click()
+  await expect(summary.locator('dl>div').first()).toContainText('0')
+  let writes=0;page.on('request',r=>{if(r.method()==='POST'&&r.url().includes('/context-packages'))writes++})
+  await page.getByRole('button',{name:'Preview selected context',exact:true}).click()
+  await expect(page.getByRole('alert')).toContainText('Enter four AOI coordinates and both UTC times.')
+  expect(writes).toBe(0)
+  expect((await picker.boundingBox())!.height).toBeLessThan(330)
+})
+
+test('model gallery supports search, tile inspection and a useful no-match state',async({page})=>{
+  await page.goto('/simulation-assets')
+  const search=page.getByLabel('Find a model'),library=page.getByRole('region',{name:'Visual model library'})
+  await expect(library.locator('.model-card').first()).toBeVisible()
+  await search.fill('Ground vehicle')
+  await expect(library.locator('.model-card')).toHaveCount(1)
+  await library.getByRole('button',{name:'Inspect model EMAD Ground vehicle',exact:true}).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await search.fill('no-such-model')
+  await expect(page.getByRole('heading',{name:'No models match this search'})).toBeVisible()
+  await page.getByRole('button',{name:'Clear model search'}).click()
+  await expect(library.locator('.model-card')).toHaveCount(7)
+  await page.setViewportSize({width:390,height:844})
+  const first=(await library.locator('.model-card').first().boundingBox())!,second=(await library.locator('.model-card').nth(1).boundingBox())!
+  expect(first.y).toBe(second.y)
+  expect(first.x+first.width).toBeLessThan(second.x)
+})
+
+test('retained analysis is visible beside inputs on desktop and before them on mobile',async({page})=>{
+  await page.goto('/intelligence?view=analysis')
+  const result=page.getByRole('region',{name:'Selected imagery job'}),inputs=page.getByRole('region',{name:'Submit vegetation comparison'})
+  await expect(result.getByRole('region',{name:'Aligned NDVI comparison'})).toBeVisible({timeout:20000})
+  await expect(result.getByLabel('Mapped NDVI change footprint',{exact:true})).toHaveAttribute('data-map-ready','true',{timeout:20000})
+  const a=(await result.boundingBox())!,b=(await inputs.boundingBox())!
+  expect(a.y).toBeLessThan(400)
+  expect(a.x).toBeGreaterThan(b.x+b.width)
+  await page.setViewportSize({width:390,height:844})
+  const mobileResult=(await result.boundingBox())!,mobileInputs=(await inputs.boundingBox())!
+  expect(mobileResult.y+mobileResult.height).toBeLessThan(mobileInputs.y)
+  await page.getByRole('link',{name:'Inputs & processing',exact:true}).click()
+  await expect(page.getByLabel('Before prepared subset')).toBeInViewport()
+  await page.getByRole('navigation',{name:'Intelligence workspaces'}).getByRole('link',{name:'Assessment review',exact:true}).click()
+  await expect(page.getByRole('article',{name:'Selected assessment review'})).toBeVisible()
+})
+
+test('secondary workspaces expose searchable layers, source diagnostics and template-to-model navigation',async({page})=>{
+  await page.goto('/systems')
+  await page.getByRole('button',{name:'Sources & access',exact:true}).click()
+  const source=page.locator('.source-card').first()
+  await expect(source.locator('.source-diagnostics')).toBeVisible()
+  await source.locator('summary').click()
+  await expect(source.locator('details')).toHaveAttribute('open','')
+  await page.goto('/map')
+  await mapControl(page,'Map layers')
+  const dialog=page.getByRole('region',{name:'Map layers'}),search=dialog.getByLabel('Find a map layer')
+  await search.fill('Buildings')
+  await expect(dialog.locator('.atlas-reference-choice input')).toHaveCount(1)
+  await expect(dialog.locator('.atlas-reference-choice')).toContainText('8 retained storage versions')
+  const panel=page.locator('.atlas-dock-body');expect((await panel.boundingBox())!.height).toBeLessThan((await page.getByRole('region',{name:'Map preview dock'}).boundingBox())!.height);expect(await panel.evaluate(el=>el.scrollHeight>el.clientHeight)).toBeTruthy()
+  // Native search inputs consume the first Escape to clear their value.
+  await page.keyboard.press('Escape')
+  await expect(search).toHaveValue('')
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  await page.goto('/simulation-assets')
+  await page.getByRole('button',{name:'Templates & environments',exact:true}).click()
+  const definitions=page.getByRole('region',{name:'Authored templates and environments'})
+  await expect(definitions.locator('.definition-card')).toHaveCount(7)
+  await definitions.getByRole('button',{name:'Inspect underlying model',exact:true}).first().click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  await expect(page.getByRole('article',{name:'Selected visual model'})).toContainText('visual only')
+})
+
+test('mobile Studio keeps the viewport separate and exposes one tool pane at a time',async({page})=>{
+  const installed=JSON.parse(readFileSync(path.join(root,'private/local/data/installation.json'),'utf8'))
+  await page.setViewportSize({width:390,height:844})
+  await page.goto('/simulation-studio?scene='+installed.simulation.sceneId)
+  const viewport=page.getByRole('region',{name:'Georeferenced viewport'}),canvas=viewport.locator('[data-render-ready]'),tabs=page.getByRole('group',{name:'Studio tools'})
+  await expect(canvas).toHaveAttribute('data-render-ready','true',{timeout:30000})
+  const geometry=(await canvas.boundingBox())!,tools=(await tabs.boundingBox())!
+  expect(geometry.y).toBeLessThan(340)
+  expect(geometry.y+geometry.height).toBeLessThan(tools.y)
+  await expect(page.getByRole('region',{name:'Scene hierarchy'})).toBeHidden()
+  await tabs.getByRole('button',{name:'Run controls',exact:true}).click()
+  await expect(page.getByRole('button',{name:'Start exercise',exact:true})).toBeVisible()
+  await expect(page.getByRole('region',{name:'Scene authoring'})).toBeHidden()
+  await tabs.getByRole('button',{name:'Actors & scenes',exact:true}).click()
+  await expect(page.getByRole('region',{name:'Scene hierarchy'})).toBeVisible()
+  await expect(page.getByRole('button',{name:'Start exercise',exact:true})).toBeHidden()
+  await page.setViewportSize({width:1440,height:1000})
+  await expect(page.getByRole('region',{name:'Scene authoring'})).toBeVisible()
+  await expect(page.getByRole('button',{name:'Start exercise',exact:true})).toBeVisible()
+})

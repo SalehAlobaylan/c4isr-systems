@@ -2,9 +2,22 @@ import { fileURLToPath, URL } from 'node:url'
 
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
+  const apiTarget = process.env.VITE_API_PROXY_TARGET ?? env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080'
+  const target = new URL(apiTarget)
+  if (!['http:', 'https:'].includes(target.protocol) || target.username || target.password || target.pathname !== '/' || target.search || target.hash) {
+    throw new Error('VITE_API_PROXY_TARGET must be an HTTP(S) origin without credentials, path, query or fragment.')
+  }
+  return {
+  // Parallel test servers must not invalidate the running installation's
+  // dependency optimizer cache or one another's module URLs.
+  cacheDir: process.env.EMAD_VITE_CACHE_DIR ?? 'node_modules/.vite',
+  // Evaluation HTML is a separate build, not a product entry. In particular,
+  // do not prebundle the candidate Babylon engine during ordinary UI startup.
+  optimizeDeps: { entries: ['index.html'] },
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -17,11 +30,11 @@ export default defineConfig({
       // changeOrigin stays false so the forwarded Host matches the browser
       // Origin, which the backend WebSocket hub validates on upgrade.
       '/api': {
-        target: 'http://localhost:8080',
+        target: target.origin,
         ws: true,
       },
       '/health': {
-        target: 'http://localhost:8080',
+        target: target.origin,
       },
     },
   },
@@ -39,4 +52,5 @@ export default defineConfig({
       },
     },
   },
+  }
 })

@@ -1,11 +1,11 @@
 package tracks
 
 import (
-	"context"
 	"testing"
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 func freshnessTrackService(t *testing.T, now time.Time, tracks ...Track) *Service {
@@ -61,7 +61,7 @@ func TestGetClassifiesFreshness(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			svc := freshnessTrackService(t, now, tc.track)
-			got, err := svc.Get(context.Background(), tc.track.ID)
+			got, err := svc.Get(testsupport.Context(), tc.track.ID)
 			if err != nil {
 				t.Fatalf("Get() error = %v", err)
 			}
@@ -79,7 +79,7 @@ func TestListClassifiesFreshness(t *testing.T) {
 		Track{ID: "trk_lost", Status: StatusLost, LastSeenAt: now},
 	)
 
-	items, _, err := svc.List(context.Background(), 0, 0)
+	items, _, err := svc.List(testsupport.Context(), 0, 0)
 	if err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
@@ -105,7 +105,7 @@ func TestFindByExternalRefClassifiesFreshness(t *testing.T) {
 		LastSeenAt:  now.Add(-12 * time.Minute),
 	})
 
-	got, err := svc.FindByExternalRef(context.Background(), "unknown-01")
+	got, err := svc.FindByExternalRef(testsupport.Context(), "unknown-01")
 	if err != nil {
 		t.Fatalf("FindByExternalRef() error = %v", err)
 	}

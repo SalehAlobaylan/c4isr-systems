@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@/lib/scopedQueries'
+
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo } from 'react'
@@ -11,9 +12,9 @@ import { ErrorState } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { api, type AuditEntry } from '@/lib/api'
+import { useAPI, type AuditEntry } from '@/lib/api'
 import { formatRelative, formatTimestamp, truncateId } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 
 const SUBJECT_OPTIONS = [
   { value: 'all', label: 'All subjects' },
@@ -32,6 +33,8 @@ const SUBJECT_OPTIONS = [
 const AUDIT_FILTERS = { limit: 200 }
 
 export function TimelinePage() {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const search = useSearch({ from: '/timeline' })
   const navigate = useNavigate()
 

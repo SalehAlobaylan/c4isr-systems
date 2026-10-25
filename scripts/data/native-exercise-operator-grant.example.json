@@ -1,0 +1,38 @@
+{
+  "id": "REPLACE_WITH_EXISTING_HUMAN_PRINCIPAL_ID",
+  "resource": {
+    "workspaceId": "default",
+    "environmentId": "local",
+    "partition": "EXERCISE_OBSERVATION",
+    "runId": "REPLACE_WITH_ADMITTED_RUN_ID"
+  },
+  "permissions": [
+    "operational.read",
+    "sources.read",
+    "observations.read",
+    "tracks.read",
+    "classifications.read",
+    "classifications.create",
+    "assets.read",
+    "telemetry.read",
+    "geofences.read",
+    "geospatial.read",
+    "alerts.read",
+    "alerts.acknowledge",
+    "alerts.resolve",
+    "incidents.read",
+    "incidents.create",
+    "incidents.update",
+    "missions.read",
+    "missions.create",
+    "missions.update",
+    "commands.read",
+    "commands.issue",
+    "commands.transition",
+    "assessments.read",
+    "assessments.create",
+    "audit.read",
+    "scenarios.read",
+    "operators.read"
+  ]
+}

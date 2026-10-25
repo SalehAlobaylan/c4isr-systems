@@ -1,4 +1,7 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
+import { useMutation, useQuery } from '@/lib/scopedQueries'
+import { useWorkspace } from '@/lib/workspaceContext'
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
@@ -21,9 +24,9 @@ import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { api, type ScenarioRun, type ScenarioSummary } from '@/lib/api'
+import { useAPI, type ScenarioRun, type ScenarioSummary } from '@/lib/api'
 import { formatRelative, formatTimestamp, formatVirtualTime } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { toast } from '@/stores/toasts'
 
 const SPEED_OPTIONS = [
@@ -35,6 +38,9 @@ const SPEED_OPTIONS = [
 ]
 
 export function ScenariosPage() {
+  const workspace = useWorkspace()
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const queryClient = useQueryClient()
   const [startTarget, setStartTarget] = useState<ScenarioSummary | null>(null)
   const [inspectedRunId, setInspectedRunId] = useState<string | null>(null)
@@ -66,6 +72,7 @@ export function ScenariosPage() {
       seed?: number
     }) => api.startScenario(name, { speed, seed }),
     onSuccess: (run) => {
+      void workspace.select({ ...workspace.session.resource, runId: run.id })
       toast({
         title: 'Scenario started',
         description: `${run.scenarioName} @ ${run.playbackSpeed}× · seed ${run.seed}`,
@@ -120,9 +127,10 @@ export function ScenariosPage() {
   const restartMutation = useMutation({
     mutationFn: (id: string) => api.restartScenarioRun(id),
     onSuccess: (run) => {
+      void workspace.select({ ...workspace.session.resource, runId: run.id })
       toast({
         title: 'Scenario restarted',
-        description: `${run.scenarioName} replaying with seed ${run.seed}`,
+        description: `${run.scenarioName} re-simulating with seed ${run.seed}`,
         variant: 'success',
       })
       invalidate()
@@ -283,7 +291,7 @@ export function ScenariosPage() {
               <Button
                 variant="outline"
                 size="sm"
-                title="Restart with same seed"
+                title="Create a new run from frozen inputs"
                 onClick={() => restartMutation.mutate(run.id)}
                 disabled={restartMutation.isPending}
               >
@@ -309,9 +317,11 @@ export function ScenariosPage() {
   return (
     <Page
       title="Scenarios"
-      description="Deterministic replay of synthetic operational activity"
+      description="Run synthetic exercises from frozen scenario inputs"
     >
       <div className="flex flex-col gap-6 p-4">
+        <Link to="/simulation-studio" className="inline-block min-h-10 underline">Simulation Studio</Link>
+        {workspace.session.permissions.includes('sim.scenarios.author') && <Link to="/simulation-assets" className="inline-block min-h-10 underline">Simulation asset registry</Link>}
         <section className="flex flex-col gap-3">
           <SectionTitle>Available scenarios</SectionTitle>
           {scenariosQuery.isError ? (
@@ -398,6 +408,13 @@ export function ScenariosPage() {
                   {inspectedRun.eventsRun}/{inspectedRun.eventsTotal} executed
                 </span>
               </div>
+              {inspectedRun.frozen?.versionId ? (
+                <p className="mb-4 break-all text-xs text-ink-muted">
+                  Frozen version <span className="font-mono">{inspectedRun.frozen.versionId}</span>
+                  {' · '}Virtual epoch {formatTimestamp(inspectedRun.frozen.clock?.epoch)}
+                  {' · '}Restart creates a new execution from these inputs. The map scrubber reads recorded evidence.
+                </p>
+              ) : null}
               {eventsQuery.isError ? (
                 <ErrorState error={eventsQuery.error} onRetry={() => void eventsQuery.refetch()} />
               ) : eventsQuery.isLoading ? (

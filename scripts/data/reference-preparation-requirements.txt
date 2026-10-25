@@ -1,0 +1,4 @@
+# Optional offline preparation tools; not server/runtime dependencies.
+numpy==2.5.4
+tifffile==2026.10.15
+imagecodecs==2026.10.10

@@ -1,4 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useWorkspace } from '@/lib/workspaceContext'
+import { useMutation, useQuery } from '@/lib/scopedQueries'
+import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo, useState } from 'react'
@@ -26,7 +28,7 @@ import { AttachRelationDialog, type RelationKind } from '@/features/incidents/At
 import { CommandConsole } from '@/features/incidents/CommandConsole'
 import { AssessmentFormDialog } from '@/features/incidents/AssessmentFormDialog'
 import { MissionFormDialog } from '@/features/incidents/MissionFormDialog'
-import { api, type AuditEntry } from '@/lib/api'
+import { useAPI, type AuditEntry } from '@/lib/api'
 import {
   formatConfidence,
   formatCoord,
@@ -34,7 +36,7 @@ import {
   formatTimestamp,
   truncateId,
 } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { toast } from '@/stores/toasts'
 
 const INCIDENT_TRANSITIONS: Record<string, string[]> = {
@@ -47,6 +49,9 @@ const INCIDENT_TRANSITIONS: Record<string, string[]> = {
 }
 
 export function IncidentDetailPage() {
+  const exercise = useWorkspace().session.resource.partition === 'EXERCISE_OBSERVATION'
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const { id } = useParams({ from: '/incidents/$id' })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -170,7 +175,7 @@ export function IncidentDetailPage() {
                 incident.assessments.length}
               )
             </TabsTab>
-            <TabsTab value="operations">Missions &amp; Commands</TabsTab>
+            {exercise && <TabsTab value="operations">Missions &amp; Commands</TabsTab>}
             <TabsTab value="audit">Audit ({auditQuery.data?.total ?? 0})</TabsTab>
           </TabsList>
 
@@ -386,6 +391,7 @@ export function IncidentDetailPage() {
                         key={assessment.id}
                         className="rounded-[4px] border border-edge bg-panel px-4 py-2.5"
                       >
+                        {assessment.reviewStatus && <p className="text-xs font-semibold text-ink">{assessment.reviewStatus} · <Link to="/intelligence" search={{ assessment: assessment.id }} className="underline">Inspect review history</Link></p>}
                         <p className="text-xs text-ink">{assessment.conclusion}</p>
                         <p className="mt-0.5 font-mono text-[12px] text-ink-faint">
                           {assessment.method} · {formatConfidence(assessment.confidence)} ·{' '}
@@ -399,7 +405,7 @@ export function IncidentDetailPage() {
             </div>
           </TabsPanel>
 
-          <TabsPanel value="operations" keepMounted>
+          {exercise && <TabsPanel value="operations" keepMounted>
             <div className="flex max-w-6xl flex-col gap-5">
               <div className="flex items-center justify-between gap-3">
                 <SectionTitle>Mission planning</SectionTitle>
@@ -410,7 +416,7 @@ export function IncidentDetailPage() {
               </div>
               <CommandConsole incidentId={id} />
             </div>
-          </TabsPanel>
+          </TabsPanel>}
 
           <TabsPanel value="audit" keepMounted>
             <div className="max-w-6xl">

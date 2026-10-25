@@ -12,6 +12,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type setStateCall struct {
@@ -148,7 +149,7 @@ func TestHandleTrackUpdatedPublishesBreachOnEntry(t *testing.T) {
 	svc, recorder := newTestService(repo)
 	position := geo.Point{Lat: 10, Lng: 20}
 
-	svc.HandleTrackUpdated(context.Background(), events.TrackUpdated{TrackID: "trk_1", Position: &position})
+	svc.HandleTrackUpdated(testsupport.Context(), events.TrackUpdated{TrackID: "trk_1", Position: &position})
 
 	if len(recorder.breaches) != 1 {
 		t.Fatalf("expected 1 breach event, got %d", len(recorder.breaches))
@@ -178,7 +179,7 @@ func TestHandleTrackUpdatedRefreshesStateWhenAlreadyInside(t *testing.T) {
 	svc, recorder := newTestService(repo)
 	position := geo.Point{Lat: 10, Lng: 20}
 
-	svc.HandleTrackUpdated(context.Background(), events.TrackUpdated{TrackID: "trk_1", Position: &position})
+	svc.HandleTrackUpdated(testsupport.Context(), events.TrackUpdated{TrackID: "trk_1", Position: &position})
 
 	if len(recorder.breaches) != 0 {
 		t.Fatalf("expected no breach events, got %d", len(recorder.breaches))
@@ -194,7 +195,7 @@ func TestHandleTrackUpdatedPublishesExitWhenLeaving(t *testing.T) {
 	svc, recorder := newTestService(repo)
 	position := geo.Point{Lat: 10, Lng: 20}
 
-	svc.HandleTrackUpdated(context.Background(), events.TrackUpdated{TrackID: "trk_1", Position: &position})
+	svc.HandleTrackUpdated(testsupport.Context(), events.TrackUpdated{TrackID: "trk_1", Position: &position})
 
 	if len(recorder.exits) != 1 {
 		t.Fatalf("expected 1 exit event, got %d", len(recorder.exits))
@@ -213,7 +214,7 @@ func TestHandleTrackUpdatedIgnoresTrackWithoutPosition(t *testing.T) {
 	repo := &fakeRepository{containing: []Geofence{{ID: "geo_1"}}}
 	svc, recorder := newTestService(repo)
 
-	svc.HandleTrackUpdated(context.Background(), events.TrackUpdated{TrackID: "trk_1"})
+	svc.HandleTrackUpdated(testsupport.Context(), events.TrackUpdated{TrackID: "trk_1"})
 
 	if repo.containingCalls != 0 || len(repo.setStateCalls) != 0 {
 		t.Fatal("expected no repository calls without a position")
@@ -228,7 +229,7 @@ func TestHandleTrackUpdatedIgnoresPersistedOutsideState(t *testing.T) {
 	svc, recorder := newTestService(repo)
 	position := geo.Point{Lat: 10, Lng: 20}
 
-	svc.HandleTrackUpdated(context.Background(), events.TrackUpdated{TrackID: "trk_1", Position: &position})
+	svc.HandleTrackUpdated(testsupport.Context(), events.TrackUpdated{TrackID: "trk_1", Position: &position})
 
 	if len(repo.setStateCalls) != 0 {
 		t.Fatalf("expected no state calls, got %+v", repo.setStateCalls)
@@ -249,7 +250,7 @@ func TestHandleTrackUpdatedIgnoresOlderTrackEvent(t *testing.T) {
 	svc, recorder := newTestService(repo)
 	position := geo.Point{Lat: 10, Lng: 20}
 
-	svc.HandleTrackUpdated(context.Background(), events.TrackUpdated{
+	svc.HandleTrackUpdated(testsupport.Context(), events.TrackUpdated{
 		TrackID:    "trk_1",
 		Position:   &position,
 		ObservedAt: latest.Add(-time.Second),
@@ -276,7 +277,7 @@ func TestHandleTrackUpdatedScopesScenarioGeofences(t *testing.T) {
 	svc, recorder := newTestService(repo)
 	position := geo.Point{Lat: 10, Lng: 20}
 
-	svc.HandleTrackUpdated(runctx.WithScope(context.Background(), scope), events.TrackUpdated{
+	svc.HandleTrackUpdated(runctx.WithScope(testsupport.Context(), scope), events.TrackUpdated{
 		TrackID:  "trk_1",
 		Position: &position,
 	})
@@ -299,7 +300,7 @@ func TestHandleTrackUpdatedScopesScenarioExitState(t *testing.T) {
 	svc, recorder := newTestService(repo)
 	position := geo.Point{Lat: 10, Lng: 20}
 
-	svc.HandleTrackUpdated(runctx.WithScope(context.Background(), scope), events.TrackUpdated{
+	svc.HandleTrackUpdated(runctx.WithScope(testsupport.Context(), scope), events.TrackUpdated{
 		TrackID:  "trk_1",
 		Position: &position,
 	})
@@ -316,7 +317,7 @@ func TestCreatePublishesGeofenceCreated(t *testing.T) {
 	repo := &fakeRepository{}
 	svc, recorder := newTestService(repo)
 
-	created, err := svc.Create(context.Background(), CreateInput{
+	created, err := svc.Create(testsupport.Context(), CreateInput{
 		Name:     "Patrol Area",
 		Type:     TypePatrol,
 		Severity: SeverityLow,
@@ -341,7 +342,7 @@ func TestEnsureReturnsExistingGeofence(t *testing.T) {
 	repo := &fakeRepository{getResult: existing}
 	svc, recorder := newTestService(repo)
 
-	geofence, created, err := svc.Ensure(context.Background(), CreateInput{
+	geofence, created, err := svc.Ensure(testsupport.Context(), CreateInput{
 		ID:      "geo_1",
 		Name:    "Zone",
 		Type:    TypeRestricted,
@@ -365,7 +366,7 @@ func TestEnsureCreatesMissingGeofence(t *testing.T) {
 	repo := &fakeRepository{getErr: apperr.NotFound("geofence", "geo_1")}
 	svc, recorder := newTestService(repo)
 
-	geofence, created, err := svc.Ensure(context.Background(), CreateInput{
+	geofence, created, err := svc.Ensure(testsupport.Context(), CreateInput{
 		ID:      "geo_1",
 		Name:    "Zone",
 		Type:    TypeRestricted,
@@ -385,10 +386,10 @@ func TestEnsureCreatesMissingGeofence(t *testing.T) {
 func TestAssetsWithinRadiusValidatesInput(t *testing.T) {
 	svc, _ := newTestService(&fakeRepository{})
 
-	if _, err := svc.AssetsWithinRadius(context.Background(), geo.Point{Lat: 0, Lng: 0}, 0, 0); err == nil {
+	if _, err := svc.AssetsWithinRadius(testsupport.Context(), geo.Point{Lat: 0, Lng: 0}, 0, 0); err == nil {
 		t.Fatal("expected radius validation error")
 	}
-	if _, err := svc.AssetsWithinRadius(context.Background(), geo.Point{Lat: 99, Lng: 0}, 100, 0); err == nil {
+	if _, err := svc.AssetsWithinRadius(testsupport.Context(), geo.Point{Lat: 99, Lng: 0}, 100, 0); err == nil {
 		t.Fatal("expected center validation error")
 	}
 }

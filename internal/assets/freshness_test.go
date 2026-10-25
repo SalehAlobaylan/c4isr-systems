@@ -10,6 +10,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 func discardDispatcher() *events.Dispatcher {
@@ -115,7 +116,7 @@ func TestGetClassifiesFreshness(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			svc, _ := freshnessService(t, now, tc.asset)
-			got, err := svc.Get(context.Background(), tc.asset.ID)
+			got, err := svc.Get(testsupport.Context(), tc.asset.ID)
 			if err != nil {
 				t.Fatalf("Get() error = %v", err)
 			}
@@ -134,7 +135,7 @@ func TestListClassifiesFreshness(t *testing.T) {
 		Asset{ID: "ast_old", Status: StatusAvailable, ConnectionState: "connected", LastSeenAt: &old},
 	)
 
-	items, _, err := svc.List(context.Background(), 0, 0)
+	items, _, err := svc.List(testsupport.Context(), 0, 0)
 	if err != nil {
 		t.Fatalf("List() error = %v", err)
 	}
@@ -156,7 +157,7 @@ func TestFreshnessIsNotPersisted(t *testing.T) {
 	longAgo := now.Add(-time.Hour)
 	svc, repo := freshnessService(t, now, Asset{ID: "ast_1", Status: StatusAvailable, ConnectionState: "connected", LastSeenAt: &longAgo})
 
-	read, err := svc.Get(context.Background(), "ast_1")
+	read, err := svc.Get(testsupport.Context(), "ast_1")
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
@@ -172,7 +173,7 @@ func TestUpdateStatusClassifiesFreshness(t *testing.T) {
 	now := time.Date(2026, 10, 13, 12, 0, 0, 0, time.UTC)
 	svc, _ := freshnessService(t, now, Asset{ID: "ast_1", Status: StatusAvailable, ConnectionState: "connected"})
 
-	updated, err := svc.UpdateStatus(context.Background(), "ast_1", StatusOffline)
+	updated, err := svc.UpdateStatus(testsupport.Context(), "ast_1", StatusOffline)
 	if err != nil {
 		t.Fatalf("UpdateStatus() error = %v", err)
 	}

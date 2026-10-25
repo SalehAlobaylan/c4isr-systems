@@ -7,10 +7,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
 )
 
 // Open creates a pgx pool and verifies connectivity.
@@ -48,6 +47,10 @@ func WithTx(ctx context.Context, pool *pgxpool.Pool, fn func(tx pgx.Tx) error) e
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)
 	}
+	if err := BindTx(ctx, tx); err != nil {
+		_ = tx.Rollback(context.WithoutCancel(ctx))
+		return normalizeScopeError(ctx, err)
+	}
 	defer func() {
 		if p := recover(); p != nil {
 			_ = tx.Rollback(context.WithoutCancel(ctx))
@@ -59,7 +62,7 @@ func WithTx(ctx context.Context, pool *pgxpool.Pool, fn func(tx pgx.Tx) error) e
 		rollbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
 		defer cancel()
 		_ = tx.Rollback(rollbackCtx)
-		return err
+		return normalizeScopeError(ctx, err)
 	}
 	if err := tx.Commit(ctx); err != nil {
 		return fmt.Errorf("commit transaction: %w", err)

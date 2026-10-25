@@ -12,6 +12,7 @@ const (
 	ActorOperator ActorType = "OPERATOR"
 	ActorScenario ActorType = "SCENARIO"
 	ActorAI       ActorType = "AI"
+	ActorService  ActorType = "SERVICE"
 )
 
 // Entry is one immutable record of something the system observed or did.

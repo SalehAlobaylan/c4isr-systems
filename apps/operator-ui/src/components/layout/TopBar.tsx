@@ -1,14 +1,18 @@
+import { useQuery } from '@/lib/scopedQueries'
+import { resourceKey, useWorkspace } from '@/lib/workspaceContext'
+import { useScrubStore } from '@/stores/scrub'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+
 import { Dialog as BaseDialog } from '@base-ui-components/react/dialog'
 
 import { UserIcon } from '@/components/icons'
 import { Menu } from '@/components/ui/menu'
+import { ModuleNav } from '@/components/layout/ModuleNav'
 import { Tooltip } from '@/components/ui/tooltip'
-import { API_TOKEN, api, fetchHealth, realtimeUrl } from '@/lib/api'
+import { API_TOKEN, useAPI, realtimeUrl } from '@/lib/api'
 import { formatRelative } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { cn } from '@/lib/utils'
 import { useRealtime, type RealtimeStatus } from '@/realtime/RealtimeProvider'
 import { toast } from '@/stores/toasts'
@@ -85,6 +89,8 @@ function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 export function TopBar() {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const navigate = useNavigate()
   const location = useLocation()
   const { status: realtimeStatus, lastEventAt } = useRealtime()
@@ -97,17 +103,17 @@ export function TopBar() {
 
   const healthQuery = useQuery({
     queryKey: queryKeys.health(),
-    queryFn: ({ signal }) => fetchHealth(signal),
+    queryFn: ({ signal }) => api.fetchHealth(signal),
     refetchInterval: 30_000,
     retry: 1,
   })
 
-  const sessionQuery = useQuery({
-    queryKey: queryKeys.currentOperator(),
-    queryFn: () => api.getCurrentOperator(),
-    retry: false,
-    staleTime: 5 * 60_000,
-  })
+  const workspace = useWorkspace()
+  const sessionQuery = { data: workspace.session }
+  const publicContext = workspace.session.resource.partition === 'PUBLIC_EVIDENCE'
+  const recordingView = location.pathname.startsWith('/recordings')
+  const live = useScrubStore((state) => state.live)
+  const sideViews = SECONDARY_VIEWS.filter((v) => !publicContext || !['/assets', '/scenarios'].includes(v.to))
 
   const authenticated = Boolean(sessionQuery.data?.operator?.id)
   const operatorID = sessionQuery.data?.operator?.id ?? 'not authenticated'
@@ -118,7 +124,7 @@ export function TopBar() {
   // says so in the disclosure itself, so the collapse of the side features
   // into one control never costs the operator their bearings.
   const activeSideFeature =
-    SECONDARY_VIEWS.find((view) => location.pathname.startsWith(view.to)) ?? null
+    sideViews.find((view) => location.pathname.startsWith(view.to)) ?? null
 
   const healthOk = healthQuery.isSuccess && healthQuery.data.status === 'ok'
   const healthDown = healthQuery.isError
@@ -148,7 +154,7 @@ export function TopBar() {
           : healthDegraded
             ? { label: 'DEGRADED', tone: 'aegis-warn' as const }
             : realtimeStatus === 'connected' && healthOk
-              ? { label: 'LIVE', tone: 'aegis-ok' as const }
+              ? { label: recordingView ? 'CONNECTED' : 'LIVE', tone: 'aegis-ok' as const }
               : { label: 'CHECKING', tone: 'aegis-faint' as const }
   // A degraded backend needs its time context visible, not only in a tooltip:
   // "since when has this been degraded?" is the question an operator asks
@@ -185,12 +191,12 @@ export function TopBar() {
       if (/^[1-9]$/.test(event.key)) {
         event.preventDefault()
         const view = ALL_VIEWS[Number(event.key) - 1]
-        if (view) void navigate({ to: view.to as never })
+        if (view && (!publicContext || !['/assets', '/scenarios'].includes(view.to))) void navigate({ to: view.to as never })
       }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [helpOpen, navigate, toggleHelp])
+  }, [helpOpen, navigate, toggleHelp, publicContext])
 
   return (
     <>
@@ -198,6 +204,26 @@ export function TopBar() {
           then whether you can trust it, then who you are. The brand
           descriptor moved to the footer, because a brand expression is the
           last thing the header should spend its height on. */}
+      <section className="emad-workspace" aria-label="Workspace context" data-resource={resourceKey(workspace.session.resource)}>
+        <nav aria-label="Product workspaces">
+          {(['PUBLIC_EVIDENCE', 'EXERCISE_OBSERVATION'] as const).map((partition) => {
+            const choices = (workspace.session.resources ?? []).filter((r) => r.partition === partition)
+            return <button key={partition} type="button" aria-pressed={workspace.session.resource.partition === partition}
+              disabled={!choices.length} onClick={() => {
+                if (workspace.session.resource.partition !== partition) void workspace.select(choices[0])
+              }}>{partition === 'PUBLIC_EVIDENCE' ? 'Public Context' : 'Exercise COP'}</button>
+          })}
+        </nav>
+        <label>Workspace / environment / run
+          <select aria-label="Workspace environment and run" value={resourceKey(workspace.session.resource)}
+            onChange={(e) => { const r = workspace.session.resources?.find((r) => resourceKey(r) === e.target.value); if (r) void workspace.select(r) }}>
+            {(workspace.session.resources ?? [workspace.session.resource]).map((r) => <option key={resourceKey(r)} value={resourceKey(r)}>
+              {r.workspaceId} / {r.environmentId} / {r.runId ?? 'public'}
+            </option>)}
+          </select>
+        </label>
+        <span data-testid="workspace-basis">{recordingView ? 'Recorded exercise output · virtual replay clock · read only' : `${publicContext ? 'Public sources · UTC wall clock' : 'Synthetic observations · virtual run clock / UTC evidence'} · ${live ? 'live' : 'historical replay'}`}</span>
+      </section>
       <div ref={shellRef} className="topbar-shell">
         <header ref={barRef} className="aegis-topbar">
         <div ref={brandRef} className="aegis-brand">
@@ -246,11 +272,11 @@ export function TopBar() {
                 </span>
               </button>
             }
-            items={SECONDARY_VIEWS.map((view) => ({
+            items={[...sideViews.map((view) => ({
               label: view.label,
               hint: String(view.index),
               onSelect: () => void navigate({ to: view.to as never }),
-            }))}
+            })), ...(!publicContext && /^rt_[a-f0-9]{64}$/.test(workspace.session.resource.runId ?? '') && workspace.session.permissions.includes('scenarios.read') ? [{label: 'Exercise tasking', hint: '', onSelect: () => void navigate({to: '/exercise'})}] : [])]}
           />
         </nav>
         <span className="aegis-vsep" aria-hidden="true" />
@@ -297,6 +323,10 @@ export function TopBar() {
               }
               items={[
                 {
+                  label: `Role: ${operatorRole}`,
+                  disabled: true,
+                },
+                {
                   label: 'Copy operator ID',
                   onSelect: () => {
                     void navigator.clipboard.writeText(operatorID)
@@ -330,6 +360,7 @@ export function TopBar() {
           </button>
         </div>
       </header>
+      <ModuleNav />
       </div>
 
       {/* The scenario transport is not part of the shell. Scenarios are a side

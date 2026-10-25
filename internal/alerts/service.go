@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
@@ -73,6 +74,10 @@ func NewServiceWithClassifier(repo Repository, bus *events.Dispatcher, classifie
 // trail from alert back to source observation stays intact - the same
 // provenance guarantee a track-derived alert gives.
 func (s *Service) HandleAreaGeofenceOverlapped(ctx context.Context, ev events.AreaGeofenceOverlapped) {
+	if scopeErr := access.Require(ctx, "alerts.project"); scopeErr != nil {
+		return
+	}
+
 	spanCtx, span := observability.StartSpan(ctx, "c4isr.alert.generate",
 		attribute.String("alert.type", areaOverlapType),
 		attribute.String("observation.id", ev.ObservationID),
@@ -156,6 +161,10 @@ func (s *Service) HandleAreaGeofenceOverlapped(ctx context.Context, ev events.Ar
 // HandleGeofenceBreached raises an alert for a breach, suppressing duplicates
 // while an alert for the same geofence and track remains unresolved.
 func (s *Service) HandleGeofenceBreached(ctx context.Context, ev events.GeofenceBreached) {
+	if scopeErr := access.Require(ctx, "alerts.project"); scopeErr != nil {
+		return
+	}
+
 	spanCtx, span := observability.StartSpan(ctx, "c4isr.alert.generate",
 		attribute.String("geofence.id", ev.GeofenceID),
 		attribute.String("track.id", ev.TrackID),
@@ -232,11 +241,19 @@ func (s *Service) HandleGeofenceBreached(ctx context.Context, ev events.Geofence
 
 // Get returns an alert by id.
 func (s *Service) Get(ctx context.Context, id string) (Alert, error) {
+	if scopeErr := access.Require(ctx, "alerts.read"); scopeErr != nil {
+		return Alert{}, scopeErr
+	}
+
 	return s.repo.Get(ctx, id)
 }
 
 // List returns alerts newest first.
 func (s *Service) List(ctx context.Context, filter ListFilter, limit, offset int) ([]Alert, int, error) {
+	if scopeErr := access.Require(ctx, "alerts.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	limit = clampLimit(limit)
 	if offset < 0 {
 		offset = 0
@@ -246,6 +263,10 @@ func (s *Service) List(ctx context.Context, filter ListFilter, limit, offset int
 
 // Acknowledge marks an ACTIVE alert as seen by an operator.
 func (s *Service) Acknowledge(ctx context.Context, id, operator string) (Alert, error) {
+	if scopeErr := access.Require(ctx, "alerts.acknowledge"); scopeErr != nil {
+		return Alert{}, scopeErr
+	}
+
 	updated, err := s.repo.Acknowledge(ctx, id, operator)
 	if err != nil {
 		return Alert{}, err
@@ -260,6 +281,10 @@ func (s *Service) Acknowledge(ctx context.Context, id, operator string) (Alert, 
 
 // Resolve closes an alert.
 func (s *Service) Resolve(ctx context.Context, id, operator string) (Alert, error) {
+	if scopeErr := access.Require(ctx, "alerts.resolve"); scopeErr != nil {
+		return Alert{}, scopeErr
+	}
+
 	updated, err := s.repo.Resolve(ctx, id, operator)
 	if err != nil {
 		return Alert{}, err
@@ -274,6 +299,10 @@ func (s *Service) Resolve(ctx context.Context, id, operator string) (Alert, erro
 
 // SetIncident links an alert to an incident workspace.
 func (s *Service) SetIncident(ctx context.Context, alertID, incidentID string) error {
+	if scopeErr := access.Require(ctx, "alerts.project"); scopeErr != nil {
+		return scopeErr
+	}
+
 	return s.repo.SetIncident(ctx, alertID, incidentID)
 }
 

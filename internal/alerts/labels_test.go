@@ -10,6 +10,7 @@ import (
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/classifications"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type fakeClassifier struct {
@@ -35,7 +36,7 @@ func TestBreachTitleNamesTheSubjectNotTheIdentifier(t *testing.T) {
 		Confidence: confidence(0.91),
 	}}
 
-	subject := DescribeTrack(context.Background(), "trk_01m2z50fzhyrcdb3832nxcpycv", classifier)
+	subject := DescribeTrack(testsupport.Context(), "trk_01m2z50fzhyrcdb3832nxcpycv", classifier)
 	title := subject.BreachTitle("Restricted Zone A")
 
 	if strings.Contains(title, "trk_01m2z50fzhyrcdb3832nxcpycv") {
@@ -55,7 +56,7 @@ func TestBreachTitleHedgesLowConfidence(t *testing.T) {
 		Confidence: confidence(0.4),
 	}}
 
-	subject := DescribeTrack(context.Background(), "trk_1", classifier)
+	subject := DescribeTrack(testsupport.Context(), "trk_1", classifier)
 	if subject.Confirmed {
 		t.Fatal("a 0.4 confidence classification must not read as confirmed")
 	}
@@ -67,7 +68,7 @@ func TestBreachTitleHedgesLowConfidence(t *testing.T) {
 func TestDescribeTrackWithoutConfidenceDoesNotClaimCertainty(t *testing.T) {
 	classifier := &fakeClassifier{latest: &classifications.Classification{Label: "drone"}}
 
-	subject := DescribeTrack(context.Background(), "trk_1", classifier)
+	subject := DescribeTrack(testsupport.Context(), "trk_1", classifier)
 	if subject.Label != "drone" {
 		t.Fatalf("label = %q, want drone", subject.Label)
 	}
@@ -88,7 +89,7 @@ func TestDescribeTrackWithoutClassificationStaysHonest(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			subject := DescribeTrack(context.Background(), "trk_1", tc.classifier)
+			subject := DescribeTrack(testsupport.Context(), "trk_1", tc.classifier)
 			if subject.Label != "Unidentified contact" {
 				t.Fatalf("label = %q, want %q", subject.Label, "Unidentified contact")
 			}
@@ -107,7 +108,7 @@ func TestDescribeTrackSurvivesClassifierFailure(t *testing.T) {
 	// name: an operator who trusts a label acts on it.
 	classifier := &fakeClassifier{err: errors.New("database unavailable")}
 
-	subject := DescribeTrack(context.Background(), "trk_1", classifier)
+	subject := DescribeTrack(testsupport.Context(), "trk_1", classifier)
 	if subject.Label != "Unidentified contact" || subject.Confirmed {
 		t.Fatalf("subject = %+v, want unidentified and unconfirmed", subject)
 	}
@@ -139,7 +140,7 @@ func TestHandleGeofenceBreachedStoresResolvedSubjectOnTheAlert(t *testing.T) {
 	bus := events.NewDispatcher(slog.New(slog.NewTextHandler(io.Discard, nil)))
 	svc := NewServiceWithClassifier(repo, bus, classifier)
 
-	svc.HandleGeofenceBreached(context.Background(), events.GeofenceBreached{
+	svc.HandleGeofenceBreached(testsupport.Context(), events.GeofenceBreached{
 		GeofenceID:   "gf_1",
 		GeofenceName: "Restricted Zone A",
 		GeofenceType: "restricted",
@@ -182,7 +183,7 @@ func TestHandleGeofenceBreachedWithoutClassifierStillReadsAsProse(t *testing.T) 
 	repo := &fakeRepository{}
 	svc, _ := newTestService(repo)
 
-	svc.HandleGeofenceBreached(context.Background(), events.GeofenceBreached{
+	svc.HandleGeofenceBreached(testsupport.Context(), events.GeofenceBreached{
 		GeofenceID:   "gf_1",
 		GeofenceName: "Restricted Zone A",
 		GeofenceType: "restricted",

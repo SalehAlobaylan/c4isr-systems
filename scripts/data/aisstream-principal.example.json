@@ -1,0 +1,18 @@
+{
+  "id": "aisstream-connector",
+  "kind": "service",
+  "name": "aisstream bounded connector",
+  "resource": {
+    "workspaceId": "public-context",
+    "environmentId": "world",
+    "partition": "PUBLIC_EVIDENCE"
+  },
+  "permissions": [
+    "operational.read",
+    "sources.read",
+    "connectors.execute"
+  ],
+  "sourceIds": [
+    "REPLACE_WITH_REGISTERED_AISSTREAM_SOURCE_ID"
+  ]
+}

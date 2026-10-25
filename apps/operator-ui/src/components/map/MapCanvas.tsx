@@ -1,4 +1,4 @@
-import type { Feature, Geometry } from 'geojson'
+import type { Feature, FeatureCollection, Geometry } from 'geojson'
 import maplibregl, {
   type ExpressionSpecification,
   type GeoJSONSource,
@@ -23,6 +23,7 @@ import {
 } from './geojson'
 
 import 'maplibre-gl/dist/maplibre-gl.css'
+import { paintSnapshot } from './displaySnapshots'
 
 const RIYADH_CENTER: [number, number] = [46.676, 24.712]
 
@@ -253,9 +254,22 @@ function addOperationalLayers(map: maplibregl.Map): string[] {
      every channel is drawn (DESIGN.md §4.2). */
   const alreadyDrawn = map.getLayer('track-circle') !== undefined
   if (alreadyDrawn) {
-    const existing = [...Object.values(LAYER_GROUPS).flat(), 'measure-line', 'measure-points']
+    const existing = ['public-selection-outline','public-selection-point','public-reference-fill','public-reference-line','public-reference-points','public-event-fill','public-event-outline','public-event-measurement-outline','public-event-buffer-outline','public-event-points', ...Object.values(LAYER_GROUPS).flat(), 'measure-line', 'measure-points']
     return existing.filter((id) => map.getLayer(id) !== undefined)
   }
+
+  map.addSource('public-context', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+  map.addLayer({ id: 'public-reference-fill', type: 'fill', source: 'public-context', filter: ['all', ['==', ['get', 'layerKind'], 'reference'], ['==', ['geometry-type'], 'Polygon']], paint: { 'fill-color': c.inkSoft, 'fill-opacity': 0.06 } })
+  map.addLayer({ id: 'public-reference-line', type: 'line', source: 'public-context', filter: ['all', ['==', ['get', 'layerKind'], 'reference'], ['!=', ['geometry-type'], 'Point']], paint: { 'line-color': '#487a95', 'line-width': 1.5 } })
+  map.addLayer({ id: 'public-reference-points', type: 'circle', source: 'public-context', filter: ['all', ['==', ['get', 'layerKind'], 'reference'], ['==', ['geometry-type'], 'Point']], paint: { 'circle-color': c.inkSoft, 'circle-radius': 3 } })
+  map.addLayer({ id: 'public-event-fill', type: 'fill', source: 'public-context', filter: ['all', ['==', ['get', 'layerKind'], 'event'], ['==', ['geometry-type'], 'Polygon']], paint: { 'fill-color': c.track, 'fill-opacity': 0.16 } })
+  map.addLayer({ id: 'public-event-outline', type: 'line', source: 'public-context', filter: ['all', ['==', ['get', 'layerKind'], 'event'], ['==', ['geometry-type'], 'Polygon'], ['!=', ['get', 'geometryRole'], 'derived_buffer'], ['!=', ['get', 'geometryRole'], 'measurement_footprint']], paint: { 'line-color': c.track, 'line-width': 1.5 } })
+  map.addLayer({ id: 'public-event-measurement-outline', type: 'line', source: 'public-context', filter: ['all', ['==', ['get', 'layerKind'], 'event'], ['==', ['geometry-type'], 'Polygon'], ['==', ['get', 'geometryRole'], 'measurement_footprint']], paint: { 'line-color': c.track, 'line-width': 1.5, 'line-dasharray': [1, 1] } })
+  map.addLayer({ id: 'public-event-buffer-outline', type: 'line', source: 'public-context', filter: ['all', ['==', ['get', 'layerKind'], 'event'], ['==', ['geometry-type'], 'Polygon'], ['==', ['get', 'geometryRole'], 'derived_buffer']], paint: { 'line-color': c.track, 'line-width': 1.5, 'line-dasharray': [3, 2] } })
+  map.addLayer({ id: 'public-event-points', type: 'circle', source: 'public-context', filter: ['all', ['==', ['get', 'layerKind'], 'event'], ['==', ['geometry-type'], 'Point']], paint: { 'circle-color': c.track, 'circle-radius': 5, 'circle-stroke-color': c.ground, 'circle-stroke-width': 2 } })
+  map.addLayer({id:'public-selection-outline',type:'line',source:'public-context',filter:['all',['==',['get','layerKind'],'selection'],['==',['geometry-type'],'Polygon']],paint:{'line-color':c.selection,'line-width':2,'line-dasharray':[4,2]}})
+  map.addLayer({id:'public-selection-point',type:'circle',source:'public-context',filter:['all',['==',['get','layerKind'],'selection'],['==',['geometry-type'],'Point']],paint:{'circle-color':c.selection,'circle-opacity':.15,'circle-radius':10,'circle-stroke-color':c.selection,'circle-stroke-width':2}})
+
 
   /* ── Areas and geofences ─────────────────────────────────────────────
      Colour follows the domain severity or phenomenon class. Neither implies
@@ -572,18 +586,27 @@ paint: {
   // Measurement is not a toggleable layer — it is a mode, and the tools that
   // set it live in the map toolbar — so it is listed here rather than in
   // LAYER_GROUPS, while still being part of what must have been drawn.
-  const expected = [...Object.values(LAYER_GROUPS).flat(), 'measure-line', 'measure-points']
+  const expected = ['public-selection-outline','public-selection-point','public-reference-fill','public-reference-line','public-reference-points','public-event-fill','public-event-outline','public-event-measurement-outline','public-event-buffer-outline','public-event-points', ...Object.values(LAYER_GROUPS).flat(), 'measure-line', 'measure-points']
   return expected.filter((id) => map.getLayer(id) !== undefined)
 }
 
-function source(map: maplibregl.Map, id: string): GeoJSONSource | undefined {
-  return map.getSource(id) as GeoJSONSource | undefined
+function source(map: maplibregl.Map | null, id: string): GeoJSONSource | undefined {
+  // A passive effect can still see the previous ready state during teardown.
+  // Never read sources from an absent or already removed map.
+  return map?.getStyle() ? map.getSource(id) as GeoJSONSource | undefined : undefined
 }
 
 export interface MapCanvasProps {
+  interpolate?: boolean
   geofences: Geofence[]
   /** Area observations (hazard footprints, weather cells) rendered as fills. */
   areas?: Observation[]
+  publicFeatures?: FeatureCollection
+  onPublicSelect?: (id: string) => void
+  publicView?: boolean
+  onViewport?: (bbox:string)=>void
+  initialCamera?: {lng:number;lat:number;zoom:number;bearing:number;pitch:number}
+  onCameraChange?: (camera:{lng:number;lat:number;zoom:number;bearing:number;pitch:number})=>void
   tracks: Track[]
   assets: Asset[]
   history: TrackHistoryPoint[]
@@ -616,6 +639,8 @@ export interface MapCanvasProps {
 
 /** The camera controls the edge toolbar exposes. */
 export interface MapCameraHandle {
+  focus: (lng: number, lat: number) => void
+  fitBounds: (bounds:[number,number,number,number])=>void
   zoomIn: () => void
   zoomOut: () => void
   /** Current zoom, so the toolbar can report it rather than guess. */
@@ -623,8 +648,15 @@ export interface MapCameraHandle {
 }
 
 export function MapCanvas({
+  interpolate = false,
   geofences,
   areas,
+  publicFeatures,
+  onPublicSelect,
+  publicView,
+  onViewport,
+  initialCamera,
+  onCameraChange,
   tracks,
   assets,
   history,
@@ -638,6 +670,7 @@ export function MapCanvas({
   cameraRef,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
+  const pointSnapshots = useRef<Record<string,FeatureCollection>>({})
   const mapRef = useRef<maplibregl.Map | null>(null)
   const [ready, setReady] = useState(false)
   // The camera handle the edge toolbar drives. Every call is null-safe: the
@@ -647,6 +680,8 @@ export function MapCanvas({
   useImperativeHandle(
     cameraRef,
     () => ({
+      focus: (lng, lat) => mapRef.current?.easeTo({ center: [lng, lat], zoom: Math.max(mapRef.current.getZoom(), 12), duration: 0 }),
+      fitBounds: b => mapRef.current?.fitBounds([[b[0],b[1]],[b[2],b[3]]],{padding:40,maxZoom:15,duration:0}),
       zoomIn: () => mapRef.current?.zoomIn({ duration: 180 }),
       zoomOut: () => mapRef.current?.zoomOut({ duration: 180 }),
       zoom: () => mapRef.current?.getZoom() ?? 0,
@@ -660,6 +695,10 @@ export function MapCanvas({
   // tile failed afterwards.
   const drawnRef = useRef(false)
 
+  const onPublicSelectRef = useRef(onPublicSelect)
+  const viewportRef=useRef(onViewport);viewportRef.current=onViewport
+  const cameraChangeRef=useRef(onCameraChange);cameraChangeRef.current=onCameraChange
+  onPublicSelectRef.current = onPublicSelect
   const onSelectRef = useRef(onSelect)
   const onMeasureRef = useRef(onMeasurePoint)
   const modeRef = useRef(mode)
@@ -672,21 +711,29 @@ export function MapCanvas({
     if (!container || mapRef.current) return
 
     let map: maplibregl.Map | null = null
+    let disposed=false
     try {
       const styleUrl = MAP_STYLE_URL
       map = new maplibregl.Map({
         container,
         style: styleUrl && styleUrl.length > 0 ? styleUrl : rasterStyle(),
-        center: RIYADH_CENTER,
-        zoom: 12,
+        center: initialCamera?[initialCamera.lng,initialCamera.lat]:RIYADH_CENTER,
+        zoom: initialCamera?.zoom??(publicView?5:12),
+        bearing:initialCamera?.bearing??0,
+        pitch:initialCamera?.pitch??0,
         attributionControl: { compact: true },
       })
 
       map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right')
       map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: 'metric' }), 'bottom-left')
+      const reportBounds=()=>{const b=map!.getBounds();const west=Math.max(-180,b.getWest()),east=Math.min(180,b.getEast()),south=Math.max(-85,b.getSouth()),north=Math.min(85,b.getNorth());if(east>west&&north>south)viewportRef.current?.([west,south,east,north].map(v=>v.toFixed(5)).join(','))}
+      map.on('moveend',reportBounds)
+      map.on('load',reportBounds)
+      map.on('moveend',()=>{const c=map!.getCenter();cameraChangeRef.current?.({lng:c.lng,lat:c.lat,zoom:map!.getZoom(),bearing:map!.getBearing(),pitch:map!.getPitch()})})
 
 map.on('load', () => {
-        if (!map) return
+        if (!map||disposed) return
+        map.on('click', 'public-event-points', (event) => { const id = event.features?.[0]?.properties?.evidenceId; if (typeof id === 'string') onPublicSelectRef.current?.(id) })
         drawnRef.current = true
         setOperationalLayers(addOperationalLayers(map))
         setReady(true)
@@ -696,8 +743,12 @@ map.on('load', () => {
       // is the difference between a map that recovers and one that silently
       // loses its entities (DESIGN.md §4.2).
       map.on('style.load', () => {
-        if (!map) return
+        if (!map||disposed) return
         setOperationalLayers(addOperationalLayers(map))
+        // Geographic overlays can draw as soon as the style exists. A slow or
+        // unavailable external raster tile must not hide retained geography.
+        drawnRef.current = true
+        setReady(true)
       })
 
       // A style that never loads leaves an empty canvas with nothing to say so.
@@ -711,6 +762,7 @@ map.on('load', () => {
       // z/x/y tile. Only a failure before the first completed render, with no
       // tile attached, is read as "the map cannot work".
       map.on('error', (event) => {
+        if(disposed)return
         if ((event as { tile?: unknown }).tile) return
         if (drawnRef.current) return
         if (event.error) setInitError(`Basemap unavailable — ${event.error.message}`)
@@ -726,7 +778,10 @@ map.on('load', () => {
       return
     }
 
+    const resize=new ResizeObserver(()=>{if(!disposed)map?.resize()});resize.observe(container)
     return () => {
+      disposed=true
+      resize.disconnect()
       mapRef.current = null
       drawnRef.current = false
       setReady(false)
@@ -792,13 +847,13 @@ map.on('load', () => {
 
   useEffect(() => {
     if (!ready) return
-    source(mapRef.current!, 'track-points')?.setData(trackFeatures(tracks))
-  }, [ready, tracks])
+    return paintSnapshot(source(mapRef.current!, 'track-points'), trackFeatures(tracks), pointSnapshots.current, 'track-points', interpolate)
+  }, [ready, tracks, interpolate])
 
   useEffect(() => {
     if (!ready) return
-    source(mapRef.current!, 'asset-points')?.setData(assetFeatures(assets))
-  }, [ready, assets])
+    return paintSnapshot(source(mapRef.current!, 'asset-points'), assetFeatures(assets), pointSnapshots.current, 'asset-points', interpolate)
+  }, [ready, assets, interpolate])
 
   useEffect(() => {
     if (!ready) return
@@ -854,6 +909,10 @@ map.on('load', () => {
     }
   }, [ready, layers])
 
+  useEffect(() => {
+    if (ready && mapRef.current) source(mapRef.current, 'public-context')?.setData(publicFeatures ?? { type: 'FeatureCollection', features: [] })
+  }, [ready, publicFeatures, operationalLayers])
+
   const lastCenteredRef = useRef<string | null>(null)
   const fitPaddingRef = useRef(fitPadding)
   fitPaddingRef.current = fitPadding
@@ -900,7 +959,7 @@ return (
       // becomes a question with an answer rather than an opinion.
       data-map-layers={operationalLayers.join(' ')}
     >
-      <div ref={containerRef} className="h-full w-full" />
+      <div ref={containerRef} data-public-feature-count={publicFeatures?.features.length??0} className="h-full w-full" />
       {/* Preparing the basemap is a loading state, not an empty picture. An
           operator must never read "nothing is happening" while the map is still
           being drawn (DESIGN.md §7.7). */}

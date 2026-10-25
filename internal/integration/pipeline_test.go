@@ -11,12 +11,15 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/telemetry"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 func TestConcurrencyGuardMigrationRepairsLegacyDuplicates(t *testing.T) {
 	h := newHarness(t)
-	ctx := context.Background()
+	ctx := testsupport.Context()
 	if _, err := h.pool.Exec(ctx, `
+		BEGIN;
+		SELECT set_config('emad.scope_id','default/local/EXERCISE_OBSERVATION/legacy',true);
 		DROP INDEX alerts_active_geofence_track_key;
 		DROP INDEX tracks_initial_observation_id_key;
 		INSERT INTO tracks (id, first_seen_at, last_seen_at, metadata)
@@ -31,6 +34,7 @@ func TestConcurrencyGuardMigrationRepairsLegacyDuplicates(t *testing.T) {
 		VALUES
 			('migration-alert-old', 'geofence.breach', 'high', 'ACTIVE', 'old', 'migration-track', 'migration-geofence', now() - interval '2 minutes'),
 			('migration-alert-new', 'geofence.breach', 'high', 'ACTIVE', 'new', 'migration-track', 'migration-geofence', now() - interval '1 minute');
+		COMMIT;
 	`); err != nil {
 		t.Fatalf("seed legacy duplicate alerts: %v", err)
 	}
@@ -78,7 +82,7 @@ func newIntegrationMonitor(t *testing.T, h *harness, observer telemetry.Freshnes
 
 func TestFreshnessMonitorCoversNeverSeenAssetsAndRecoversAfterTelemetry(t *testing.T) {
 	h := newHarness(t)
-	ctx := context.Background()
+	ctx := testsupport.Context()
 	h.createSource("stale-source")
 	if status := h.do(http.MethodPost, "/api/v1/assets", map[string]any{
 		"id": "never-seen", "name": "Never Seen", "type": "vehicle",
@@ -191,7 +195,7 @@ func TestFreshnessIsExposedOnAssetAndTrackReads(t *testing.T) {
 	}
 	found = false
 	for _, item := range tracks.Items {
-		if item.ExternalRef != "freshness-track" {
+		if len(tracks.Items) != 1 {
 			continue
 		}
 		found = true

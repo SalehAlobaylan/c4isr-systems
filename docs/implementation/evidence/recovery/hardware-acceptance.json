@@ -1,0 +1,13 @@
+{
+  "schema": "emad.hardware-measurement.v1",
+  "capturedAt": "2026-10-23T12:45:57.2537800Z",
+  "cpu": "AMD Ryzen 9 7900X 12-Core Processor",
+  "physicalCores": 12,
+  "logicalCPUs": 24,
+  "memoryBytes": 33479524352,
+  "availableGPUs": [
+    "NVIDIA GeForce RTX 4070 Ti SUPER",
+    "AMD Radeon(TM) Graphics"
+  ],
+  "graphicsAcceptance": "Explicit Chromium ANGLE SwiftShader software rendering; available GPU names are not the measured renderer."
+}

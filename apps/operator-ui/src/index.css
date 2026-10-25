@@ -20,6 +20,10 @@
 @import './styles/tokens.css';
 @import './components/board/board.css';
 @import './components/map/picture.css';
+@import './styles/workspace.css';
+@import './styles/atlas.css';
+@import './styles/atlas-dock.css';
+@import './styles/navigation.css';
 
 /* ============================================================================
    Tailwind v4 integration
@@ -2397,16 +2401,8 @@
   }
 }
 
-/* When the bar's single row cannot fit every navigation item, the navigation
-   takes its own row rather than clipping `SCENARIOS` to `SCENAR`. The state is
-   measured in TopBar, not decided by a width: a container query can see the
-   bar's width but never its content, and the unauthenticated operator chip is
-   wider than the signed-in one — the same viewport fits or does not depending
-   on session state. */
-/* Nothing measured above may change when this state toggles — the brand,
-   including its subline, and the status cluster keep their natural widths, or
-   the measurement would feed back into itself and oscillate. */
-
+/* Tablet spacing retains the desktop row. The compact layout below gives
+   navigation its own row when the full header cannot fit a small screen. */
 @media (max-width: 820px) {
   .aegis-topbar,
   .aegis-band,
@@ -2467,4 +2463,59 @@
   .aegis-tray-cell:nth-child(n + 3) {
     border-top: 1px solid var(--emad-border-subtle-soft);
   }
+}
+/* Small screens retain complete status and identity controls, with navigation
+   on its own row. The full role remains available in the identity menu. */
+@media (max-width: 640px) {
+  .aegis-topbar { flex-wrap: wrap; gap: 4px 8px; }
+  .aegis-topbar .aegis-glyph,
+  .aegis-topbar .aegis-vsep,
+  .aegis-topbar .aegis-operator-role { display: none; }
+  .aegis-topright { gap: 4px; }
+  .aegis-console-state,
+  .aegis-topright .aegis-iconbtn { min-height: 44px; }
+  .aegis-topright .aegis-iconbtn { min-width: 44px; }
+  .aegis-nav { order: 1; flex: 1 0 100%; }
+  .aegis-nav a,
+  .aegis-nav-more { min-height: 44px; }
+}
+
+/* Persistent trust and time context for both product workspaces. */
+.emad-workspace { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:8px 16px; border-bottom:1px solid var(--border, #34424c); font-size:12px; }
+.emad-workspace nav { display:flex; gap:6px; }
+.emad-workspace button, .emad-workspace select { padding:5px 8px; border:1px solid currentColor; border-radius:4px; background:transparent; color:inherit; }
+.emad-workspace button[aria-pressed="true"] { font-weight:700; text-decoration:underline; }
+.emad-workspace button:disabled { opacity:.45; }
+.emad-workspace label { display:flex; gap:8px; align-items:center; }
+.emad-workspace select { max-width:42vw; }
+
+.aegis-app > .emad-workspace { grid-row: 2; }
+.emad-workspace button, .emad-workspace select { font: inherit; }
+
+/* Product entry and direct module discovery, using the existing palette. */
+.emad-modules { display:flex; align-items:center; min-width:0; gap:4px; padding:0 16px; border-bottom:1px solid var(--emad-border-subtle-soft); background:var(--emad-surface-panel); }
+.emad-module-links { display:flex; flex:1; min-width:0; gap:4px; overflow-x:auto; }
+.emad-modules a { display:inline-flex; flex-shrink:0; align-items:center; min-height:44px; padding:8px 12px; font-size:12px; font-weight:600; border-bottom:2px solid transparent; }
+.emad-modules a:hover, .emad-modules a[aria-current="page"] { background:var(--emad-surface-inset); border-bottom-color:currentColor; }
+.emad-home { height:100%; overflow:auto; padding:clamp(20px, 4vw, 56px); }
+.emad-home-intro, .emad-pillars, .emad-home-next { max-width:1280px; margin-inline:auto; }
+.emad-home-intro { margin-bottom:32px; }
+.emad-eyebrow { font-family:var(--font-mono, monospace); text-transform:uppercase; letter-spacing:.12em; font-size:11px; }
+.emad-home h1 { font-size:clamp(32px, 4vw, 56px); line-height:1.08; letter-spacing:-.035em; font-weight:600; margin:14px 0 18px; }
+.emad-home-intro > p:last-child { max-width:680px; font-size:16px; line-height:1.65; }
+.emad-pillars { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:20px; }
+.emad-pillar { display:flex; flex-direction:column; min-width:0; padding:28px; border:1px solid var(--emad-border-subtle-soft); border-top:3px solid currentColor; background:var(--emad-surface-panel); }
+.emad-pillar h2 { font-size:26px; font-weight:600; margin:12px 0; letter-spacing:-.02em; }
+.emad-pillar p, .emad-home-next p { line-height:1.65; font-size:14px; }
+.emad-pillar ul { list-style:disc; padding-left:20px; margin:20px 0; font-size:13px; line-height:1.9; }
+.emad-home-action { border-top:1px solid var(--emad-border-subtle-soft); padding-top:18px; margin-top:auto; }
+.emad-access-status { font-weight:600; margin-bottom:8px; }
+.emad-launch { display:inline-flex; align-items:center; min-height:44px; border:1px solid currentColor; padding:10px 16px; margin-top:12px; text-align:left; font-size:13px; font-weight:600; }
+.emad-launch:hover { background:var(--emad-surface-inset); }
+.emad-home-next { display:grid; grid-template-columns:2fr 1fr; gap:32px; padding:28px 0; }
+.emad-home-next h2, .emad-home-next h3 { font-size:16px; font-weight:600; margin-bottom:8px; }
+@media (max-width:760px) {
+  .emad-pillars, .emad-home-next { grid-template-columns:minmax(0, 1fr); }
+  .emad-pillar { padding:22px; }
+  .emad-home h1 { font-size:36px; }
 }

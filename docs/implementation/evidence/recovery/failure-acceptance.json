@@ -1,0 +1,35 @@
+{
+  "schema": "emad.failure-acceptance.v1",
+  "acceptedAt": "2026-10-23T12:02:08.725469+00:00",
+  "workerCrash": {
+    "runId": "rt_0c3f864dede8a131105e1982f8ca15811792343bf07ebd15dac802c01377633d",
+    "status": "FAILED",
+    "failureCode": "HEARTBEAT_TIMEOUT",
+    "automaticWorkerRestart": true,
+    "partialRecordingReady": true,
+    "silentTakeover": false
+  },
+  "storageOutage": {
+    "unavailableReported": true,
+    "recoveryReported": true,
+    "persistentBytesPreserved": true
+  },
+  "expiredCredential": {
+    "authenticationStatus": 401,
+    "probeDisabled": true,
+    "existingCredentialsChanged": false
+  },
+  "interruptedSetup": {
+    "checkpoint": "retained references",
+    "resumed": true,
+    "referenceVersionsBefore": 24,
+    "referenceVersionsAfter": 24
+  },
+  "rasterLeaseRecovery": {
+    "captureId": "cap_94f0b0e46e7d2054754451ab2c31244ff457e559f31e77d4210eceb5b269696f",
+    "attempt": 2,
+    "status": "SUCCEEDED",
+    "staleLeaseStatus": 409,
+    "inputs": "Actual retained Sentinel-2 windows; no synthetic observations"
+  }
+}

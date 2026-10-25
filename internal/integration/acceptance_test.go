@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 	"github.com/coder/websocket"
 )
 
@@ -22,7 +23,7 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 	h := newHarness(t)
 
 	// Realtime client must be connected before the run starts.
-	wsCtx, cancelWS := context.WithCancel(context.Background())
+	wsCtx, cancelWS := context.WithCancel(testsupport.Context())
 	defer cancelWS()
 	wsURL := "ws" + strings.TrimPrefix(h.server.URL, "http") + "/api/v1/realtime?access_token=" + integrationToken
 	conn, _, err := websocket.Dial(wsCtx, wsURL, nil)
@@ -59,7 +60,7 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 	sourceID := resourceNamespace + "source__simulator-01"
 	assetID := resourceNamespace + "asset__patrol-01"
 	geofenceID := resourceNamespace + "geofence__restricted-zone-a"
-	trackReference := resourceNamespace + "track__unknown-01"
+	trackReference := ""
 
 	// 2. The scenario registers its source and asset through normal services.
 	var sources struct {
@@ -84,7 +85,9 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 	}
 	waitFor(t, 60*time.Second, 250*time.Millisecond, "alert from geofence breach", func() bool {
 		h.do(http.MethodGet, "/api/v1/alerts?state=ACTIVE", nil, &alerts)
-		return alerts.Total >= 1
+		// At 50x an alert may resolve between the separate count and list reads.
+		// Wait for an actionable returned row before inspecting the first item.
+		return alerts.Total >= 1 && len(alerts.Items) > 0
 	})
 	alert := alerts.Items[0]
 	alertID := alert["id"].(string)
@@ -103,10 +106,10 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 			t.Errorf("alert %s leaks a track identifier: %q", field.name, field.value)
 		}
 	}
-	if title != "Suspected vehicle entered Restricted Zone A" {
+	if title != "Suspected vehicle entered Exercise area" {
 		t.Errorf("alert title = %q, want the hedged subject name", title)
 	}
-	if !strings.Contains(message, "Restricted Zone A") {
+	if !strings.Contains(message, "Exercise area") {
 		t.Errorf("alert message should name the geofence: %q", message)
 	}
 
@@ -115,7 +118,19 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 		Items []map[string]any `json:"items"`
 	}
 	h.do(http.MethodGet, "/api/v1/tracks", nil, &tracks)
-	track := findTrack(tracks.Items, trackReference)
+	var storedTrackID string
+	if err := h.pool.QueryRow(testsupport.Context(), `SELECT contact_ref FROM simulation_actor_mappings WHERE scope_id=$1 AND actor_id='unknown-01' AND kind='observation' LIMIT 1`, "default/local/EXERCISE_TRUTH/"+runID).Scan(&trackReference); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.pool.QueryRow(testsupport.Context(), `SELECT id FROM tracks WHERE external_ref=$1`, trackReference).Scan(&storedTrackID); err != nil {
+		t.Fatal(err)
+	}
+	var track map[string]any
+	for _, item := range tracks.Items {
+		if item["id"] == storedTrackID {
+			track = item
+		}
+	}
 	if track == nil {
 		t.Fatal("track unknown-01 was not derived from observations")
 	}
@@ -215,7 +230,7 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 	// PostGIS confirms observations actually occurred inside the zone and the
 	// track exited again by the end of the run.
 	var insideCount int
-	if err := h.pool.QueryRow(context.Background(), `
+	if err := h.pool.QueryRow(testsupport.Context(), `
 		SELECT count(*) FROM observations o
 		WHERE o.payload->>'scenarioRunId' = $1
 		  AND EXISTS (
@@ -229,7 +244,7 @@ func TestFirstMilestoneAcceptance(t *testing.T) {
 		t.Fatal("no observation occurred inside the restricted zone")
 	}
 	var inside bool
-	if err := h.pool.QueryRow(context.Background(), `
+	if err := h.pool.QueryRow(testsupport.Context(), `
 		SELECT inside FROM geofence_states
 		WHERE geofence_id = $1 AND track_id = $2`, geofenceID, trackID).Scan(&inside); err != nil {
 		t.Fatalf("geofence state missing: %v", err)
@@ -366,29 +381,15 @@ func assertPositionsIdentical(t *testing.T, first, second []latLng) {
 	}
 }
 
-// positionsForRun returns a run's observed positions in emission order.
-//
-// The ordering key is the sequence number embedded in the observation id, not
-// created_at. Scenario observations are named "<run>__observation__<ref>__<seq>"
-// by the engine, and that sequence is what determinism actually means: it is
-// derived from the seeded engine state and is identical across replays.
-//
-// created_at cannot carry that guarantee. It is wall-clock now() at insert, so
-// two runs of the same scenario at the same playback speed can interleave the
-// same logical observations in different orders. Comparing the two results
-// index-by-index then compares *different* observations and reports a
-// divergence that never happened - which is exactly how this test flaked
-// intermittently at a moving index.
-//
-// The sequence is cast to bigint because ordering the id as text would sort
-// "...__10" before "...__2".
+// positionsForRun orders by the declared run event sequence. Synthetic message
+// and observation identities are opaque and do not encode private actor names.
 func positionsForRun(t *testing.T, h *harness, runID string) []latLng {
 	t.Helper()
-	rows, err := h.pool.Query(context.Background(), `
-		SELECT ST_Y(position::geometry), ST_X(position::geometry)
-		FROM observations
-		WHERE payload->>'scenarioRunId' = $1 AND position IS NOT NULL
-		ORDER BY (regexp_match(id, '__(\d+)$'))[1]::bigint ASC, id ASC`, runID)
+	rows, err := h.pool.Query(testsupport.Context(), `
+		SELECT ST_Y(o.position::geometry), ST_X(o.position::geometry)
+  FROM observations o JOIN exercise_messages m ON m.id=o.id AND m.scope_id=o.scope_id
+  WHERE o.payload->>'scenarioRunId'=$1 AND o.position IS NOT NULL
+  ORDER BY m.sequence,o.id`, runID)
 	if err != nil {
 		t.Fatalf("query run observations: %v", err)
 	}
@@ -474,7 +475,7 @@ func assertScenarioResourcesAreIsolated(t *testing.T, h *harness, runID, namespa
 	}
 	for _, check := range checks {
 		var count int
-		if err := h.pool.QueryRow(context.Background(), check.query, check.args...).Scan(&count); err != nil {
+		if err := h.pool.QueryRow(testsupport.Context(), check.query, check.args...).Scan(&count); err != nil {
 			t.Fatalf("count %s for run %s: %v", check.name, runID, err)
 		}
 		if count == 0 {

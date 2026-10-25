@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EMAD · adaptive map dock</title>
+  <style>
+    :root{font:15px/1.6 system-ui,sans-serif;color:#24383e;background:#eef2f3;color-scheme:light}
+    *{box-sizing:border-box}body{margin:0}header,main,footer{max-width:1400px;margin:auto;padding:24px 32px}
+    header{padding-top:38px;padding-bottom:14px}.kicker{font-size:11px;font-weight:650;letter-spacing:.14em;text-transform:uppercase;color:#50717a}
+    h1{font-size:clamp(28px,4vw,44px);letter-spacing:-.035em;line-height:1.15;margin:8px 0 16px}p{max-width:82ch;margin:8px 0}
+    a{color:#126176;text-underline-offset:3px}nav{display:flex;flex-wrap:wrap;gap:10px 20px;margin-top:16px}
+    a:focus-visible,button:focus-visible{outline:3px solid #18778a;outline-offset:4px}
+    .metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:22px 0 0}.metric{border:1px solid #cbd7db;border-radius:7px;background:#fafcfc;padding:13px 18px}.metric strong{display:block;font-size:26px;line-height:1.3}.metric span{font-size:12px;color:#526a72}
+    .view-tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}button{font:inherit;font-size:13px;cursor:pointer;border:1px solid #c6d3d7;border-radius:5px;padding:8px 13px;background:#fafcfc;color:#29464f}button[aria-pressed=true]{background:#203c45;border-color:#203c45;color:white}
+    figure{margin:0;background:#fafcfc;border:1px solid #c6d3d7;border-radius:8px;overflow:hidden}.screenshot{display:flex;align-items:center;justify-content:center;aspect-ratio:1440/1000;background:#dce5e8}.screenshot img{display:block;max-width:100%;max-height:100%;width:auto;height:auto}
+    figcaption{padding:18px 22px;border-top:1px solid #cbd7db}h2{font-size:18px;line-height:1.3;margin:0 0 6px}figcaption p{font-size:14px}.details{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin:26px 0 0}.details h2{font-size:16px}.details p{font-size:13px;color:#526a72}
+    .note{color:#60777e;font-size:12px}footer{padding-top:0;padding-bottom:32px}
+    @media(max-width:640px){header,main,footer{padding:18px 14px}.metrics{gap:6px}.metric{padding:10px}.metric strong{font-size:23px}.metric span{font-size:11px}.details{grid-template-columns:1fr;gap:12px}.screenshot:has(img[data-phone=true]){aspect-ratio:390/844}.screenshot img[data-phone=true]{width:100%}figcaption{padding:14px}}
+  </style>
+</head>
+<body>
+  <header>
+    <p class="kicker">EMAD · implemented map layout</p>
+    <h1>A shallow dock. Space to explore.</h1>
+    <p>The idle dock is a single toolbar. Previews use a short tray; detailed work uses an allocated side panel on desktop. Larger panels and full-screen work open only when you choose them.</p>
+    <nav aria-label="Review resources"><a href="http://127.0.0.1:5173/map">Open application</a><a href="../navigation/index.html">Latest workspace & workbench navigation</a><a href="../EMAD_ADAPTIVE_DOCK_REVIEW.md">Implementation & verification</a><a href="layout-acceptance.json">Measured layout</a></nav>
+    <div class="metrics" aria-label="Measured at 1440 by 1000 pixels">
+      <div class="metric"><strong>44px</strong><span>Idle toolbar height</span></div>
+      <div class="metric"><strong>124px</strong><span>Desktop preview tray</span></div>
+      <div class="metric"><strong>74%</strong><span>Map width with a detailed side panel</span></div>
+    </div>
+  </header>
+  <main>
+    <div class="view-tabs" role="group" aria-label="Captured application views">
+      <button aria-pressed="true" data-view="0">Map</button><button aria-pressed="false" data-view="1">Preview tray</button><button aria-pressed="false" data-view="2">Side panel</button><button aria-pressed="false" data-view="3">Systems beside map</button><button aria-pressed="false" data-view="4">Full Systems grid</button><button aria-pressed="false" data-view="5">Phone</button><button aria-pressed="false" data-view="6">Phone panel</button><button aria-pressed="false" data-view="7">Analysis beside map</button>
+    </div>
+    <figure>
+      <a class="screenshot" id="image-link" href="01-toolbar.png" aria-label="Open full-size screenshot"><img id="screenshot" src="01-toolbar.png" alt="Desktop map with a single 44-pixel toolbar and no open panel" width="1440" height="1000" data-phone="false"></a>
+      <figcaption aria-live="polite"><h2 id="caption-title">The map opens with room to explore</h2><p id="caption-body">The 44px toolbar keeps workspaces, layers, tools, views, evidence and situation controls available. Counts and refresh actions open in a temporary disclosure.</p></figcaption>
+    </figure>
+    <div class="details">
+      <section><h2>Browse in a shallow tray</h2><p>Desktop previews take 124px. Choosing a record or detailed workspace opens the appropriate panel. Hiding the panel returns its space to the map.</p></section>
+      <section><h2>Work beside the geography</h2><p>Automatic layout uses a side panel for detailed desktop work and short landscape screens. Layout also offers explicit side, bottom, expanded and maximized views.</p></section>
+      <section><h2>Keep the existing capabilities</h2><p>Systems retains all six domains, Sources & access and Processing. Detailed forms adapt to their actual panel width; drafts remain mounted during temporary map controls.</p></section>
+    </div>
+  </main>
+  <footer><p class="note">Application screenshots and geometry captured from the persistent installation on 25 October 2026. These are captured views; the application link opens the running local services. See the verification record for checks and measured geometry.</p></footer>
+  <script>
+    const views=[
+      ['01-toolbar.png','The map opens with room to explore','The 44px toolbar keeps workspaces, layers, tools, views, evidence and situation controls available. Counts and refresh actions open in a temporary disclosure.','Desktop map with a single 44-pixel toolbar and no open panel'],
+      ['06-preview-tray.png','Previews stay shallow','The desktop tray is 124px tall, including its toolbar. Retained record thumbnails, acquisition dates and sources remain directly available beneath the map.','Desktop map with a shallow retained-imagery preview tray'],
+      ['02-side-layers.png','Detailed controls use allocated space','At 1440px wide, this panel uses 374px and leaves 1066px of map width. The map keeps its full available height, with no panel overlaid on the geography.','Layers panel beside a full-height desktop map'],
+      ['03-side-systems.png','Systems works beside the map','The six-domain grid adapts to a scrollable side panel. Actual retained imagery, source states and workflow actions stay accessible while the geography remains visible.','Systems overview in an allocated side panel with retained imagery'],
+      ['07-full-grid.png','The Systems grid is still available','Maximize opens all six working domains, including actual retained imagery, assessments and source states. Return to map restores a compact panel. Reloading does not restore a maximized workbench.','Explicitly maximized Systems grid with all six domains'],
+      ['04-mobile-toolbar.png','One toolbar on phones','At 390px wide, the dock remains 44px tall. Tools, situation and layout open from compact controls; the geographic search and current scope stay above the map.','Phone map with a single-row compact toolbar'],
+      ['05-mobile-panel.png','Phone panels leave the map visible','The panel is 236px tall at 390 by 844. Its contents scroll inside the allocated panel. Expand and Maximize remain available when a task needs more space.','Phone map with a bounded, scrollable layers panel'],
+      ['08-side-analysis.png','Inspect the result beside the geography','The retained NDVI result uses the panel’s full readable width. Mapped cells, masks and limitations stay attached to the calculation; this indicator remains subject to human interpretation.','Real retained NDVI analysis rendered in a narrow side panel beside the map']
+    ];
+    document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>{
+      const index=Number(button.dataset.view),view=views[index],phone=index===5||index===6,img=document.getElementById('screenshot');
+      document.querySelectorAll('[data-view]').forEach(other=>other.setAttribute('aria-pressed',String(other===button)));
+      img.src=view[0];img.alt=view[3];img.width=phone?390:1440;img.height=phone?844:1000;img.dataset.phone=String(phone);
+      document.getElementById('image-link').href=view[0];document.getElementById('caption-title').textContent=view[1];document.getElementById('caption-body').textContent=view[2];
+    }));
+  </script>
+</body>
+</html>

@@ -18,15 +18,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/testcontainers/testcontainers-go"
-	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
-
 	"github.com/SalehAlobaylan/c4isr-systems/internal/app"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/config"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/logging"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/testcontainers/testcontainers-go"
+	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const integrationEnv = "C4ISR_TEST_INTEGRATION"
@@ -39,13 +39,17 @@ type harness struct {
 	app    *app.App
 }
 
-func newHarness(t *testing.T) *harness {
+func newHarness(t *testing.T, options ...app.Option) *harness {
+	return newConfiguredHarness(t, nil, options...)
+}
+
+func newConfiguredHarness(t *testing.T, configure func(*config.Config), options ...app.Option) *harness {
 	t.Helper()
 	if os.Getenv(integrationEnv) != "1" {
 		t.Skipf("set %s=1 to run integration tests (Docker required)", integrationEnv)
 	}
 
-	ctx := context.Background()
+	ctx := testsupport.Context()
 	container, err := tcpostgres.Run(ctx, "imresamu/postgis:17-3.5",
 		tcpostgres.WithDatabase("c4isr"),
 		tcpostgres.WithUsername("c4isr"),
@@ -62,7 +66,7 @@ func newHarness(t *testing.T) *harness {
 		t.Fatalf("start postgis container: %v", err)
 	}
 	t.Cleanup(func() {
-		if err := container.Terminate(context.Background()); err != nil {
+		if err := container.Terminate(testsupport.Context()); err != nil {
 			t.Logf("terminate container: %v", err)
 		}
 	})
@@ -97,7 +101,10 @@ func newHarness(t *testing.T) *harness {
 		AuthTokens:     map[string]string{integrationToken: "operator-01"},
 	}
 	logger := logging.New(io.Discard, "text", "error")
-	application, err := app.New(ctx, cfg, logger)
+	if configure != nil {
+		configure(&cfg)
+	}
+	application, err := app.New(ctx, cfg, logger, options...)
 	if err != nil {
 		t.Fatalf("build app: %v", err)
 	}
@@ -165,6 +172,10 @@ func extractUpSection(content string) string {
 }
 
 func (h *harness) do(method, path string, body any, out any) int {
+	return h.doRun("", method, path, body, out)
+}
+
+func (h *harness) doRun(runID, method, path string, body any, out any) int {
 	h.t.Helper()
 	var reader io.Reader
 	if body != nil {
@@ -182,6 +193,9 @@ func (h *harness) do(method, path string, body any, out any) int {
 		req.Header.Set("Content-Type", "application/json")
 	}
 	req.Header.Set("Authorization", "Bearer "+integrationToken)
+	if runID != "" {
+		req.Header.Set("X-EMAD-Run-ID", runID)
+	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

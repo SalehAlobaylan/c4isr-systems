@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // PostgresRepository stores audit entries in PostgreSQL.
@@ -17,7 +17,7 @@ type PostgresRepository struct {
 
 // NewPostgresRepository builds a repository over the connection pool.
 func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
-	return &PostgresRepository{q: dbgen.New(pool)}
+	return &PostgresRepository{q: dbgen.New(platformdb.Scoped(pool))}
 }
 
 // Append inserts an audit entry.

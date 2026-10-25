@@ -32,6 +32,7 @@ const (
 
 // Source is the origin of observations.
 type Source struct {
+	Ingestion *IngestionSummary
 	ID        string
 	Name      string
 	Type      Type
@@ -81,4 +82,23 @@ func (in CreateInput) Validate() error {
 		return apperr.Validation("source status must be one of active, degraded, offline")
 	}
 	return nil
+}
+
+// IngestionSummary describes provider coverage independently of registration
+// status and observed entity counts. It carries no connector credentials/cursors.
+type IngestionSummary struct {
+	State               string     `json:"state"`
+	AdmissionID         string     `json:"admissionId,omitempty"`
+	OriginalProducer    string     `json:"originalProducer,omitempty"`
+	UpstreamProvider    string     `json:"upstreamProvider,omitempty"`
+	Dataset             string     `json:"dataset,omitempty"`
+	ProductVersion      string     `json:"productVersion,omitempty"`
+	LastSuccessAt       *time.Time `json:"lastSuccessAt,omitempty"`
+	LastAttemptAt       *time.Time `json:"lastAttemptAt,omitempty"`
+	NextAttemptAt       *time.Time `json:"nextAttemptAt,omitempty"`
+	FailureCode         string     `json:"failureCode,omitempty"`
+	CoverageFrom        *time.Time `json:"coverageFrom,omitempty"`
+	CoverageTo          *time.Time `json:"coverageTo,omitempty"`
+	PendingPublications int        `json:"pendingPublications"`
+	Meaning             string     `json:"meaning"`
 }

@@ -28,6 +28,8 @@ const (
 
 // Command is an instruction toward an asset.
 type Command struct {
+	RequestOwner   string
+	RequestKey     string
 	ID             string
 	AssetID        string
 	MissionID      string
@@ -48,6 +50,7 @@ type Command struct {
 
 // IssueInput is the application input for issuing a command.
 type IssueInput struct {
+	RequestKey    string
 	AssetID       string
 	MissionID     string
 	IncidentID    string
@@ -98,7 +101,7 @@ func CanTransition(from, to State) bool {
 		return to == StateAcknowledged || to == StateRejected || to == StateFailed ||
 			to == StateTimedOut || to == StateCancelled
 	case StateAcknowledged:
-		return to == StateCompleted || to == StateFailed || to == StateCancelled
+		return to == StateCompleted || to == StateFailed || to == StateTimedOut || to == StateCancelled
 	}
 	return false
 }

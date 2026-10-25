@@ -1,3 +1,4 @@
+import { mockSession } from './session'
 /**
  * Deterministic operational fixture shared by the end-to-end suites.
  *
@@ -190,6 +191,12 @@ export async function json(route: Route, body: unknown, status = 200): Promise<v
 }
 
 export async function mockOperationalWorkflow(page: Page): Promise<void> {
+  // Legacy exercise inspection suites explicitly open the optional inspector.
+  // The normal installed product starts clean; its default is covered separately.
+  await page.addInitScript(()=>localStorage.setItem('emad.exercise.layout.v2',JSON.stringify({state:{railOpen:true},version:0})))
+  // Mocked UI tests must never attach to a developer's real backend socket.
+  // A test can register a more specific socket route afterwards when needed.
+  await page.routeWebSocket('**/api/v1/realtime**',socket=>{const u=new URL(socket.url());socket.send(JSON.stringify({type:'realtime.ready',version:2,resource:{workspaceId:u.searchParams.get('workspaceId')??'default',environmentId:u.searchParams.get('environmentId')??'local',partition:u.searchParams.get('partition')??'EXERCISE_OBSERVATION',runId:u.searchParams.get('runId')??'legacy'},data:{}}))})
   let alert = { ...baseAlert }
   let incident: Record<string, any> | null = null
   let mission: Record<string, any> | null = null
@@ -281,8 +288,7 @@ export async function mockOperationalWorkflow(page: Page): Promise<void> {
 
     if (path === '/api/v1/auth/me') {
       await json(route, {
-        operator: { id: 'operator-01', name: 'Operator 01', role: 'operator' },
-        permissions: ['read', 'write'],
+        ...mockSession(route.request().headers()),
       })
       return
     }

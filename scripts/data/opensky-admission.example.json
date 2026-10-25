@@ -1,0 +1,37 @@
+{
+  "originalProducer": "OpenSky receiver network",
+  "upstreamProvider": "opensky",
+  "connectorId": "opensky-region",
+  "connectorPrincipalId": "opensky-connector",
+  "dataset": "opensky-state-vectors",
+  "productVersion": "v1",
+  "coverageDescription": "Bounded Jeddah coastal AOI; reception gaps and missing reports are not evidence of absence.",
+  "revisionPolicy": "content_hash",
+  "enabled": false,
+  "rights": {
+    "id": "REPLACE_WITH_REVIEWED_RIGHTS_VERSION",
+    "legalBasis": "REPLACE: record written OpenSky operational agreement and archive permissions",
+    "termsUrl": "https://opensky-network.org/about/terms-of-use",
+    "attribution": "REPLACE_WITH_REQUIRED_PROVIDER_ATTRIBUTION",
+    "retainRaw": false,
+    "allowAnalysis": false,
+    "allowSimulationExport": false
+  },
+  "policy": {
+    "aoi": {
+      "west": 39.1,
+      "south": 21.3,
+      "east": 39.4,
+      "north": 21.7
+    },
+    "lookbackSeconds": 300,
+    "freshForSeconds": 60,
+    "unavailableAfterSeconds": 180,
+    "minIntervalSeconds": 300,
+    "timeoutSeconds": 10,
+    "maxPages": 1,
+    "maxRecordsPerPage": 200,
+    "maxResponseBytes": 1048576,
+    "maxRequestsPerDay": 300
+  }
+}

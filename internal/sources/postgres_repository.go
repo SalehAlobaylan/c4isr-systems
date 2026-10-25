@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // PostgresRepository stores sources in PostgreSQL.
@@ -24,7 +24,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 // Create inserts a source.
 func (r *PostgresRepository) Create(ctx context.Context, source Source) (Source, error) {
-	row, err := dbgen.New(r.pool).CreateSource(ctx, dbgen.CreateSourceParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CreateSource(ctx, dbgen.CreateSourceParams{
 		ID:       source.ID,
 		Name:     source.Name,
 		Type:     string(source.Type),
@@ -39,7 +39,7 @@ func (r *PostgresRepository) Create(ctx context.Context, source Source) (Source,
 
 // Get loads a source by id.
 func (r *PostgresRepository) Get(ctx context.Context, id string) (Source, error) {
-	row, err := dbgen.New(r.pool).GetSource(ctx, id)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).GetSource(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Source{}, apperr.NotFound("source", id)
@@ -51,12 +51,12 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Source, error)
 
 // Exists reports whether a source id is registered.
 func (r *PostgresRepository) Exists(ctx context.Context, id string) (bool, error) {
-	return dbgen.New(r.pool).SourceExists(ctx, id)
+	return dbgen.New(platformdb.Scoped(r.pool)).SourceExists(ctx, id)
 }
 
 // List returns sources ordered newest first with a total count.
 func (r *PostgresRepository) List(ctx context.Context, limit, offset int) ([]Source, int, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	rows, err := q.ListSources(ctx, dbgen.ListSourcesParams{LimitCount: int32(limit), OffsetCount: int32(offset)})
 	if err != nil {
 		return nil, 0, err
@@ -74,7 +74,7 @@ func (r *PostgresRepository) List(ctx context.Context, limit, offset int) ([]Sou
 
 // UpdateStatus changes source availability.
 func (r *PostgresRepository) UpdateStatus(ctx context.Context, id string, status Status) (Source, error) {
-	row, err := dbgen.New(r.pool).UpdateSourceStatus(ctx, dbgen.UpdateSourceStatusParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).UpdateSourceStatus(ctx, dbgen.UpdateSourceStatusParams{
 		ID:     id,
 		Status: string(status),
 	})

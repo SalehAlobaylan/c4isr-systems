@@ -1,0 +1,45 @@
+{
+  "date": "2026-10-22",
+  "tasks": [
+    "S1.2",
+    "S1.3",
+    "S2.1"
+  ],
+  "nextTask": "S2.2",
+  "migration": 35,
+  "userDatabaseMigrated": false,
+  "integration": {
+    "passedCases": 77,
+    "topLevel": 53,
+    "subcases": 24,
+    "optInSkips": 4
+  },
+  "realBackendBrowser": {
+    "passed": 10
+  },
+  "mockedBrowser": {
+    "passed": 74,
+    "intentionalProjectSkips": 50
+  },
+  "windowsLinuxOffline": {
+    "sameFrozenScene": true,
+    "sameVirtualInstantMs": 5000,
+    "maximumActorPositionDifferenceM": 0.0,
+    "sceneId": "scene_2bfe8079c2448db9f9f7364e2c87afaaf069279434b933571c0aa9c2e3f07857",
+    "windowsBuild": "399c35d0e6bd5b37a15b1b72baf4a710872a562131afefa01a0774aa535d24f3",
+    "linuxBuild": "1da14d875aee913d7f736c9eb1df6c10eb456dad63d5288ace83d48e249f9c09"
+  },
+  "logs": {
+    "integration-final.jsonl": "6dfef23ec05e10bd5edbe535fbd091980cf41b31072c0fc4fdd68409c05eb26f",
+    "native-final.log": "fc2553ca58cc5505b2d1abfae25a9acfdbb8a27bc8c1a1a8c6daa9cfbcb94f92",
+    "browser-final.log": "b0d02ec1fa29d6ea78854593bc1e40e9c7fef4c17f35878829be01853358d5d4",
+    "browser-mocked.log": "cbcbe11545ba9366475fd624ad2e59b477a48ed9d658eec55eb4273ce2602eb5",
+    "linux-runtime.log": "20f48a4c02823be7e7f779a43248c2032f4279bd7630906b40fdc1f07aa2c088",
+    "go-tests.log": "3a2d2e2e5549f9f0adb2ee61f4b18a4e4f3d21ad294f8a7851ffecfeb0a6c4b1",
+    "go-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "ui-build.log": "bc06f81c0874eff095d636ffc9bb818ed60736d26e687c49c58ef4e573bcaa2f",
+    "openapi.log": "b6bae1b16d47e26f5a29d0bf7d9667bf1c54c287bf02236d96acb4fa3d8e2351"
+  },
+  "m4Scope": "Natural Earth Jeddah reference subset, synthetic ellipsoidal terrain, project-authored glTF, visual-only rendering and abstract behavior; no surveyed terrain/physics/sensor certification",
+  "m5Accepted": false
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "id": "opensky-region",
+    "sourceId": "REPLACE_WITH_REGISTERED_OPENSKY_SOURCE_ID",
+    "resource": {
+      "workspaceId": "public-context",
+      "environmentId": "world",
+      "partition": "PUBLIC_EVIDENCE"
+    },
+    "url": "https://opensky-network.org/api/states/all",
+    "adapter": "opensky-states-v1",
+    "maxRequestsPerDay": 300
+  },
+  {
+    "id": "aisstream-region",
+    "sourceId": "REPLACE_WITH_REGISTERED_AISSTREAM_SOURCE_ID",
+    "resource": {
+      "workspaceId": "public-context",
+      "environmentId": "world",
+      "partition": "PUBLIC_EVIDENCE"
+    },
+    "url": "wss://stream.aisstream.io/v0/stream",
+    "adapter": "aisstream-position-v1",
+    "maxRequestsPerDay": 1000,
+    "authTokenEnv": "AISSTREAM_API_KEY"
+  }
+]

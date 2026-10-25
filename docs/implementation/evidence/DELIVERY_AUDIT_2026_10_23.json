@@ -1,0 +1,1878 @@
+{
+  "metadata": {
+    "date": "2026-10-23",
+    "timezone": "Asia/Riyadh",
+    "head": "2c0c65548036ca73be8e8c259c60171ddecfc46b",
+    "basis": "Dirty working tree, including uncommitted implementation and subsequent startup fixes",
+    "method": "33-task traceability, authoritative proposal comparison, targeted static review, read-only local inventory and isolated behavioral probes",
+    "implementationPlanBeforeAuditSHA256": "c4524401fca0e2e5403011277683aa6fab9a30f73c6fa8a744c07d93392d034c",
+    "sources": [
+      {
+        "path": "EMAD_ARCHITECTURE_AND_DIRECTION_v2.md",
+        "sha256": "d2a2b08ef7f9dddbc744f3e62af047a32e31b2f3da0ada07191d8ff0a6588f11"
+      },
+      {
+        "path": "EMAD_FINAL_DATA_STRATEGY_v2.md",
+        "sha256": "b2dc4ee5cfd6c00acb10072f6ea419899b570896d6b552dac12d26c368b29df4"
+      },
+      {
+        "path": "EMAD_IMPLEMENTATION_PLAN_v2.md",
+        "sha256": "c4524401fca0e2e5403011277683aa6fab9a30f73c6fa8a744c07d93392d034c"
+      },
+      {
+        "path": "apps/emad-asset-validator/validate.mjs",
+        "sha256": "c6e8223f66ff4984fa36b8d0cbdc3b5432b55bd37a98e312eda351ae02818c4c"
+      },
+      {
+        "path": "apps/emad-runtime/main.go",
+        "sha256": "ff6d5a243a244a1274daa84be128063e04b77329adf2d136f19a058849a91e7f"
+      },
+      {
+        "path": "apps/operator-ui/scripts/evaluate-engines.mjs",
+        "sha256": "137d55ff94006cdff0a1255903d1937042d97112da61a111023fe65bb8196e7e"
+      },
+      {
+        "path": "apps/operator-ui/src/components/WorkspaceProvider.tsx",
+        "sha256": "13212d7bf3c91dc59e6b8be4f1022549a5f679de13f5533552e5c35b5274d321"
+      },
+      {
+        "path": "apps/operator-ui/src/features/public-context/PublicContextPanel.tsx",
+        "sha256": "8fe262c9415ec8d519b4b86f70895fb9b7f9c67443426b88834fa33b2f3fa6c1"
+      },
+      {
+        "path": "apps/operator-ui/src/features/simulation/SceneViewport.tsx",
+        "sha256": "67843dbe0cf68f7e833e121f553c4c7db80a9df6f3df30e6ef468257932521e2"
+      },
+      {
+        "path": "apps/operator-ui/src/routes/home.tsx",
+        "sha256": "ae724ac2716421fe67cdd679e4f5be7c5afa6f5f5ebd1c1f76516d65f2e7c5f9"
+      },
+      {
+        "path": "apps/operator-ui/src/routes/recordings.tsx",
+        "sha256": "df5d9d6f652bd9f99c043346b399bde8fd96e28dbde0b0ba7e0aafe6f324e9ef"
+      },
+      {
+        "path": "apps/operator-ui/src/routes/simulation-studio.tsx",
+        "sha256": "820027cf8cdd567ab622b549aa8f8ffe4884d32ab526d902344231c39d63ab88"
+      },
+      {
+        "path": "apps/operator-ui/tests/e2e/product-entry.spec.ts",
+        "sha256": "3d2e9abeb5ad564f4f0a943d570e9c02c23f33eba552f470307b2032ada98578"
+      },
+      {
+        "path": "apps/operator-ui/tests/integration/public-context.spec.ts",
+        "sha256": "c87e4d552337e892119c98f2f22a3219e91fa289b7391f907cee8411821e9093"
+      },
+      {
+        "path": "db/migrations/00020_resource_ownership.sql",
+        "sha256": "a467714aae4d96c68fc3474d2df9eb90c5c0fcb4d962fbe02585554fa4713440"
+      },
+      {
+        "path": "deployments/Dockerfile.server",
+        "sha256": "10fd5264ba1d09aa88361bd18a9e0094955df06e871efb46b585671ab8f4686b"
+      },
+      {
+        "path": "deployments/docker-compose.yml",
+        "sha256": "03aaef6c02eef6cb3656d6fa00f958374d09d07b2bbce8c49e576aab2f7bbf05"
+      },
+      {
+        "path": "deployments/staging/docker-compose.yml",
+        "sha256": "ad37da7beae964a10fab9bdeee046bf2b9209d2b76de3ca568e8da90484bb438"
+      },
+      {
+        "path": "docs/implementation/F0_1_BASELINE.md",
+        "sha256": "67b080e1bbc7fc9bc87a1ce8a8285b8fe30e35fbbfb9b1570c43b1ae9eb3dc6b"
+      },
+      {
+        "path": "docs/implementation/F0_1_INVENTORY.json",
+        "sha256": "d9e639a91880012090e01bdb810f87e4638b403189aa41455ea9c59df29c68c3"
+      },
+      {
+        "path": "docs/implementation/LOCAL_STARTUP.md",
+        "sha256": "e439bbb3f21b9f1e1cfdb80622c1244a0bbed7882589cca81a31be68d85ce771"
+      },
+      {
+        "path": "docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md",
+        "sha256": "499c557336073bd1d2dfbb6c2a04791b516544a700b0d3ef29b494c2efd2098e"
+      },
+      {
+        "path": "docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md",
+        "sha256": "a000693f89b7e72731016138ab6075a504149ed628ed865d7ba4217d87a1f75c"
+      },
+      {
+        "path": "docs/implementation/S1_2_ENGINE_DECISION.md",
+        "sha256": "a6dad27fee784e4cc2e5115308fe4158db11e8694d3ccb58f70ef3f28eaf4f2c"
+      },
+      {
+        "path": "docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md",
+        "sha256": "b6620f1f7a8156a87eab58019565ecc8c1d81f9db96c289e4481286fc72936d7"
+      },
+      {
+        "path": "internal/app/app.go",
+        "sha256": "2fbb0d3ee3cad4fecfc9eaf8e2a8997e03f516d3d89ad5a0c0b9a366c7ff2b4e"
+      },
+      {
+        "path": "internal/assessments/review.go",
+        "sha256": "f7eb98c9e1a75d41d3e722aaef555a3aa693e5cda5b3e0f636cc25f31ede1dd8"
+      },
+      {
+        "path": "internal/contextpackage/service.go",
+        "sha256": "bd709ddc9cf7dd88f84f6fea8f54074790c2b3759e9d08ad09f76ea0fed8db11"
+      },
+      {
+        "path": "internal/exerciseingest/service.go",
+        "sha256": "f4f48e291e910c26eb9c258f25eee23a420041a86c6aadc61a0f30f15cfedf27"
+      },
+      {
+        "path": "internal/externaltracks/projector.go",
+        "sha256": "718d97d19e8e822787e2ceaab4ef76680ad288f269803167414580d281193f11"
+      },
+      {
+        "path": "internal/imagery/scenes.go",
+        "sha256": "0177f95d050bb0f9f22f3a7d4c1593480801c892ca7b736d48a1ee0853e643ab"
+      },
+      {
+        "path": "internal/imageryanalysis/ndvi.go",
+        "sha256": "3d1853677a87ceed75e1c73e86e2ff08e47f3216a87741eb40ca6da8d0b6e67e"
+      },
+      {
+        "path": "internal/integration/context_export_test.go",
+        "sha256": "cd50d1c82332ae57891ca7209763ffacf501ab620190abbe30d3a1d4ca361d36"
+      },
+      {
+        "path": "internal/integration/firms_live_test.go",
+        "sha256": "1c8b9a7cb8a3611ad13345a6167d4d00e2e98fff7035e72bc6241fb2a63adc4f"
+      },
+      {
+        "path": "internal/integration/harness_test.go",
+        "sha256": "be1c47845d69cfa2e4a385af3520ef5f1695ae8d7bc727f38330e9dbadae9207"
+      },
+      {
+        "path": "internal/integration/headless_context_test.go",
+        "sha256": "65a69c963a80a4d985242d8294a7658212b5ce0d2ba6451c9a016672b7d29685"
+      },
+      {
+        "path": "internal/integration/imagery_test.go",
+        "sha256": "5e596defe9c49747735d2ddef029010ede2b59c59a03b3afab3446468bacba99"
+      },
+      {
+        "path": "internal/integration/moving_test.go",
+        "sha256": "669d8bde60284c47f781e7dd6a91063c24cf489523529760c4fe346cf7c9e69a"
+      },
+      {
+        "path": "internal/integration/native_gateway_test.go",
+        "sha256": "a17285b8aad56dbacade60feb340d769f47ea946829b0d52e463f8c577fcb4f1"
+      },
+      {
+        "path": "internal/integration/native_perception_test.go",
+        "sha256": "9cf805dd47a987b0891d126295ff81c538be882947d25a3dc7186a83a364fccc"
+      },
+      {
+        "path": "internal/integration/ownership_migration_test.go",
+        "sha256": "86fd3a13d7b39f726f631931b152e72ebef16101f15c9bc54a48f94e53d9d64f"
+      },
+      {
+        "path": "internal/integration/provisioning_cli_test.go",
+        "sha256": "aa8419c468fe22b09935f25dd160687e427ef2e07d0a523a46e0c450e810c7a5"
+      },
+      {
+        "path": "internal/integration/public_events_test.go",
+        "sha256": "1f5e180490d31f7abd5672d2b1e5168e7ac574a500a2e207772547ccdc614b60"
+      },
+      {
+        "path": "internal/integration/public_ingestion_test.go",
+        "sha256": "e855f8922c33d4c6ce28dfff4f89eb5991b43081ef65ce5ce7975d487eb2a424"
+      },
+      {
+        "path": "internal/integration/realtime_boundaries_test.go",
+        "sha256": "c91cef51116169c0deaff7d0c88d519cb6bdcfa327623bbf087311e071d65dc5"
+      },
+      {
+        "path": "internal/integration/recordings_test.go",
+        "sha256": "4314aca97c0383dbd3c8f98224c685bf2342ff5db80d2e6725951676013003a4"
+      },
+      {
+        "path": "internal/integration/reference_test.go",
+        "sha256": "03870224e433189ddc78698082a82a93a241380c8ed84a56539390dfd8f194f4"
+      },
+      {
+        "path": "internal/integration/scope_test.go",
+        "sha256": "bbb6c9a9650f62222f424686f58bd0832eb2fab870ce1a33b7380b3da1f9b5c4"
+      },
+      {
+        "path": "internal/integration/simulation_foundations_test.go",
+        "sha256": "dbc40d34adf883e1e9bb6dc87ee541c48395d24f16754ffaf05607c49c73734d"
+      },
+      {
+        "path": "internal/integration/studio_runtime_test.go",
+        "sha256": "41a3d4add8ab53a174d1f783ab50510adee71ca18629b91ade258cde95f9d4b8"
+      },
+      {
+        "path": "internal/integration/usgs_live_test.go",
+        "sha256": "493fd49d68e1b21b0624bee4f3d5b7b98fe203b46b8d9a89f38b8d2fadfcc990"
+      },
+      {
+        "path": "internal/integration/weather_reports_test.go",
+        "sha256": "4375fe09db08863da74b7dc4f7da7323447df0a729f7827c912ec084b8882b2d"
+      },
+      {
+        "path": "internal/modelassets/service.go",
+        "sha256": "63b00997098832b41285cc54ccbe0dd9aa178341f00a8d6c04275205237f3645"
+      },
+      {
+        "path": "internal/nativeexercise/tasks.go",
+        "sha256": "b76290b59b3037dcbfd78fbe9a0dfd0b42bc4448147047c947225b6c8366f0cf"
+      },
+      {
+        "path": "internal/platform/access/catalog.go",
+        "sha256": "44a50f0c718cb57b72a290b3ad58b6680ce957ddb20d4844ee685827642960a7"
+      },
+      {
+        "path": "internal/platform/access/provision.go",
+        "sha256": "871975f854f652a084ac71c3bf20efd4697c0d9d538fdc6fbc9f0d7e37207c3a"
+      },
+      {
+        "path": "internal/platform/access/store.go",
+        "sha256": "5c94a8667e5c794a9020f542a754e91b11385f6d36afe83e5a4bb592a29d40ac"
+      },
+      {
+        "path": "internal/platform/db/scoped.go",
+        "sha256": "b37813eccc14f0109e381dd9e9f7615935af6990253e4d561065f4d5314dc0d9"
+      },
+      {
+        "path": "internal/publiccontext/service.go",
+        "sha256": "e0d13940682833b1c8143498c68cd6bd12e657a252c5845fe63577b4b3a3de51"
+      },
+      {
+        "path": "internal/publicevents/projector.go",
+        "sha256": "47bedb1333e9c4631c5f20913d6e8676c7b1093f8140ab08bc25af1c4c584887"
+      },
+      {
+        "path": "internal/publicingest/firms.go",
+        "sha256": "6acce44d430e887b79faba1ba0d7471d04e52a4c532825a1443c3f177a41d568"
+      },
+      {
+        "path": "internal/publicingest/opensky.go",
+        "sha256": "7f05a828b791c050f9c6e4dc237d98bb4ef635c8f4df27c2e75af5daca94a029"
+      },
+      {
+        "path": "internal/publicingest/service.go",
+        "sha256": "d74f26ab4a50c58975d5ba25d0a440b9a139b6b9b185fe2d1ec3350e6bf7330b"
+      },
+      {
+        "path": "internal/publicingest/usgs.go",
+        "sha256": "14bc0da26debef22476833c0dddbe45ab4842b07666aa8cbd2897deebef888ba"
+      },
+      {
+        "path": "internal/realtime/hub.go",
+        "sha256": "324232839a7e2c5834e90fb0fbc68deabed1ef92fd07dc14a11e3a8f362cce39"
+      },
+      {
+        "path": "internal/recordings/evaluation.go",
+        "sha256": "cc8c565ebb8114df1f5d09d9dcc65007b0102cc4645d1927cbbd71a7d66074e4"
+      },
+      {
+        "path": "internal/recordings/service.go",
+        "sha256": "860a90d7ff44585aecf768360c9c72ace8ceaddf209c4b264cae965620a94081"
+      },
+      {
+        "path": "internal/reference/service.go",
+        "sha256": "19bee15f99417b5aac9a6d29bd1eda9d811625047b0244485ee78e1cec5cc20b"
+      },
+      {
+        "path": "internal/scenarios/frozen.go",
+        "sha256": "c64939422294a8ed224a51af1863f59ad2e4f8bbc1c848ffafe2f092573bfc03"
+      },
+      {
+        "path": "internal/simruntime/broker.go",
+        "sha256": "13bb8573b6269bcde8ffd19502a08b04c529636509c375d6ffdb3870ed01eefe"
+      },
+      {
+        "path": "internal/simruntime/projection.go",
+        "sha256": "c1ec27cea483f3b3f7dec00eba8d90db5cb541784a9540c8ff645b42ea2f2857"
+      },
+      {
+        "path": "internal/simruntime/sensors.go",
+        "sha256": "163277c5fda08568b6474b72ee5ebbdafd625f44986767c434a46b1b22810cfd"
+      },
+      {
+        "path": "internal/simscene/domain.go",
+        "sha256": "d84eb5977e5dfc8edab0c9471d6b7e5fc1bde63356595032799d11bdd2be55a9"
+      },
+      {
+        "path": "internal/simscene/presets.go",
+        "sha256": "848a37570927fc9cfa5e8312f30cf2e007bf1220961c1a09d3dbf925b36bb2ad"
+      },
+      {
+        "path": "internal/simulation/spatial.go",
+        "sha256": "0654898455f0c2d6d9d7df4604adf05d494afcddbbf4ad77c0dabc2e43895eb2"
+      },
+      {
+        "path": "internal/simulation/spatial_test.go",
+        "sha256": "b21c9bf9da699a1dda187f72255cef27327ecdc9aa3e952f917295d93e233e73"
+      },
+      {
+        "path": "scripts/data/import_reference_sample.ps1",
+        "sha256": "a72a399b5f84116bb8df28488289948c64d9634f9be5d38d271f05acf84c40bd"
+      },
+      {
+        "path": "scripts/data/prepare_imagery_subset.py",
+        "sha256": "b600a486236832f7da2a9894bf4a30c989be2c861a0ea485a06e24bb98982069"
+      },
+      {
+        "path": "scripts/ops/backup.sh",
+        "sha256": "e44ce3cd6ef97314e8514f49e32e07baec4faf7139720ec47ec42c58d6c2d67a"
+      },
+      {
+        "path": "testdata/imagery/retrieval.json",
+        "sha256": "fb769846675d451efcb19d18d4a6207fb0dc80435ce0f1612405d0a8508be2b0"
+      }
+    ],
+    "documentationCorrections": [
+      {
+        "path": "EMAD_IMPLEMENTATION_PLAN_v2.md",
+        "sha256": "0f1ad936417f7bc4235c29f9324bb88f08f3de9dc002aba13dd3df9cabe6059a"
+      },
+      {
+        "path": "README.md",
+        "sha256": "7e60e5c98613daf662d2ce83342a1ce604dfffdd374755d58c712d38a3410241"
+      },
+      {
+        "path": "docs/implementation/PLAN_REVIEW.md",
+        "sha256": "90f208968673e9cb0b6c3df80786d2cb635750caef3d232a2a67c8787511bb84"
+      },
+      {
+        "path": "docs/implementation/PRECOMMIT_READINESS.md",
+        "sha256": "b4cd8e9829a400327c4d8615bfcc668a9f80a434746da86253861b9b5f30d971"
+      }
+    ],
+    "queryTarget": "Local default development container c4isr-postgres, database c4isr; PGOPTIONS default_transaction_read_only=on",
+    "auditInputFingerprints": "Source fingerprints describe the reviewed input. The implementation-plan fingerprint precedes its explicit delivery-status correction; correction hashes are recorded separately."
+  },
+  "database": {
+    "capturedAt": "2026-10-22T21:36:20Z",
+    "database": "c4isr",
+    "superuser": "on",
+    "latestMigration": 38,
+    "scopes": [
+      {
+        "workspaceId": "default",
+        "environmentId": "local",
+        "partition": "EXERCISE_OBSERVATION",
+        "runId": "legacy"
+      },
+      {
+        "workspaceId": "default",
+        "environmentId": "local",
+        "partition": "EXERCISE_OBSERVATION",
+        "runId": "scn_01m4qzmcv5ye9rm75cmgqyyncy"
+      },
+      {
+        "workspaceId": "default",
+        "environmentId": "local",
+        "partition": "EXERCISE_OBSERVATION",
+        "runId": "scn_01m578gjq67tbgypyy9fwvkqw0"
+      }
+    ],
+    "tableCounts": {
+      "workspaces": 1,
+      "environments": 1,
+      "data_scopes": 3,
+      "operators": 1,
+      "principals": 1,
+      "principal_grants": 1,
+      "goose_db_version": 39,
+      "principal_credentials": 1,
+      "authorization_denials": 15,
+      "authorization_changes": 0,
+      "sources": 4,
+      "assets": 0,
+      "asset_state": 0,
+      "asset_telemetry": 0,
+      "observations": 41,
+      "track_state": 1,
+      "track_observations": 41,
+      "tracks": 1,
+      "track_history": 40,
+      "classifications": 2,
+      "geofences": 2,
+      "geofence_states": 1,
+      "assessments": 0,
+      "alerts": 1,
+      "incidents": 0,
+      "commands": 0,
+      "incident_alerts": 0,
+      "incident_tracks": 0,
+      "incident_assets": 0,
+      "incident_observations": 0,
+      "missions": 0,
+      "mission_assets": 0,
+      "mission_tasks": 0,
+      "scenario_runs": 2,
+      "assessment_evidence": 0,
+      "incident_assessments": 0,
+      "audit_events": 140,
+      "scenario_run_events": 88,
+      "source_connector_state": 0,
+      "connector_runs": 0,
+      "public_evidence_outbox": 0,
+      "source_admissions": 0,
+      "public_evidence": 0,
+      "public_evidence_catalog": 0,
+      "public_event_current": 0,
+      "public_event_revisions": 0,
+      "reference_datasets": 0,
+      "reference_features": 0,
+      "simulation_versions": 0,
+      "simulation_actor_mappings": 0,
+      "exercise_messages": 0,
+      "context_packages": 0,
+      "artifacts": 0,
+      "imagery_scenes": 0,
+      "imagery_jobs": 0,
+      "imagery_job_attempts": 0,
+      "imagery_preparations": 0,
+      "assessment_revisions": 0,
+      "context_export_previews": 0,
+      "assessment_review_heads": 0,
+      "external_track_segments": 0,
+      "external_track_associations": 0,
+      "public_context_records": 0,
+      "model_asset_uploads": 0,
+      "model_asset_versions": 0,
+      "model_asset_attempts": 0,
+      "actor_templates": 0,
+      "environment_assets": 0,
+      "simulation_scenes": 0,
+      "simulation_runtime_events": 0,
+      "simulation_runtime_truth": 0,
+      "simulation_runtime_runs": 0,
+      "native_exercises": 0,
+      "native_controlled_assets": 0,
+      "native_projection_batches": 0,
+      "native_task_dispatch": 0,
+      "simulation_authorization_history": 2,
+      "simulation_recording_limits": 0,
+      "simulation_recording_events": 0,
+      "simulation_recordings": 0,
+      "simulation_evaluations": 0,
+      "simulation_released_reports": 0,
+      "simulation_sensor_presets": 0
+    },
+    "grants": [
+      {
+        "principalId": "human:operator-01",
+        "workspaceId": "default",
+        "environmentId": "local",
+        "partition": "EXERCISE_OBSERVATION",
+        "runId": "*"
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "id": "F0.1",
+      "workstream": "F0",
+      "title": "Verify the baseline and publish the migration inventory",
+      "planLine": 160,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-20. [Verification and acceptance evidence](docs/implementation/F0_1_BASELINE.md); [source inventory](docs/implementation/F0_1_INVENTORY.json); [read-only legacy audit](docs/implementation/F0_1_LEGACY_AUDIT.sql).",
+      "requirements": [
+        "Execute the existing relevant checks; record failures separately from new work.",
+        "Inventory routes, background actions, tables, relationship tables, events, UI queries, artifacts, and existing scenario fixtures.",
+        "Map each data path to its intended partition, owner, reader, writer, and compatibility behavior.",
+        "Classify legacy records from recorded provenance. Do not assume that every existing row is synthetic or public.",
+        "Reconcile old product positioning in documentation while preserving historical phase records."
+      ],
+      "code": "docs/implementation/F0_1_BASELINE.md",
+      "verification": "docs/implementation/F0_1_INVENTORY.json",
+      "implemented": "Baseline inventory, migration audit and executed verification records.",
+      "gap": "Historical checks did not establish a populated two-pillar installation.",
+      "deliveryExit": "Retain the baseline and add persistent installation acceptance.",
+      "deliveryClass": "foundation_evidenced",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "F0.2",
+      "workstream": "F0",
+      "title": "Define principals, resource context, and contract vocabulary",
+      "planLine": 172,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-20. [Implementation, rollout, and acceptance evidence](docs/implementation/F0_2_4_IMPLEMENTATION.md).",
+      "requirements": [
+        "Add distinct human and service principal types while reusing existing operator records and authentication where practical.",
+        "Define grants for source-bound public ingestion, scenario authoring, run publication/control, exercise operation, review, and privileged evaluation.",
+        "Define expiry/revocation and credential rotation behavior; connectors and runners do not use human supervisor tokens.",
+        "Introduce an application resource context carrying validated workspace/environment/partition/run bindings.",
+        "Audit denied cross-boundary attempts without copying sensitive payloads into ordinary logs."
+      ],
+      "code": "internal/platform/access/store.go",
+      "verification": "internal/integration/provisioning_cli_test.go",
+      "implemented": "Human/service principals, resource grants, credential lifecycle and administrator CLI.",
+      "gap": "Only one legacy human principal and one exercise grant are installed; no analyst/author/evaluator/worker identities.",
+      "deliveryExit": "Explicitly provision scoped roles and service identities; distinct registered humans are required for independent review.",
+      "deliveryClass": "foundation_evidenced",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "F0.3",
+      "workstream": "F0",
+      "title": "Add ownership persistence and backfill safely",
+      "planLine": 184,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-20. [Implementation, rollout, and acceptance evidence](docs/implementation/F0_2_4_IMPLEMENTATION.md).",
+      "requirements": [
+        "Add explicit ownership/partition/run fields or ownership relations to affected aggregates, evidence links, current projections, histories, and audit records.",
+        "Scope uniqueness and idempotency to the owning resource domain. A provider ID or scenario-local ID is not globally unique.",
+        "Add indexed scope predicates and referential checks that prevent unauthorized cross-run links.",
+        "Preserve legitimate run-to-input references through validated application operations. Cross-partition references require explicit semantics.",
+        "Backfill known legacy scenario resources using run records, resource namespaces, and audit provenance; preserve original IDs.",
+        "Keep ambiguous records inaccessible to new public/exercise views until classified. This is a migration quarantine state, not a fifth product partition."
+      ],
+      "code": "db/migrations/00020_resource_ownership.sql",
+      "verification": "internal/integration/ownership_migration_test.go",
+      "implemented": "Ownership persistence, backfill/quarantine, referential checks and forced RLS; local schema reaches 38.",
+      "gap": "Only three legacy exercise scopes exist. Schema migration does not import new content.",
+      "deliveryExit": "Preserve migration history and original evidence; create authorized public/input resources explicitly.",
+      "deliveryClass": "foundation_evidenced",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "F0.4",
+      "workstream": "F0",
+      "title": "Enforce boundaries in application services and queries",
+      "planLine": 197,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-20. [Implementation, rollout, and acceptance evidence](docs/implementation/F0_2_4_IMPLEMENTATION.md).",
+      "requirements": [
+        "Carry validated context through HTTP, scenario calls, background work, and repository methods.",
+        "Enforce scope on list/get/search/count/history/replay queries, spatial evaluation, attachments, command recipients, and state transitions.",
+        "Validate related objects under the same authorized context; caller-supplied IDs cannot bypass ownership.",
+        "Scope incidents and alerts appropriately in both pillars. Missions, commands, and controlled asset telemetry stay within exercises.",
+        "Make public observed entities ineligible for command dispatch at the application boundary."
+      ],
+      "code": "internal/platform/db/scoped.go",
+      "verification": "internal/integration/scope_test.go",
+      "implemented": "Scoped service/query paths and cross-resource negative cases.",
+      "gap": "No activated local public/native workflow demonstrates these boundaries to the user.",
+      "deliveryExit": "Keep boundaries enabled while validating installed workflows; do not grant implicit global access.",
+      "deliveryClass": "foundation_evidenced",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "F0.5",
+      "workstream": "F0",
+      "title": "Separate realtime delivery and protect metadata",
+      "planLine": 209,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-20. [Realtime contract, disclosure policy, migration, and verification](docs/implementation/F0_5_REALTIME.md).",
+      "requirements": [
+        "Add scope-aware event context and authorize subscriptions before delivery.",
+        "Remove the global broadcast assumption; reconnects and permission revocation must preserve the same grants.",
+        "Keep explicit payload mapping. Audit observation payloads, `trackHint`, external references, resource names, errors, and scenario event inspection for hidden identity disclosure.",
+        "Reserve truth/input-sensitive event types for separate privileged delivery; ordinary subscriptions reject them by construction.",
+        "Apply bounded buffering and a documented reconnect/resynchronization policy using authorized snapshots."
+      ],
+      "code": "internal/realtime/hub.go",
+      "verification": "internal/integration/realtime_boundaries_test.go",
+      "implemented": "Scoped versioned streaming, payload filtering, revocation and reconnect behavior.",
+      "gap": "A healthy socket is not evidence that public/native producers are running. A cancelled development handshake was repaired separately.",
+      "deliveryExit": "Demonstrate installed producers, reconnect and revocation with current permissions.",
+      "deliveryClass": "foundation_evidenced",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "F0.6",
+      "workstream": "F0",
+      "title": "Separate workspaces and close the compatibility gate",
+      "planLine": 221,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Implementation, compatibility, and real-backend browser acceptance](docs/implementation/F0_6_WORKSPACES.md).",
+      "requirements": [
+        "Add explicit Public Context and Exercise COP navigation within the existing React application.",
+        "Keep workspace, environment, run, source mode, and time basis visible.",
+        "Scope TanStack Query keys and realtime handlers; clear inaccessible selection/cache state when identity or workspace changes.",
+        "Keep current scenario controls in the exercise workspace. A full 3D Studio is not required at this stage.",
+        "Preserve existing endpoint behavior through documented, server-bound compatibility mapping where possible; version unavoidable contract changes.",
+        "Build the negative authorization matrix and a representative real-backend browser flow."
+      ],
+      "code": "apps/operator-ui/src/components/WorkspaceProvider.tsx",
+      "verification": "apps/operator-ui/tests/e2e/product-entry.spec.ts",
+      "implemented": "Workspace/cache isolation and Public/Exercise selection; Home/direct module links were added after the complaint.",
+      "gap": "The default account still lacks public and authoring scopes. Earlier new routes were not discoverable.",
+      "deliveryExit": "Verify ordinary startup with explicitly configured accounts and visible, populated workflows.",
+      "deliveryClass": "partial_default_rollout",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P1.1",
+      "workstream": "P1",
+      "title": "Source admission, provenance, and connector execution",
+      "planLine": 242,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Implementation, operating contract, migration, and verification](docs/implementation/P1_1_PUBLIC_INGESTION.md). Includes source-bound service retrieval, immutable rights/provenance, revision deduplication, persistent quotas/backoff/checkpoints, recoverable publication, and visible coverage. Five focused API/PostGIS tests and the full compatibility regressions passed. Provider-specific native adapters remain P1.4/P1.5; semantic routing remains P1.2.",
+      "requirements": [
+        "Extend the source catalogue with original producer, upstream provider, connector identity, dataset/product version, rights record, coverage, freshness expectations, and AOI/quota policy.",
+        "Distinguish connector execution history from evidence identity and from an analysis that consumes the evidence.",
+        "Implement bounded retrieval with timeouts, backoff, rate limits, checkpoints/watermarks, deduplication, and visible health.",
+        "Define provider record ID/revision normalization and content hashing; retain original records or permitted references with retrieval metadata.",
+        "Publish a revision only after its durable evidence is committed. Recover projection failures without duplicating evidence.",
+        "Use vetted provider locations and artifact retrieval rules; credentials remain server-side."
+      ],
+      "code": "internal/publicingest/service.go",
+      "verification": "internal/integration/public_ingestion_test.go",
+      "implemented": "Admissions, immutable evidence, provenance, quotas/backoff/checkpoints and bounded execution.",
+      "gap": "No admission, connector state, connector run or public evidence is installed.",
+      "deliveryExit": "Activate one reviewed source/AOI and its service worker; verify durable evidence, health and recovery.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P1.2",
+      "workstream": "P1",
+      "title": "Separate point events, areas, and moving observations",
+      "planLine": 255,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Implementation and acceptance evidence](docs/implementation/P1_2_4_PUBLIC_CONTEXT.md). Explicit semantics/geometry roles, immutable provider revision history, current reported-event projections, atomic publication recovery, PostGIS point/footprint rules, and correction/withdrawal alert provenance. Earthquake/thermal fixtures create zero tracks; existing moving/scenario regressions pass.",
+      "requirements": [
+        "Introduce explicit semantic routing independent of geometry: a point can be an earthquake event, a thermal detection, or a moving observation.",
+        "Preserve existing track behavior for compatible moving/scenario observations.",
+        "Store public point events and valid area observations without creating tracks.",
+        "Reuse PostGIS spatial rules for relevant event/area alerts and preserve the triggering record and rule version.",
+        "Retain provider revisions as new evidence versions/supersession links; update projections and affected alerts with visible correction history.",
+        "Treat measured footprints, derived buffers, and actual phenomenon boundaries as distinct."
+      ],
+      "code": "internal/publicevents/projector.go",
+      "verification": "internal/integration/public_events_test.go",
+      "implemented": "Point/event/area/moving semantics, revision projections and spatial rules.",
+      "gap": "Public event tables are empty; current public behavior is evidenced through fixtures.",
+      "deliveryExit": "Verify persisted reports, corrections/withdrawals, spatial effects and zero fabricated tracks.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P1.3",
+      "workstream": "P1",
+      "title": "Reference GIS and terrain catalogue",
+      "planLine": 268,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Reference artifacts, limits, import procedure, and verification](docs/implementation/P1_2_4_PUBLIC_CONTEXT.md). Retained Natural Earth Jeddah/Makkah features and NOAA ETOPO elevation samples have versioned rights/attribution, coordinates/datum, quality, transformations and checked hashes. Scoped import/catalog/artifact APIs, MapLibre reference views, and eligible immutable versions are available to S0.",
+      "requirements": [
+        "Import a compact, permitted selection of reference features from the proposed reference sources, plus one suitable elevation dataset.",
+        "Record source/version, AOI, CRS, vertical datum, resolution, validity, quality, rights, attribution, and artifact checksums.",
+        "Separate reference features from observations and exercise actors.",
+        "Preserve source artifacts or reproducible authorized retrieval references; introduce minimal artifact storage when size requires it.",
+        "Expose reference layers on MapLibre and make eligible dataset versions available to S0."
+      ],
+      "code": "internal/reference/service.go",
+      "verification": "internal/integration/reference_test.go",
+      "implemented": "Reference APIs and retained Natural Earth/NOAA samples with rights, coordinates and hashes.",
+      "gap": "No reference data is imported. Prepared EGM2008 terrain needs conversion/cropping for Studio; no OSM road/building import pipeline was located.",
+      "deliveryExit": "Import the real reference region and derive a separately versioned scene-ready subset with valid datum/extent.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P1.4",
+      "workstream": "P1",
+      "title": "USGS event integration",
+      "planLine": 280,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Adapter contract, recorded fixtures, live smoke, and UI evidence](docs/implementation/P1_2_4_PUBLIC_CONTEXT.md). The bounded native query preserves reported origin/depth/revision/quality and raw provenance, handles explicit withdrawals, publishes event/spatial projections, and supports source revision/original inspection. An authorized live service invocation retained five reports and produced zero tracks. Persistent source activation remains an explicit deployment operation.",
+      "requirements": [
+        "Implement one bounded earthquake feed/query adapter using the admitted source contract.",
+        "Preserve provider event identity, reported origin time, location/depth semantics, revision time, quality, and raw provenance.",
+        "Handle updated and withdrawn records according to verified provider behavior without deleting their history.",
+        "Add point overlays, relevant spatial alerts, and drill-down to source revisions."
+      ],
+      "code": "internal/publicingest/usgs.go",
+      "verification": "internal/integration/usgs_live_test.go",
+      "implemented": "Native USGS adapter and a documented historical five-report live smoke.",
+      "gap": "The live smoke used disposable PostGIS, not the persistent developer workspace.",
+      "deliveryExit": "Admit and capture bounded USGS reports in the persistent installation and inspect their revisions/originals.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P1.5",
+      "workstream": "P1",
+      "title": "FIRMS thermal detection integration",
+      "planLine": 291,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Implementation, contracts, rollout and verification](docs/implementation/S0_4_P1_5_6_ADAPTER_AND_PUBLIC_HISTORY.md). Reviewed NOAA-20 VIIRS NRT adapter, bounded resumable UTC-day retrieval, exact CSV provenance, categorical confidence and honest point/resolution representation; fixture and same-AOI integration gates pass. Live activation remains an explicit keyed deployment operation.",
+      "requirements": [
+        "Select one VIIRS product after checking coverage, access conditions, quality fields, and usage rights.",
+        "Preserve acquisition time, instrument/product, reported quality, source identity, and footprint/resolution information when available.",
+        "Represent thermal detections as reported. Do not label them confirmed fires, fire perimeters, identities, or intent.",
+        "Use declared, separately attributed spatial rules if proximity or derived areas are needed."
+      ],
+      "code": "internal/publicingest/firms.go",
+      "verification": "internal/integration/firms_live_test.go",
+      "implemented": "Bounded NOAA-20 VIIRS retrieval, CSV provenance and time/quality semantics.",
+      "gap": "No installed FIRMS source/data; keyed live acceptance remains conditional.",
+      "deliveryExit": "Obtain authorized configuration/key, activate one product and retain honest detection/coverage semantics.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P1.6",
+      "workstream": "P1",
+      "title": "Public evidence drill-down and historical view",
+      "planLine": 302,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Implementation, contracts, rollout and verification](docs/implementation/S0_4_P1_5_6_ADAPTER_AND_PUBLIC_HISTORY.md). Source/phenomenon/AOI/observed-time/quality/revision filters, exact originals and lineage, labeled known/publication-time versus retrospective effective-time views, validated bookmarks, safe historical map presentation, and M1 acceptance pass.",
+      "requirements": [
+        "Add filters for source, phenomenon, AOI, observed interval, quality, and revision.",
+        "Show original producer/provider, observed/received times, original record, correction lineage, rights, and source health.",
+        "Keep raw records separate from interpretation. A source outage or filtered view must be understandable.",
+        "Define historical view semantics explicitly: evidence effective at a time versus evidence known to EMAD at a time. Preserve both timestamps and label the selected interpretation."
+      ],
+      "code": "apps/operator-ui/src/features/public-context/PublicContextPanel.tsx",
+      "verification": "apps/operator-ui/tests/integration/public-context.spec.ts",
+      "implemented": "Public filters, source originals/revisions, bookmarks and historical time semantics.",
+      "gap": "There is no installed public evidence to inspect.",
+      "deliveryExit": "Exercise the ordinary UI on retained reports, including outages, originals and history.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S0.1",
+      "workstream": "S0",
+      "title": "Scenario versions, runs, and explicit time",
+      "planLine": 320,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Implementation, contracts, limits, and verification](docs/implementation/S0_1_3_SIMULATION_FOUNDATIONS.md).",
+      "requirements": [
+        "Separate mutable scenario authoring from immutable scenario versions and run instances.",
+        "Freeze scenario definition, actor templates, context references, seed, adapter/runtime build, and clock configuration at run creation.",
+        "Define start/pause/resume/stop/failure/restart semantics. Restart creates a new run and preserves previous evidence.",
+        "Define virtual epoch/elapsed time, tick or event ordering, sequence identity, time scale, and source-to-scenario time mapping.",
+        "Keep receipt/processing wall time separate. Simulation freshness must follow the exercise clock; public freshness follows public time semantics.",
+        "Define recorded event replay separately from re-simulation. State the reproducibility guarantee and any excluded fields."
+      ],
+      "code": "internal/scenarios/frozen.go",
+      "verification": "internal/integration/simulation_foundations_test.go",
+      "implemented": "Frozen scenario/run/clock contracts and deterministic lifecycle tests.",
+      "gap": "No new simulation version/native run is retained locally; old legacy runs are not the new demonstration.",
+      "deliveryExit": "Retain and execute an installed frozen version with declared seed/build/clock and pause/restart behavior.",
+      "deliveryClass": "foundation_evidenced",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S0.2",
+      "workstream": "S0",
+      "title": "Coordinate and fidelity contracts",
+      "planLine": 333,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Implementation, contracts, limits, and verification](docs/implementation/S0_1_3_SIMULATION_FOUNDATIONS.md).",
+      "requirements": [
+        "Define WGS84 input, longitude/latitude order, scene origin, local axes, units, orientation convention, and transform version.",
+        "Implement/test the chosen Earth-fixed/local-frame conversion independently of the future renderer.",
+        "Record vertical datum and distinguish ellipsoidal, MSL, and above-ground heights; unsupported conversions must be rejected or explicitly unresolved.",
+        "Attach declared fidelity and simplifications to actor/sensor templates."
+      ],
+      "code": "internal/simulation/spatial.go",
+      "verification": "internal/simulation/spatial_test.go",
+      "implemented": "WGS84/ECEF/ENU transforms, axis/unit/fidelity checks and unsupported-datum rejection.",
+      "gap": "A real EGM2008-to-ellipsoid terrain conversion is absent; rejection is correct.",
+      "deliveryExit": "Preserve the contract and add a validated, versioned transformation for the selected real terrain.",
+      "deliveryClass": "foundation_evidenced",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S0.3",
+      "workstream": "S0",
+      "title": "Context package manifest and integrity",
+      "planLine": 344,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Implementation, contracts, limits, and verification](docs/implementation/S0_1_3_SIMULATION_FOUNDATIONS.md).",
+      "requirements": [
+        "Define one versioned manifest covering AOI, selected time window, source references, dataset versions, retrieval times, asset hashes, CRS/datum, transform/processing versions, quality, rights, attribution, creator, approval, and reproduction status.",
+        "Implement a minimal package builder/validator and content integrity check.",
+        "Store immutable authorized bytes for offline reproduction where rights permit. If only references may be retained, mark the package dependency and weaker reproduction guarantee explicitly.",
+        "Validate a hand-authored fixture, then one permitted reference/terrain package from P1.3.",
+        "Keep authored actors and hidden scenario instructions outside ordinary public metadata and operator-visible package listings."
+      ],
+      "code": "internal/contextpackage/service.go",
+      "verification": "internal/integration/context_export_test.go",
+      "implemented": "Immutable manifests, retained bytes, rights, hashes and offline validation.",
+      "gap": "No installed package. A smaller selected AOI retains whole artifacts rather than clipping them.",
+      "deliveryExit": "Retain an approved real context package and explicitly derive crop/transform/omission metadata.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S0.4",
+      "workstream": "S0",
+      "title": "Existing runner adapter and minimal synthetic ingress",
+      "planLine": 356,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Implementation, contracts, rollout and verification](docs/implementation/S0_4_P1_5_6_ADAPTER_AND_PUBLIC_HISTORY.md). Authorized typed synthetic observation/telemetry boundary, opaque contact/message identities, protected immutable evaluator mappings, frozen-context headless consumer, seeded failure and operational compatibility, and M2 acceptance pass.",
+      "requirements": [
+        "Adapt existing YAML scenarios and seeded failure actions to the new version/run/time contracts.",
+        "Route synthetic observations and controlled telemetry through the authorized exercise application boundary.",
+        "Expose observation identities independently of hidden actor identities. Keep evaluator mappings in a protected structure.",
+        "Retain existing mission/command simulations as compatibility fixtures; the native runtime extension arrives in S2/S3.",
+        "Add a headless fixture that consumes frozen context and emits synthetic observations without requiring graphics."
+      ],
+      "code": "internal/exerciseingest/service.go",
+      "verification": "internal/integration/headless_context_test.go",
+      "implemented": "Existing runner adapter, synthetic ingress and headless frozen-context fixtures.",
+      "gap": "No installed context-backed exercise demonstrates this path.",
+      "deliveryExit": "Run retained context with feeds disabled, opaque observation identities and protected mappings.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P2.1",
+      "workstream": "P2",
+      "title": "Artifact storage and imagery catalogue",
+      "planLine": 375,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Delivered behavior, acceptance evidence and operating limits](docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md).",
+      "requirements": [
+        "Extend the artifact abstraction introduced as needed in P1/S0 to S3-compatible storage for imagery and derived outputs.",
+        "Enforce partition-aware object keys/access, hashes, sizes, retention, rights, download authorization, and deletion policy.",
+        "Implement bounded Copernicus STAC discovery and scene metadata: acquisition time, geometry, product/version, cloud/quality, asset references, and processing lineage.",
+        "Track partial retrieval and retry without exposing incomplete scenes as analysis-ready."
+      ],
+      "code": "internal/imagery/scenes.go",
+      "verification": "internal/integration/imagery_test.go",
+      "implemented": "Private S3 artifacts, STAC metadata and bounded scene discovery.",
+      "gap": "No installed imagery scene/preparation/artifact. Real catalogue metadata is not downloaded imagery; supplied stacks omit blob storage.",
+      "deliveryExit": "Configure private blobs and retain two eligible scenes with permitted raster inputs.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P2.2",
+      "workstream": "P2",
+      "title": "Reproducible environmental analysis",
+      "planLine": 386,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Delivered behavior, acceptance evidence and operating limits](docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md).",
+      "requirements": [
+        "Choose one limited environmental change use case, such as vegetation or flood-related change, with a documented deterministic baseline.",
+        "Validate scene comparability, spatial alignment, resolution, masks, cloud/no-data conditions, and method limitations before comparison.",
+        "Record input hashes, algorithm/build version, parameters, coordinate transforms, quality checks, and output artifacts.",
+        "Run expensive raster processing asynchronously outside synchronous API handlers. A separate Python worker is justified here if needed.",
+        "Persist job lifecycle, cancellation, retries, resource limits, and failures. Select the simplest durable job mechanism that meets the measured workload."
+      ],
+      "code": "internal/imageryanalysis/ndvi.go",
+      "verification": "scripts/data/prepare_imagery_subset.py",
+      "implemented": "Deterministic raster preparation and asynchronous NDVI with comparability/mask/retry checks.",
+      "gap": "End-to-end acceptance uses synthetic spectral arrays; no real pair/result is installed. Preparation starts from already retained local bands.",
+      "deliveryExit": "Demonstrate one licensed real-raster comparison with pinned inputs, declared limitations and repeatable worker output.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P2.3",
+      "workstream": "P2",
+      "title": "Reviewable assessments and intelligence workspace",
+      "planLine": 398,
+      "originalPlanClaim": "**Status:** Complete — 2026-10-21. [Delivered behavior, acceptance evidence and operating limits](docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md).",
+      "requirements": [
+        "Extend existing assessments with revisions, evidence versions, proposal/review/publish/reject states, reviewer identity, and rationale.",
+        "Preserve source claims, algorithm/AI proposals, and analyst conclusions as distinct records or explicit types.",
+        "Link a finding to both original scenes, derived artifacts, method version, quality limitations, and confidence rationale.",
+        "Add imagery comparison, finding geometry, assessment history, and review controls.",
+        "Keep model scores separate from analyst confidence; shared source lineage must remain visible."
+      ],
+      "code": "internal/assessments/review.go",
+      "verification": "internal/integration/imagery_test.go",
+      "implemented": "Assessment proposal/revision/review/publish flows and imagery comparison UI.",
+      "gap": "Confirmed defect: two principals of the same registered operator can review and publish that human's proposal. No local reviewed content exists.",
+      "deliveryExit": "Enforce independence by canonical registered human identity; deny same-human aliases and accept genuinely different humans.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "confirmed_review_identity_defect"
+    },
+    {
+      "id": "P2.4",
+      "workstream": "P2",
+      "title": "Approved public-to-simulation export",
+      "planLine": 410,
+      "originalPlanClaim": "**Status:** Complete - 2026-10-21. M3 preview/approval/offline validation and headless integration passed. [Acceptance and operating limits](docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md).",
+      "requirements": [
+        "Add AOI/time/layer selection and preview of the package contents, rights, quality, transforms, and omissions.",
+        "Use S0's existing manifest/validator; add imagery references/assets without changing its trust model.",
+        "Require an authorized user to approve and freeze the selected version.",
+        "Label converted geometry as derived/synthetic and preserve source lineage. Public tracks, if used later as inspiration, require a new explicitly synthetic actor definition.",
+        "Keep export one-way; scenario edits cannot modify original public evidence."
+      ],
+      "code": "internal/contextpackage/service.go",
+      "verification": "internal/integration/context_export_test.go",
+      "implemented": "Preview/approval, frozen export, rights checks and offline consumption.",
+      "gap": "No installed preview/package. Retaining imagery/vector lineage does not render it into a 3D environment.",
+      "deliveryExit": "Export real approved evidence/context and disclose exactly what renders, remains a reference or requires conversion.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P3.1",
+      "workstream": "P3",
+      "title": "External moving track projection",
+      "planLine": 429,
+      "originalPlanClaim": "**Status:** Complete - 2026-10-21. [Implementation, native protocol/budget/isolation acceptance and operating limits](docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md).",
+      "requirements": [
+        "Extend scoped observation normalization for moving entities, with evidence links, source time, identity hypotheses, uncertainty, and staleness.",
+        "Keep classification, claimed identity, affiliation claim, and confidence separate.",
+        "Define track creation/update/expiry/reassociation behavior and preserve historical correlation decisions.",
+        "Keep public tracks structurally ineligible for exercise commands and controlled asset registration."
+      ],
+      "code": "internal/externaltracks/projector.go",
+      "verification": "internal/integration/moving_test.go",
+      "implemented": "External hypotheses, history/associations, late/jump/gap handling and observational-only identity.",
+      "gap": "No public moving segments or associations are installed.",
+      "deliveryExit": "Populate a permitted bounded capture and verify freshness/history without control authority.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P3.2",
+      "workstream": "P3",
+      "title": "One ADS-B provider and AISStream",
+      "planLine": 438,
+      "originalPlanClaim": "**Status:** Complete - 2026-10-21. [Implementation, native protocol/budget/isolation acceptance and operating limits](docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md). Live feeds are not enabled: OpenSky requires its written operational agreement; AISStream requires its server key and reviewed use/retention rights.",
+      "requirements": [
+        "Evaluate and choose one of the proposed ADS-B providers for the bounded AOI; implement AISStream as the maritime source.",
+        "Check current access, coverage, rights, retention, and quotas before activation.",
+        "Reuse connector health, deduplication, revisions, and provenance facilities.",
+        "Bound stream subscriptions, reconnect, buffering, out-of-order handling, and retention."
+      ],
+      "code": "internal/publicingest/opensky.go",
+      "verification": "docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md",
+      "implemented": "OpenSky/AISStream adapters with protocol/fixture/budget tests.",
+      "gap": "No live integration is installed; documented agreement/key/rights prerequisites remain unresolved.",
+      "deliveryExit": "Close provider prerequisites and conduct bounded persistent live acceptance; label blocked integrations explicitly.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "P3.3",
+      "workstream": "P3",
+      "title": "Weather context and selected reports",
+      "planLine": 447,
+      "originalPlanClaim": "**Status:** Complete - bounded NOAA METAR station samples and GDACS EQ bulletins, evidence history, common-source lineage and independent report assessment review. [Acceptance and rollout](docs/implementation/P3_3_WEATHER_AND_REPORTS.md). Migration 33 is required. Disabled source templates do not claim live activation.",
+      "requirements": [
+        "Add METAR or one suitable official weather feed where the use case requires it; retain station/area coverage and uncertainty.",
+        "Pilot selected GDELT/UCDP/official reports only against an explicit analyst question and admission decision.",
+        "Preserve source documents, claims, cited locations/time uncertainty, extraction method, and analyst review.",
+        "Identify shared upstream sources and syndicated reports. Multiple copies do not increase corroboration automatically."
+      ],
+      "code": "internal/publiccontext/service.go",
+      "verification": "internal/integration/weather_reports_test.go",
+      "implemented": "Selected METAR/GDACS natural-hazard pilot, provenance/history and report assessment routes.",
+      "gap": "No station/report data is installed; review shares the principal-alias independence defect.",
+      "deliveryExit": "Activate the admitted pilot and fix canonical human review before accepting reviewed report delivery.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "confirmed_review_identity_defect"
+    },
+    {
+      "id": "S1.1",
+      "workstream": "S1",
+      "title": "Model and environment asset registry",
+      "planLine": 465,
+      "originalPlanClaim": "**Status:** Complete - immutable scoped visual models, separate actor templates/environment frames, retained source/native artifacts and a bounded standalone validation worker. [Acceptance and rollout](docs/implementation/S1_1_MODEL_ASSET_REGISTRY.md). Migration 34 is required. This task does not instantiate runtime actors or select an engine.",
+      "requirements": [
+        "Separate visual `ModelAsset`, behavioral `ActorTemplate`, and runtime `SimulationActor`.",
+        "Support a small set of licensed GLB/glTF assets, source files/references, checksums, import versions, units, axes, materials, bounds, and fidelity declarations.",
+        "Validate imports and bound decompression, mesh/texture size, external references, and processing time.",
+        "Keep large binaries in artifact storage and retain generated engine-native variants separately."
+      ],
+      "code": "internal/modelassets/service.go",
+      "verification": "apps/emad-asset-validator/validate.mjs",
+      "implemented": "Immutable model registry, independent bounded glTF validation and separate templates/environments.",
+      "gap": "No model/template/environment is installed. Samples are tiny abstract meshes; animations/skins are rejected by the static profile.",
+      "deliveryExit": "Import a useful permitted starter set through normal validation and declare its visual/fidelity limitations.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S1.2",
+      "workstream": "S1",
+      "title": "Engine evaluation",
+      "planLine": 474,
+      "originalPlanClaim": "**Status:** Complete — shared-scene Three.js/Babylon hardware, software and no-GPU comparisons; requirements, budgets and scoped renderer selection recorded in [the decision and raw evidence](docs/implementation/S1_2_ENGINE_DECISION.md). Native physics/GPU engines remain future workload-specific decisions.",
+      "requirements": [
+        "Record requirements for geospatial precision, headless execution, scripting, native/web embedding, Windows/Linux support, licensing/distribution, maintenance, and performance.",
+        "Shortlist candidates and run the same small scene, asset set, coordinate fixtures, and headless behavior test.",
+        "Measure load time, memory, CPU/GPU use, positional error, and integration complexity on a declared machine.",
+        "Record the selection and tradeoffs in an architecture decision. The original plan did not preselect an engine; the completed evaluation now selects the initial viewport adapter."
+      ],
+      "code": "docs/implementation/S1_2_ENGINE_DECISION.md",
+      "verification": "apps/operator-ui/scripts/evaluate-engines.mjs",
+      "implemented": "Measured Three.js/Babylon comparison and scoped initial renderer decision.",
+      "gap": "Benchmark contains 13 triangles/four draws with synthetic terrain; it cannot establish advanced terrain/physics scale.",
+      "deliveryExit": "Retain the initial decision; re-evaluate representative workloads before larger simulation claims.",
+      "deliveryClass": "foundation_evidenced",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S1.3",
+      "workstream": "S1",
+      "title": "First georeferenced scene and Studio shell",
+      "planLine": 483,
+      "originalPlanClaim": "**Status:** Complete — immutable scoped scenes, explicit S0 terrain/actor coordinates, 3D/2D views, authoring properties, rights/fidelity and input-only Studio shell. [Acceptance and rollout](docs/implementation/S1_3_S2_1_STUDIO_AND_NATIVE_RUNTIME.md). Migration 35 required.",
+      "requirements": [
+        "Load the accepted terrain/reference package and a few abstract actors using S0 transforms.",
+        "Add a scene viewport, asset selection, actor placement/properties, attribution, and 2D geographic overview where useful.",
+        "Separate privileged authoring visibility from exercise operator perception.",
+        "Keep authoring integrated into EMAD's repository, identity, and navigation even if a native executable supplies the viewport."
+      ],
+      "code": "internal/simscene/domain.go",
+      "verification": "internal/integration/studio_runtime_test.go",
+      "implemented": "Frozen scenes, static georeferenced viewport, placement/properties and 2D alternative.",
+      "gap": "No installed scene. Acceptance substituted synthetic relief/one point; unmodified prepared real files fail the loader.",
+      "deliveryExit": "Resolve real datum/cropping derivatives and make a retained starter scene reachable through normal navigation.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S2.1",
+      "workstream": "S2",
+      "title": "Runtime lifecycle and actor behavior",
+      "planLine": 501,
+      "originalPlanClaim": "**Status:** Complete — independent compiled Windows/Linux headless runtime, version/build negotiation, exclusive service lease, virtual clock, static/waypoint actors, stop/cancellation/failure, idempotent bounded snapshots and separately authorized truth. [Acceptance, limits and rollout](docs/implementation/S1_3_S2_1_STUDIO_AND_NATIVE_RUNTIME.md). No native sensor/COP projection is claimed by this task.",
+      "requirements": [
+        "Implement authenticated run start/attach/pause/resume/stop, runtime version negotiation, heartbeat, cancellation, and failure reporting.",
+        "Own virtual clocks, actor lifecycle, private world state, and simple declared behaviors in the runtime.",
+        "Support headless execution using the same scenario contract.",
+        "Publish bounded snapshots/events; keep render frames and high-frequency physics out of relational observation ingestion."
+      ],
+      "code": "internal/simruntime/broker.go",
+      "verification": "apps/emad-runtime/main.go",
+      "implemented": "Independent native kinematic executable, broker/lifecycle, leases/build admission and protected truth.",
+      "gap": "No native run/service identity is installed. Queueing in UI does not launch/attach the separate process.",
+      "deliveryExit": "Provide a trusted on-demand launch/attach path and demonstrate installed lifecycle/clock/failure behavior.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S2.2",
+      "workstream": "S2",
+      "title": "Synthetic sensor adapters",
+      "planLine": 510,
+      "originalPlanClaim": "**Delivered:** 2026-10-22. [Implementation and acceptance](docs/implementation/S2_2_S2_3_S3_1_PERCEPTION_AND_TASKING.md).",
+      "requirements": [
+        "Convert private truth into explicit synthetic observations with configurable sample rate, missing samples, delay, noise, and quality.",
+        "Maintain observation/track identities independently of hidden actor identities.",
+        "Publish controlled exercise asset telemetry only to authorized operators for those assets and runs.",
+        "Keep truth storage and inspection under separate grants, artifact paths, and payload types."
+      ],
+      "code": "internal/simruntime/sensors.go",
+      "verification": "internal/integration/native_perception_test.go",
+      "implemented": "Deterministic abstract sensing with sample/drop/delay/noise settings and controlled telemetry.",
+      "gap": "No installed native perception run. Scheduled abstract observers do not establish calibrated physical sensing.",
+      "deliveryExit": "Demonstrate configured misses/delays in an installed exercise and preserve truth/perception separation.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S2.3",
+      "workstream": "S2",
+      "title": "Exercise ingestion and operational picture",
+      "planLine": 519,
+      "originalPlanClaim": "**Delivered:** 2026-10-22. [Implementation and acceptance](docs/implementation/S2_2_S2_3_S3_1_PERCEPTION_AND_TASKING.md).",
+      "requirements": [
+        "Implement the cross-process gateway using the accepted contracts and required transport.",
+        "Enforce run status, principal binding, sequence/idempotency, bounded ingestion, duplicate/reordered events, reconnect, and cancellation.",
+        "Project synthetic evidence into exercise tracks, alerts, and permitted asset state.",
+        "Update the Exercise COP with explicit virtual time and observed-versus-controlled semantics.",
+        "Let viewports interpolate display snapshots without becoming authoritative simulation state."
+      ],
+      "code": "internal/simruntime/projection.go",
+      "verification": "internal/integration/native_gateway_test.go",
+      "implemented": "Durable scoped native gateway and exercise read-model projections.",
+      "gap": "No installed native exercise/projection. Studio is not connected to runtime snapshots for live 3D movement.",
+      "deliveryExit": "Show accepted native synthetic observations in the installed COP, with duplicate/reconnect/cancellation behavior.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S3.1",
+      "workstream": "S3",
+      "title": "Exercise-controlled workflows",
+      "planLine": 538,
+      "originalPlanClaim": "**Delivered:** 2026-10-22. [Implementation and acceptance](docs/implementation/S2_2_S2_3_S3_1_PERCEPTION_AND_TASKING.md).",
+      "requirements": [
+        "Reuse Assets, Missions, Commands, Telemetry, Incidents, Operators, and Audit.",
+        "Bind virtual recipients, issuer permissions, task/command IDs, and outcomes to one run.",
+        "Extend the runtime adapter for acknowledgment, completion, rejection, timeout, and failure.",
+        "Preserve idempotency and correlate outcomes with the original command; stopped runs cannot receive new tasking.",
+        "Test delayed acknowledgment and reconnect without cross-run dispatch or duplicate execution."
+      ],
+      "code": "internal/nativeexercise/tasks.go",
+      "verification": "internal/integration/native_perception_test.go",
+      "implemented": "Run-bound virtual assets/tasking, ACK/outcomes/idempotency and existing operational audit.",
+      "gap": "No installed native controlled asset/task dispatch; old legacy fixtures are a different path.",
+      "deliveryExit": "Issue an authorized virtual task, observe a simulated outcome and retain correlated audit.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S3.2",
+      "workstream": "S3",
+      "title": "Recording and replay",
+      "planLine": 548,
+      "originalPlanClaim": "**Delivered:** 2026-10-22. Separate durable operator/truth journals, content-addressed artifacts, bounded read-only historical replay and compatible selected-state checkpoints. [Implementation and acceptance](docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md).",
+      "requirements": [
+        "Record bounded event logs, selected state snapshots, checkpoints, runtime build, scenario version, asset/context hashes, seed, and clock configuration.",
+        "Store large histories as appropriate artifact files; keep queryable metadata in PostgreSQL.",
+        "Separate operator-visible recordings from privileged truth recordings and indexes.",
+        "Replay recorded output without reissuing commands, ingesting it as new public evidence, or mutating the original run.",
+        "Apply current requester authorization to every replay read; historical permission records do not grant present access.",
+        "Preserve state transitions needed for historical status, classification, alerts, permissions, and time interpretation; do not silently read present-day state into a historical frame.",
+        "Define and test checkpoint compatibility and storage/retention limits."
+      ],
+      "code": "internal/recordings/service.go",
+      "verification": "internal/integration/recordings_test.go",
+      "implemented": "Durable operator/truth journals, private archives, checkpoints and read-only historical frames.",
+      "gap": "No installed recording/archive/worker. User replay is a 2D SVG frame plot rather than animated 3D replay.",
+      "deliveryExit": "Archive/recover an installed run and replay it without side effects; state the 2D/3D scope explicitly.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S3.3",
+      "workstream": "S3",
+      "title": "After-action evaluation",
+      "planLine": 560,
+      "originalPlanClaim": "**Delivered:** 2026-10-22. Versioned metrics over recorded perception/truth, explicit audited evaluator grants and deliberate release of numeric summaries. [Implementation and acceptance](docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md).",
+      "requirements": [
+        "Give authorized evaluators an audited comparison of recorded observations against sealed truth.",
+        "Start with defined perception and workflow metrics: missed/late observations, track association errors, duplicate handling, command lifecycle timing, and scenario completion.",
+        "Record metric definitions, time basis, denominator, versions, and uncertainty.",
+        "Separate privileged results from any intentionally released operator report; sanitize and authorize that release explicitly."
+      ],
+      "code": "internal/recordings/evaluation.go",
+      "verification": "apps/operator-ui/src/routes/recordings.tsx",
+      "implemented": "Versioned perception/workflow metrics, audited evaluator reads and selective numeric release.",
+      "gap": "No installed evaluation/report/evaluator. Broader spatial truth-overlay UX is absent.",
+      "deliveryExit": "Evaluate the retained run using a separately granted evaluator and release only intended summaries.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    },
+    {
+      "id": "S4.1",
+      "workstream": "S4",
+      "title": "Reusable sensor-quality presets",
+      "planLine": 590,
+      "originalPlanClaim": "**Delivered:** 2026-10-22, selected explicitly by the user as the third task in this increment. [Implementation and acceptance](docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md).",
+      "requirements": [
+        "Save immutable, content-addressed abstract observer profiles with explicit limitations.",
+        "Reapply profiles across scenes; pin their documents and exact values into frozen versions.",
+        "Treat edits as custom settings or a new profile version; preserve existing scene hashes and behavior.",
+        "Bound preset count and observer settings, retain author audit and environment isolation, and compare sampled behavior with the prior custom-settings baseline."
+      ],
+      "code": "internal/simscene/presets.go",
+      "verification": "docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md",
+      "implemented": "Immutable reusable sensor-quality presets pinned into frozen scenes.",
+      "gap": "No installed preset. This one selected increment does not complete the open-ended S4 roadmap.",
+      "deliveryExit": "Create/reuse presets in installed scenes while keeping future S4 expansion explicitly open.",
+      "deliveryClass": "profile_proof_not_activated",
+      "implementationAssessment": "implementation_artifacts_evidenced"
+    }
+  ],
+  "findings": [
+    {
+      "id": "D01",
+      "priority": "Blocking",
+      "category": "Acceptance and reporting",
+      "title": "Technical profile completion was reported as product delivery",
+      "tasks": [
+        "F0.6",
+        "P1.6",
+        "P2.4",
+        "S1.3",
+        "S3.3"
+      ],
+      "finding": "The architecture requires two end-to-end user demonstrations. Neither exists in the persistent installation. Plan/readiness reports treated fixture-based milestone passes as completion of the product delivery. The recent Home/navigation repair does not supply data, services or these demonstrations.",
+      "evidence": [
+        {
+          "path": "EMAD_ARCHITECTURE_AND_DIRECTION_v2.md",
+          "pattern": "### Demonstration A:",
+          "line": 414,
+          "text": "### Demonstration A: Public Context intelligence"
+        },
+        {
+          "path": "EMAD_ARCHITECTURE_AND_DIRECTION_v2.md",
+          "pattern": "### Demonstration B:",
+          "line": 418,
+          "text": "### Demonstration B: Integrated 3D simulation"
+        },
+        {
+          "path": "EMAD_IMPLEMENTATION_PLAN_v2.md",
+          "pattern": "**Status:** The original 32 tasks",
+          "line": 5,
+          "text": "**Status:** The original 32 tasks (F0–S3.3) are complete within their documented acceptance scopes. M0–M6 have passed for the declared public/reference, synthetic-terrain and abstract native simulation profiles. S4.1 reusable sensor-quality presets is the first delivered expansion selected by the user. S4 remains an ongoing backlog. Live feeds still require provider agreements/credentials and reviewed admissions."
+        }
+      ],
+      "impact": "Migrate/restart instructions reasonably led the user to expect usable new product pillars; normal installation acceptance was not performed.",
+      "required": "Replace blanket completion with implementation/profile/installed states and require persistent user journeys before closing delivery."
+    },
+    {
+      "id": "D02",
+      "priority": "Blocking",
+      "category": "Unfinished activation",
+      "title": "No public, authoring, evaluator or worker access setup is installed",
+      "tasks": [
+        "F0.2",
+        "F0.6",
+        "P1.1",
+        "S2.1",
+        "S3.3"
+      ],
+      "finding": "The inventory contains one human principal and one wildcard legacy exercise grant. All three scopes are EXERCISE_OBSERVATION. There is no public/input/truth scope or connector/runtime/worker principal. The restriction itself is intentional; the explicit rollout is missing.",
+      "evidence": [
+        {
+          "path": "internal/platform/access/store.go",
+          "pattern": "func (s *Store) LegacyCredentials",
+          "line": 46,
+          "text": "func (s *Store) LegacyCredentials(ctx context.Context, tokens map[string]string) error {"
+        },
+        {
+          "path": "internal/platform/access/catalog.go",
+          "pattern": "func (s *Store) SelectableResources",
+          "line": 13,
+          "text": "func (s *Store) SelectableResources(ctx context.Context) ([]Resource, error) {"
+        }
+      ],
+      "impact": "Normal accounts cannot use new resources and required workers cannot authenticate with their intended scoped identities.",
+      "required": "Provide explicit trusted role/service setup, including distinct registered humans for independent review; verify effective access without implicit privilege expansion."
+    },
+    {
+      "id": "D03",
+      "priority": "Blocking",
+      "category": "Unfinished activation",
+      "title": "Prepared and test data was never installed as persistent product content",
+      "tasks": [
+        "P1.1",
+        "P1.3",
+        "P1.4",
+        "P1.5",
+        "P1.6",
+        "P2.1",
+        "P3.3",
+        "S1.1",
+        "S1.3"
+      ],
+      "finding": "Of 53 tables added by migrations 19–38, 45 are empty. The eight populated new tables are identity/scope/authorization support. New public, reference, imagery, context, model/template/scene, native exercise, recording/evaluation and preset content is absent. Older synthetic exercise records remain.",
+      "evidence": [
+        {
+          "path": "internal/integration/harness_test.go",
+          "pattern": "container.Terminate",
+          "line": 65,
+          "text": "if err := container.Terminate(testsupport.Context()); err != nil {"
+        },
+        {
+          "path": "scripts/data/import_reference_sample.ps1",
+          "pattern": "[Parameter(Mandatory = $true)][string]$TokenFile",
+          "line": 2,
+          "text": "[Parameter(Mandatory = $true)][string]$TokenFile,"
+        }
+      ],
+      "impact": "The new UI has no persistent content to show. Migrations and menu changes cannot populate it.",
+      "required": "Perform idempotent provenance-preserving admissions/imports/captures in the intended persistent workspace and provide a visible import receipt."
+    },
+    {
+      "id": "D04",
+      "priority": "Blocking",
+      "category": "Missing deployment integration",
+      "title": "Supplied stacks do not package new storage and workers",
+      "tasks": [
+        "P1.1",
+        "P2.1",
+        "P2.2",
+        "S1.1",
+        "S2.1",
+        "S3.2"
+      ],
+      "finding": "Development Compose starts PostgreSQL. Staging packages the API/UI/database and observability, but no private artifact store or EMAD worker profiles. The server image contains the API and goose. Separate connector, imagery, model-import, runtime and recording executables require manual credentials/configuration/launch.",
+      "evidence": [
+        {
+          "path": "deployments/docker-compose.yml",
+          "pattern": "  postgres:",
+          "line": 4,
+          "text": "postgres:"
+        },
+        {
+          "path": "deployments/staging/docker-compose.yml",
+          "pattern": "  api:",
+          "line": 41,
+          "text": "api:"
+        },
+        {
+          "path": "deployments/Dockerfile.server",
+          "pattern": "COPY --from=build /out/c4isr-server",
+          "line": 25,
+          "text": "COPY --from=build /out/c4isr-server /usr/local/bin/c4isr-server"
+        },
+        {
+          "path": "apps/emad-runtime/main.go",
+          "pattern": "tokenFile := flag.String",
+          "line": 43,
+          "text": "tokenFile := flag.String(\"token-file\", \"\", \"private service credential file\")"
+        }
+      ],
+      "impact": "Rebuilding API/UI does not activate retrieval, processing, simulation or archiving. Unknown external S3 setup is not assumed absent; no operational handoff was verified.",
+      "required": "Deliver a supported persistent local profile with private blobs and supervised/on-demand workers, preserving separate identities and exact-build admission."
+    },
+    {
+      "id": "D05",
+      "priority": "High",
+      "category": "Missing real-data acceptance",
+      "title": "The environmental intelligence proof uses synthetic pixels",
+      "tasks": [
+        "P2.1",
+        "P2.2",
+        "P2.3",
+        "P2.4"
+      ],
+      "finding": "Real STAC catalogue metadata is retained and NDVI computation/preparation code exists. The end-to-end integration constructs 4×4 synthetic spectral arrays. No real retained raster pair, installed environmental result or real-data reviewed assessment demonstrates the promised analyst workflow. Preparation starts from already retained local bands.",
+      "evidence": [
+        {
+          "path": "internal/integration/imagery_test.go",
+          "pattern": "PreparationMethod: \"synthetic-fixture.v1\"",
+          "line": 115,
+          "text": "tile := imageryanalysis.Tile{Schema: \"emad.multispectral-subset.v1\", SceneID: scene.ID, SceneHash: scene.ContentHash, Grid: imageryanalysis.Grid{CRS: \"EPSG:4326\", Width: 4, Height: 4, West: 39.16, North: 21.49, StepLng: .0002, StepLat: .0002, Registration: \"pixel_edges_north_to_south\"}, AcquiredAt: scene.AcquiredAt, Platform: scene.Platform, Tile: scene.Tile, Orbit: scene.Orbit, ProcessingVersion: scene.ProcessingVersion, ReflectanceUnit: \"surface_reflectance\", PreparationMethod: \"synthetic-fixture.v1\", Synthetic: true, SourceHashes: map[string]string{}}"
+        },
+        {
+          "path": "scripts/data/prepare_imagery_subset.py",
+          "pattern": "Inputs are local retained",
+          "line": 3,
+          "text": "Inputs are local retained B04/B08/SCL files and exact product metadata. No"
+        },
+        {
+          "path": "testdata/imagery/retrieval.json",
+          "pattern": "Only catalogue metadata retained",
+          "line": 5,
+          "text": "\"note\": \"Exact public CDSE STAC response. Only catalogue metadata retained; no upstream raster credentials or raster download. Synthetic subset pixel fixtures are separate.\""
+        }
+      ],
+      "impact": "The numerical and lineage mechanics are tested for their declared fixture, but a useful real-image intelligence demonstration remains undelivered.",
+      "required": "Complete one permitted real-raster pair through masks/comparability, processing, canonical independent review and approved context export."
+    },
+    {
+      "id": "D06",
+      "priority": "High",
+      "category": "Missing transformation implementation",
+      "title": "Prepared real geography fails the current Studio handoff",
+      "tasks": [
+        "P1.3",
+        "S0.2",
+        "S0.3",
+        "P2.4",
+        "S1.3"
+      ],
+      "finding": "Fresh probes passed the unmodified retained files to GeometryFor at the documented Jeddah frame. NOAA elevation fails the unresolved EGM2008 datum; the full places subset fails the 10 km radius. Export retains whole artifacts without clipping. The acceptance scene used synthetic 3×3 ellipsoidal relief and one manually subset reference point.",
+      "evidence": [
+        {
+          "path": "internal/simscene/domain.go",
+          "pattern": "terrain requires a versioned WGS84_ELLIPSOID conversion",
+          "line": 149,
+          "text": "return g, fmt.Errorf(\"terrain requires a versioned WGS84_ELLIPSOID conversion; source datum: %s\", asset.VerticalDatum)"
+        },
+        {
+          "path": "internal/simscene/domain.go",
+          "pattern": "scene radius exceeds 10 km",
+          "line": 78,
+          "text": "return v, fmt.Errorf(\"scene radius exceeds 10 km; choose a smaller context subset\")"
+        },
+        {
+          "path": "internal/contextpackage/service.go",
+          "pattern": "artifacts are retained without implicit clipping",
+          "line": 100,
+          "text": "return Bundle{}, apperr.Validation(\"package AOI must be within every selected dataset; artifacts are retained without implicit clipping\")"
+        },
+        {
+          "path": "internal/integration/studio_runtime_test.go",
+          "pattern": "Terrain is project-authored synthetic ellipsoid data",
+          "line": 38,
+          "text": "// fixture. Terrain is project-authored synthetic ellipsoid data, not ETOPO or a"
+        }
+      ],
+      "impact": "The central real geography → approved package → scene path is incomplete. Correct rejection safeguards should stay; the explicit derivative preparation is missing.",
+      "required": "Add versioned AOI subsetting and validated datum/height conversion, or choose a compatible permitted source; retain original bytes and transformation provenance."
+    },
+    {
+      "id": "D07",
+      "priority": "Scope gap",
+      "category": "Unclosed architecture coverage",
+      "title": "Geographic scene content is far narrower than the proposed world-building inputs",
+      "tasks": [
+        "P1.3",
+        "P2.4",
+        "S1.3"
+      ],
+      "finding": "Retained reference content is two generalized populated-place points plus coarse elevation. No OSM road/building import pipeline was located in reviewed paths. Studio skips non-point vectors and retains imagery/analysis as lineage rather than rendering imagery on terrain.",
+      "evidence": [
+        {
+          "path": "EMAD_FINAL_DATA_STRATEGY_v2.md",
+          "pattern": "OpenStreetMap/Geofabrik",
+          "line": 62,
+          "text": "| **P0 foundation** | OpenStreetMap/Geofabrik, Natural Earth and **one appropriately licensed elevation/terrain dataset** | The 2D COP and future 3D terrain need stable geographic reference | Reference GIS and geospatial asset catalogue | Frozen terrain/road/building/landcover scene assets, only when rights permit |"
+        },
+        {
+          "path": "internal/simscene/domain.go",
+          "pattern": "Non-point reference feature not rendered",
+          "line": 202,
+          "text": "g.Omissions = append(g.Omissions, \"Non-point reference feature not rendered: \"+feature.ID)"
+        },
+        {
+          "path": "internal/simscene/domain.go",
+          "pattern": "Retained lineage only; scene profile does not render",
+          "line": 225,
+          "text": "g.Omissions = append(g.Omissions, \"Retained lineage only; scene profile does not render \"+asset.Kind)"
+        }
+      ],
+      "impact": "This supports a tiny coordinate proof, not a rich geographic environment. This is a proposal-coverage limitation; a full city engine was not a required initial S1 implementation.",
+      "required": "Explicitly bound the next useful geographic region/layers/omissions. A displayed basemap must not be described as ingested or scene-ready GIS."
+    },
+    {
+      "id": "D08",
+      "priority": "Scope gap",
+      "category": "Unclosed product capability",
+      "title": "3D authoring is static; live 3D movement/playback and spatial truth review are absent",
+      "tasks": [
+        "S1.3",
+        "S2.3",
+        "S3.2",
+        "S3.3"
+      ],
+      "finding": "SceneViewport consumes a frozen scene and positions actors from authored input, with no runtime-snapshot input. Runtime lifecycle and the 2D Exercise COP are separate. Recording playback uses a longitude/latitude SVG plot; evaluation offers metrics/numeric release rather than spatial truth overlays. The static model profile rejects animations/skins.",
+      "evidence": [
+        {
+          "path": "apps/operator-ui/src/features/simulation/SceneViewport.tsx",
+          "pattern": "static authoring view",
+          "line": 43,
+          "text": "observer=new ResizeObserver(resize);observer.observe(container);resize();fit();if(!cancelled){setReady(true);setState(`${scene.frozen.input.actors.length} authored actors · ${renderer.info.render.triangles} rendered triangles · static authoring view`)}"
+        },
+        {
+          "path": "apps/operator-ui/src/features/simulation/SceneViewport.tsx",
+          "pattern": "for(const actor of scene.frozen.input.actors)",
+          "line": 36,
+          "text": "for(const actor of scene.frozen.input.actors){const template=scene.frozen.templates.find(t=>t.id===actor.templateId),base=template&&bases.get(template.modelVersionId);if(!base)throw new Error('Pinned actor model is unavailable.');const object=base.clone(true),p=localFromPosition(origin,actor.position);object.position.set(p.x,p.z,-p.y);object.rotation.y=Math.PI-actor.heading*Math.PI/180;object.userData.actorID=actor.id;objects.set(actor.id,object);world.add(object)"
+        },
+        {
+          "path": "apps/operator-ui/src/routes/recordings.tsx",
+          "pattern": "Recorded positions · longitude / latitude",
+          "line": 38,
+          "text": "const plot=(()=>{if(!points.length)return null;const xs=points.map(p=>p.x),ys=points.map(p=>p.y),west=Math.min(...xs),east=Math.max(...xs),south=Math.min(...ys),north=Math.max(...ys);return <figure className=\"rounded border border-edge p-3\"><figcaption className=\"font-semibold\">Recorded positions · longitude / latitude</figcaption><svg viewBox=\"0 0 600 250\" role=\"img\" aria-label={`${points.length} recorded contact and asset positions at ${ms} virtual milliseconds`} className=\"h-56 w-full\"><rect x=\"20\" y=\"15\" width=\"560\" height=\"210\" fill=\"none\" stroke=\"currentColor\"/>{points.map(p=><circle key={p.id} cx={40+(p.x-west)/Math.max(.00001,east-west)*520} cy={205-(p.y-south)/Math.max(.00001,north-south)*170} r=\"5\" fill=\"currentColor\"><title>{p.id}: {p.y.toFixed(5)}, {p.x.toFixed(5)}</title></circle>)}<text x=\"20\" y=\"245\" fill=\"currentColor\" fontSize=\"12\">W {west.toFixed(5)} · E {east.toFixed(5)} · S {south.toFixed(5)} · N {north.toFixed(5)}</text></svg><details><summary className=\"min-h-11 py-2\">Position values</summary><ul>{points.map(p=><li key={p.id} className=\"break-all\">{p.id}: {p.y.toFixed(5)}, {p.x.toFixed(5)}</li>)}</ul></details></figure>})()"
+        },
+        {
+          "path": "apps/emad-asset-validator/validate.mjs",
+          "pattern": "['animations', 'skins', 'cameras']",
+          "line": 47,
+          "text": "for (const name of ['animations', 'skins', 'cameras']) if (d[name]?.length) fail('static_profile_only')"
+        }
+      ],
+      "impact": "The kinematic runtime genuinely exists, but the visible moving 3D experience does not. Static S1/abstract S2 acceptance cannot stand for the full long-term simulator.",
+      "required": "Scope a role-safe live/recorded display adapter, usable starter assets and spatial after-action views. Preserve the distinction between authoring, operator perception and privileged truth."
+    },
+    {
+      "id": "D09",
+      "priority": "Blocking",
+      "category": "Confirmed correctness defect",
+      "title": "Independent assessment review checks principal alias rather than registered human",
+      "tasks": [
+        "P2.3",
+        "P3.3"
+      ],
+      "finding": "AuthorID stores principal ID and Act rejects only equal principal IDs. Multiple human principals can share operator_id. The existing test creates source-reviewer and p2-independent-reviewer for operator-01 and successfully reviews/publishes. A fresh disposable PostGIS/S3 rerun confirmed this; the overlay added only a diagnostic log.",
+      "evidence": [
+        {
+          "path": "internal/assessments/review.go",
+          "pattern": "AuthorID: p.ID",
+          "line": 156,
+          "text": "v = ReviewRevision{ID: ids.New(\"asrv\"), AssessmentID: assessmentID, SourceID: source, ReportEvidence: report, Version: 1, Status: \"PROPOSED\", Conclusion: in.Conclusion, Method: in.Method, Confidence: in.Confidence, ConfidenceRationale: in.ConfidenceRationale, ModelScore: in.ModelScore, AuthorID: p.ID, ActorID: p.ID, RecordedAt: time.Now().UTC(), Evidence: j}"
+        },
+        {
+          "path": "internal/assessments/review.go",
+          "pattern": "p.ID == old.AuthorID",
+          "line": 268,
+          "text": "if in.Action != \"submit\" && p.ID == old.AuthorID {"
+        },
+        {
+          "path": "internal/integration/imagery_test.go",
+          "pattern": "\"p2-independent-reviewer\", \"operator-01\"",
+          "line": 317,
+          "text": "if e = identities.CreateHuman(admin, \"p2-independent-reviewer\", \"operator-01\", access.Grant{Resource: f.resource, Permissions: []string{\"operational.read\", \"sources.read\", \"assessments.read\", \"assessments.review\"}, SourceIDs: []string{f.source}}); e != nil {"
+        },
+        {
+          "path": "internal/platform/access/provision.go",
+          "pattern": "SELECT $1,'human',id,name FROM operators",
+          "line": 100,
+          "text": "tag, err := tx.Exec(ctx, `INSERT INTO principals(id,kind,operator_id,name) SELECT $1,'human',id,name FROM operators WHERE id=$2`, id, operatorID)"
+        }
+      ],
+      "impact": "A second authorized principal of the same registered operator passes the independent-human guard. Appropriate provisioned permissions are required; no ability for an ordinary user to create aliases is asserted.",
+      "required": "Use canonical registered human identity for authorship/review independence while preserving principal/credential audit identity; deny same-human aliases and accept genuinely different registered humans."
+    },
+    {
+      "id": "D10",
+      "priority": "Conditional",
+      "category": "External prerequisites",
+      "title": "Several live integrations remain conditional or unactivated",
+      "tasks": [
+        "P1.5",
+        "P3.2",
+        "P3.3"
+      ],
+      "finding": "FIRMS live verification is key-gated. Repository rollout documents leave OpenSky/AISStream access/keys/rights unresolved. METAR/GDACS here have fixture/protocol acceptance. USGS has a documented historical live smoke and should not be misreported as never tested.",
+      "evidence": [
+        {
+          "path": "internal/integration/firms_live_test.go",
+          "pattern": "if os.Getenv(\"FIRMS_MAP_KEY\")",
+          "line": 15,
+          "text": "if os.Getenv(\"FIRMS_MAP_KEY\") == \"\" {"
+        },
+        {
+          "path": "internal/integration/usgs_live_test.go",
+          "pattern": "No developer",
+          "line": 10,
+          "text": "// credential, production HTTPS adapter and disposable database. No developer"
+        },
+        {
+          "path": "docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md",
+          "pattern": "OpenSky",
+          "line": 40,
+          "text": "**OpenSky is the selected ADS-B provider.** Its native bounded `/api/states/all` endpoint is implemented; no generic intermediary response is assumed. ADS-B.lol's current public API documentation marks that API deprecated and directs use toward feeder-restricted access, so it was not selected for this increment."
+        }
+      ],
+      "impact": "Disabled coverage is a delivery limitation, but no external key/permission should be invented or synthetic evidence represented as live data.",
+      "required": "Track and close each source's prerequisites separately, recheck terms at activation and perform bounded persistent acceptance. This audit does not establish current legal/provider eligibility."
+    },
+    {
+      "id": "D11",
+      "priority": "High",
+      "category": "Missing operational handoff",
+      "title": "Database health/backups do not cover the new dependency chain",
+      "tasks": [
+        "P1.1",
+        "P2.1",
+        "P2.2",
+        "S2.1",
+        "S3.2"
+      ],
+      "finding": "The default health handler pings PostgreSQL only. Feature/job health logic exists, but API health does not establish configured sources, storage or running workers. Bundled backups/restores handle PostgreSQL while imagery/models/recordings require external blobs. Tiny profile measurements do not establish representative long-running operation.",
+      "evidence": [
+        {
+          "path": "internal/app/app.go",
+          "pattern": "if err := pool.Ping(ctx)",
+          "line": 526,
+          "text": "if err := pool.Ping(ctx); err != nil {"
+        },
+        {
+          "path": "scripts/ops/backup.sh",
+          "pattern": "pg_dump",
+          "line": 20,
+          "text": "command -v pg_dump >/dev/null 2>&1 || {"
+        },
+        {
+          "path": "docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md",
+          "pattern": "PostgreSQL-only backups do not include new S3 content",
+          "line": 25,
+          "text": "Retention is explicit, immutable, no more than 365 days and no later than admitted rights expiry. The UI chooses up to seven days. Metadata and hashes remain after authorized deletion; content reads fail after expiry. `DELETE /artifacts/{id}` is denied before retention ends, and thereafter performs retryable DELETING → DELETED cleanup. No automatic janitor is added; operators invoke authorized cleanup. Source suspension blocks use, while expired-content cleanup remains possible. Configure private bucket access and preserve blobs together with database backups; existing PostgreSQL-only backups do not include new S3 content. Use storage versioning/backups when required by deployment policy. Existing small reference/context artifacts remain compatible in PostgreSQL."
+        }
+      ],
+      "impact": "A green connection can coexist with unusable pillars; database-only restore cannot recover missing dependent blobs.",
+      "required": "Deliver feature-readiness diagnostics, paired database/blob recovery rehearsal and a bounded representative operational workload."
+    },
+    {
+      "id": "D12",
+      "priority": "High",
+      "category": "Missing user-facing handoff",
+      "title": "Normal setup and complete workflows remain fragmented",
+      "tasks": [
+        "F0.6",
+        "P1.1",
+        "P2.3",
+        "P2.4",
+        "S1.3",
+        "S2.1",
+        "S3.3"
+      ],
+      "finding": "The old default launch hid major new routes. Recent Home/navigation and a single optional analyst setup guide repair discovery, but full setup still spans admissions, service credentials, storage, imports, runtime build hashes/attachment and separate reviewer/evaluator identities. No integrated persistent setup/acceptance path was verified.",
+      "evidence": [
+        {
+          "path": "docs/implementation/LOCAL_STARTUP.md",
+          "pattern": "These commands are an",
+          "line": 31,
+          "text": "These commands are an **optional, trusted administrator action against your local development database**. They create a separate human credential with Public Context access, authoring access and exercise access in `default / local`. They do not alter the existing operator's grants, grant simulator-truth access, or enable external retrieval. Change the names/environment for your installation. Run provisioning once; if the identity already exists, use the administrator's `issue`/`rotate` actions rather than recreating it."
+        },
+        {
+          "path": "apps/operator-ui/src/routes/simulation-studio.tsx",
+          "pattern": "Admitted runtime build SHA-256",
+          "line": 54,
+          "text": "{control&&scene&&<section className=\"space-y-3 rounded border border-edge p-3\" aria-label=\"Native runtime control\"><h2 className=\"font-semibold\">Native runtime</h2><p>A separate authenticated runtime attaches to a queued run. This view shows lifecycle and clock status; synthetic observers publish only their configured perception to the Exercise COP. Hidden actor truth requires a separate evaluator grant.</p><div className=\"grid gap-3 md:grid-cols-3\"><label>Admitted runtime build SHA-256<input className={field} value={build} maxLength={64} onChange={e=>setBuild(e.target.value)}/></label><label>Duration (virtual seconds)<input className={field} type=\"number\" min={1} max={3600} value={duration} onChange={e=>setDuration(e.target.value)}/></label><label>Clock scale<input className={field} type=\"number\" min={.1} max={20} step=\"any\" value={scale} onChange={e=>setScale(e.target.value)}/></label></div><button className={button} disabled={busy||!/^[a-f0-9]{64}$/.test(build)} onClick={()=>void act(async()=>{const r=await api.startNativeRun({requestKey:crypto.randomUUID(),sceneId:scene.id,runtimeVersion:scene.frozen.runtime,runtimeBuild:build,seed:51,epoch:new Date().toISOString(),durationMs:Number(duration)*1000,scale:Number(scale)});if(!signal.aborted)await navigate({search:{scene:scene.id,run:r.id}})})}>Queue native run</button>"
+        },
+        {
+          "path": "apps/operator-ui/src/routes/home.tsx",
+          "pattern": "Public workspace access required",
+          "line": 53,
+          "text": "<p className=\"emad-access-status\">Public workspace access required</p>"
+        }
+      ],
+      "impact": "Following migrate → dev:api → dev:web still does not deliver the intended analyst-to-exercise experience without additional specialist setup.",
+      "required": "Provide guided setup or an explicit trusted bootstrap command, persistent starter content and a normal-user walkthrough; a general-purpose IAM administration product is not necessary."
+    }
+  ],
+  "milestones": [
+    {
+      "id": "M0",
+      "name": "Safe foundation",
+      "technicalEvidence": "Substantial isolation/compatibility implementation and negative-test evidence.",
+      "installedOutcome": "Default rollout has only legacy exercise access."
+    },
+    {
+      "id": "M1",
+      "name": "Public evidence workspace",
+      "technicalEvidence": "Reference/event/FIRMS fixture checks and historical USGS live smoke.",
+      "installedOutcome": "No installed public scope, admissions, reference imports or public evidence."
+    },
+    {
+      "id": "M2",
+      "name": "Simulation-ready inputs",
+      "technicalEvidence": "Frozen package/time/coordinates/headless profile evidence.",
+      "installedOutcome": "No installed package/version; real terrain is not scene-ready."
+    },
+    {
+      "id": "M3",
+      "name": "Intelligence demonstration",
+      "technicalEvidence": "Recorded catalogue and synthetic spectral workflow.",
+      "installedOutcome": "No real-raster demonstration; canonical independent-human review is defective."
+    },
+    {
+      "id": "M4",
+      "name": "3D scene proof",
+      "technicalEvidence": "Tiny static scene with synthetic relief.",
+      "installedOutcome": "No installed scene; retained real inputs fail the loader."
+    },
+    {
+      "id": "M5",
+      "name": "Perception-driven exercise",
+      "technicalEvidence": "Native abstract runtime/sensor/gateway integration tests.",
+      "installedOutcome": "No installed native run or worker identity; no runtime-driven 3D viewer."
+    },
+    {
+      "id": "M6",
+      "name": "Integrated exercise demonstration",
+      "technicalEvidence": "Synthetic tasking, archives, replay and metric flows.",
+      "installedOutcome": "No installed archive/evaluation/report or persistent Demonstration B."
+    }
+  ],
+  "recovery": [
+    {
+      "id": "R1",
+      "title": "Correct completion states and acceptance",
+      "addresses": [
+        "D01",
+        "D12"
+      ],
+      "scope": "Separate implementation, fixture/profile and persistent delivery; expose unresolved guarantees.",
+      "acceptance": "No blanket completion claim; all blocked/incomplete outcomes are explicit."
+    },
+    {
+      "id": "R2",
+      "title": "Supported deployment and explicit role setup",
+      "addresses": [
+        "D02",
+        "D04",
+        "D11",
+        "D12"
+      ],
+      "scope": "Persistent private blobs, scoped roles, distinct humans, worker launch and runtime-build admission.",
+      "acceptance": "A clean supported setup reaches feature readiness without permissive grants."
+    },
+    {
+      "id": "R3",
+      "title": "Persist a usable Public Context region",
+      "addresses": [
+        "D03",
+        "D10"
+      ],
+      "scope": "Import real reference data and activate reviewed bounded USGS/FIRMS captures when authorized.",
+      "acceptance": "Normal UI exposes retained reports/revisions/provenance and survives restart."
+    },
+    {
+      "id": "R4",
+      "title": "Fix canonical review independence",
+      "addresses": [
+        "D09"
+      ],
+      "scope": "Use stable registered human identity; retain principal audit identity; test aliases and different humans.",
+      "acceptance": "Same-human aliases cannot review/publish; genuinely different registered humans can."
+    },
+    {
+      "id": "R5",
+      "title": "Complete real imagery Demonstration A",
+      "addresses": [
+        "D05",
+        "D03"
+      ],
+      "scope": "Retain a permitted real raster pair, process it reproducibly, independently review and approve export.",
+      "acceptance": "A real-data intelligence workflow works in the persistent installation."
+    },
+    {
+      "id": "R6",
+      "title": "Complete real context-to-scene preparation",
+      "addresses": [
+        "D06",
+        "D07"
+      ],
+      "scope": "Derive AOI/height datum/transform/layers while retaining source and omissions.",
+      "acceptance": "Actual selected real terrain loads; synthetic substitution cannot pass that acceptance."
+    },
+    {
+      "id": "R7",
+      "title": "Deliver a usable native 3D exercise entry",
+      "addresses": [
+        "D03",
+        "D08",
+        "D12"
+      ],
+      "scope": "Install starter assets/environment/scene; coordinate trusted launch/attach; scope role-safe moving 3D display.",
+      "acceptance": "An author starts an installed exercise and viewers see only their declared permitted state."
+    },
+    {
+      "id": "R8",
+      "title": "Finish persistent archive and evaluation handoff",
+      "addresses": [
+        "D03",
+        "D08",
+        "D11"
+      ],
+      "scope": "Run recording, retain/recover blobs, use a separate evaluator and deliberately release reports; scope spatial/3D review explicitly.",
+      "acceptance": "Demonstration B completes task/outcome/replay/evaluation and survives restart."
+    },
+    {
+      "id": "R9",
+      "title": "Verify recovery, budgets and normal-user operation",
+      "addresses": [
+        "D01",
+        "D11",
+        "D12"
+      ],
+      "scope": "Rehearse database+blob restore and bounded realistic workload/outage/restart scenarios.",
+      "acceptance": "A normal-user walkthrough and receipts prove both pillars independently and together."
+    }
+  ],
+  "limitations": [
+    "This is a task-by-task delivery audit of the dirty working tree, targeted source paths, recent evidence and the observed persistent installation. It does not certify every line of code or the absence of all defects.",
+    "The preceding follow-up executed 80 browser regressions and 16 real-backend browser checks. Those recent results are reused, not rerun wholesale; they prove their cases rather than installation activation.",
+    "The review-alias path was freshly rerun with a Go overlay adding one diagnostic log. Original production/test source was unchanged; the green test confirmed the wrong independence assumption.",
+    "The terrain probes used original retained bytes and the unmodified loader; both source artifact hashes match. No source datum was relabeled to make the probes pass.",
+    "No local application data, access grants, source configuration, applied migration, provider activation, commit or push was changed by the audit.",
+    "Unknown external S3 configuration and current provider permissions/keys were not inspected or revalidated. Bundled-profile omissions and database contents are observed facts.",
+    "High-fidelity aircraft dynamics, physical radar, broad model libraries, federation, GPU clusters and real hardware were explicitly future/deferred/out of scope and are not counted as missed initial tasks.",
+    "Mandatory ML/LLM automation, Kafka/Kubernetes and a particular heavyweight engine were not requirements. A deterministic baseline and a Three.js initial viewport remain compatible with the v2 direction."
+  ],
+  "emptyNewTables": [
+    "actor_templates",
+    "artifacts",
+    "assessment_review_heads",
+    "assessment_revisions",
+    "authorization_changes",
+    "connector_runs",
+    "context_export_previews",
+    "context_packages",
+    "environment_assets",
+    "exercise_messages",
+    "external_track_associations",
+    "external_track_segments",
+    "imagery_job_attempts",
+    "imagery_jobs",
+    "imagery_preparations",
+    "imagery_scenes",
+    "model_asset_attempts",
+    "model_asset_uploads",
+    "model_asset_versions",
+    "native_controlled_assets",
+    "native_exercises",
+    "native_projection_batches",
+    "native_task_dispatch",
+    "public_context_records",
+    "public_event_current",
+    "public_event_revisions",
+    "public_evidence",
+    "public_evidence_catalog",
+    "public_evidence_outbox",
+    "reference_datasets",
+    "reference_features",
+    "simulation_actor_mappings",
+    "simulation_evaluations",
+    "simulation_recording_events",
+    "simulation_recording_limits",
+    "simulation_recordings",
+    "simulation_released_reports",
+    "simulation_runtime_events",
+    "simulation_runtime_runs",
+    "simulation_runtime_truth",
+    "simulation_scenes",
+    "simulation_sensor_presets",
+    "simulation_versions",
+    "source_admissions",
+    "source_connector_state"
+  ],
+  "terrainProbes": [
+    {
+      "artifactHashMatches": true,
+      "error": "terrain requires a versioned WGS84_ELLIPSOID conversion; source datum: EGM2008 orthometric height, metres, positive up",
+      "file": "testdata/reference/jeddah-makkah/elevation.json",
+      "loaderSucceeded": false,
+      "partialReferencePoints": 0,
+      "partialTerrainSamples": 0,
+      "verticalDatum": "EGM2008 orthometric height, metres, positive up"
+    },
+    {
+      "artifactHashMatches": true,
+      "error": "scene radius exceeds 10 km; choose a smaller context subset",
+      "file": "testdata/reference/jeddah-makkah/places.json",
+      "loaderSucceeded": false,
+      "partialReferencePoints": 1,
+      "partialTerrainSamples": 0,
+      "verticalDatum": "not_applicable"
+    }
+  ],
+  "reviewAliasProbe": {
+    "confirmed": true,
+    "diagnostic": "imagery_test.go:331: DELIVERY AUDIT: source-reviewer and p2-independent-reviewer both bind operator-01; separate principal IDs successfully review and publish the same registered human proposal",
+    "originalSourceUnchanged": true,
+    "overlayAddedDiagnosticLogOnly": true,
+    "logSHA256": "d803fe1889406fc22951c5662663da449663fe494a881416298b040298845198"
+  },
+  "summary": {
+    "originalTasks": 32,
+    "selectedS4Increments": 1,
+    "reviewedTaskRecords": 33,
+    "implementationArtifactRecords": 33,
+    "deliveryClasses": {
+      "foundation_evidenced": 8,
+      "partial_default_rollout": 1,
+      "profile_proof_not_activated": 24
+    },
+    "installedDemonstrations": 0,
+    "requiredDemonstrations": 2,
+    "newTables": 53,
+    "emptyNewTables": 45,
+    "findings": 12,
+    "recoveryPackages": 9,
+    "completionPercentage": null,
+    "percentageReason": "Tasks differ in size; overlapping activation/integration gaps cannot yield a defensible code or effort percentage."
+  },
+  "recentVerificationEvidence": [
+    {
+      "path": "tmp/runtime-review/ui-build.log",
+      "sha256": "b143003e21b96e95ed2a1d1552707c926e085783c3102668272dacef1772a2b4"
+    },
+    {
+      "path": "tmp/runtime-review/browser-regressions.log",
+      "sha256": "2a5de40defb081294dccf02c9602d9ae940e5d499281db0ccdcd84209309b0d8"
+    },
+    {
+      "path": "tmp/runtime-review/real-browser-final.log",
+      "sha256": "35f9f3fa4f443ad4aee07fbac8bf78104b582ab223781ea5287bb60244694b31"
+    },
+    {
+      "path": "tmp/runtime-review/live-browser-final.log",
+      "sha256": "1220d33ce2184739a7726dca0b732dd48d23e88a71054757e4e607eec10f46d1"
+    }
+  ],
+  "terrainProbeReproducer": {
+    "sourcePath": "tmp/delivery-audit-2026-10-23/probe/main.go",
+    "sourceSHA256": "c5042b773002fae4072b1d8cea11bc43e22032210449a5e038dad451a4f0decb",
+    "command": "go run ./tmp/delivery-audit-2026-10-23/probe",
+    "source": "package main\n\nimport (\n \"crypto/sha256\"\n \"encoding/hex\"\n \"encoding/json\"\n \"fmt\"\n \"os\"\n \"github.com/SalehAlobaylan/c4isr-systems/internal/reference\"\n \"github.com/SalehAlobaylan/c4isr-systems/internal/simulation\"\n \"github.com/SalehAlobaylan/c4isr-systems/internal/simscene\"\n \"github.com/SalehAlobaylan/c4isr-systems/internal/contextpackage\"\n)\nfunc main(){\n height:=10.0\n frame:=simulation.DefaultFrame(simulation.Position{Longitude:39.2,Latitude:21.5,Height:&height,VerticalDatum:\"WGS84_ELLIPSOID\"})\n out:=[]map[string]any{}\n for _,name:=range []string{\"elevation\",\"places\"}{\n  path:=\"testdata/reference/jeddah-makkah/\"+name+\".json\"\n  raw,e:=os.ReadFile(path);if e!=nil{panic(e)}\n  var input reference.Input;if e=json.Unmarshal(raw,&input);e!=nil{panic(e)}\n  sum:=sha256.Sum256(input.Artifact);hash:=hex.EncodeToString(sum[:])\n  b:=contextpackage.Bundle{Manifest:contextpackage.Manifest{Assets:[]contextpackage.Asset{{Kind:input.Kind,SHA256:hash,VerticalDatum:input.VerticalDatum,DatasetID:name}}},Assets:map[string][]byte{hash:input.Artifact}}\n  g,e:=simscene.GeometryFor(b,frame)\n  result:=map[string]any{\"file\":path,\"artifactHashMatches\":hash==input.SHA256,\"verticalDatum\":input.VerticalDatum,\"loaderSucceeded\":e==nil,\"partialTerrainSamples\":len(g.Terrain),\"partialReferencePoints\":len(g.Points)}\n  if e!=nil{result[\"error\"]=e.Error()}\n  out=append(out,result)\n }\n data,_:=json.MarshalIndent(out,\"\",\"  \");fmt.Println(string(data))\n}\n"
+  },
+  "verificationOfAuditArtifacts": {
+    "canvasTypecheck": "passed with the installed cursor/canvas declarations; native host rendering not independently exercised",
+    "taskRecords": 33,
+    "sourceAndVerificationPaths": "all resolve",
+    "behavioralProbeStatus": "original real-data loader rejections and same-operator review publication confirmed",
+    "runtimeChangesMade": false,
+    "grantOrApplicationDataChangesMade": false
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "sourceId": "RETURNED_CANONICAL_SOURCE_ID",
+  "datasetKey": "natural-earth-places-jeddah-makkah",
+  "version": "5.1.2-subset-v1",
+  "label": "Jeddah and Makkah reference places",
+  "kind": "vector",
+  "originalProducer": "Natural Earth",
+  "crs": "EPSG:4326",
+  "aoi": {
+    "west": 39,
+    "south": 21,
+    "east": 40,
+    "north": 22
+  },
+  "retrievedAt": "2026-10-21T07:45:19.189467+00:00",
+  "retrievalReference": "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/v5.1.2/geojson/ne_50m_populated_places_simple.geojson",
+  "rights": {
+    "id": "natural-earth-places-jeddah-makkah-rights-v1",
+    "legalBasis": "Public reference data; reviewed source terms linked below",
+    "termsUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+    "attribution": "Made with Natural Earth, v5.1.2, 1:50 million",
+    "retainRaw": true,
+    "allowAnalysis": true,
+    "allowSimulationExport": true
+  },
+  "artifact": "eyJ0eXBlIjoiRmVhdHVyZUNvbGxlY3Rpb24iLCJmZWF0dXJlcyI6W3sidHlwZSI6IkZlYXR1cmUiLCJwcm9wZXJ0aWVzIjp7InNjYWxlcmFuayI6MiwibmF0c2NhbGUiOjIwMCwibGFiZWxyYW5rIjo1LCJmZWF0dXJlY2xhIjoiUG9wdWxhdGVkIHBsYWNlIiwibmFtZSI6IkplZGRhaCIsIm5hbWVwYXIiOm51bGwsIm5hbWVhbHQiOiJKaWRkYWgiLCJuYW1lYXNjaWkiOiJKZWRkYWgiLCJhZG0wY2FwIjowLCJjYXBhbHQiOjAsImNhcGluIjpudWxsLCJ3b3JsZGNpdHkiOjAsIm1lZ2FjaXR5IjoxLCJzb3YwbmFtZSI6IlNhdWRpIEFyYWJpYSIsInNvdl9hMyI6IlNBVSIsImFkbTBuYW1lIjoiU2F1ZGkgQXJhYmlhIiwiYWRtMF9hMyI6IlNBVSIsImFkbTFuYW1lIjoiTWFra2FoIiwiaXNvX2EyIjoiU0EiLCJub3RlIjpudWxsLCJsYXRpdHVkZSI6MjEuNTE4ODM1LCJsb25naXR1ZGUiOjM5LjIxNzI1MiwicG9wX21heCI6MzAxMjAwMCwicG9wX21pbiI6Mjg2NzQ0NiwicG9wX290aGVyIjowLCJyYW5rX21heCI6MTIsInJhbmtfbWluIjoxMiwibWVnYW5hbWUiOiJKaWRkYWgiLCJsc19uYW1lIjoiSmVkZGFoIiwibWluX3pvb20iOjQsIm5lX2lkIjoxMTU5MTUxMjc3fSwiYmJveCI6WzM5LjIxNzI1MiwyMS41MTg4MzUsMzkuMjE3MjUyLDIxLjUxODgzNV0sImdlb21ldHJ5Ijp7InR5cGUiOiJQb2ludCIsImNvb3JkaW5hdGVzIjpbMzkuMjE3MjUyLDIxLjUxODgzNV19LCJpZCI6IjExNTkxNTEyNzcifSx7InR5cGUiOiJGZWF0dXJlIiwicHJvcGVydGllcyI6eyJzY2FsZXJhbmsiOjIsIm5hdHNjYWxlIjoyMDAsImxhYmVscmFuayI6NSwiZmVhdHVyZWNsYSI6IlBvcHVsYXRlZCBwbGFjZSIsIm5hbWUiOiJNYWtrYWgiLCJuYW1lcGFyIjoiTWVjY2EiLCJuYW1lYWx0IjpudWxsLCJuYW1lYXNjaWkiOiJNYWtrYWgiLCJhZG0wY2FwIjowLCJjYXBhbHQiOjAsImNhcGluIjpudWxsLCJ3b3JsZGNpdHkiOjAsIm1lZ2FjaXR5IjoxLCJzb3YwbmFtZSI6IlNhdWRpIEFyYWJpYSIsInNvdl9hMyI6IlNBVSIsImFkbTBuYW1lIjoiU2F1ZGkgQXJhYmlhIiwiYWRtMF9hMyI6IlNBVSIsImFkbTFuYW1lIjoiTWFra2FoIiwiaXNvX2EyIjoiU0EiLCJub3RlIjpudWxsLCJsYXRpdHVkZSI6MjEuNDMxOTY3LCJsb25naXR1ZGUiOjM5LjgxODA5NCwicG9wX21heCI6MTM4NTAwMCwicG9wX21pbiI6MTMyMzYyNCwicG9wX290aGVyIjoxNjMwMDAzLCJyYW5rX21heCI6MTIsInJhbmtfbWluIjoxMiwibWVnYW5hbWUiOiJNYWtrYWgiLCJsc19uYW1lIjoiTWFra2FoIiwibWluX3pvb20iOjMuNywibmVfaWQiOjExNTkxNTEyNzl9LCJiYm94IjpbMzkuODE4MDk0LDIxLjQzMTk2NywzOS44MTgwOTQsMjEuNDMxOTY3XSwiZ2VvbWV0cnkiOnsidHlwZSI6IlBvaW50IiwiY29vcmRpbmF0ZXMiOlszOS44MTgwOTQsMjEuNDMxOTY3XX0sImlkIjoiMTE1OTE1MTI3OSJ9XX0=",
+  "sha256": "632504397c0c7602b7c925af429f20fa0fb8e19cb8f339e6c77806ba2aab71f7",
+  "parentArtifactSha256": "8e70756b39fae9bcdc1e332bfc510c024c5edd3a13203ffd20092ee37b61d978",
+  "verticalDatum": "not_applicable",
+  "resolution": {
+    "value": 50000000,
+    "unit": "map_scale"
+  },
+  "validity": "Static Natural Earth v5.1.2 release; not a current infrastructure survey",
+  "quality": "Generalized place locations at 1:50 million scale; not building extents or routing data",
+  "transformation": "Select original point features inside [39,21,40,22]; preserve source properties and coordinates"
+}

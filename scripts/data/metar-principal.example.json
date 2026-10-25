@@ -1,0 +1,18 @@
+{
+  "id": "metar-connector",
+  "kind": "service",
+  "name": "metar bounded context connector",
+  "resource": {
+    "workspaceId": "public-context",
+    "environmentId": "world",
+    "partition": "PUBLIC_EVIDENCE"
+  },
+  "permissions": [
+    "operational.read",
+    "sources.read",
+    "connectors.execute"
+  ],
+  "sourceIds": [
+    "REPLACE_WITH_REGISTERED_METAR_SOURCE_ID"
+  ]
+}

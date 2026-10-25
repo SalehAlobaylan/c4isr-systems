@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 )
 
 // PostgresRepository stores assets in PostgreSQL.
@@ -27,7 +27,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 // Create inserts an asset and its state projection, returning the read model.
 func (r *PostgresRepository) Create(ctx context.Context, asset Asset) (Asset, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	row, err := q.CreateAsset(ctx, dbgen.CreateAssetParams{
 		ID:           asset.ID,
 		Name:         asset.Name,
@@ -47,7 +47,7 @@ func (r *PostgresRepository) Create(ctx context.Context, asset Asset) (Asset, er
 
 // Get loads an asset with its current state by id.
 func (r *PostgresRepository) Get(ctx context.Context, id string) (Asset, error) {
-	row, err := dbgen.New(r.pool).GetAssetDetail(ctx, id)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).GetAssetDetail(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Asset{}, apperr.NotFound("asset", id)
@@ -59,12 +59,12 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Asset, error) 
 
 // Exists reports whether an asset id is registered.
 func (r *PostgresRepository) Exists(ctx context.Context, id string) (bool, error) {
-	return dbgen.New(r.pool).AssetExists(ctx, id)
+	return dbgen.New(platformdb.Scoped(r.pool)).AssetExists(ctx, id)
 }
 
 // List returns assets ordered by name with a total count.
 func (r *PostgresRepository) List(ctx context.Context, limit, offset int) ([]Asset, int, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	rows, err := q.ListAssetsWithState(ctx, dbgen.ListAssetsWithStateParams{
 		OffsetCount: int32(offset),
 		LimitCount:  int32(limit),
@@ -85,7 +85,7 @@ func (r *PostgresRepository) List(ctx context.Context, limit, offset int) ([]Ass
 
 // UpdateStatus changes asset availability and returns the read model.
 func (r *PostgresRepository) UpdateStatus(ctx context.Context, id string, status Status) (Asset, error) {
-	_, err := dbgen.New(r.pool).UpdateAssetStatus(ctx, dbgen.UpdateAssetStatusParams{
+	_, err := dbgen.New(platformdb.Scoped(r.pool)).UpdateAssetStatus(ctx, dbgen.UpdateAssetStatusParams{
 		Status: string(status),
 		ID:     id,
 	})

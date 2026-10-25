@@ -23,7 +23,7 @@ func (q *Queries) CountSources(ctx context.Context) (int64, error) {
 const createSource = `-- name: CreateSource :one
 INSERT INTO sources (id, name, type, status, metadata, created_at, updated_at)
 VALUES ($1, $2, $3, $4, $5, now(), now())
-RETURNING id, name, type, status, metadata, created_at, updated_at
+RETURNING id, name, type, status, metadata, created_at, updated_at, scope_id
 `
 
 type CreateSourceParams struct {
@@ -51,12 +51,13 @@ func (q *Queries) CreateSource(ctx context.Context, arg CreateSourceParams) (Sou
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const getSource = `-- name: GetSource :one
-SELECT id, name, type, status, metadata, created_at, updated_at FROM sources WHERE id = $1
+SELECT id, name, type, status, metadata, created_at, updated_at, scope_id FROM sources WHERE id = $1
 `
 
 func (q *Queries) GetSource(ctx context.Context, id string) (Source, error) {
@@ -70,12 +71,13 @@ func (q *Queries) GetSource(ctx context.Context, id string) (Source, error) {
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }
 
 const listSources = `-- name: ListSources :many
-SELECT id, name, type, status, metadata, created_at, updated_at FROM sources
+SELECT id, name, type, status, metadata, created_at, updated_at, scope_id FROM sources
 ORDER BY created_at DESC
 LIMIT $2 OFFSET $1
 `
@@ -102,6 +104,7 @@ func (q *Queries) ListSources(ctx context.Context, arg ListSourcesParams) ([]Sou
 			&i.Metadata,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ScopeID,
 		); err != nil {
 			return nil, err
 		}
@@ -128,7 +131,7 @@ const updateSourceStatus = `-- name: UpdateSourceStatus :one
 UPDATE sources
 SET status = $1, updated_at = now()
 WHERE id = $2
-RETURNING id, name, type, status, metadata, created_at, updated_at
+RETURNING id, name, type, status, metadata, created_at, updated_at, scope_id
 `
 
 type UpdateSourceStatusParams struct {
@@ -147,6 +150,7 @@ func (q *Queries) UpdateSourceStatus(ctx context.Context, arg UpdateSourceStatus
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ScopeID,
 	)
 	return i, err
 }

@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@/lib/scopedQueries'
+
 import { useEffect, useMemo, useState } from 'react'
 
 import { ErrorState } from '@/components/shared/states'
-import { api, type Asset, type Track } from '@/lib/api'
+import { useAPI, type Asset, type Track } from '@/lib/api'
 import {
   FRESHNESS_LABELS,
   freshnessWarning,
@@ -18,7 +19,7 @@ import {
   presentTrackStatus,
   type SemanticTone,
 } from '@/lib/operationalPresentation'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { useLayoutStore } from '@/stores/layout'
 
 const TRACK_FILTERS = { limit: 500 }
@@ -98,6 +99,8 @@ function statusSeverity(tone: SemanticTone): SemanticTone | undefined {
 }
 
 export function BoardPage() {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const density = useLayoutStore((state) => state.density)
   const setDensity = useLayoutStore((state) => state.setDensity)
   const chipsOpen = useLayoutStore((state) => state.chipsOpen)

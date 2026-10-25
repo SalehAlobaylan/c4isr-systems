@@ -1,0 +1,551 @@
+{
+  "schema": "emad.delivery-recovery.v1",
+  "status": "ACCEPTED_WITH_DECLARED_EXTERNAL_GATES",
+  "scope": "All 12 audit gaps; Saudi-wide Public Context; bounded Jeddah scene; explicitly gated restricted sources; development review accounts",
+  "tasks": [
+    {
+      "id": "F0.1",
+      "title": "Verify the baseline and publish the migration inventory",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "F0.2",
+      "title": "Define principals, resource context, and contract vocabulary",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "F0.3",
+      "title": "Add ownership persistence and backfill safely",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "F0.4",
+      "title": "Enforce boundaries in application services and queries",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "F0.5",
+      "title": "Separate realtime delivery and protect metadata",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "F0.6",
+      "title": "Separate workspaces and close the compatibility gate",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "P1.1",
+      "title": "Source admission, provenance, and connector execution",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "P1.2",
+      "title": "Separate point events, areas, and moving observations",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "P1.3",
+      "title": "Reference GIS and terrain catalogue",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "P1.4",
+      "title": "USGS event integration",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "P1.5",
+      "title": "FIRMS thermal detection integration",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "LIVE_ADAPTER_AND_BOUNDED_PERSISTENT_CAPTURE_ACCEPTED",
+      "installation": "FIRMS_ENABLED_INITIAL_BACKFILL_IN_PROGRESS",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json",
+        "evidence/firms/ACCEPTANCE.json"
+      ],
+      "liveAcceptanceMeaning": "First installed day page returned HTTP 200 and zero detections. Remaining frozen lookback pages resume hourly; complete installed query coverage remains pending."
+    },
+    {
+      "id": "P1.6",
+      "title": "Public evidence drill-down and historical view",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S0.1",
+      "title": "Scenario versions, runs, and explicit time",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S0.2",
+      "title": "Coordinate and fidelity contracts",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S0.3",
+      "title": "Context package manifest and integrity",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S0.4",
+      "title": "Existing runner adapter and minimal synthetic ingress",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "P2.1",
+      "title": "Artifact storage and imagery catalogue",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "P2.2",
+      "title": "Reproducible environmental analysis",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "P2.3",
+      "title": "Reviewable assessments and intelligence workspace",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "CANONICAL_ACCOUNT_SEPARATION_ACCEPTED_REAL_REVIEW_PENDING",
+      "installation": "REAL_PROPOSAL_PENDING_HUMAN_REVIEW",
+      "externalPrerequisites": [
+        "Actual human interpretation and independent review before real publication; development review tested separately"
+      ],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "P2.4",
+      "title": "Approved public-to-simulation export",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "GEOGRAPHIC_EXPORT_AND_DEVELOPMENT_REVIEW_EXPORT_ACCEPTED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "P3.1",
+      "title": "External moving track projection",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "OPENSKY_BOUNDED_LIVE_RETRIEVAL_ACCEPTED_PROJECTION_REGRESSION_ACCEPTED",
+      "installation": "OPENSKY_ENABLED_AIS_GATED",
+      "externalPrerequisites": [
+        "Approved AIS use/retention and API key"
+      ],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json",
+        "evidence/opensky/ACCEPTANCE.json"
+      ],
+      "liveAcceptanceMeaning": "OpenSky OAuth and bounded live retrieval accepted; first snapshot returned zero records. External-track projection remains covered by the assembled regression; no live aircraft observation was invented."
+    },
+    {
+      "id": "P3.2",
+      "title": "One ADS-B provider and AISStream",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "OPENSKY_BOUNDED_LIVE_RETRIEVAL_ACCEPTED_PROJECTION_REGRESSION_ACCEPTED",
+      "installation": "OPENSKY_ENABLED_AIS_GATED",
+      "externalPrerequisites": [
+        "Approved AIS use/retention and API key"
+      ],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json",
+        "evidence/opensky/ACCEPTANCE.json"
+      ],
+      "liveAcceptanceMeaning": "OpenSky OAuth and bounded live retrieval accepted; first snapshot returned zero records. External-track projection remains covered by the assembled regression; no live aircraft observation was invented."
+    },
+    {
+      "id": "P3.3",
+      "title": "Weather context and selected reports",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S1.1",
+      "title": "Model and environment asset registry",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S1.2",
+      "title": "Engine evaluation",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S1.3",
+      "title": "First georeferenced scene and Studio shell",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S2.1",
+      "title": "Runtime lifecycle and actor behavior",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S2.2",
+      "title": "Synthetic sensor adapters",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S2.3",
+      "title": "Exercise ingestion and operational picture",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S3.1",
+      "title": "Exercise-controlled workflows",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S3.2",
+      "title": "Recording and replay",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S3.3",
+      "title": "After-action evaluation",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_OR_APPLIED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    },
+    {
+      "id": "S4.1",
+      "title": "Reusable sensor-quality presets",
+      "implementation": "IMPLEMENTED_BOUNDED_SCOPE",
+      "verification": "ACCEPTED",
+      "installation": "INSTALLED_SENSOR_PRESETS_ONLY_FURTHER_S4_DEFERRED",
+      "externalPrerequisites": [],
+      "evidence": [
+        "evidence/recovery/ACCEPTANCE.json"
+      ]
+    }
+  ],
+  "recovery": [
+    {
+      "id": "R1",
+      "title": "Canonical review identity and delivery ledger",
+      "implementation": "IMPLEMENTED",
+      "verification": "ACCEPTED",
+      "installation": "PERSISTENT_LOCAL_ACCEPTED",
+      "auditItems": [
+        "D01",
+        "D09"
+      ],
+      "evidence": [
+        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "evidence/recovery/ACCEPTANCE.json"
+      ],
+      "externalPrerequisites": []
+    },
+    {
+      "id": "R2",
+      "title": "Persistent setup and scoped workers",
+      "implementation": "IMPLEMENTED",
+      "verification": "ACCEPTED",
+      "installation": "PERSISTENT_LOCAL_ACCEPTED",
+      "auditItems": [
+        "D02",
+        "D04",
+        "D11",
+        "D12"
+      ],
+      "evidence": [
+        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "evidence/recovery/ACCEPTANCE.json"
+      ],
+      "externalPrerequisites": []
+    },
+    {
+      "id": "R3",
+      "title": "Saudi Public Context content",
+      "implementation": "IMPLEMENTED",
+      "verification": "ACCEPTED",
+      "installation": "PERSISTENT_LOCAL_ACCEPTED",
+      "auditItems": [
+        "D03",
+        "D07",
+        "D10"
+      ],
+      "evidence": [
+        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "evidence/recovery/ACCEPTANCE.json"
+      ],
+      "externalPrerequisites": [
+        "AIS access remains explicitly gated; OpenSky and FIRMS live adapters accepted. FIRMS initial backfill remains in progress."
+      ]
+    },
+    {
+      "id": "R4",
+      "title": "Real imagery and assessment workflow",
+      "implementation": "IMPLEMENTED",
+      "verification": "ACCEPTED",
+      "installation": "PERSISTENT_LOCAL_ACCEPTED",
+      "auditItems": [
+        "D03",
+        "D05"
+      ],
+      "evidence": [
+        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "evidence/recovery/ACCEPTANCE.json"
+      ],
+      "externalPrerequisites": []
+    },
+    {
+      "id": "R5",
+      "title": "Real prepared geography",
+      "implementation": "IMPLEMENTED",
+      "verification": "ACCEPTED",
+      "installation": "PERSISTENT_LOCAL_ACCEPTED",
+      "auditItems": [
+        "D06",
+        "D07"
+      ],
+      "evidence": [
+        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "evidence/recovery/ACCEPTANCE.json"
+      ],
+      "externalPrerequisites": []
+    },
+    {
+      "id": "R6",
+      "title": "Authoring and moving 3D exercise",
+      "implementation": "IMPLEMENTED",
+      "verification": "ACCEPTED",
+      "installation": "PERSISTENT_LOCAL_ACCEPTED",
+      "auditItems": [
+        "D03",
+        "D08",
+        "D12"
+      ],
+      "evidence": [
+        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "evidence/recovery/ACCEPTANCE.json"
+      ],
+      "externalPrerequisites": []
+    },
+    {
+      "id": "R7",
+      "title": "Recording replay and evaluation",
+      "implementation": "IMPLEMENTED",
+      "verification": "ACCEPTED",
+      "installation": "PERSISTENT_LOCAL_ACCEPTED",
+      "auditItems": [
+        "D03",
+        "D08",
+        "D11"
+      ],
+      "evidence": [
+        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "evidence/recovery/ACCEPTANCE.json"
+      ],
+      "externalPrerequisites": []
+    },
+    {
+      "id": "R8",
+      "title": "Interface polish",
+      "implementation": "IMPLEMENTED",
+      "verification": "ACCEPTED",
+      "installation": "PERSISTENT_LOCAL_ACCEPTED",
+      "auditItems": [
+        "D12"
+      ],
+      "evidence": [
+        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "evidence/recovery/ACCEPTANCE.json"
+      ],
+      "externalPrerequisites": []
+    },
+    {
+      "id": "R9",
+      "title": "Recovery and persistent acceptance",
+      "implementation": "IMPLEMENTED",
+      "verification": "ACCEPTED",
+      "installation": "PERSISTENT_LOCAL_ACCEPTED",
+      "auditItems": [
+        "D01",
+        "D11"
+      ],
+      "evidence": [
+        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "evidence/recovery/ACCEPTANCE.json"
+      ],
+      "externalPrerequisites": []
+    }
+  ],
+  "acceptedAt": "2026-10-23T12:47:56.078254+00:00",
+  "acceptance": "DELIVERY_RECOVERY_ACCEPTANCE.md",
+  "followUps": [
+    {
+      "id": "OPENSKY_ACTIVATION",
+      "acceptedAt": "2026-10-23T13:42:20.794929+00:00",
+      "evidence": "evidence/opensky/ACCEPTANCE.json",
+      "report": "OPENSKY_ACTIVATION.md"
+    },
+    {
+      "id": "FIRMS_ACTIVATION",
+      "acceptedAt": "2026-10-23T16:16:08.861046+00:00",
+      "evidence": "evidence/firms/ACCEPTANCE.json",
+      "report": "FIRMS_ACTIVATION.md",
+      "meaning": "Key and live adapter verified; persistent lookback backfills under unchanged pacing."
+    }
+  ]
+}

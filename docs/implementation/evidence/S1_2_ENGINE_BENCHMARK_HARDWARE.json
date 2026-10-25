@@ -1,0 +1,447 @@
+{
+  "at": "2026-10-22T08:03:44.433Z",
+  "versions": {
+    "three": "0.180.0",
+    "babylon": "8.32.0",
+    "chromium": "153.0.8010.12"
+  },
+  "machine": {
+    "platform": "win32",
+    "release": "10.0.26200",
+    "arch": "x64",
+    "cpu": "AMD Ryzen 9 7900X 12-Core Processor            ",
+    "logicalCPUs": 24,
+    "memoryBytes": 33479524352,
+    "node": "v24.13.0"
+  },
+  "method": "5 alternating cold browser contexts per candidate in one browser; same 960x640 DPR1 scene, files and transforms; shader-ready first frame included in load. 120 identical kinematic steps. 13 triangles and 4 draws required. GPU timer null is unavailable, never zero. Five fresh no-GPU Node processes per candidate also load the terrain and run 20000 identical 50-ms waypoint steps; RSS is end-of-test resident memory, not peak. CPU is process CPU milliseconds. Browser heap is privacy-rounded and excludes native/GPU allocations.",
+  "assets": [
+    {
+      "file": "ground-tile.gltf",
+      "sha256": "7866d88a6e26fec96bbda5a87c82002ecbc9e6a9aea2ababd0d51709f7ddf807",
+      "bytes": 1299
+    },
+    {
+      "file": "abstract-wing.glb",
+      "sha256": "017f1423640c0decd0b80598e1cc90a65441c93e97581ad8fc6c9dfac2afd7b0",
+      "bytes": 676
+    },
+    {
+      "file": "marker.glb",
+      "sha256": "c93568f723ab8b60628d4da7cd022ce8c38a0848756820998150ffd51ae0129d",
+      "bytes": 704
+    }
+  ],
+  "fixture": {
+    "assets": [
+      {
+        "file": "ground-tile.gltf",
+        "local": {
+          "x": 0,
+          "y": 0,
+          "z": 0
+        }
+      },
+      {
+        "file": "abstract-wing.glb",
+        "local": {
+          "x": 0,
+          "y": 0,
+          "z": 10
+        }
+      },
+      {
+        "file": "marker.glb",
+        "local": {
+          "x": 100,
+          "y": 100,
+          "z": 0
+        }
+      }
+    ],
+    "terrain": [
+      {
+        "x": -200,
+        "y": -200,
+        "z": 0
+      },
+      {
+        "x": 0,
+        "y": -200,
+        "z": 0
+      },
+      {
+        "x": 200,
+        "y": -200,
+        "z": 0
+      },
+      {
+        "x": -200,
+        "y": 0,
+        "z": 0
+      },
+      {
+        "x": 0,
+        "y": 0,
+        "z": 10
+      },
+      {
+        "x": 200,
+        "y": 0,
+        "z": 0
+      },
+      {
+        "x": -200,
+        "y": 200,
+        "z": 0
+      },
+      {
+        "x": 0,
+        "y": 200,
+        "z": 0
+      },
+      {
+        "x": 200,
+        "y": 200,
+        "z": 0
+      }
+    ],
+    "triangles": [
+      0,
+      1,
+      3,
+      1,
+      4,
+      3,
+      1,
+      2,
+      4,
+      2,
+      5,
+      4,
+      3,
+      4,
+      6,
+      4,
+      7,
+      6,
+      4,
+      5,
+      7,
+      5,
+      8,
+      7
+    ],
+    "coordinates": [
+      {
+        "x": 0,
+        "y": 0,
+        "z": 100
+      },
+      {
+        "x": 111.3194907876,
+        "y": 0,
+        "z": -0.0009714458
+      },
+      {
+        "x": 9999.123456789,
+        "y": -9756.87654321,
+        "z": 123.0123456789
+      }
+    ]
+  },
+  "trials": [
+    {
+      "candidate": "three",
+      "loadMs": 209.30000000074506,
+      "frames": 120,
+      "renderBatchMs": 5.5,
+      "gpuBatchMs": 1.3496,
+      "gpuTimerAvailable": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER (0x00002705) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "triangles": 13,
+      "drawCalls": 4,
+      "maxFloat32PositionErrorM": 0.0005797081446523528,
+      "headlessExpectedFinalX": 19.833333333333332,
+      "jsHeapBytes": 6220579,
+      "trial": 0,
+      "rendererTaskSeconds": 0.205972
+    },
+    {
+      "candidate": "babylon",
+      "loadMs": 357.20000000018626,
+      "frames": 120,
+      "renderBatchMs": 14.599999999627471,
+      "gpuBatchMs": 6.409216,
+      "gpuTimerAvailable": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER (0x00002705) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "triangles": 13,
+      "drawCalls": 4,
+      "maxFloat32PositionErrorM": 0.0005797081446523528,
+      "headlessExpectedFinalX": 19.833333333333332,
+      "jsHeapBytes": 23163028,
+      "trial": 0,
+      "rendererTaskSeconds": 0.118587
+    },
+    {
+      "candidate": "babylon",
+      "loadMs": 349.6000000005588,
+      "frames": 120,
+      "renderBatchMs": 14.700000000186265,
+      "gpuBatchMs": 6.298784,
+      "gpuTimerAvailable": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER (0x00002705) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "triangles": 13,
+      "drawCalls": 4,
+      "maxFloat32PositionErrorM": 0.0005797081446523528,
+      "headlessExpectedFinalX": 19.833333333333332,
+      "jsHeapBytes": 23147368,
+      "trial": 1,
+      "rendererTaskSeconds": 0.112542
+    },
+    {
+      "candidate": "three",
+      "loadMs": 46.200000000186265,
+      "frames": 120,
+      "renderBatchMs": 4.7000000001862645,
+      "gpuBatchMs": 2.80192,
+      "gpuTimerAvailable": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER (0x00002705) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "triangles": 13,
+      "drawCalls": 4,
+      "maxFloat32PositionErrorM": 0.0005797081446523528,
+      "headlessExpectedFinalX": 19.833333333333332,
+      "jsHeapBytes": 6365663,
+      "trial": 1,
+      "rendererTaskSeconds": 0.051679
+    },
+    {
+      "candidate": "three",
+      "loadMs": 49.5,
+      "frames": 120,
+      "renderBatchMs": 5.5,
+      "gpuBatchMs": 0.232928,
+      "gpuTimerAvailable": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER (0x00002705) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "triangles": 13,
+      "drawCalls": 4,
+      "maxFloat32PositionErrorM": 0.0005797081446523528,
+      "headlessExpectedFinalX": 19.833333333333332,
+      "jsHeapBytes": 6191751,
+      "trial": 2,
+      "rendererTaskSeconds": 0.054264
+    },
+    {
+      "candidate": "babylon",
+      "loadMs": 366.5,
+      "frames": 120,
+      "renderBatchMs": 15,
+      "gpuBatchMs": 6.82576,
+      "gpuTimerAvailable": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER (0x00002705) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "triangles": 13,
+      "drawCalls": 4,
+      "maxFloat32PositionErrorM": 0.0005797081446523528,
+      "headlessExpectedFinalX": 19.833333333333332,
+      "jsHeapBytes": 23056360,
+      "trial": 2,
+      "rendererTaskSeconds": 0.120354
+    },
+    {
+      "candidate": "babylon",
+      "loadMs": 369.3999999994412,
+      "frames": 120,
+      "renderBatchMs": 15.700000000186265,
+      "gpuBatchMs": 6.772736,
+      "gpuTimerAvailable": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER (0x00002705) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "triangles": 13,
+      "drawCalls": 4,
+      "maxFloat32PositionErrorM": 0.0005797081446523528,
+      "headlessExpectedFinalX": 19.833333333333332,
+      "jsHeapBytes": 23175524,
+      "trial": 3,
+      "rendererTaskSeconds": 0.119009
+    },
+    {
+      "candidate": "three",
+      "loadMs": 54.200000000186265,
+      "frames": 120,
+      "renderBatchMs": 5.6000000005587935,
+      "gpuBatchMs": 1.358848,
+      "gpuTimerAvailable": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER (0x00002705) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "triangles": 13,
+      "drawCalls": 4,
+      "maxFloat32PositionErrorM": 0.0005797081446523528,
+      "headlessExpectedFinalX": 19.833333333333332,
+      "jsHeapBytes": 6212383,
+      "trial": 3,
+      "rendererTaskSeconds": 0.058492
+    },
+    {
+      "candidate": "three",
+      "loadMs": 49.299999999813735,
+      "frames": 120,
+      "renderBatchMs": 4.7999999998137355,
+      "gpuBatchMs": 1.323008,
+      "gpuTimerAvailable": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER (0x00002705) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "triangles": 13,
+      "drawCalls": 4,
+      "maxFloat32PositionErrorM": 0.0005797081446523528,
+      "headlessExpectedFinalX": 19.833333333333332,
+      "jsHeapBytes": 6183667,
+      "trial": 4,
+      "rendererTaskSeconds": 0.054681
+    },
+    {
+      "candidate": "babylon",
+      "loadMs": 351.29999999981374,
+      "frames": 120,
+      "renderBatchMs": 15.599999999627471,
+      "gpuBatchMs": 6.337536,
+      "gpuTimerAvailable": true,
+      "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 4070 Ti SUPER (0x00002705) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+      "triangles": 13,
+      "drawCalls": 4,
+      "maxFloat32PositionErrorM": 0.0005797081446523528,
+      "headlessExpectedFinalX": 19.833333333333332,
+      "jsHeapBytes": 23157908,
+      "trial": 4,
+      "rendererTaskSeconds": 0.116018
+    }
+  ],
+  "headless": [
+    {
+      "candidate": "three",
+      "loadMs": 44.4161,
+      "totalMs": 51.5521,
+      "cpuMs": 46,
+      "rssBytes": 77975552,
+      "heapUsedBytes": 15705480,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0,
+      "trial": 0
+    },
+    {
+      "candidate": "babylon",
+      "loadMs": 1983.3377,
+      "totalMs": 1990.8621,
+      "cpuMs": 2062,
+      "rssBytes": 171290624,
+      "heapUsedBytes": 51956520,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0,
+      "trial": 0
+    },
+    {
+      "candidate": "babylon",
+      "loadMs": 2001.7468000000001,
+      "totalMs": 2009.6842000000001,
+      "cpuMs": 2093,
+      "rssBytes": 171524096,
+      "heapUsedBytes": 52014568,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0,
+      "trial": 1
+    },
+    {
+      "candidate": "three",
+      "loadMs": 46.2763,
+      "totalMs": 52.9727,
+      "cpuMs": 94,
+      "rssBytes": 78028800,
+      "heapUsedBytes": 16067360,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0,
+      "trial": 1
+    },
+    {
+      "candidate": "three",
+      "loadMs": 45.3561,
+      "totalMs": 52.7294,
+      "cpuMs": 93,
+      "rssBytes": 78430208,
+      "heapUsedBytes": 15858352,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0,
+      "trial": 2
+    },
+    {
+      "candidate": "babylon",
+      "loadMs": 1973.8135000000002,
+      "totalMs": 1981.9180999999999,
+      "cpuMs": 2000,
+      "rssBytes": 172748800,
+      "heapUsedBytes": 69002008,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0,
+      "trial": 2
+    },
+    {
+      "candidate": "babylon",
+      "loadMs": 1947.196,
+      "totalMs": 1954.7033999999999,
+      "cpuMs": 2046,
+      "rssBytes": 171278336,
+      "heapUsedBytes": 51982720,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0,
+      "trial": 3
+    },
+    {
+      "candidate": "three",
+      "loadMs": 45.868700000000004,
+      "totalMs": 53.2076,
+      "cpuMs": 140,
+      "rssBytes": 78286848,
+      "heapUsedBytes": 15717208,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0,
+      "trial": 3
+    },
+    {
+      "candidate": "three",
+      "loadMs": 45.3108,
+      "totalMs": 52.9942,
+      "cpuMs": 47,
+      "rssBytes": 77746176,
+      "heapUsedBytes": 15764336,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0,
+      "trial": 4
+    },
+    {
+      "candidate": "babylon",
+      "loadMs": 1979.2529,
+      "totalMs": 1987.9331,
+      "cpuMs": 2015,
+      "rssBytes": 166354944,
+      "heapUsedBytes": 62972616,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0,
+      "trial": 4
+    }
+  ]
+}

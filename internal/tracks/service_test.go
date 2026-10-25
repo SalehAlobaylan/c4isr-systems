@@ -13,6 +13,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type fakeRepository struct {
@@ -258,7 +259,7 @@ func TestHandleObservationReceivedCreatesTrackForHint(t *testing.T) {
 
 	observedAt := time.Date(2026, 3, 1, 10, 0, 0, 0, time.UTC)
 	position := &geo.Point{Lat: 36.2, Lng: 36.1}
-	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+	svc.HandleObservationReceived(testsupport.Context(), events.ObservationReceived{
 		At:            observedAt,
 		ObservationID: "obs_1",
 		SourceID:      "src_1",
@@ -340,7 +341,7 @@ func TestHandleObservationReceivedResolvesTrackHintInsertCollision(t *testing.T)
 	processor := &fakeProcessor{}
 	svc := NewService(repo, processor, bus)
 
-	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+	svc.HandleObservationReceived(testsupport.Context(), events.ObservationReceived{
 		ObservationID: "obs_race",
 		SourceID:      "src_1",
 		ObservedAt:    observedAt.Add(time.Minute),
@@ -380,7 +381,7 @@ func TestHandleObservationReceivedDoesNotPublishWhenHistoryCommitFails(t *testin
 	processor := &fakeProcessor{}
 	svc := NewService(repo, processor, bus)
 
-	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+	svc.HandleObservationReceived(testsupport.Context(), events.ObservationReceived{
 		ObservationID: "obs_history_failure",
 		SourceID:      "src_1",
 		ObservedAt:    observedAt.Add(time.Minute),
@@ -407,7 +408,7 @@ func TestHandleObservationReceivedWithoutHintCreatesOwnTrack(t *testing.T) {
 
 	observedAt := time.Date(2026, 3, 1, 10, 0, 0, 0, time.UTC)
 	for i, observationID := range []string{"obs_1", "obs_2"} {
-		svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+		svc.HandleObservationReceived(testsupport.Context(), events.ObservationReceived{
 			ObservationID: observationID,
 			SourceID:      "src_1",
 			ObservedAt:    observedAt.Add(time.Duration(i) * time.Minute),
@@ -450,7 +451,7 @@ func TestHandleObservationReceivedStaleDoesNotRegressState(t *testing.T) {
 	svc := NewService(repo, processor, bus)
 
 	staleAt := lastSeen.Add(-time.Minute)
-	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+	svc.HandleObservationReceived(testsupport.Context(), events.ObservationReceived{
 		At:            staleAt,
 		ObservationID: "obs_stale",
 		SourceID:      "src_1",
@@ -510,7 +511,7 @@ func TestHandleObservationReceivedAttachIsIdempotent(t *testing.T) {
 	processor := &fakeProcessor{}
 	svc := NewService(repo, processor, bus)
 
-	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+	svc.HandleObservationReceived(testsupport.Context(), events.ObservationReceived{
 		At:            lastSeen.Add(time.Minute),
 		ObservationID: "obs_dup",
 		SourceID:      "src_1",
@@ -569,14 +570,14 @@ func TestHandleObservationReceivedRetryCompletesAfterAttachment(t *testing.T) {
 		Retry:         true,
 	}
 
-	svc.HandleObservationReceived(context.Background(), event)
+	svc.HandleObservationReceived(testsupport.Context(), event)
 	if len(repo.history) != 1 || len(processor.processed) != 1 || len(updated) != 1 {
 		t.Fatalf("retry did not complete projection: history=%d processed=%d updates=%d", len(repo.history), len(processor.processed), len(updated))
 	}
 
 	// Replaying the same retry after projection is already present is idempotent
 	// and must not append a second history point.
-	svc.HandleObservationReceived(context.Background(), event)
+	svc.HandleObservationReceived(testsupport.Context(), event)
 	if len(repo.history) != 1 || len(updated) != 1 {
 		t.Fatalf("repeated retry was not idempotent: history=%d processed=%d updates=%d", len(repo.history), len(processor.processed), len(updated))
 	}
@@ -600,7 +601,7 @@ func TestHandleObservationReceivedComputesSpeedAndHeading(t *testing.T) {
 	}
 
 	observedAt := lastSeen.Add(10 * time.Second)
-	svc.HandleObservationReceived(context.Background(), events.ObservationReceived{
+	svc.HandleObservationReceived(testsupport.Context(), events.ObservationReceived{
 		ObservationID: "obs_2",
 		SourceID:      "src_1",
 		ObservedAt:    observedAt,

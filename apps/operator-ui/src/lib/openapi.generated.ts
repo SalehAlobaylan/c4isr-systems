@@ -4,6 +4,534 @@
  */
 
 export interface paths {
+    "/api/v1/map/surrounding-area": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createSurroundingArea"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/map/measure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["measureMapGeometry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geography/regions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listGeographicRegions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geography/editions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["admitGeographicEdition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/map/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getMapFeatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/map/reference/{z}/{x}/{y}.pbf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getReferenceTile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-recordings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * getSimulationRecording
+         * @description Explicit run authorization; immutable artifacts and current grants apply.
+         */
+        get: operations["getSimulationRecording"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-recordings/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * archiveSimulationRecording
+         * @description Explicit run authorization; immutable artifacts and current grants apply.
+         */
+        post: operations["archiveSimulationRecording"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-recordings/{id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * getRecordingEvents
+         * @description Explicit run authorization; immutable artifacts and current grants apply.
+         */
+        get: operations["getRecordingEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-recordings/{id}/frame": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * getRecordingFrame
+         * @description Explicit run authorization; immutable artifacts and current grants apply.
+         */
+        get: operations["getRecordingFrame"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-recordings/{id}/checkpoint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * getRecordingCheckpoint
+         * @description Explicit run authorization; immutable artifacts and current grants apply.
+         */
+        get: operations["getRecordingCheckpoint"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-recordings/{id}/evaluation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * getAfterActionEvaluation
+         * @description Requires explicit EXERCISE_TRUTH run, sim.truth.read and sim.evaluation.read. Every read is audited.
+         */
+        get: operations["getAfterActionEvaluation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-recordings/{id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * releaseAfterActionMetrics
+         * @description Human evaluator with sim.evaluation.release explicitly releases selected numeric aggregates. Immutable once released.
+         */
+        post: operations["releaseAfterActionMetrics"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-recordings/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * getReleasedEvaluation
+         * @description Explicit run authorization; immutable artifacts and current grants apply.
+         */
+        get: operations["getReleasedEvaluation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-studio/sensor-presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * listSensorQualityPresets
+         * @description Explicit run authorization; immutable artifacts and current grants apply.
+         */
+        get: operations["listSensorQualityPresets"];
+        put?: never;
+        /**
+         * createSensorQualityPreset
+         * @description Explicit run authorization; immutable artifacts and current grants apply.
+         */
+        post: operations["createSensorQualityPreset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-studio/sensor-presets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * getSensorQualityPreset
+         * @description Explicit run authorization; immutable artifacts and current grants apply.
+         */
+        get: operations["getSensorQualityPreset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-studio/context-packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListStudioContextPackages
+         * @description Requires sim.scenarios.author in input and context.export in PUBLIC_EVIDENCE of the same workspace/environment.
+         */
+        get: operations["listStudioContextPackages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-studio/scenes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListStudioScenes
+         * @description Explicit EXERCISE_INPUT grant required. Human authoring and runtime service capabilities are separate.
+         */
+        get: operations["listStudioScenes"];
+        put?: never;
+        /**
+         * FreezeStudioScene
+         * @description Explicit EXERCISE_INPUT grant required. Human authoring and runtime service capabilities are separate.
+         */
+        post: operations["freezeStudioScene"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-studio/scenes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetStudioScene
+         * @description Explicit EXERCISE_INPUT grant required. Human authoring and runtime service capabilities are separate.
+         */
+        get: operations["getStudioScene"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-runtime/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * ListNativeRuns
+         * @description Explicit EXERCISE_INPUT grant required. Human authoring and runtime service capabilities are separate.
+         */
+        get: operations["listNativeRuns"];
+        put?: never;
+        /**
+         * StartNativeRun
+         * @description Explicit EXERCISE_INPUT grant required. Human authoring and runtime service capabilities are separate.
+         */
+        post: operations["startNativeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-runtime/runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetNativeRun
+         * @description Explicit EXERCISE_INPUT grant required. Human authoring and runtime service capabilities are separate.
+         */
+        get: operations["getNativeRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-runtime/runs/{id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * PauseNativeRun
+         * @description Explicit EXERCISE_INPUT grant required. Human authoring and runtime service capabilities are separate.
+         */
+        post: operations["pauseNativeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-runtime/runs/{id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * ResumeNativeRun
+         * @description Explicit EXERCISE_INPUT grant required. Human authoring and runtime service capabilities are separate.
+         */
+        post: operations["resumeNativeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-runtime/runs/{id}/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * StopNativeRun
+         * @description Explicit EXERCISE_INPUT grant required. Human authoring and runtime service capabilities are separate.
+         */
+        post: operations["stopNativeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-runtime/runs/{id}/attach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * AttachNativeRun
+         * @description Runtime service identity and sim.runtime.execute in explicit EXERCISE_INPUT required. Frozen build negotiation and exclusive lease; raw input never sent to COP users.
+         */
+        post: operations["attachNativeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-runtime/runs/{id}/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * HeartbeatNativeRun
+         * @description Same service identity, current credential and run lease required. Monotonic bounded latest truth snapshot; not an observation or sensor ingress.
+         */
+        post: operations["heartbeatNativeRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-runtime/runs/{id}/truth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GetNativeRunTruth
+         * @description Separate privileged transport. Explicit EXERCISE_TRUTH for this run with sim.truth.read; every successful read is audited. Input authors and ordinary COP operators receive no implicit truth access.
+         */
+        get: operations["getNativeRunTruth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -41,7 +569,16 @@ export interface paths {
     "/api/v1/auth/me": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -55,10 +592,212 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public-events": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List current provider event reports, including explicit withdrawals */
+        get: operations["listPublicEvents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public-events/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Get an immutable reported event revision */
+        get: operations["getPublicEvent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public-events/{id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** List visible retained revisions of the same provider record */
+        get: operations["listPublicEventRevisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reference-datasets": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List bounded immutable GIS and terrain versions */
+        get: operations["listReferenceDatasets"];
+        put?: never;
+        /** Review and import an immutable bounded reference version */
+        post: operations["importReferenceDataset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reference-datasets/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Get a reference dataset version and rights */
+        get: operations["getReferenceDataset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reference-datasets/{id}/features": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Get bounded WGS84 GeoJSON reference features */
+        get: operations["getReferenceFeatures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reference-datasets/{id}/artifact": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Download exact retained reference artifact bytes for checksum verification */
+        get: operations["getReferenceArtifact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sources": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -73,10 +812,245 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sources/{id}/admission": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Get reviewed source admission */
+        get: operations["getSourceAdmission"];
+        put?: never;
+        /** Review and version a public source admission */
+        post: operations["admitSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/admissions/{admissionID}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Get the immutable source and rights snapshot referenced by evidence */
+        get: operations["getSourceAdmissionVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/health": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Get provider coverage and retrieval health */
+        get: operations["getSourceIngestionHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/connector-runs": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** List connector execution history */
+        get: operations["listConnectorRuns"];
+        put?: never;
+        /** Run a bounded public connector with a service identity */
+        post: operations["executeConnector"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/evidence": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** List published immutable evidence revisions */
+        get: operations["listSourceEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/evidence/{evidenceID}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Get retained evidence or its permitted original reference */
+        get: operations["getSourceEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/evidence/{evidenceID}/original": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Download exact original provider record bytes when retention rights permit */
+        get: operations["getOriginalSourceEvidence"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/publications/retry": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish pending catalog receipts without retrieving evidence */
+        post: operations["retryEvidencePublications"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sources/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -93,7 +1067,16 @@ export interface paths {
     "/api/v1/sources/{id}/status": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -110,7 +1093,16 @@ export interface paths {
     "/api/v1/observations": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -131,7 +1123,16 @@ export interface paths {
     "/api/v1/observations/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -148,7 +1149,16 @@ export interface paths {
     "/api/v1/assets": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -166,7 +1176,16 @@ export interface paths {
     "/api/v1/assets/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -183,7 +1202,16 @@ export interface paths {
     "/api/v1/assets/{id}/status": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -200,7 +1228,16 @@ export interface paths {
     "/api/v1/assets/{id}/telemetry": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -217,7 +1254,16 @@ export interface paths {
     "/api/v1/telemetry": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -234,7 +1280,16 @@ export interface paths {
     "/api/v1/tracks": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -251,7 +1306,16 @@ export interface paths {
     "/api/v1/tracks/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -268,7 +1332,16 @@ export interface paths {
     "/api/v1/tracks/{id}/history": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -285,7 +1358,16 @@ export interface paths {
     "/api/v1/tracks/{id}/classifications": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -302,7 +1384,16 @@ export interface paths {
     "/api/v1/classifications": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -319,7 +1410,16 @@ export interface paths {
     "/api/v1/classifications/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -336,7 +1436,16 @@ export interface paths {
     "/api/v1/geofences": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -354,7 +1463,16 @@ export interface paths {
     "/api/v1/geofences/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -371,7 +1489,16 @@ export interface paths {
     "/api/v1/geofences/{id}/active": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -388,7 +1515,16 @@ export interface paths {
     "/api/v1/geospatial/geofences-containing": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -405,7 +1541,16 @@ export interface paths {
     "/api/v1/geospatial/assets-within": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -422,7 +1567,16 @@ export interface paths {
     "/api/v1/geospatial/nearest-assets": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -439,7 +1593,16 @@ export interface paths {
     "/api/v1/alerts": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -456,7 +1619,16 @@ export interface paths {
     "/api/v1/alerts/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -473,7 +1645,16 @@ export interface paths {
     "/api/v1/alerts/{id}/acknowledge": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -490,7 +1671,16 @@ export interface paths {
     "/api/v1/alerts/{id}/resolve": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -507,7 +1697,16 @@ export interface paths {
     "/api/v1/incidents": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -525,7 +1724,16 @@ export interface paths {
     "/api/v1/incidents/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -543,7 +1751,16 @@ export interface paths {
     "/api/v1/incidents/{id}/status": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -560,7 +1777,16 @@ export interface paths {
     "/api/v1/incidents/{id}/relations": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -577,7 +1803,16 @@ export interface paths {
     "/api/v1/missions": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -595,7 +1830,16 @@ export interface paths {
     "/api/v1/missions/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -612,7 +1856,16 @@ export interface paths {
     "/api/v1/missions/{id}/status": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -629,7 +1882,16 @@ export interface paths {
     "/api/v1/missions/{id}/assets": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -646,7 +1908,16 @@ export interface paths {
     "/api/v1/missions/{id}/tasks": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -663,7 +1934,16 @@ export interface paths {
     "/api/v1/missions/{id}/tasks/{taskId}/status": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -680,7 +1960,16 @@ export interface paths {
     "/api/v1/commands": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -698,7 +1987,16 @@ export interface paths {
     "/api/v1/commands/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -715,7 +2013,16 @@ export interface paths {
     "/api/v1/commands/{id}/transition": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -732,7 +2039,16 @@ export interface paths {
     "/api/v1/assessments": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -750,7 +2066,16 @@ export interface paths {
     "/api/v1/assessments/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -767,7 +2092,16 @@ export interface paths {
     "/api/v1/audit": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -784,7 +2118,16 @@ export interface paths {
     "/api/v1/operators": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -802,7 +2145,16 @@ export interface paths {
     "/api/v1/operators/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -816,10 +2168,193 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/context-packages": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List approved geographic context packages
+         * @description Requires context.export in PUBLIC_EVIDENCE; source grants constrain every dependency.
+         */
+        get: operations["listContextPackages"];
+        put?: never;
+        /**
+         * Approve and freeze selected reference versions
+         * @description Human context.export and sources.read required. Does not fetch feeds or generate scene geometry.
+         */
+        post: operations["buildContextPackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/context-packages/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** Get an approved frozen manifest */
+        get: operations["getContextPackage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/context-packages/{id}/bundle": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** Download bounded retained assets and manifest for offline validation */
+        get: operations["downloadContextPackage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scenarios/runs/{id}/synthetic-messages": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List the selected run's bounded synthetic ingress receipts
+         * @description Requires observations.read; contains no hidden actor identity or evaluator mapping.
+         */
+        get: operations["listSyntheticMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scenarios/runs/{id}/manifest": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the immutable run manifest
+         * @description Requires scenarios.read; authored actors are available only through the version endpoint.
+         */
+        get: operations["getScenarioRunManifest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scenarios/runs/{id}/version": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the immutable run version
+         * @description Requires sim.scenarios.author; authored actors are available only through the version endpoint.
+         */
+        get: operations["getScenarioRunVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/scenarios": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -836,7 +2371,16 @@ export interface paths {
     "/api/v1/scenarios/{name}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -853,7 +2397,16 @@ export interface paths {
     "/api/v1/scenarios/definitions/{name}/start": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -870,7 +2423,16 @@ export interface paths {
     "/api/v1/scenarios/runs": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -887,7 +2449,16 @@ export interface paths {
     "/api/v1/scenarios/runs/{id}": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -904,7 +2475,16 @@ export interface paths {
     "/api/v1/scenarios/runs/{id}/events": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -921,7 +2501,16 @@ export interface paths {
     "/api/v1/scenarios/runs/{id}/pause": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -938,7 +2527,16 @@ export interface paths {
     "/api/v1/scenarios/runs/{id}/resume": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -955,7 +2553,16 @@ export interface paths {
     "/api/v1/scenarios/runs/{id}/stop": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -972,7 +2579,16 @@ export interface paths {
     "/api/v1/scenarios/runs/{id}/speed": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -989,13 +2605,22 @@ export interface paths {
     "/api/v1/scenarios/runs/{id}/restart": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
         get?: never;
         put?: never;
-        /** Restart scenario run */
+        /** Re-simulate frozen scenario inputs in a new run */
         post: operations["restartScenarioRun"];
         delete?: never;
         options?: never;
@@ -1006,7 +2631,16 @@ export interface paths {
     "/api/v1/picture": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -1026,7 +2660,16 @@ export interface paths {
     "/api/v1/picture/window": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -1046,13 +2689,37 @@ export interface paths {
     "/api/v1/realtime": {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
         /**
          * Realtime
-         * @description WebSocket endpoint. Browser clients pass the bearer token as access_token during upgrade.
+         * @description Version 2 COP stream. Every envelope includes its validated resource. Only
+         *     PUBLIC_EVIDENCE and EXERCISE_OBSERVATION are accepted. Topic permissions
+         *     and source constraints are checked before enqueue and immediately before
+         *     send; idle credentials are checked every second. Unknown/internal topics
+         *     are denied. Browser clients offer emad.realtime.v2 and emad.auth.<URI-encoded-token>
+         *     subprotocols; only emad.realtime.v2 is selected. Legacy access_token query
+         *     credentials are consumed and removed before server tracing/logging.
+         *     Optional query selection (workspaceId, environmentId, partition, runId)
+         *     selects existing grants, as do headers. Omitting selection follows the
+         *     credential default. Explicit subscriptions stay pinned.
+         *     realtime.ready and realtime.resync require authorized API snapshots;
+         *     frames are best-effort notifications without a replay cursor. Clients
+         *     must reconcile snapshots after connection, permission/resource changes,
+         *     and gaps. Buffer limit is 256 frames, each at most 64 KiB, with a 5-second
+         *     write timeout. Policy denial closes with 1008; overflow uses 1013.
+         *     A frame already handed to the network cannot be recalled.
          */
         get: operations["realtime"];
         put?: never;
@@ -1063,10 +2730,2611 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/artifacts": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reserve an immutable source-scoped artifact */
+        post: operations["reserveArtifact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/artifacts/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Inspect artifact provenance and retention */
+        get: operations["getArtifact"];
+        put?: never;
+        post?: never;
+        /** Delete bytes only after immutable retention ends */
+        delete: operations["deleteExpiredArtifact"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/artifacts/{id}/content": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Download retained bytes with active rights and scoped authorization */
+        get: operations["downloadArtifact"];
+        /** Upload exact declared bytes after hash and size checks */
+        put: operations["uploadArtifact"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/scenes": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** Inspect bounded published catalogue revisions; not analysis-ready by discovery alone */
+        get: operations["listImageryScenes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/scenes/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Inspect exact catalogue scene revision */
+        get: operations["getImageryScene"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/jobs": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List bounded asynchronous jobs */
+        get: operations["listImageryJobs"];
+        put?: never;
+        /** Freeze exact inputs and queue independent processing */
+        post: operations["submitImageryJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Inspect frozen inputs, state and result provenance */
+        get: operations["getImageryJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/jobs/{id}/attempts": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Inspect immutable processing attempts */
+        get: operations["listImageryJobAttempts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/jobs/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry a bounded imagery job */
+        post: operations["retryImageryJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/jobs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel a bounded imagery job */
+        post: operations["cancelImageryJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/intelligence": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List latest review revisions without asserting proposals as published facts */
+        get: operations["listIntelligenceAssessments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/imagery-proposals": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create an unreviewed imagery assessment with frozen evidence */
+        post: operations["proposeImageryAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/{id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Inspect immutable evidence and human review history */
+        get: operations["listAssessmentRevisions"];
+        put?: never;
+        /** Record a new draft revision with optimistic concurrency */
+        post: operations["reviseImageryAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/{id}/revisions/{revisionID}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+                revisionID: string;
+            };
+            cookie?: never;
+        };
+        /** Retrieve an exact immutable assessment version */
+        get: operations["getAssessmentRevision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Independent human review and explicit publication */
+        post: operations["reviewAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/{id}/submit": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit an authored draft for independent review */
+        post: operations["submitAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/jobs/{id}/result": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Read exact retained analysis output after scope and hash validation */
+        get: operations["getImageryResult"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/context-packages/preview": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview pinned eligible context before human approval */
+        post: operations["previewContextPackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/external-tracks": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** Inspect bounded public moving hypotheses */
+        get: operations["listExternalTracks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/external-tracks/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Inspect one non-controllable external hypothesis */
+        get: operations["getExternalTrack"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/external-tracks/{id}/associations": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Inspect immutable evidence association decisions */
+        get: operations["getExternalAssociations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/reports": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List latest source-report assessment review revisions */
+        get: operations["listReportAssessments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assessments/report-proposals": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Propose an unreviewed interpretation with an exact retained report revision */
+        post: operations["proposeReportAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public-context/records": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List current station weather and report claims in a bounded AOI */
+        get: operations["listContextRecords"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public-context/records/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Retrieve an exact retained contextual evidence revision */
+        get: operations["getContextRecord"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public-context/records/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Inspect immutable station samples or report revisions */
+        get: operations["listContextHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-assets/uploads": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List protected simulation source and variant artifacts */
+        get: operations["listSimulationUploads"];
+        put?: never;
+        /** Admit a bounded model, authoring source or separate engine variant */
+        post: operations["reserveSimulationAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-assets/uploads/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Inspect a protected source artifact and import state */
+        get: operations["getSimulationUpload"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-assets/models": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List immutable validated visual model versions */
+        get: operations["listSimulationModels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-assets/models/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Retrieve an exact validated visual model version */
+        get: operations["getSimulationModel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-assets/templates": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List reusable actor template definitions */
+        get: operations["listSimulationTemplates"];
+        put?: never;
+        /** Record an immutable abstract actor template without spawning an actor */
+        post: operations["createSimulationTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-assets/templates/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Retrieve an exact actor template definition */
+        get: operations["getSimulationTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-assets/environments": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** List georeferenced visual environment definitions */
+        get: operations["listSimulationEnvironments"];
+        put?: never;
+        /** Record a visual environment using the explicit S0 frame contract */
+        post: operations["createSimulationEnvironment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-assets/environments/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Retrieve an exact environment asset definition */
+        get: operations["getSimulationEnvironment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-assets/uploads/{id}/content": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Download a protected original artifact with integrity verification */
+        get: operations["downloadSimulationAsset"];
+        /** Retain the exact admitted source bytes for bounded validation */
+        put: operations["uploadSimulationAsset"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-assets/uploads/{id}/attempts": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Inspect immutable worker attempts and recovery history */
+        get: operations["listSimulationImportAttempts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-assets/models/{id}/manifest": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /** Retrieve an exact validated visual model versionManifest */
+        get: operations["getSimulationModelManifest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/readiness": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** get Feature Readiness */
+        get: operations["getFeatureReadiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/worker-heartbeats": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** heartbeat Feature Worker */
+        post: operations["heartbeatFeatureWorker"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-runtime/capabilities": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** list Runtime Capabilities */
+        get: operations["listRuntimeCapabilities"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-runtime/queue": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** list Worker Runtime Queue */
+        get: operations["listWorkerRuntimeQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reference-features": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** get Reference Viewport */
+        get: operations["getReferenceViewport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/captures": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** list Imagery Captures */
+        get: operations["listImageryCaptures"];
+        put?: never;
+        /** create Imagery Capture */
+        post: operations["createImageryCapture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/captures/claim": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** claim Imagery Capture */
+        post: operations["claimImageryCapture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/captures/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** get Imagery Capture */
+        get: operations["getImageryCapture"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/captures/{id}/progress": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** progress Imagery Capture */
+        post: operations["progressImageryCapture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exercise-view/{id}": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** get Exercise Environment */
+        get: operations["getExerciseEnvironment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/exercise-view/{id}/content": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** download Exercise Environment */
+        get: operations["downloadExerciseEnvironment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/activation": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** get Source Activation */
+        get: operations["getSourceActivation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/simulation-recordings/{id}/spatial": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** get Spatial Replay Frame */
+        get: operations["getSpatialReplayFrame"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/captures/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** retry Imagery Capture */
+        post: operations["retryImageryCapture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/captures/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** cancel Imagery Capture */
+        post: operations["cancelImageryCapture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        MapFeatureCollection: {
+            /** @enum {string} */
+            type: "FeatureCollection";
+            features: {
+                /** @enum {string} */
+                type: "Feature";
+                id?: string;
+                geometry: {
+                    [key: string]: unknown;
+                };
+                properties: {
+                    [key: string]: unknown;
+                };
+            }[];
+            total?: number;
+            matched?: number;
+            truncated?: boolean;
+            state?: string;
+            scope?: string;
+            countMeaning?: string;
+            unlocated?: number;
+        };
+        SceneVector: {
+            x: number;
+            y: number;
+            z: number;
+        };
+        ScenePlacement: {
+            id: string;
+            templateId: string;
+            position: components["schemas"]["SimulationPosition"];
+            heading: number;
+            speedMps: number;
+            waypoints: components["schemas"]["SimulationPosition"][];
+            spawnMs: number;
+            despawnMs: number;
+        };
+        RecordingBlob: {
+            sha256: string;
+            bytes: number;
+            first: number;
+            last: number;
+        };
+        RecordingManifest: {
+            schema: string;
+            runId: string;
+            partition: string;
+            /** Format: date-time */
+            epoch: string;
+            elapsedMs: number;
+            runStatus: string;
+            projectionSettled: boolean;
+            events: number;
+            chunks: components["schemas"]["RecordingBlob"][];
+            checkpoint: components["schemas"]["RecordingBlob"];
+            contentSha256: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            retainUntil: string;
+            replayGuarantee: string;
+        };
+        RecordingIndex: {
+            /** @enum {string} */
+            status: "QUEUED" | "PROCESSING" | "READY" | "FAILED";
+            errorCode: string;
+            /** @description Number of archive attempts already claimed. */
+            attempts: number;
+            /** @enum {integer} */
+            maxAttempts: 3;
+            /**
+             * Format: date-time
+             * @description Earliest automatic retry time after a failed attempt. Omitted when no retry is scheduled.
+             */
+            retryAt?: string;
+            manifest?: components["schemas"]["RecordingManifest"];
+        };
+        RecordingEvent: {
+            sequence: number;
+            elapsedMs: number;
+            /** Format: date-time */
+            receivedAt: string;
+            kind: string;
+            entity: string;
+            /** @enum {string} */
+            operation: "INSERT" | "UPDATE" | "DELETE";
+            document: {
+                [key: string]: unknown;
+            };
+        };
+        RecordingFrame: {
+            schema: string;
+            elapsedMs: number;
+            sequence: number;
+            state: {
+                [key: string]: {
+                    [key: string]: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            counts: {
+                [key: string]: number;
+            };
+            truncated: boolean;
+        };
+        RecordingCheckpoint: {
+            schema: string;
+            elapsedMs: number;
+            sequence: number;
+            state: {
+                [key: string]: {
+                    [key: string]: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        EvaluationMetric: {
+            name: string;
+            value: number | null;
+            /** @description For evaluation v2, count for a fraction or measured sum for a mean; value equals numerator divided by denominator. Stored v1 mean operands retain their original count semantics. */
+            numerator: number;
+            denominator: number;
+            unit: string;
+            definition: string;
+        };
+        AfterActionEvaluation: {
+            version: string;
+            timeBasis: string;
+            operatorHash: string;
+            truthHash: string;
+            runStatus: string;
+            elapsedMs: number;
+            metrics: components["schemas"]["EvaluationMetric"][];
+            limitations: string[];
+        };
+        EvaluationRelease: {
+            metrics: string[];
+            reason: string;
+        };
+        ReleasedEvaluationReport: {
+            version: string;
+            metrics: components["schemas"]["EvaluationMetric"][];
+            reason: string;
+            releasedBy: string;
+            /** Format: date-time */
+            releasedAt: string;
+        };
+        SensorPresetInput: {
+            name: string;
+            periodMs: number;
+            dropEvery: number;
+            delayMs: number;
+            noiseM: number;
+            confidence: number;
+            limitations: string;
+        };
+        SensorQualityPreset: {
+            id: string;
+            schema: string;
+            /** @enum {string} */
+            fidelity: "abstract_behavior";
+            name: string;
+            periodMs: number;
+            dropEvery: number;
+            delayMs: number;
+            noiseM: number;
+            confidence: number;
+            limitations: string;
+        };
+        /** @description Abstract seeded XY sensor; missing samples are scheduled, not a physical sensor model. */
+        SceneSensor: {
+            presetId?: string;
+            id: string;
+            periodMs: number;
+            dropEvery: number;
+            delayMs: number;
+            noiseM: number;
+            confidence: number;
+        };
+        SceneControlledAsset: {
+            actorId: string;
+            callsign: string;
+            telemetryMs: number;
+        };
+        /** @description Private lease binding, unavailable to the Exercise COP. */
+        RuntimeControlledBinding: {
+            actorId: string;
+            assetId: string;
+        };
+        RuntimeTask: {
+            commandId: string;
+            assetId: string;
+            type: string;
+            issuedMs: number;
+            deadlineMs: number;
+        };
+        RuntimeTaskOutcome: {
+            commandId: string;
+            /** @enum {string} */
+            state: "ACKNOWLEDGED" | "COMPLETED" | "REJECTED" | "FAILED";
+            elapsedMs: number;
+            /** @enum {string} */
+            code: "" | "UNSUPPORTED_ACTION" | "ACTOR_UNAVAILABLE";
+        };
+        /** @description Private gateway payload; projected public evidence has a separate observation or telemetry schema. */
+        RuntimeReading: {
+            id: string;
+            actorId: string;
+            contact: string;
+            sensorId: string;
+            assetId?: string;
+            /** @enum {string} */
+            kind: "observation" | "telemetry";
+            sampleMs: number;
+            deliverMs: number;
+            local: components["schemas"]["SceneVector"];
+            heading: number;
+            confidence: number;
+            accuracyM: number;
+        };
+        RuntimePerceptionBatch: {
+            readings?: components["schemas"]["RuntimeReading"][];
+            outcomes?: components["schemas"]["RuntimeTaskOutcome"][];
+        };
+        SceneInput: {
+            name: string;
+            contextPackageId: string;
+            environmentId: string;
+            sensors?: components["schemas"]["SceneSensor"][];
+            controlled?: components["schemas"]["SceneControlledAsset"][];
+            actors: components["schemas"]["ScenePlacement"][];
+        };
+        SceneGeometry: {
+            terrain: components["schemas"]["SceneVector"][];
+            triangles: number[];
+            points: {
+                id: string;
+                local: components["schemas"]["SceneVector"];
+                heightAssumed: boolean;
+            }[];
+            omissions: string[];
+        };
+        FrozenScene: {
+            sensorPresets?: components["schemas"]["SensorQualityPreset"][];
+            schema: string;
+            runtime: string;
+            input: components["schemas"]["SceneInput"];
+            context: components["schemas"]["ContextBundle"];
+            environment: components["schemas"]["ModelEnvironmentAsset"];
+            templates: components["schemas"]["ModelActorTemplate"][];
+            models: components["schemas"]["ModelAssetVersion"][];
+            geometry: components["schemas"]["SceneGeometry"];
+        };
+        StudioScene: {
+            id: string;
+            frozen: components["schemas"]["FrozenScene"];
+        };
+        StudioSceneList: {
+            items: {
+                id: string;
+                name: string;
+            }[];
+        };
+        StudioPackageList: {
+            items: components["schemas"]["ContextPackage"][];
+        };
+        RuntimeStart: {
+            requestKey: string;
+            sceneId: string;
+            runtimeVersion: string;
+            runtimeBuild: string;
+            seed: number;
+            /** Format: date-time */
+            epoch: string;
+            scale: number;
+            durationMs: number;
+        };
+        NativeRuntimeRun: {
+            id: string;
+            configuration: components["schemas"]["RuntimeStart"];
+            /** @enum {string} */
+            status: "QUEUED" | "RUNNING" | "PAUSED" | "STOPPING" | "STOPPED" | "COMPLETED" | "FAILED";
+            /** @enum {string} */
+            desired: "RUNNING" | "PAUSED" | "STOPPED";
+            sequence: number;
+            elapsedMs: number;
+            /** Format: date-time */
+            heartbeatAt: string | null;
+            failureCode: string;
+            tasks?: components["schemas"]["RuntimeTask"][];
+        };
+        NativeRuntimeRunList: {
+            items: components["schemas"]["NativeRuntimeRun"][];
+        };
+        RuntimeAttach: {
+            runtimeVersion: string;
+            runtimeBuild: string;
+        };
+        RuntimeActorState: {
+            id: string;
+            local: components["schemas"]["SceneVector"];
+            heading: number;
+            active: boolean;
+        };
+        RuntimeSnapshot: {
+            runId: string;
+            sceneId: string;
+            runtimeBuild: string;
+            sequence: number;
+            elapsedMs: number;
+            actors: components["schemas"]["RuntimeActorState"][];
+        };
+        RuntimeHeartbeat: {
+            token: string;
+            status: string;
+            failureCode: string;
+            snapshot: components["schemas"]["RuntimeSnapshot"];
+            batch?: components["schemas"]["RuntimePerceptionBatch"];
+        };
+        RuntimeLease: {
+            token: string;
+            run: components["schemas"]["NativeRuntimeRun"];
+            scene: components["schemas"]["StudioScene"];
+            heartbeatMs: number;
+            bindings?: components["schemas"]["RuntimeControlledBinding"][];
+        };
+        ModelLicense: {
+            id: string;
+            licenseId: string;
+            termsUrl: string;
+            attribution: string;
+            legalBasis: string;
+            archivePermission: string;
+            allowStorage: boolean;
+            allowSimulation: boolean;
+            allowRedistribution: boolean;
+        };
+        ModelAssetUploadInput: {
+            sourceVersion: string;
+            requestKey: string;
+            name: string;
+            sha256: string;
+            sourceReference: string;
+            provenance: string;
+            sourceFileId?: string;
+            parentVersionId?: string;
+            engine?: string;
+            engineBuild?: string;
+            /** @enum {string} */
+            kind: "MODEL" | "SOURCE" | "ENGINE_VARIANT";
+            bytes: number;
+            /** @enum {string} */
+            mediaType: "model/gltf-binary" | "model/gltf+json" | "application/octet-stream";
+            license: components["schemas"]["ModelLicense"];
+        };
+        ModelAssetUpload: {
+            sourceVersion: string;
+            requestKey: string;
+            name: string;
+            sha256: string;
+            sourceReference: string;
+            provenance: string;
+            sourceFileId?: string;
+            parentVersionId?: string;
+            engine?: string;
+            engineBuild?: string;
+            /** @enum {string} */
+            kind: "MODEL" | "SOURCE" | "ENGINE_VARIANT";
+            bytes: number;
+            /** @enum {string} */
+            mediaType: "model/gltf-binary" | "model/gltf+json" | "application/octet-stream";
+            license: components["schemas"]["ModelLicense"];
+            id: string;
+            /** @enum {string} */
+            state: "PENDING" | "STAGED" | "RUNNING" | "READY" | "STORED" | "REJECTED" | "FAILED";
+            attempts: number;
+            errorCode: string;
+            createdBy: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ModelValidation: {
+            schema: string;
+            importer: string;
+            validatorVersion: string;
+            units: string;
+            axes: string;
+            fidelity: string;
+            vertices: number;
+            triangles: number;
+            primitives: number;
+            nodes: number;
+            instances: number;
+            textureCount: number;
+            decodedTexturePixels: number;
+            materials: {
+                [key: string]: unknown;
+            }[];
+            images: {
+                [key: string]: unknown;
+            }[];
+            bounds: {
+                min: number[];
+                max: number[];
+            };
+            warnings: string[];
+        };
+        ModelAssetVersion: {
+            manifestBytes: number;
+            id: string;
+            upload: components["schemas"]["ModelAssetUpload"];
+            validation: components["schemas"]["ModelValidation"];
+            workerBuild: string;
+            validatorBuild: string;
+            manifestSha256: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ModelActorTemplateInput: {
+            name: string;
+            modelVersionId: string;
+            /** @enum {string} */
+            behavior: "STATIC" | "WAYPOINT_KINEMATIC";
+            maxSpeedMps: number;
+            /** @enum {string} */
+            fidelity: "abstract_behavior";
+            limitations: string;
+        };
+        ModelActorTemplate: {
+            name: string;
+            modelVersionId: string;
+            /** @enum {string} */
+            behavior: "STATIC" | "WAYPOINT_KINEMATIC";
+            maxSpeedMps: number;
+            /** @enum {string} */
+            fidelity: "abstract_behavior";
+            limitations: string;
+            id: string;
+            createdBy: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ModelEnvironmentFrame: {
+            crs: string;
+            order: string;
+            axes: string;
+            units: string;
+            orientation: string;
+            transform: string;
+            origin: {
+                longitude: number;
+                latitude: number;
+                height: number;
+                verticalDatum: string;
+            };
+        };
+        ModelEnvironmentInput: {
+            name: string;
+            modelVersionId: string;
+            frame: components["schemas"]["ModelEnvironmentFrame"];
+            /** @enum {string} */
+            modelAxesToEnu: "x_east_y_up_z_south";
+            provenance: string;
+            /** @enum {string} */
+            fidelity: "visual_only";
+            prepared?: components["schemas"]["PreparedEnvironment"];
+            releaseToOperators?: boolean;
+        };
+        ModelEnvironmentAsset: {
+            name: string;
+            modelVersionId: string;
+            frame: components["schemas"]["ModelEnvironmentFrame"];
+            /** @enum {string} */
+            modelAxesToEnu: "x_east_y_up_z_south";
+            provenance: string;
+            /** @enum {string} */
+            fidelity: "visual_only";
+            id: string;
+            createdBy: string;
+            /** Format: date-time */
+            createdAt: string;
+            prepared?: components["schemas"]["PreparedEnvironment"];
+            releaseToOperators?: boolean;
+        };
+        ModelImportAttempt: {
+            id: string;
+            uploadId: string;
+            status: string;
+            reason?: string;
+            workerBuild?: string;
+            validatorBuild?: string;
+            /** Format: date-time */
+            startedAt?: string;
+            /** Format: date-time */
+            finishedAt?: string;
+            /** Format: date-time */
+            recordedAt?: string;
+            attempt?: number;
+        };
+        StationWeather: {
+            stationId: string;
+            rawMetar: string;
+            reportType: string;
+            temperatureC: number | null;
+            dewpointC: number | null;
+            windDirectionDegrees: number | null;
+            windSpeedMps: number | null;
+            windGustMps: number | null;
+            visibilityStatuteMiles: number | null;
+            altimeterHPa: number | null;
+            variableWind: boolean;
+            visibilityLowerBound: boolean;
+        };
+        SourceReport: {
+            claim: string;
+            country: string;
+            providerAlertLevel: string;
+            citedSource: string;
+            citedSourceId: string;
+            citedFrom: string;
+            citedTo: string;
+            documentUrl: string;
+            corroborationMeaning: string;
+            lineageKeys: string[];
+        };
+        ContextRecord: {
+            /** @enum {string} */
+            kind: "WEATHER" | "REPORT";
+            title: string;
+            position: components["schemas"]["Point"];
+            locationBasis: string;
+            timeBasis: string;
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+            extractionMethod: string;
+            uncertainty: string;
+            weather?: components["schemas"]["StationWeather"];
+            report?: components["schemas"]["SourceReport"];
+        };
+        PublicContextEntry: {
+            evidence: components["schemas"]["PublicEvidence"];
+            analystQuestion: string;
+            attribution: string;
+            status: string;
+            ageSeconds: number;
+            sourceState: string;
+            /** Format: date-time */
+            lastAttempt?: string;
+            /** Format: date-time */
+            lastSuccess?: string;
+            failureCode?: string;
+        };
+        ReportProposal: {
+            conclusion: string;
+            /** @enum {string} */
+            method: "OPERATOR" | "ALGORITHM" | "AI";
+            confidence?: number | null;
+            confidenceRationale?: string;
+            modelScore?: number | null;
+            expectedRevisionId?: string;
+            reportEvidenceId: string;
+        };
+        ContextPackageSelection: {
+            datasetIds?: string[];
+            aoi: components["schemas"]["SourceAOI"];
+            timeWindow: components["schemas"]["ContextWindow"];
+            acceptedQuality: string;
+            /** @description Ignored for a preview; approval is supplied only when freezing. */
+            approval?: string;
+            referenceOnly?: boolean;
+            preparationIds?: string[];
+            assessmentRevisionIds?: string[];
+        };
+        ContextImageryLineage: {
+            admissionId: string;
+            artifactId: string;
+            jobId: string;
+            revisionId?: string;
+            role: string;
+            artifactSha256: string;
+            sceneIds: string[];
+            evidenceIds: string[];
+            synthetic: boolean;
+            currentRights: components["schemas"]["SourceRights"];
+            authorHumanId?: string;
+            reviewerHumanId?: string;
+        };
+        ContextPreview: {
+            id: string;
+            sha256: string;
+            /** Format: date-time */
+            expiresAt: string;
+            manifest: components["schemas"]["ContextManifest"];
+            bytes: number;
+        };
+        MovingProviderObservation: {
+            kind: string;
+            identityClaim: string;
+            /** Format: date-time */
+            observedAt: string;
+            position: components["schemas"]["Point"];
+            speedMps: number | null;
+            course: number | null;
+            claims: {
+                [key: string]: unknown;
+            };
+            quality: {
+                [key: string]: unknown;
+            };
+        };
+        ExternalTrack: {
+            id: string;
+            sourceId: string;
+            kind: string;
+            identityClaim: string;
+            /** Format: date-time */
+            firstSeenAt: string;
+            /** Format: date-time */
+            lastSeenAt: string;
+            latestEvidenceId: string;
+            reported: components["schemas"]["MovingProviderObservation"];
+            status: string;
+            ageSeconds: number;
+            coverageState: string;
+            originalProducer: string;
+            upstreamProvider: string;
+            attribution: string;
+            meaning: string;
+            /** @constant */
+            controllable: false;
+            /** Format: date-time */
+            sourceLastAttemptAt?: string;
+            /** Format: date-time */
+            sourceLastSuccessAt?: string;
+            /** Format: date-time */
+            coverageTo?: string;
+            sourceFailureCode?: string;
+        };
+        ExternalAssociation: {
+            evidenceId: string;
+            observationId: string;
+            trackId: string;
+            sourceId: string;
+            decision: string;
+            rationale: string;
+            method: string;
+            /** Format: date-time */
+            observedAt: string;
+            /** Format: date-time */
+            knownAt: string;
+            reported: components["schemas"]["MovingProviderObservation"];
+        };
+        ArtifactInput: {
+            requestKey: string;
+            sourceId: string;
+            sha256: string;
+            bytes: number;
+            /** @enum {string} */
+            mediaType: "application/json" | "image/tiff" | "image/jp2" | "image/png";
+            /** @enum {string} */
+            kind: "imagery_subset" | "analysis_result" | "source_raster" | "imagery_preview" | "imagery_capture" | "imagery_window";
+            /** Format: date-time */
+            retainUntil: string;
+            provenance: string;
+        };
+        Artifact: components["schemas"]["ArtifactInput"] & {
+            id: string;
+            admissionId: string;
+            rights: components["schemas"]["SourceRights"];
+            createdBy: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            state: "PENDING" | "READY" | "DELETING" | "DELETED";
+        };
+        ImageryScene: {
+            schema: string;
+            id: string;
+            sourceId: string;
+            evidenceId: string;
+            admissionId: string;
+            contentHash: string;
+            /** Format: date-time */
+            retrievedAt: string;
+            originalProducer: string;
+            provider: string;
+            rights: components["schemas"]["SourceRights"];
+            providerId: string;
+            collection: string;
+            /** Format: date-time */
+            acquiredAt: string;
+            platform: string;
+            tile: string;
+            orbit: number;
+            processingVersion: string;
+            cloudCover: number | null;
+            geometry: {
+                [key: string]: unknown;
+            };
+            bbox: number[];
+            assets: {
+                [key: string]: {
+                    href: string;
+                    mediaType: string;
+                };
+            };
+            stacVersion: string;
+            catalogueReference?: string;
+            rasterBands?: {
+                [key: string]: {
+                    scale?: number;
+                    offset?: number;
+                    nodata?: number;
+                    spatial_resolution: number;
+                };
+            };
+        };
+        ImageryGrid: {
+            /** @enum {string} */
+            crs: "EPSG:4326";
+            width: number;
+            height: number;
+            west: number;
+            north: number;
+            stepLng: number;
+            stepLat: number;
+            /** @enum {string} */
+            registration: "pixel_edges_north_to_south";
+        };
+        ImageryParameters: {
+            declineThreshold: number;
+            minValidFraction: number;
+        };
+        ImagerySubmit: {
+            requestKey: string;
+            /** @enum {string} */
+            kind: "PREPARE" | "NDVI_CHANGE";
+            sceneId?: string;
+            artifactId?: string;
+            preparationIds?: string[];
+            parameters?: components["schemas"]["ImageryParameters"];
+        };
+        ImageryJobInput: {
+            schema: string;
+            /** @enum {string} */
+            kind: "PREPARE" | "NDVI_CHANGE";
+            algorithm: string;
+            scenes: components["schemas"]["ImageryScene"][];
+            artifacts: components["schemas"]["Artifact"][];
+            preparationIds: string[];
+            parameters: components["schemas"]["ImageryParameters"];
+        };
+        ImageryTileInfo: {
+            grid: components["schemas"]["ImageryGrid"];
+            sourceHashes: {
+                [key: string]: string;
+            };
+            preparationMethod: string;
+        };
+        ImageryJobResult: {
+            artifactId?: string;
+            sha256?: string;
+            tile?: components["schemas"]["ImageryTileInfo"];
+            validCells?: number;
+            declineCells?: number;
+            limitations: string[];
+            synthetic: boolean;
+            findingGeometry?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        ImageryJob: {
+            id: string;
+            sourceId: string;
+            /** @enum {string} */
+            status: "QUEUED" | "RUNNING" | "CANCEL_REQUESTED" | "CANCELED" | "FAILED" | "SUCCEEDED";
+            input: components["schemas"]["ImageryJobInput"];
+            createdBy: string;
+            /** Format: date-time */
+            createdAt: string;
+            attempt: number;
+            workerBuild: string;
+            errorCode: string;
+            result: components["schemas"]["ImageryJobResult"] | null;
+            /** Format: date-time */
+            finishedAt: string | null;
+        };
+        ImageryProposal: {
+            jobId: string;
+            conclusion: string;
+            /** @enum {string} */
+            method: "OPERATOR" | "ALGORITHM" | "AI";
+            confidence?: number | null;
+            confidenceRationale?: string;
+            modelScore?: number | null;
+            expectedRevisionId?: string;
+        };
+        AssessmentReviewAction: {
+            expectedRevisionId: string;
+            /** @enum {string} */
+            action: "submit" | "review" | "publish" | "reject";
+            rationale: string;
+            confidence?: number | null;
+            confidenceRationale?: string;
+        };
+        AssessmentRevision: {
+            reportEvidence?: components["schemas"]["PublicEvidence"];
+            id: string;
+            assessmentId: string;
+            sourceId: string;
+            version: number;
+            /** @enum {string} */
+            status: "DRAFT" | "PROPOSED" | "IN_REVIEW" | "PUBLISHED" | "REJECTED";
+            previousId?: string;
+            conclusion: string;
+            method: string;
+            confidence: number | null;
+            confidenceRationale: string;
+            modelScore: number | null;
+            authorId: string;
+            actorId: string;
+            /** Format: date-time */
+            recordedAt: string;
+            reviewRationale: string;
+            evidence?: components["schemas"]["ImageryJob"];
+            publishedBy?: string;
+            authorHumanId?: string;
+            actorHumanId?: string;
+            publisherHumanId?: string;
+            reviewIdentityStatus?: string;
+        } & (unknown | unknown);
+        ImageryResultArtifact: {
+            schema: string;
+            algorithm: string;
+            parameters: components["schemas"]["ImageryParameters"];
+            grid: components["schemas"]["ImageryGrid"];
+            beforeScene: string;
+            afterScene: string;
+            beforeNdvi: (number | null)[];
+            afterNdvi: (number | null)[];
+            delta: (number | null)[];
+            validCells: number;
+            maskedCells: number;
+            declineCells: number;
+            meanDelta: number;
+            findingGeometry: {
+                [key: string]: unknown;
+            } | null;
+            limitations: string[];
+            synthetic: boolean;
+            geometryProcessor: string;
+        };
+        PublicEventView: {
+            /** @enum {string} */
+            mode: "latest" | "known_at" | "effective_at";
+            /** Format: date-time */
+            asOf?: string;
+            meaning: string;
+            knownTimeBasis: string;
+            qualityMeaning: string;
+        };
+        PublicEventFilters: {
+            regionId?: string;
+            geometry?: string;
+            /** @enum {string} */
+            view: "latest" | "known_at" | "effective_at";
+            /** Format: date-time */
+            asOf?: string;
+            /** @enum {string} */
+            revisions: "latest" | "all";
+            sourceId?: string;
+            phenomenon?: string;
+            quality?: string;
+            /** Format: date-time */
+            observedFrom?: string;
+            /** Format: date-time */
+            observedTo?: string;
+            bounds?: components["schemas"]["SourceAOI"];
+            limit: number;
+            offset: number;
+        };
+        SyntheticReceipt: {
+            /** @enum {string} */
+            schema: "emad.synthetic.v1";
+            /** @description Opaque publication/message identity; no actor mapping. */
+            id: string;
+            /** @enum {string} */
+            kind: "observation" | "telemetry";
+            runId: string;
+            scenarioVersionId: string;
+            runtimeVersion: string;
+            runtimeBuild: string;
+            /** @enum {string} */
+            producerId: "yaml-adapter";
+            sequence: number;
+            /** Format: int64 */
+            elapsedMs: number;
+            /** Format: date-time */
+            observedAt: string;
+            /** Format: date-time */
+            receivedAt: string;
+            /** @enum {string} */
+            status: "PENDING" | "DELIVERED" | "REJECTED";
+            errorCode?: string;
+        };
+        SimulationClock: {
+            /** Format: date-time */
+            epoch: string;
+            /** @enum {string} */
+            elapsedUnit: "milliseconds";
+            /** @enum {string} */
+            order: "virtual_time_then_sequence";
+            /** @enum {string} */
+            sourceTimeMapping: "preserve_source_time";
+        };
+        Fidelity: {
+            /** @enum {string} */
+            profile: "visual_only" | "abstract_behavior" | "kinematic";
+            modelVersion: string;
+            simplifications: string[];
+        };
+        SimulationPosition: {
+            longitude: number;
+            latitude: number;
+            /** @description Metres. Missing is unresolved; conversion requires WGS84 ellipsoidal height. */
+            height: number | null;
+            verticalDatum: string;
+        };
+        SimulationFrame: {
+            /** @enum {string} */
+            crs: "EPSG:4326";
+            /** @enum {string} */
+            order: "longitude_latitude";
+            /** @enum {string} */
+            axes: "east_north_up";
+            /** @enum {string} */
+            units: "metres";
+            /** @enum {string} */
+            orientation: "heading_clockwise_from_north_pitch_nose_up_roll_right_degrees";
+            /** @enum {string} */
+            transform: "wgs84-ecef-enu-v1";
+            origin: components["schemas"]["SimulationPosition"];
+        };
+        /** @description Immutable configuration. Legacy rows have no frozen input and require an explicit new start. Seed is omitted for ordinary operators. */
+        FrozenRun: {
+            schema?: string;
+            versionId?: string;
+            runtime?: string;
+            runtimeBuild?: string;
+            /** Format: int64 */
+            seed?: number;
+            initialScale?: number;
+            clock?: components["schemas"]["SimulationClock"];
+            contextPackageIds?: string[] | null;
+            restartOf?: string;
+        };
+        ScenarioVersion: {
+            /** @enum {string} */
+            schema: "emad.scenario.v1";
+            definition: components["schemas"]["Scenario"];
+            runtime: string;
+            runtimeBuild: string;
+            context: components["schemas"]["ContextBundle"][];
+        };
+        ContextWindow: {
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+        };
+        ContextPackageBuild: {
+            datasetIds?: string[];
+            aoi?: components["schemas"]["SourceAOI"];
+            timeWindow?: components["schemas"]["ContextWindow"];
+            acceptedQuality?: string;
+            approval: string;
+            referenceOnly?: boolean;
+            preparationIds?: string[];
+            assessmentRevisionIds?: string[];
+            previewId?: string;
+            previewSha256?: string;
+        };
+        ContextAsset: {
+            /** @enum {string} */
+            kind: "vector" | "elevation" | "imagery" | "analysis" | "assessment" | "derived_geometry";
+            datasetAoi: components["schemas"]["SourceAOI"];
+            parentArtifactSha256?: string;
+            datasetId: string;
+            sourceId: string;
+            datasetKey: string;
+            version: string;
+            originalProducer: string;
+            /** Format: uri */
+            reference: string;
+            /** Format: date-time */
+            retrievedAt: string;
+            sha256: string;
+            bytes: number;
+            /** @enum {string} */
+            crs: "EPSG:4326";
+            verticalDatum: string;
+            resolution: {
+                value: number;
+                unit: string;
+            };
+            quality: string;
+            validity: string;
+            processing: string;
+            rights: components["schemas"]["SourceRights"];
+            /** @enum {string} */
+            retention: "retained" | "reference_only";
+            lineage?: components["schemas"]["ContextImageryLineage"];
+            /** Format: date-time */
+            availableUntil?: string;
+            syntheticDerived?: boolean;
+        };
+        ContextManifest: {
+            /** @enum {string} */
+            schema: "emad.context.v1";
+            aoi: components["schemas"]["SourceAOI"];
+            timeWindow: components["schemas"]["ContextWindow"];
+            /** Format: date-time */
+            createdAt: string;
+            creator: string;
+            approval: {
+                by: string;
+                /** Format: date-time */
+                at: string;
+                statement: string;
+            };
+            /** @enum {string} */
+            transformVersion: "wgs84-ecef-enu-v1";
+            /** @enum {string} */
+            processingVersion: "reference-snapshot-v1" | "context-snapshot-v2";
+            geometryQuality: string;
+            imageryQuality: string;
+            /** @enum {string} */
+            reproduction: "retained_offline" | "external_dependencies";
+            /** @description True when derived geometry is included; it is synthetic context and not simulator ground truth. */
+            syntheticDerived: boolean;
+            assets: components["schemas"]["ContextAsset"][];
+            omissions?: string[];
+        };
+        ContextPackage: {
+            id: string;
+            manifest: components["schemas"]["ContextManifest"];
+        };
+        ContextBundle: components["schemas"]["ContextPackage"] & {
+            /** @description SHA-256 keyed original bytes; never paths or fetched URLs. */
+            assets: {
+                [key: string]: string;
+            };
+        };
+        ContextPackageList: {
+            items: components["schemas"]["ContextPackage"][];
+            total: number;
+        };
+        ReportedObservation: {
+            /** @enum {string} */
+            semanticKind: "point_event" | "area";
+            type: string;
+            title: string;
+            /** Format: date-time */
+            observedAt: string;
+            position?: components["schemas"]["Point"];
+            area?: {
+                kind: string;
+                polygon: components["schemas"]["Point"][];
+            };
+            /** @enum {string} */
+            geometryRole: "reported_location" | "reported_extent" | "measurement_footprint" | "derived_buffer" | "phenomenon_boundary";
+            withdrawn: boolean;
+            properties: {
+                [key: string]: unknown;
+            } | null;
+            quality: {
+                [key: string]: unknown;
+            } | null;
+        };
+        PublicEvent: {
+            /** Format: date-time */
+            knownAt?: string;
+            /** Format: date-time */
+            effectiveAt?: string;
+            /** @enum {string} */
+            effectiveBasis?: "provider_revision" | "reported_observation_no_revision_time" | "receipt_fallback";
+            /** @enum {string} */
+            qualityClass?: "low" | "nominal" | "high" | "reviewed" | "automatic" | "unknown";
+            evidenceId: string;
+            sourceId: string;
+            providerRecordId: string;
+            providerRevision: string;
+            admissionId: string;
+            observationId?: string;
+            supersedesId?: string;
+            /** Format: date-time */
+            revisionAt: string;
+            /** Format: date-time */
+            receivedAt: string;
+            reported: components["schemas"]["ReportedObservation"];
+        };
+        PublicEventList: {
+            items: components["schemas"]["PublicEvent"][];
+            total: number;
+            truncated?: boolean;
+            filters?: components["schemas"]["PublicEventFilters"];
+            view?: components["schemas"]["PublicEventView"];
+        };
+        ReferenceMetadata: {
+            sourceId: string;
+            datasetKey: string;
+            version: string;
+            label: string;
+            /** @enum {string} */
+            kind: "vector" | "elevation";
+            originalProducer: string;
+            /** @enum {string} */
+            crs: "EPSG:4326";
+            verticalDatum: string;
+            resolution: {
+                value: number;
+                /** @enum {string} */
+                unit: "arc_seconds" | "metres" | "map_scale";
+            };
+            aoi: components["schemas"]["SourceAOI"];
+            validity: string;
+            quality: string;
+            transformation: string;
+            rights: components["schemas"]["SourceRights"];
+            /** Format: uri */
+            retrievalReference: string;
+            parentArtifactSha256?: string;
+            /** Format: date-time */
+            retrievedAt: string;
+            sha256: string;
+        };
+        ReferenceImport: components["schemas"]["ReferenceMetadata"] & {
+            /**
+             * Format: byte
+             * @description Base64 of at most 512 KiB of exact GeoJSON or elevation-grid JSON bytes, whose SHA-256 is verified.
+             */
+            artifact: string;
+        };
+        ReferenceDataset: components["schemas"]["ReferenceMetadata"] & {
+            id: string;
+            approvedBy: string;
+            /** Format: date-time */
+            approvedAt: string;
+            bytes: number;
+            featureCount: number;
+            eligibleForSimulation: boolean;
+        };
+        ReferenceDatasetList: {
+            items: components["schemas"]["ReferenceDataset"][];
+            total: number;
+        };
+        ReferenceFeatureCollection: {
+            /** @enum {string} */
+            type: "FeatureCollection";
+            features: {
+                /** @enum {string} */
+                type: "Feature";
+                id: string;
+                geometry: {
+                    [key: string]: unknown;
+                };
+                properties: {
+                    [key: string]: unknown;
+                } | null;
+            }[];
+        };
+        /** @description Exact retained source subset. Vector artifacts are GeoJSON; elevation artifacts are regular south-to-north point grids with height in metres relative to the dataset verticalDatum. */
+        ReferenceArtifact: unknown;
         Point: {
             lat: number;
             lng: number;
@@ -1089,6 +5357,171 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            ingestion?: components["schemas"]["SourceIngestionSummary"];
+        };
+        SourceIngestionSummary: {
+            /** @enum {string} */
+            state: "not_admitted" | "disabled" | "unknown" | "current" | "stale" | "unavailable";
+            admissionId?: string;
+            originalProducer?: string;
+            upstreamProvider?: string;
+            dataset?: string;
+            productVersion?: string;
+            /** Format: date-time */
+            lastSuccessAt?: string;
+            /** Format: date-time */
+            lastAttemptAt?: string;
+            /** Format: date-time */
+            nextAttemptAt?: string;
+            failureCode?: string;
+            /** Format: date-time */
+            coverageFrom?: string;
+            /** Format: date-time */
+            coverageTo?: string;
+            pendingPublications: number;
+            /** @description Coverage describes a provider query; missing records never prove absence. */
+            meaning: string;
+        };
+        SourceRights: {
+            id: string;
+            legalBasis: string;
+            /** Format: uri */
+            termsUrl: string;
+            attribution: string;
+            retainRaw: boolean;
+            allowAnalysis: boolean;
+            /** @description Rights metadata only; does not authorize an export or create a scenario actor. */
+            allowSimulationExport: boolean;
+            /** Format: date-time */
+            expiresAt?: string;
+        };
+        SourceAOI: {
+            west: number;
+            south: number;
+            east: number;
+            north: number;
+        };
+        SourceRetrievalPolicy: {
+            aoi: components["schemas"]["SourceAOI"];
+            lookbackSeconds: number;
+            freshForSeconds: number;
+            unavailableAfterSeconds: number;
+            minIntervalSeconds: number;
+            timeoutSeconds: number;
+            maxPages: number;
+            maxRecordsPerPage: number;
+            maxResponseBytes: number;
+            maxRequestsPerDay: number;
+        };
+        SourceAdmissionInput: {
+            /** @description Required explicit analyst question for native weather/report pilots. */
+            analystQuestion?: string;
+            originalProducer: string;
+            upstreamProvider: string;
+            /** @description A source/resource binding in the trusted server location manifest; never a caller-supplied URL. */
+            connectorId: string;
+            connectorPrincipalId: string;
+            dataset: string;
+            productVersion: string;
+            coverageDescription: string;
+            /** @enum {string} */
+            revisionPolicy: "provider_version" | "content_hash";
+            rights: components["schemas"]["SourceRights"];
+            policy: components["schemas"]["SourceRetrievalPolicy"];
+            enabled: boolean;
+        };
+        SourceAdmission: components["schemas"]["SourceAdmissionInput"] & {
+            id: string;
+            sourceId: string;
+            version: number;
+            approvedBy: string;
+            /** Format: date-time */
+            approvedAt: string;
+        };
+        ConnectorRun: {
+            id: string;
+            sourceId: string;
+            admissionId: string;
+            connectorId: string;
+            principalId: string;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            finishedAt?: string;
+            /** @enum {string} */
+            status: "RUNNING" | "SUCCEEDED" | "PARTIAL" | "FAILED" | "INTERRUPTED";
+            failureCode?: string;
+            requests: number;
+            newEvidence: number;
+            duplicates: number;
+            /** Format: date-time */
+            captureFrom?: string;
+            /** Format: date-time */
+            captureTo?: string;
+            retrieval?: {
+                /** @description OpenSky states balance reported by X-Rate-Limit-Remaining at retrieval time; not the daily allowance. */
+                creditsRemaining?: number;
+                locationId?: string;
+                httpStatus?: number;
+                discontinuous?: boolean;
+                compressionEnabled?: boolean;
+                coverageMeaning?: string;
+                responseHash?: string;
+                selectionExcluded?: number;
+                etag?: string;
+                lastModified?: string;
+            };
+        };
+        EvidenceRetrieval: {
+            /** @description Provider-reported states credit balance at retrieval time. */
+            creditsRemaining?: number;
+            /** @description SHA-256 of bounded original response body. */
+            responseHash?: string;
+            selectionExcluded?: number;
+            locationId: string;
+            httpStatus: number;
+            etag?: string;
+            lastModified?: string;
+        };
+        /** @description Immutable provider evidence, distinct from connector execution, derived analysis, observation routing, and assessment. Lists omit originalRecord; detail retains it only when rights permit. */
+        PublicEvidence: {
+            context?: components["schemas"]["ContextRecord"];
+            /**
+             * @description CSV originals retain the exact header plus selected original row, not the entire response.
+             * @enum {string}
+             */
+            originalMediaType?: "application/json" | "text/csv" | "application/xml";
+            normalizerVersion?: string;
+            observation?: components["schemas"]["ReportedObservation"];
+            id: string;
+            sourceId: string;
+            admissionId: string;
+            connectorRunId: string;
+            /** @description Same original producer/product/record/revision across providers and connector runs; repeated origins are not independent corroboration. */
+            originRecordKey: string;
+            providerRecordId: string;
+            providerRevision: string;
+            contentHash: string;
+            rawHash: string;
+            /** @enum {string} */
+            hashVersion: "emad-json-v1";
+            originalProducer: string;
+            upstreamProvider: string;
+            dataset: string;
+            productVersion: string;
+            rightsId: string;
+            referenceUrl: string;
+            /** Format: date-time */
+            observedAt?: string;
+            /** Format: date-time */
+            providerUpdatedAt?: string;
+            /** Format: date-time */
+            retrievedAt: string;
+            retrieval: components["schemas"]["EvidenceRetrieval"];
+            originalRecord?: unknown;
+        };
+        PublicationResult: {
+            published: number;
         };
         /**
          * @description Phenomenon class for an area observation, so alert rules can select the areas they care about without parsing free-form payload keys.
@@ -1194,6 +5627,10 @@ export interface components {
         };
         /** @description The operational picture reconstructed at a point in time from recorded evidence. Freshness is derived against the requested instant rather than the wall clock, so a replay never splices two moments together. */
         Picture: {
+            /** @enum {string} */
+            semanticKind?: "moving" | "point_event" | "area";
+            /** @enum {string} */
+            geometryRole?: "reported_location" | "reported_extent" | "measurement_footprint" | "derived_buffer" | "phenomenon_boundary";
             /** Format: date-time */
             at: string;
             /** @description True when this is the present moment rather than a replay. */
@@ -1395,6 +5832,9 @@ export interface components {
             position?: components["schemas"]["Point"];
         };
         RelatedAssessment: {
+            reviewStatus?: string;
+            revisionId?: string;
+            publishedRevisionId?: string;
             id: string;
             subjectType: string;
             subjectId: string;
@@ -1473,6 +5913,10 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
             evidence: components["schemas"]["AssessmentEvidence"][];
+            /** @description Present for imagery workflow roots; absence does not imply reviewed legacy evidence. */
+            reviewStatus?: string;
+            revisionId?: string;
+            publishedRevisionId?: string;
         };
         AssessmentEvidence: {
             type: string;
@@ -1501,6 +5945,32 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        RealtimeEnvelope: {
+            id: string;
+            type: string;
+            /** @constant */
+            version: 2;
+            /** Format: date-time */
+            occurredAt: string;
+            resource: components["schemas"]["AccessResource"];
+            data: {
+                [key: string]: unknown;
+            };
+        };
+        /** @enum {string} */
+        DataPartition: "PUBLIC_EVIDENCE" | "EXERCISE_INPUT" | "EXERCISE_OBSERVATION" | "EXERCISE_TRUTH";
+        Principal: {
+            id: string;
+            /** @enum {string} */
+            kind: "human" | "service";
+        };
+        /** @description Validated resource selected for this request. Public evidence has no runId. Exercise observation and truth require runId; exercise input may be run-bound. Scope identifiers and credential grants are server-owned, never taken from payload metadata. */
+        AccessResource: {
+            workspaceId: string;
+            environmentId: string;
+            partition: components["schemas"]["DataPartition"];
+            runId?: string;
+        };
         CurrentOperator: {
             id: string;
             name: string;
@@ -1518,6 +5988,15 @@ export interface components {
             events: number;
         };
         Scenario: {
+            contextAnchors?: {
+                track: string;
+                packageId: string;
+                datasetId: string;
+                featureId: string;
+            }[];
+            clock?: components["schemas"]["SimulationClock"];
+            frame?: components["schemas"]["SimulationFrame"];
+            contextPackages?: string[];
             name: string;
             description: string;
             /** Format: int64 */
@@ -1531,11 +6010,13 @@ export interface components {
             commandSimulation: components["schemas"]["CommandSimulation"] | null;
         };
         ScenarioSource: {
+            fidelity?: components["schemas"]["Fidelity"];
             id: string;
             name: string;
             type: string;
         };
         ScenarioAsset: {
+            fidelity?: components["schemas"]["Fidelity"];
             id: string;
             name: string;
             type: string;
@@ -1550,6 +6031,7 @@ export interface components {
             polygon: components["schemas"]["Point"][];
         };
         ScenarioTrack: {
+            fidelity?: components["schemas"]["Fidelity"];
             id: string;
             start: components["schemas"]["Point"] | null;
         };
@@ -1603,11 +6085,12 @@ export interface components {
             completeAfter: string;
         };
         ScenarioRun: {
+            frozen?: components["schemas"]["FrozenRun"];
             id: string;
-            resourceNamespace: string;
-            scenarioName: string;
+            resourceNamespace?: string;
+            scenarioName?: string;
             /** Format: int64 */
-            seed: number;
+            seed?: number;
             status: string;
             playbackSpeed: number;
             /** Format: int64 */
@@ -1725,6 +6208,134 @@ export interface components {
         ScenarioEventList: {
             items: components["schemas"]["ScenarioEvent"][];
             total: number;
+        };
+        FeatureReadiness: {
+            checkedAt: string;
+            resource: {
+                [key: string]: unknown;
+            };
+            features: {
+                id: string;
+                state: string;
+                count: number;
+                nextAction: string;
+            }[];
+            workers: {
+                feature: string;
+                lastSeenAt: string;
+                state: string;
+                runtimeBuild?: string;
+            }[];
+        };
+        WorkerHeartbeat: {
+            /** @enum {string} */
+            feature: "connectors" | "imagery" | "assets" | "runtime" | "recordings" | "preparation";
+            runtimeBuild?: string;
+        };
+        RuntimeCapability: {
+            runtimeBuild: string;
+            runtimeVersion: string;
+            state: string;
+        };
+        ReferenceViewport: {
+            /** @enum {string} */
+            type: "FeatureCollection";
+            features: {
+                [key: string]: unknown;
+            }[];
+            matched: number;
+            truncated: boolean;
+        };
+        ImageryCaptureInput: {
+            requestKey: string;
+            sceneId: string;
+            aoi: components["schemas"]["SourceAOI"];
+        };
+        ImageryCaptureResult: {
+            preparationId: string;
+            subsetArtifactId: string;
+            rgbArtifactId: string;
+            qualityArtifactId: string;
+            receiptArtifactId: string;
+            windowArtifactIds: string[];
+        };
+        ImageryCapture: {
+            id: string;
+            sourceId: string;
+            input: {
+                scene: components["schemas"]["ImageryScene"];
+                aoi: components["schemas"]["SourceAOI"];
+                method: string;
+            };
+            /** @enum {string} */
+            status: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "CANCELLED";
+            attempt: number;
+            progress: string;
+            errorCode: string;
+            result?: components["schemas"]["ImageryCaptureResult"];
+            createdAt: string;
+        };
+        PreparedEnvironment: {
+            /** @enum {string} */
+            schema: "emad.prepared-environment.v1";
+            aoi: components["schemas"]["SourceAOI"];
+            frame: components["schemas"]["ModelEnvironmentFrame"];
+            modelSha256: string;
+            terrainParentSha256: string;
+            geoidSha256: string;
+            osmParentSha256: string;
+            imagerySha256: string;
+            inputVerticalDatum: string;
+            outputVerticalDatum: string;
+            transformation: string;
+            terrainVertices: number;
+            buildings: number;
+            roadSegments: number;
+            limitations: string[];
+        };
+        ExerciseEnvironmentView: {
+            /** @enum {string} */
+            schema: "emad.exercise-environment.v1";
+            runId: string;
+            environment: components["schemas"]["ModelEnvironmentAsset"];
+            model: {
+                uploadId: string;
+                sha256: string;
+                bytes: number;
+                mediaType: string;
+            };
+            meaning: string;
+        };
+        SourceActivation: {
+            /** @description Last reported OpenSky states balance. An absent header produces null, never the configured daily allowance. */
+            providerCredits?: {
+                /** @enum {string} */
+                bucket: "states";
+                remaining: number | null;
+                /** Format: date-time */
+                reportedAt: string | null;
+            };
+            sourceId: string;
+            state: string;
+            reason: string;
+            nextAction: string;
+            health?: components["schemas"]["SourceIngestionSummary"];
+        };
+        SpatialReplayFrame: {
+            schema: string;
+            elapsedMs: number;
+            truthSnapshot: components["schemas"]["RuntimeSnapshot"] | null;
+            contacts: {
+                contact: string;
+                actorId: string;
+                sampleMs: number;
+                deliverMs: number;
+                local: components["schemas"]["SceneVector"];
+                truthAtSample?: components["schemas"]["SceneVector"];
+                errorM?: number;
+                confidence: number;
+            }[];
+            limitations: string[];
         };
     };
     responses: {
@@ -2090,6 +6701,14 @@ export interface components {
         };
     };
     parameters: {
+        /** @description Select an existing authorized workspace; defaults to the credential resource. */
+        WorkspaceHeader: string;
+        /** @description Select an existing authorized environment within the workspace. */
+        EnvironmentHeader: string;
+        /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+        PartitionHeader: components["schemas"]["DataPartition"];
+        /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+        RunHeader: string;
         Id: string;
         ScenarioName: string;
         Limit: number;
@@ -2116,6 +6735,10 @@ export interface components {
         ObservationInput: {
             content: {
                 "application/json": {
+                    /** @enum {string} */
+                    semanticKind?: "moving" | "point_event" | "area";
+                    /** @enum {string} */
+                    geometryRole?: "reported_location" | "reported_extent" | "measurement_footprint" | "derived_buffer" | "phenomenon_boundary";
                     id?: string;
                     sourceId: string;
                     type: string;
@@ -2218,6 +6841,8 @@ export interface components {
         Command: {
             content: {
                 "application/json": {
+                    /** @description Required for native exercise tasking; retries retain the same key. */
+                    requestKey?: string;
                     assetId: string;
                     missionId?: string;
                     incidentId?: string;
@@ -2251,6 +6876,884 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    createSurroundingArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    longitude: number;
+                    latitude: number;
+                    radiusM: number;
+                };
+            };
+        };
+        responses: {
+            /** @description PostGIS geodesic analyst context buffer, never a jurisdiction */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    measureMapGeometry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Bounded WGS84 Polygon or LineString */
+                    geometry: {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description PostGIS geodesic measurement of analyst geometry */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        areaM2: number;
+                        perimeterM: number;
+                        lengthM: number;
+                        method: string;
+                        meaning: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    listGeographicRegions: {
+        parameters: {
+            query?: {
+                q?: string;
+                parent?: string;
+                kind?: "country" | "region" | "governorate" | "place" | "study";
+                id?: string;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized versioned geographic reference */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapFeatureCollection"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    admitGeographicEdition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sourceId: string;
+                    label: string;
+                    version: string;
+                    rights: {
+                        [key: string]: unknown;
+                    };
+                    receipt: {
+                        [key: string]: unknown;
+                    };
+                    sha256: string;
+                    /**
+                     * Format: byte
+                     * @description Retained WGS84 FeatureCollection bytes, base64 encoded
+                     */
+                    artifact: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Existing identical edition */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Immutable admitted edition */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getMapFeatures: {
+        parameters: {
+            query: {
+                /** @description Analyst WGS84 study polygon; not a jurisdiction */
+                geometry?: string;
+                family: "events" | "earthquakes" | "thermal" | "weather" | "bulletins" | "aircraft" | "vessels" | "imagery" | "coverage" | "findings";
+                region_id?: string;
+                bbox?: string;
+                source_id?: string;
+                quality?: string;
+                view?: "latest" | "known_at" | "effective_at";
+                as_of?: string;
+                observed_from?: string;
+                observed_to?: string;
+                zoom?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped retained features and complete matching count; display limits and unsupported history are explicit */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MapFeatureCollection"];
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getReferenceTile: {
+        parameters: {
+            query: {
+                datasets: string;
+            };
+            header?: never;
+            path: {
+                z: number;
+                x: number;
+                y: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized PostGIS reference tile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.mapbox-vector-tile": string;
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getSimulationRecording: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingIndex"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    archiveSimulationRecording: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingIndex"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getRecordingEvents: {
+        parameters: {
+            query?: {
+                after?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["RecordingEvent"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getRecordingFrame: {
+        parameters: {
+            query?: {
+                elapsedMs?: number;
+                sequence?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingFrame"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getRecordingCheckpoint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordingCheckpoint"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getAfterActionEvaluation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AfterActionEvaluation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    releaseAfterActionMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvaluationRelease"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleasedEvaluationReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getReleasedEvaluation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleasedEvaluationReport"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listSensorQualityPresets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["SensorQualityPreset"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    createSensorQualityPreset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SensorPresetInput"];
+            };
+        };
+        responses: {
+            /** @description Success */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensorQualityPreset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getSensorQualityPreset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SensorQualityPreset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listStudioContextPackages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted bounded response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudioPackageList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listStudioScenes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted bounded response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudioSceneList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    freezeStudioScene: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SceneInput"];
+            };
+        };
+        responses: {
+            /** @description Accepted bounded response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudioScene"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getStudioScene: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted bounded response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudioScene"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listNativeRuns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted bounded response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeRuntimeRunList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    startNativeRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuntimeStart"];
+            };
+        };
+        responses: {
+            /** @description Accepted bounded response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeRuntimeRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getNativeRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted bounded response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeRuntimeRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    pauseNativeRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted bounded response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeRuntimeRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    resumeNativeRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted bounded response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeRuntimeRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    stopNativeRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted bounded response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeRuntimeRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    attachNativeRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuntimeAttach"];
+            };
+        };
+        responses: {
+            /** @description Accepted bounded response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeLease"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    heartbeatNativeRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuntimeHeartbeat"];
+            };
+        };
+        responses: {
+            /** @description Accepted bounded response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeRuntimeRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getNativeRunTruth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted bounded response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeSnapshot"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     getHealth: {
         parameters: {
             query?: never;
@@ -2305,7 +7808,16 @@ export interface operations {
     getCurrentOperator: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2318,6 +7830,22 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
+                        /** @description Existing ordinary COP resources authorized by live grants; excludes input and truth. */
+                        resources?: components["schemas"]["AccessResource"][];
+                        /** @description Navigation labels for the same selectable resources. Exercise state and start time require scenarios.read in that resource; no authoring scene or truth is read. */
+                        resourceDetails?: {
+                            resource: components["schemas"]["AccessResource"];
+                            label: string;
+                            /** @enum {string} */
+                            kind: "public" | "exercise" | "legacy";
+                            status?: string;
+                            /** Format: date-time */
+                            startedAt?: string;
+                        }[];
+                        /** @description Opaque access fingerprint; changes when grants or source restrictions change. */
+                        accessRevision?: string;
+                        principal: components["schemas"]["Principal"];
+                        resource: components["schemas"]["AccessResource"];
                         operator: components["schemas"]["CurrentOperator"];
                         permissions: string[];
                     };
@@ -2326,13 +7854,360 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    listPublicEvents: {
+        parameters: {
+            query?: {
+                /** @description Bounded WGS84 analyst study polygon */
+                geometry?: string;
+                /** @description Versioned admitted polygon scope */
+                region_id?: string;
+                source_id?: string;
+                view?: "latest" | "known_at" | "effective_at";
+                /** @description Required for historical modes; RFC3339 with timezone. */
+                as_of?: string;
+                revisions?: "latest" | "all";
+                /** @description Normalized provider phenomenon, for example thermal.detection or event.earthquake. */
+                phenomenon?: string;
+                /** @description Provider VIIRS confidence class or USGS review status; not assessment confidence. */
+                quality?: "low" | "nominal" | "high" | "reviewed" | "automatic" | "unknown";
+                /** @description west,south,east,north; PostGIS filtering after revision selection. Missing withdrawal geometry does not match bounds. */
+                bbox?: string;
+                observed_from?: string;
+                observed_to?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List current provider event reports, including explicit withdrawals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicEventList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getPublicEvent: {
+        parameters: {
+            query?: {
+                source_id?: string;
+                view?: "latest" | "known_at" | "effective_at";
+                /** @description Required for historical modes; RFC3339 with timezone. */
+                as_of?: string;
+                revisions?: "latest" | "all";
+                /** @description Normalized provider phenomenon, for example thermal.detection or event.earthquake. */
+                phenomenon?: string;
+                /** @description Provider VIIRS confidence class or USGS review status; not assessment confidence. */
+                quality?: "low" | "nominal" | "high" | "reviewed" | "automatic" | "unknown";
+                /** @description west,south,east,north; PostGIS filtering after revision selection. Missing withdrawal geometry does not match bounds. */
+                bbox?: string;
+                observed_from?: string;
+                observed_to?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get an immutable reported event revision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicEvent"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listPublicEventRevisions: {
+        parameters: {
+            query?: {
+                source_id?: string;
+                view?: "latest" | "known_at" | "effective_at";
+                /** @description Required for historical modes; RFC3339 with timezone. */
+                as_of?: string;
+                revisions?: "latest" | "all";
+                /** @description Normalized provider phenomenon, for example thermal.detection or event.earthquake. */
+                phenomenon?: string;
+                /** @description Provider VIIRS confidence class or USGS review status; not assessment confidence. */
+                quality?: "low" | "nominal" | "high" | "reviewed" | "automatic" | "unknown";
+                /** @description west,south,east,north; PostGIS filtering after revision selection. Missing withdrawal geometry does not match bounds. */
+                bbox?: string;
+                observed_from?: string;
+                observed_to?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List the latest 200 retained revisions of the same provider record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicEventList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listReferenceDatasets: {
+        parameters: {
+            query?: {
+                eligible?: boolean;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List bounded immutable GIS and terrain versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceDatasetList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    importReferenceDataset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferenceImport"];
+            };
+        };
+        responses: {
+            /** @description Unchanged retry */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceDataset"];
+                };
+            };
+            /** @description Imported version */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceDataset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getReferenceDataset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get a reference dataset version and rights */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceDataset"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getReferenceFeatures: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get bounded WGS84 GeoJSON reference features */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceFeatureCollection"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getReferenceArtifact: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Download exact retained reference artifact bytes for checksum verification */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceArtifact"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listSources: {
         parameters: {
             query?: {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2346,7 +8221,16 @@ export interface operations {
     createSource: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2358,10 +8242,404 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    getSourceAdmission: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get reviewed source admission */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceAdmission"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    admitSource: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SourceAdmissionInput"];
+            };
+        };
+        responses: {
+            /** @description Review and version a public source admission */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceAdmission"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getSourceAdmissionVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+                admissionID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Immutable admission version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceAdmission"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getSourceIngestionHealth: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get provider coverage and retrieval health */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceIngestionSummary"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listConnectorRuns: {
+        parameters: {
+            query?: {
+                limit?: components["parameters"]["Limit"];
+                offset?: components["parameters"]["Offset"];
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List connector execution history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ConnectorRun"][];
+                        total: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    executeConnector: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: date-time */
+                    from?: string;
+                    /** Format: date-time */
+                    to?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Run a bounded public connector with a service identity */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectorRun"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listSourceEvidence: {
+        parameters: {
+            query?: {
+                limit?: components["parameters"]["Limit"];
+                offset?: components["parameters"]["Offset"];
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List published immutable evidence revisions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["PublicEvidence"][];
+                        total: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getSourceEvidence: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+                evidenceID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Get retained evidence or its permitted original reference */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicEvidence"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getOriginalSourceEvidence: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+                evidenceID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exact retained JSON record bytes or CSV header plus selected row; rawHash verifies this download */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "text/csv": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    retryEvidencePublications: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Publish pending catalog receipts without retrieving evidence */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicationResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     getSource: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2378,7 +8656,16 @@ export interface operations {
     updateSourceStatus: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2411,7 +8698,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2426,7 +8722,16 @@ export interface operations {
     ingestObservation: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2442,7 +8747,16 @@ export interface operations {
     getObservation: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2462,7 +8776,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2476,7 +8799,16 @@ export interface operations {
     createAsset: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2491,7 +8823,16 @@ export interface operations {
     getAsset: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2508,7 +8849,16 @@ export interface operations {
     updateAssetStatus: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2536,7 +8886,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2552,7 +8911,16 @@ export interface operations {
     ingestTelemetry: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2571,7 +8939,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2585,7 +8962,16 @@ export interface operations {
     getTrack: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2604,7 +8990,16 @@ export interface operations {
             query?: {
                 limit?: components["parameters"]["Limit"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2623,7 +9018,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2639,7 +9043,16 @@ export interface operations {
     createClassification: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2665,7 +9078,16 @@ export interface operations {
     getClassification: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2685,7 +9107,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2699,7 +9130,16 @@ export interface operations {
     createGeofence: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2714,7 +9154,16 @@ export interface operations {
     getGeofence: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2731,7 +9180,16 @@ export interface operations {
     setGeofenceActive: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2758,7 +9216,16 @@ export interface operations {
                 lat: components["parameters"]["Lat"];
                 lng: components["parameters"]["Lng"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2777,7 +9244,16 @@ export interface operations {
                 lng: components["parameters"]["Lng"];
                 radius_m: components["parameters"]["RadiusM"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2796,7 +9272,16 @@ export interface operations {
                 lng: components["parameters"]["Lng"];
                 limit?: components["parameters"]["Limit"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2818,7 +9303,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2832,7 +9326,16 @@ export interface operations {
     getAlert: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2849,7 +9352,16 @@ export interface operations {
     acknowledgeAlert: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2867,7 +9379,16 @@ export interface operations {
     resolveAlert: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2889,7 +9410,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2903,7 +9433,16 @@ export interface operations {
     createIncident: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -2918,7 +9457,16 @@ export interface operations {
     getIncident: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2935,7 +9483,16 @@ export interface operations {
     updateIncident: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2963,7 +9520,16 @@ export interface operations {
     updateIncidentStatus: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -2988,7 +9554,16 @@ export interface operations {
     attachIncidentRelation: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3018,7 +9593,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3032,7 +9616,16 @@ export interface operations {
     createMission: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3047,7 +9640,16 @@ export interface operations {
     getMission: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3064,7 +9666,16 @@ export interface operations {
     updateMissionStatus: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3089,7 +9700,16 @@ export interface operations {
     assignMissionAsset: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3114,7 +9734,16 @@ export interface operations {
     addMissionTask: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3140,7 +9769,16 @@ export interface operations {
     updateMissionTaskStatus: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
                 taskId: string;
@@ -3173,7 +9811,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3187,7 +9834,16 @@ export interface operations {
     issueCommand: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3202,7 +9858,16 @@ export interface operations {
     getCommand: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3219,7 +9884,16 @@ export interface operations {
     transitionCommand: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3250,7 +9924,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3264,7 +9947,16 @@ export interface operations {
     createAssessment: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3279,7 +9971,16 @@ export interface operations {
     getAssessment: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3303,7 +10004,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3320,7 +10030,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3334,7 +10053,16 @@ export interface operations {
     createOperator: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3359,7 +10087,16 @@ export interface operations {
     getOperator: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3373,10 +10110,266 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    listContextPackages: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Approved manifests */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextPackageList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    buildContextPackage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContextPackageBuild"];
+            };
+        };
+        responses: {
+            /** @description Frozen manifest */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextPackage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getContextPackage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Frozen package */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextPackage"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    downloadContextPackage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Frozen package */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextBundle"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listSyntheticMessages: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description At most 1000 safe receipts, ordered by run sequence */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["SyntheticReceipt"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getScenarioRunManifest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Frozen manifest */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrozenRun"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getScenarioRunVersion: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Frozen version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScenarioVersion"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     listScenarios: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3390,7 +10383,16 @@ export interface operations {
     getScenario: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 name: components["parameters"]["ScenarioName"];
             };
@@ -3415,7 +10417,16 @@ export interface operations {
     startScenario: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 name: components["parameters"]["ScenarioName"];
             };
@@ -3445,7 +10456,16 @@ export interface operations {
                 limit?: components["parameters"]["Limit"];
                 offset?: components["parameters"]["Offset"];
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3459,7 +10479,16 @@ export interface operations {
     getScenarioRun: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3476,7 +10505,16 @@ export interface operations {
     inspectScenarioRunEvents: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3493,7 +10531,16 @@ export interface operations {
     pauseScenarioRun: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3511,7 +10558,16 @@ export interface operations {
     resumeScenarioRun: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3529,7 +10585,16 @@ export interface operations {
     stopScenarioRun: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3547,7 +10612,16 @@ export interface operations {
     setScenarioRunSpeed: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3572,7 +10646,16 @@ export interface operations {
     restartScenarioRun: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path: {
                 id: components["parameters"]["Id"];
             };
@@ -3598,7 +10681,16 @@ export interface operations {
                 scope?: string;
                 limit?: number;
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3622,7 +10714,16 @@ export interface operations {
             query?: {
                 scope?: string;
             };
-            header?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
@@ -3644,19 +10745,37 @@ export interface operations {
     };
     realtime: {
         parameters: {
-            query?: never;
-            header?: never;
+            query?: {
+                /** @description Comma-separated permitted topics. Omission selects the current permitted catalogue. */
+                topics?: string;
+                workspaceId?: string;
+                environmentId?: string;
+                partition?: components["schemas"]["DataPartition"];
+                runId?: string;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description WebSocket upgrade */
+            /** @description WebSocket upgrade; subsequent JSON text frames use this envelope. */
             101: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["RealtimeEnvelope"];
+                };
             };
             /** @description WebSocket negotiation response */
             200: {
@@ -3667,6 +10786,2307 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    reserveArtifact: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ArtifactInput"];
+            };
+        };
+        responses: {
+            /** @description Reserve an immutable source-scoped artifact */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Artifact"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getArtifact: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspect artifact provenance and retention */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Artifact"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deleteExpiredArtifact: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Delete bytes only after immutable retention ends */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    downloadArtifact: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Download retained bytes with active rights and scoped authorization */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    uploadArtifact: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Upload exact declared bytes after hash and size checks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Artifact"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listImageryScenes: {
+        parameters: {
+            query?: {
+                /** @description Bounded WGS84 analyst study polygon */
+                geometry?: string;
+                /** @description Versioned admitted polygon scope */
+                region_id?: string;
+                /** @description WGS84 west,south,east,north; authoritative PostGIS intersection; at most 400 square degrees */
+                bbox?: string;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspect bounded published catalogue revisions; not analysis-ready by discovery alone */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ImageryScene"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getImageryScene: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspect exact catalogue scene revision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageryScene"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listImageryJobs: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List bounded asynchronous jobs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ImageryJob"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    submitImageryJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImagerySubmit"];
+            };
+        };
+        responses: {
+            /** @description Freeze exact inputs and queue independent processing */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageryJob"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getImageryJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspect frozen inputs, state and result provenance */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageryJob"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listImageryJobAttempts: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspect immutable processing attempts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            [key: string]: unknown;
+                        }[];
+                        total: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    retryImageryJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retry a bounded imagery job */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageryJob"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    cancelImageryJob: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancel a bounded imagery job */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageryJob"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listIntelligenceAssessments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List latest review revisions without asserting proposals as published facts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["AssessmentRevision"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    proposeImageryAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageryProposal"];
+            };
+        };
+        responses: {
+            /** @description Create an unreviewed imagery assessment with frozen evidence */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentRevision"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listAssessmentRevisions: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspect immutable evidence and human review history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["AssessmentRevision"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    reviseImageryAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageryProposal"] | components["schemas"]["ReportProposal"];
+            };
+        };
+        responses: {
+            /** @description Record a new draft revision with optimistic concurrency */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentRevision"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getAssessmentRevision: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+                revisionID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pinned evidence and human review snapshot */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentRevision"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    reviewAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssessmentReviewAction"];
+            };
+        };
+        responses: {
+            /** @description Independent human review and explicit publication */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentRevision"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    submitAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssessmentReviewAction"];
+            };
+        };
+        responses: {
+            /** @description Submit an authored draft for independent review */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentRevision"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getImageryResult: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reproducible indicator with explicit masks and limitations */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageryResultArtifact"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    previewContextPackage: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContextPackageSelection"];
+            };
+        };
+        responses: {
+            /** @description Preview pinned eligible context before human approval */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContextPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listExternalTracks: {
+        parameters: {
+            query?: {
+                /** @description Bounded WGS84 analyst study polygon */
+                geometry?: string;
+                /** @description Versioned admitted polygon scope */
+                region_id?: string;
+                bbox?: string;
+                source?: string;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspect bounded public moving hypotheses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ExternalTrack"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getExternalTrack: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspect one non-controllable external hypothesis */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalTrack"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getExternalAssociations: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspect immutable evidence association decisions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ExternalAssociation"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listReportAssessments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List latest review revisions without asserting proposals as published facts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["AssessmentRevision"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    proposeReportAssessment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportProposal"];
+            };
+        };
+        responses: {
+            /** @description Create an unreviewed imagery assessment with frozen evidence */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssessmentRevision"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listContextRecords: {
+        parameters: {
+            query?: {
+                /** @description Bounded WGS84 analyst study polygon */
+                geometry?: string;
+                /** @description Versioned admitted polygon scope */
+                region_id?: string;
+                kind?: "WEATHER" | "REPORT";
+                /** @description WGS84 west,south,east,north; at most 400 square degrees. */
+                bbox?: string;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List latest review revisions without asserting proposals as published facts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["PublicContextEntry"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getContextRecord: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List latest review revisions without asserting proposals as published facts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicContextEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listContextHistory: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List latest review revisions without asserting proposals as published facts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["PublicContextEntry"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listSimulationUploads: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List protected simulation source and variant artifacts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ModelAssetUpload"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    reserveSimulationAsset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelAssetUploadInput"];
+            };
+        };
+        responses: {
+            /** @description Admit a bounded model, authoring source or separate engine variant */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelAssetUpload"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getSimulationUpload: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspect a protected source artifact and import state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelAssetUpload"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listSimulationModels: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List immutable validated visual model versions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ModelAssetVersion"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getSimulationModel: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retrieve an exact validated visual model version */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelAssetVersion"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listSimulationTemplates: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List reusable actor template definitions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ModelActorTemplate"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    createSimulationTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelActorTemplateInput"];
+            };
+        };
+        responses: {
+            /** @description Record an immutable abstract actor template without spawning an actor */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelActorTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getSimulationTemplate: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retrieve an exact actor template definition */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelActorTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listSimulationEnvironments: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List georeferenced visual environment definitions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ModelEnvironmentAsset"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    createSimulationEnvironment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelEnvironmentInput"];
+            };
+        };
+        responses: {
+            /** @description Record a visual environment using the explicit S0 frame contract */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelEnvironmentAsset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getSimulationEnvironment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retrieve an exact environment asset definition */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelEnvironmentAsset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    downloadSimulationAsset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Download a protected original artifact with integrity verification */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    uploadSimulationAsset: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Retain the exact admitted source bytes for bounded validation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelAssetUpload"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listSimulationImportAttempts: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Inspect immutable worker attempts and recovery history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ModelImportAttempt"][];
+                        total: number;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getSimulationModelManifest: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retrieve an exact validated visual model versionManifest */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelValidation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getFeatureReadiness: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureReadiness"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    heartbeatFeatureWorker: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkerHeartbeat"];
+            };
+        };
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        state: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listRuntimeCapabilities: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["RuntimeCapability"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listWorkerRuntimeQueue: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["NativeRuntimeRun"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getReferenceViewport: {
+        parameters: {
+            query: {
+                bbox: string;
+                datasets: string;
+                offset?: number;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceViewport"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listImageryCaptures: {
+        parameters: {
+            query?: {
+                /** @description Bounded WGS84 analyst study polygon */
+                geometry?: string;
+                /** @description Versioned admitted polygon scope */
+                region_id?: string;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ImageryCapture"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    createImageryCapture: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageryCaptureInput"];
+            };
+        };
+        responses: {
+            /** @description Successful scoped response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageryCapture"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    claimImageryCapture: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        job: components["schemas"]["ImageryCapture"] | null;
+                        lease?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getImageryCapture: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageryCapture"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    progressImageryCapture: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    lease: string;
+                    progress: string;
+                    result?: components["schemas"]["ImageryCaptureResult"] | null;
+                    failed?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        state: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getExerciseEnvironment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseEnvironmentView"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    downloadExerciseEnvironment: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getSourceActivation: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceActivation"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getSpatialReplayFrame: {
+        parameters: {
+            query: {
+                elapsedMs: number;
+                reason: string;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpatialReplayFrame"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    retryImageryCapture: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageryCapture"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    cancelImageryCapture: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful scoped response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImageryCapture"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
 }

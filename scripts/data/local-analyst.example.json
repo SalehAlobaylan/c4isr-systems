@@ -1,0 +1,28 @@
+{
+  "id": "local-analyst",
+  "kind": "human",
+  "operatorId": "operator-01",
+  "resource": {
+    "workspaceId": "default",
+    "environmentId": "local",
+    "partition": "PUBLIC_EVIDENCE"
+  },
+  "permissions": [
+    "operational.read",
+    "sources.read",
+    "observations.read",
+    "tracks.read",
+    "classifications.read",
+    "geofences.read",
+    "geospatial.read",
+    "alerts.read",
+    "incidents.read",
+    "assessments.read",
+    "audit.read",
+    "sources.manage",
+    "imagery.jobs.submit",
+    "assessments.create",
+    "assessments.review",
+    "context.export"
+  ]
+}

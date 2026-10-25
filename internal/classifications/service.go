@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
 )
 
@@ -33,6 +34,10 @@ func NewService(repo Repository, bus *events.Dispatcher) *Service {
 // Create records a classification hypothesis and publishes
 // classification.created.
 func (s *Service) Create(ctx context.Context, in CreateInput) (Classification, error) {
+	if scopeErr := access.Require(ctx, "classifications.create"); scopeErr != nil {
+		return Classification{}, scopeErr
+	}
+
 	in.Normalize()
 	if err := in.Validate(); err != nil {
 		return Classification{}, err
@@ -64,16 +69,28 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Classification, e
 
 // Get returns a classification by id.
 func (s *Service) Get(ctx context.Context, id string) (Classification, error) {
+	if scopeErr := access.Require(ctx, "classifications.read"); scopeErr != nil {
+		return Classification{}, scopeErr
+	}
+
 	return s.repo.Get(ctx, id)
 }
 
 // ListByTrack returns a track's classifications newest first.
 func (s *Service) ListByTrack(ctx context.Context, trackID string, limit, offset int) ([]Classification, int, error) {
+	if scopeErr := access.Require(ctx, "classifications.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	return s.repo.ListByTrack(ctx, trackID, clampLimit(limit), max(offset, 0))
 }
 
 // LatestForTrack returns the most recent classification for a track, if any.
 func (s *Service) LatestForTrack(ctx context.Context, trackID string) (*Classification, error) {
+	if scopeErr := access.Require(ctx, "classifications.read"); scopeErr != nil {
+		return nil, scopeErr
+	}
+
 	return s.repo.LatestForTrack(ctx, trackID)
 }
 

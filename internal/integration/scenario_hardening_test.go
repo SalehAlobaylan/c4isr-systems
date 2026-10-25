@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"strings"
@@ -29,7 +30,7 @@ func TestConcurrentScenarioRunsRouteCommandsToTheirOwningEngine(t *testing.T) {
 
 	issue := func(namespace string) string {
 		var command map[string]any
-		status := h.do(http.MethodPost, "/api/v1/commands", map[string]any{
+		status := h.doRun(strings.TrimSuffix(namespace, "__"), http.MethodPost, "/api/v1/commands", map[string]any{
 			"assetId": namespace + "asset__patrol-01",
 			"type":    "move_to",
 			"payload": map[string]any{"lat": 24.7155, "lng": 46.6785},
@@ -41,12 +42,18 @@ func TestConcurrentScenarioRunsRouteCommandsToTheirOwningEngine(t *testing.T) {
 	}
 	firstCommand := issue(firstNamespace)
 	secondCommand := issue(secondNamespace)
+	stateForRun := func(runID, id string) string {
+		var command map[string]any
+		h.doRun(runID, http.MethodGet, "/api/v1/commands/"+id, nil, &command)
+		state, _ := command["state"].(string)
+		return state
+	}
 
 	waitFor(t, 20*time.Second, 100*time.Millisecond, "first command completion", func() bool {
-		return commandState(h, firstCommand) == "COMPLETED"
+		return stateForRun(firstID, firstCommand) == "COMPLETED"
 	})
 	waitFor(t, 20*time.Second, 100*time.Millisecond, "second command completion", func() bool {
-		return commandState(h, secondCommand) == "COMPLETED"
+		return stateForRun(secondID, secondCommand) == "COMPLETED"
 	})
 	for _, item := range []struct {
 		runID     string
@@ -58,7 +65,7 @@ func TestConcurrentScenarioRunsRouteCommandsToTheirOwningEngine(t *testing.T) {
 		{runID: secondID, assetID: secondNamespace + "asset__patrol-01", command: secondCommand, namespace: secondNamespace},
 	} {
 		var command map[string]any
-		if status := h.do(http.MethodGet, "/api/v1/commands/"+item.command, nil, &command); status != http.StatusOK {
+		if status := h.doRun(item.runID, http.MethodGet, "/api/v1/commands/"+item.command, nil, &command); status != http.StatusOK {
 			t.Fatalf("get command %s: status %d", item.command, status)
 		}
 		if command["assetId"] != item.assetID || command["state"] != "COMPLETED" {
@@ -77,7 +84,6 @@ func TestOperationalFailureMatrixPersistsFailureAndRevisionEvidence(t *testing.T
 		t.Fatalf("start failure matrix: status %d (%v)", status, run)
 	}
 	runID := run["id"].(string)
-	namespace := run["resourceNamespace"].(string)
 	waitForRunCompletion(t, h, runID)
 
 	var eventList struct {
@@ -121,7 +127,11 @@ func TestOperationalFailureMatrixPersistsFailureAndRevisionEvidence(t *testing.T
 		Items []map[string]any `json:"items"`
 		Total int              `json:"total"`
 	}
-	assessmentPath := "/api/v1/assessments?subject_type=track&subject_id=" + url.QueryEscape(namespace+"track__ambiguous-01")
+	var assessmentTrackID string
+	if err := h.pool.QueryRow(context.Background(), `SELECT t.id FROM tracks t JOIN simulation_actor_mappings m ON m.contact_ref=t.external_ref WHERE m.scope_id=$1 AND m.actor_id='ambiguous-01' AND m.kind='observation' LIMIT 1`, "default/local/EXERCISE_TRUTH/"+runID).Scan(&assessmentTrackID); err != nil {
+		t.Fatal(err)
+	}
+	assessmentPath := "/api/v1/assessments?subject_type=track&subject_id=" + url.QueryEscape(assessmentTrackID)
 	if status := h.do(http.MethodGet, assessmentPath, nil, &assessments); status != http.StatusOK {
 		t.Fatalf("list scenario assessments: status %d", status)
 	}

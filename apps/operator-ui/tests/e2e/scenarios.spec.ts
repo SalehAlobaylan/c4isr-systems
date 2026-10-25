@@ -1,3 +1,4 @@
+import { mockSession } from './session'
 import { expect, test, type Page, type Route } from '@playwright/test'
 
 const scenario = {
@@ -67,8 +68,12 @@ async function mockApi(page: Page, options: { unauthorized?: boolean } = {}): Pr
   await page.route('**/api/v1/**', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
-    if (options.unauthorized && url.pathname.endsWith('/scenarios')) {
+    if (options.unauthorized && (url.pathname.endsWith('/scenarios') || url.pathname.endsWith('/auth/me'))) {
       await json(route, { error: { code: 'unauthorized', message: 'a valid bearer token is required' } }, 401)
+      return
+    }
+    if (url.pathname.endsWith('/auth/me')) {
+      await json(route, mockSession(request.headers()))
       return
     }
     if (url.pathname.endsWith('/scenarios/runs')) {

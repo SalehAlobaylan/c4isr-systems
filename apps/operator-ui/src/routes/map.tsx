@@ -1,4 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { PublicMapWorkspace } from '@/features/workspace/PublicMapWorkspace'
+import { useWorkspace } from '@/lib/workspaceContext'
+import { PublicContextPanel } from '@/features/public-context/PublicContextPanel'
+import { usePublicContext } from '@/features/public-context/usePublicContext'
+import { useQuery } from '@/lib/scopedQueries'
+
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import {
   useCallback,
@@ -23,7 +28,7 @@ import { Scrubber } from '@/components/map/Scrubber'
 import { TelemetryTray } from '@/components/map/TelemetryTray'
 import { ScenarioBar } from '@/components/layout/ScenarioBar'
 import { ErrorState } from '@/components/shared/states'
-import { api, type Asset, type PictureAsset, type PictureTrack, type Track } from '@/lib/api'
+import { useAPI, type Asset, type PictureAsset, type PictureTrack, type Track } from '@/lib/api'
 import {
   FRESHNESS_COLORS,
   FRESHNESS_LABELS,
@@ -50,7 +55,7 @@ import {
   toneRef,
   type SemanticTone,
 } from '@/lib/operationalPresentation'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { useLayoutStore } from '@/stores/layout'
 import { selectReplayAt, useScrubStore } from '@/stores/scrub'
 import { formatSelection, parseSelection, useUiStore, type Selection } from '@/stores/ui'
@@ -141,7 +146,13 @@ function toLiveAsset(asset: PictureAsset): Asset {
   } as Asset
 }
 
-export function MapPage() {
+function ExerciseMapPage() {
+  const publicContext = usePublicContext()
+  const publicHistory = publicContext.enabled && publicContext.savedFilters.view !== 'latest'
+  const resource = useWorkspace().session.resource
+  const exercise = resource.partition === 'EXERCISE_OBSERVATION'
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const search = useSearch({ from: '/map' })
   const navigate = useNavigate()
   const selection = parseSelection(search.selected)
@@ -212,6 +223,7 @@ const railRef = useRef<HTMLElement | null>(null)
   const tracksQuery = useQuery({
     queryKey: queryKeys.tracks.list(TRACK_FILTERS),
     queryFn: () => api.listTracks(TRACK_FILTERS),
+    refetchInterval: exercise ? false : 15_000,
   })
   const assetsQuery = useQuery({
     queryKey: queryKeys.assets.list(ASSET_FILTERS),
@@ -224,6 +236,7 @@ const railRef = useRef<HTMLElement | null>(null)
   const alertsQuery = useQuery({
     queryKey: queryKeys.alerts.list(OPEN_ALERTS),
     queryFn: () => api.listAlerts(OPEN_ALERTS),
+    refetchInterval: exercise ? false : 15_000,
   })
   // Area footprints are fetched with a dedicated filter rather than by paging
   // the general observation list and filtering here: point observations outnumber
@@ -246,6 +259,7 @@ const railRef = useRef<HTMLElement | null>(null)
         ? api.getTrackHistory(selectedTrackId, { limit: 500 })
         : Promise.resolve({ items: [], total: 0 }),
     enabled: selectedTrackId !== null,
+    refetchInterval: exercise ? false : 15_000,
   })
 
   useEffect(() => {
@@ -292,7 +306,7 @@ const railRef = useRef<HTMLElement | null>(null)
     (next: Selection | null) => {
       void navigate({
         to: '/map',
-        search: next ? { selected: formatSelection(next) } : {},
+        search: (prev) => ({ ...prev, selected: next ? formatSelection(next) : undefined }),
       })
     },
     [navigate],
@@ -303,7 +317,7 @@ const railRef = useRef<HTMLElement | null>(null)
   // from the current-state projections that have already moved on.
   const replayAt = useScrubStore(selectReplayAt)
   const pictureQuery = useQuery({
-    queryKey: ['picture', replayAt ?? 'live'],
+    queryKey: queryKeys.picture(replayAt),
     queryFn: () =>
       replayAt ? api.getPicture({ at: replayAt }) : api.getPicture({ live: true }),
     // While scrubbed, the picture is frozen. Refetching on an interval would
@@ -509,10 +523,14 @@ const railBox = railRef.current?.getBoundingClientRect()
   const selectionCoords = formatCoord(selectedTrack?.position ?? selectedAsset?.position ?? null)
 
   return (
+    <div className="flex h-full min-h-0 flex-col">
+      {exercise && !railOpen && <ScenarioBar />}
+      <PublicContextPanel data={publicContext} replaying={isReplaying} focus={(lng, lat) => cameraRef.current?.focus(lng, lat)} />
+      {publicHistory && <p className="m-0 shrink-0 border-b border-edge bg-panel px-4 py-2 text-sm" role="status" aria-label="Historical report map">{publicContext.savedFilters.view === 'known_at' ? 'Published by EMAD' : 'Retrospective provider-effective'} · {publicContext.savedFilters.asOf}. Current tracks and control zones are hidden; track controls return with the latest view.</p>}
     <div
       className="aegis-picture"
-      data-rail={railOpen ? 'on' : 'off'}
-      style={{ '--rail-w': `${railWidth}px` } as CSSProperties}
+      data-rail={railOpen && !publicHistory ? 'on' : 'off'}
+      style={{ '--rail-w': `${railWidth}px`, height: 'auto', flex: 1, ...(publicHistory ? { gridTemplateColumns: 'minmax(0, 1fr)' } : {}) } as CSSProperties}
     >
       <div className="aegis-mapcol">
         <div
@@ -527,14 +545,14 @@ const railBox = railRef.current?.getBoundingClientRect()
             } as CSSProperties
           }
         >
-          {tracksQuery.isError ? (
+          {!publicHistory && tracksQuery.isError ? (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-veil p-6">
               <ErrorState error={tracksQuery.error} onRetry={() => void tracksQuery.refetch()} />
             </div>
           ) : null}
 
 
-          {isReplaying ? (
+          {!publicHistory && isReplaying ? (
             // A replayed picture must never be mistaken for a live one. The
             // banner is explicit because every number behind it describes a
             // past moment. It sits in flow between the scrubber and the board
@@ -551,28 +569,34 @@ const railBox = railRef.current?.getBoundingClientRect()
             </div>
           ) : null}
 
-          {pictureQuery.isError && isReplaying ? (
+          {!publicHistory && pictureQuery.isError && isReplaying ? (
             <div className="absolute inset-0 z-20 flex items-center justify-center bg-veil p-6">
               <ErrorState error={pictureQuery.error} onRetry={() => void pictureQuery.refetch()} />
             </div>
           ) : null}
 
         <MapCanvas
+          interpolate={exercise && /^rt_[a-f0-9]{64}$/.test(resource.runId ?? '') && !publicHistory && !isReplaying}
           cameraRef={cameraRef}
-            geofences={pictureGeofences ?? geofencesQuery.data?.items ?? []}
-            areas={areasQuery.data?.items ?? []}
-            tracks={tracks}
-            assets={assets}
-            history={showTrackHistory ? (historyQuery.data?.items ?? []) : []}
-            selected={selection}
-            mode={mapMode}
-            measurePoints={drawPoints}
+          publicFeatures={publicContext.mapFeatures}
+          publicView={publicContext.enabled}
+          onViewport={publicContext.enabled?publicContext.setBounds:undefined}
+          onPublicSelect={publicContext.selectEvidence}
+            geofences={publicHistory ? [] : (pictureGeofences ?? geofencesQuery.data?.items ?? [])}
+            areas={publicContext.enabled ? [] : (areasQuery.data?.items ?? [])}
+            tracks={publicHistory ? [] : tracks}
+            assets={publicHistory ? [] : assets}
+            history={!publicHistory && showTrackHistory ? (historyQuery.data?.items ?? []) : []}
+            selected={publicHistory ? null : selection}
+            mode={publicHistory ? 'inspect' : mapMode}
+            measurePoints={publicHistory ? [] : drawPoints}
             layers={layerVisibility}
-            fitPadding={fitPadding}
+            fitPadding={publicHistory ? { top: 24, bottom: 24, right: 24 } : fitPadding}
             onSelect={handleSelect}
             onMeasurePoint={addDrawPoint}
           />
 
+          {!publicHistory && <>
           <div
             className="aegis-mapboard"
             data-od-id="map-board"
@@ -738,7 +762,8 @@ const railBox = railRef.current?.getBoundingClientRect()
           syncAt={observationsQuery.dataUpdatedAt}
           isLoading={tracksQuery.isLoading || assetsQuery.isLoading}
         />
-          {hidden.legend !== true && !legendYields ? (
+          </>}
+          {!publicHistory && hidden.legend !== true && !legendYields ? (
             /* One box, three groups. Three separately-panelled boxes cost ~14px
                of extra chrome and read as three unrelated things; one panel with
                dividers reads as a single legend describing three scales, and
@@ -821,7 +846,7 @@ const railBox = railRef.current?.getBoundingClientRect()
               two controls end up disagreeing about what the plot is doing.
               The container exists only while there is a measurement to report,
               so the corner is genuinely empty the rest of the time. */}
-          {mapMode === 'measure' ? (
+          {!publicHistory && mapMode === 'measure' ? (
             <div className="aegis-maptools">
               <div className="aegis-measure">
                 <p>
@@ -865,7 +890,7 @@ const railBox = railRef.current?.getBoundingClientRect()
             past-tense map. */}
       </div>
 
-      {railOpen ? (
+      {!publicHistory && railOpen ? (
         <div
           ref={resizerRef}
           className="aegis-resizer"
@@ -883,7 +908,7 @@ const railBox = railRef.current?.getBoundingClientRect()
         />
       ) : null}
 
-      {railOpen ? (
+      {publicHistory ? null : railOpen ? (
         <aside className="aegis-rail" aria-label="Operations rail" ref={railRef}>
           <div className="aegis-railhead">
             <h2 className="aegis-railhead-title">Picture</h2>
@@ -1078,10 +1103,10 @@ const railBox = railRef.current?.getBoundingClientRect()
                 the panel, after the picture's own detail, so nothing the
                 operator came to read is pushed down by it, and the drawer
                 works with no scenario running at all. */}
-            <section className="aegis-rail-side" aria-label="Scenario run">
+            {exercise && <section className="aegis-rail-side" aria-label="Scenario run">
               <p className="aegis-railsection">Scenario</p>
               <ScenarioBar variant="drawer" />
-            </section>
+            </section>}
           </div>
         </aside>
       ) : (
@@ -1095,6 +1120,7 @@ const railBox = railRef.current?.getBoundingClientRect()
           </button>
         </div>
       )}
+    </div>
     </div>
   )
 }
@@ -1120,3 +1146,5 @@ function MetricCell({
     </div>
   )
 }
+
+export function MapPage() { const {session}=useWorkspace(); return session.resource.partition==='PUBLIC_EVIDENCE'?<PublicMapWorkspace/>:<ExerciseMapPage/> }

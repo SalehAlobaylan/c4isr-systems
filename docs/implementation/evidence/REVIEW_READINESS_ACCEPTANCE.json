@@ -1,0 +1,447 @@
+{
+  "date": "2026-10-22",
+  "status": "ready for review within declared acceptance scopes",
+  "original32TaskBacklog": "complete within documented acceptance scopes",
+  "S4.1": "delivered; subsequent S4 increments remain backlog",
+  "userReportedMigrationsApplied": [
+    37,
+    38
+  ],
+  "productionDatabaseInspected": false,
+  "newMigrations": [],
+  "changes": [
+    "Long-running worker survives archive/queue errors; authorization loss stops work; backoff is cancellable and bounded.",
+    "Durable 20s/60s archive retry eligibility; maximum three attempts; nine-minute job deadline inside ten-minute lease.",
+    "Authorized attempt/retry metadata, automatic retry polling and truthful terminal-failure UI.",
+    "Recorded clock labels and preserved author recording links on reload.",
+    "New evaluation v2 means expose measured sum/sample count; stored v1 documents remain unchanged.",
+    "Build all independent Go executables and align local/CI affected-package race checks."
+  ],
+  "checks": {
+    "goTest": "passed",
+    "goVet": "passed",
+    "integration": {
+      "passed": 80,
+      "topLevel": 56,
+      "subcases": 24,
+      "skipped": [
+        "TestCDSEAuthorizedLiveCatalogueSmoke",
+        "TestFIRMSAuthorizedLiveSmoke",
+        "TestUSGSAuthorizedLiveSmoke",
+        "TestWorkspaceBrowserCompatibilityGate"
+      ]
+    },
+    "realBackendBrowser": {
+      "passed": 16
+    },
+    "browserRegression": {
+      "passed": 76,
+      "intentionalProjectSkips": 50
+    },
+    "affectedPackageLinuxRace": "passed",
+    "allGoExecutablesBuild": "passed",
+    "uiProductionBuild": "passed; existing large-chunk advisory",
+    "openapiLint": "passed",
+    "generatedContractsAndDBModels": "regenerated and reproduced exactly",
+    "protectedFilesUnchanged": 40,
+    "all38AppliedMigrationsUnchanged": true,
+    "formatAndDiffChecks": "passed"
+  },
+  "measurements": {
+    "actors": 3,
+    "archiveMs": 35.37,
+    "controlledAssets": 1,
+    "durationVirtualMs": 8000,
+    "evaluation": {
+      "elapsedMs": 8000,
+      "limitations": [
+        "Abstract scheduled observers only; no physical sensor validation or weapon effectiveness claim.",
+        "Expected slots include active actors whose configured delivery time falls within the recorded interval; scheduled misses are included and reported separately.",
+        "Lateness threshold is configured delivery plus 1000 virtual ms; gateway publication may add delay at accelerated clock scales.",
+        "Position error is available only where an active sealed snapshot matches the exact sample millisecond; no interpolated position is inferred.",
+        "Track errors count recorded merge/fragmentation relationships, not semantic classification correctness. Missing denominators are null, never zero scores.",
+        "Scenario completion means runtime COMPLETED; workflow completion counts command outcomes independently. Cancelled/failed runs remain partial exercises."
+      ],
+      "metrics": [
+        {
+          "definition": "Commands with recorded final state COMPLETED.",
+          "denominator": 1,
+          "name": "command_completed",
+          "numerator": 1,
+          "unit": "fraction",
+          "value": 1
+        },
+        {
+          "definition": "Commands ending COMPLETED, REJECTED, FAILED, TIMED_OUT or CANCELLED.",
+          "denominator": 1,
+          "name": "command_terminal",
+          "numerator": 1,
+          "unit": "fraction",
+          "value": 1
+        },
+        {
+          "definition": "Repeated exact sample IDs in accepted sealed batches; rejected gateway retries are not new accepted events.",
+          "denominator": 21,
+          "name": "duplicate_samples",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Observed actors associated with more than one recorded track.",
+          "denominator": 3,
+          "name": "fragmented_actors",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Published observations received by the COP more than 1000 virtual ms after configured delivery.",
+          "denominator": 12,
+          "name": "late_observations",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Mean first runtime acknowledgment elapsed time minus command issue time; no-ACK commands excluded.",
+          "denominator": 1,
+          "name": "mean_command_ack",
+          "numerator": 1583,
+          "unit": "virtual_ms",
+          "value": 1583
+        },
+        {
+          "definition": "Mean runtime completion elapsed time minus command issue time for completed commands.",
+          "denominator": 1,
+          "name": "mean_command_completion",
+          "numerator": 2083,
+          "unit": "virtual_ms",
+          "value": 2083
+        },
+        {
+          "definition": "Mean local horizontal error only where a sealed active snapshot exists at the exact sample millisecond.",
+          "denominator": 3,
+          "name": "mean_horizontal_error",
+          "numerator": 26.50830228856563,
+          "unit": "m",
+          "value": 8.83610076285521
+        },
+        {
+          "definition": "Mean COP publication virtual time minus original sample time.",
+          "denominator": 12,
+          "name": "mean_observation_delay",
+          "numerator": 13989,
+          "unit": "virtual_ms",
+          "value": 1165.75
+        },
+        {
+          "definition": "Recorded tracks containing observations from more than one sealed actor.",
+          "denominator": 3,
+          "name": "merged_tracks",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Expected active actor/sensor slots due by final virtual time without a recorded published observation; includes configured scheduled misses.",
+          "denominator": 24,
+          "name": "missed_observations",
+          "numerator": 12,
+          "unit": "fraction",
+          "value": 0.5
+        },
+        {
+          "definition": "Run reached declared duration with runtime status COMPLETED.",
+          "denominator": 1,
+          "name": "scenario_completed",
+          "numerator": 1,
+          "unit": "fraction",
+          "value": 1
+        },
+        {
+          "definition": "Frozen dropEvery slots among expected slots.",
+          "denominator": 24,
+          "name": "scheduled_misses",
+          "numerator": 12,
+          "unit": "fraction",
+          "value": 0.5
+        }
+      ],
+      "operatorHash": "f1ef0455aa290e8e492c41f97fc5f88e47ee26edcb69bf1549076de37d977eab",
+      "runStatus": "COMPLETED",
+      "timeBasis": "integer virtual milliseconds; received_at is independent wall receipt time",
+      "truthHash": "824356a96c5d2fe0bd5ffc9be2d287e5413b26e573c4d51a7af9a853bc380267",
+      "version": "emad.abstract-evaluation.v2"
+    },
+    "finalFrameMs": 11.523,
+    "observations": 12,
+    "observers": 1,
+    "operatorManifest": {
+      "checkpoint": {
+        "bytes": 5288,
+        "first": 0,
+        "last": 0,
+        "sha256": "ee78c2f32b0dad257f2f16bfa8ecc5ad73cadbdd56a3253408a1be5fb4e13e03"
+      },
+      "chunks": [
+        {
+          "bytes": 73581,
+          "first": 1,
+          "last": 132,
+          "sha256": "f1ef0455aa290e8e492c41f97fc5f88e47ee26edcb69bf1549076de37d977eab"
+        }
+      ],
+      "contentSha256": "f1ef0455aa290e8e492c41f97fc5f88e47ee26edcb69bf1549076de37d977eab",
+      "createdAt": "2026-10-22T14:02:47.2457187Z",
+      "elapsedMs": 8000,
+      "epoch": "2025-01-01T03:00:00+03:00",
+      "events": 132,
+      "partition": "EXERCISE_OBSERVATION",
+      "projectionSettled": true,
+      "replayGuarantee": "Ordered recorded output at virtual milliseconds and journal sequence; no command execution or re-simulation. Checkpoints restore selected recorded state only.",
+      "retainUntil": "2027-01-20T17:02:49.005577+03:00",
+      "runId": "rt_5b79d3505d543de7f5d89e7a2e32c10e7bbec11868d5e5383cffb5e33922d1df",
+      "runStatus": "COMPLETED",
+      "schema": "emad.recording.v1"
+    },
+    "scale": 2
+  },
+  "limits": [
+    "Existing bounded abstract simulation and archive profiles remain; this is not a maximum-scale or physical-sensor validation.",
+    "No production database, live provider or deployed process was changed.",
+    "Provider admissions/credentials and process supervision remain deployment configuration.",
+    "No new capability beyond the accepted S4.1 increment is claimed."
+  ],
+  "evidence": [
+    {
+      "path": "tmp/review-closeout/integration.jsonl",
+      "sha256": "a7e0d86cb0ea5978ab2dfdfaf9ef9eddd216c543db9d42bcf917563f08ce7427",
+      "bytes": 273602
+    },
+    {
+      "path": "tmp/review-closeout/recording-integration.log",
+      "sha256": "c0b470484212b57ca42a9d176457004cd6320843503dbfd42ef3eb612ef1028d",
+      "bytes": 8546
+    },
+    {
+      "path": "tmp/review-closeout/browser-final.log",
+      "sha256": "5b4b90af99a420369e42375d7ebb5f9cd384714b356679e2849834834f793080",
+      "bytes": 5808
+    },
+    {
+      "path": "tmp/review-closeout/browser-regressions-complete.log",
+      "sha256": "9c9597742775ad000bb134a45b542ca545648efe2ec8ffc79fc3df0897d7ca54",
+      "bytes": 83732
+    },
+    {
+      "path": "tmp/review-closeout/browser-retries.log",
+      "sha256": "414766043c77d9cc445e9e6259354273ecee33541cf563a55bad9d6603889b7b",
+      "bytes": 11407
+    },
+    {
+      "path": "tmp/review-closeout/go-test-final.log",
+      "sha256": "022cbd73414fa10812b0c4e31c24d05aba9d95612c9b73c6595854d70a7018d7",
+      "bytes": 5031
+    },
+    {
+      "path": "tmp/review-closeout/go-vet-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tmp/review-closeout/linux-race.log",
+      "sha256": "deb1e917256040bee0367f3b66e822ca436c7dcf285061c001814c0434202478",
+      "bytes": 534
+    },
+    {
+      "path": "tmp/review-closeout/ui-build-final.log",
+      "sha256": "ec924d1d1389b9122086fbf4461abdeaaa2c5ab45754fb41180090e9e404a7f6",
+      "bytes": 3224
+    },
+    {
+      "path": "tmp/review-closeout/build-all.log",
+      "sha256": "68b6be8766d83832decc09d39ab472a11e244a871e8d8af6e0cc3ef789763167",
+      "bytes": 47
+    },
+    {
+      "path": "tmp/review-closeout/task-list.log",
+      "sha256": "56d36db53488a02d919bdc407d08cdad67029471973bf584f7b6dd70204cbb3a",
+      "bytes": 3704
+    },
+    {
+      "path": "tmp/review-closeout/openapi-lint.log",
+      "sha256": "46c320b206b06abf7b1978a786a0f1ab0183a053088f53a613d0a2be16f9a388",
+      "bytes": 226
+    },
+    {
+      "path": "tmp/review-closeout/generated-types.log",
+      "sha256": "e7a271ec2eeb89996160f974ceca9050d8ff3ef7e093238fd4fbb111904cc8b2",
+      "bytes": 301
+    },
+    {
+      "path": "tmp/review-closeout/generated-before.json",
+      "sha256": "ae34e10f5a06143b38d907650615d779f21fc5669dbc262542ebf6b940a65991",
+      "bytes": 213
+    },
+    {
+      "path": "tmp/review-closeout/preserved-hashes.json",
+      "sha256": "c6b3742e65900d00e68a66e83ff9a02d7142e2f2ea51d471c9ce5f9627f24f71",
+      "bytes": 4570
+    },
+    {
+      "path": "tmp/review-closeout/diff-check.log",
+      "sha256": "dd243cd403aa0ef69a2c3ec518f22056b0f30c9f6204b28ac56a3021cd04b4b7",
+      "bytes": 601
+    },
+    {
+      "path": "tmp/review-closeout/replay-desktop.png",
+      "sha256": "a8dcd2220fae9ce8e05fa7dc2b88e54ab8a5492b10af4160a7c3938bef2856d6",
+      "bytes": 74768
+    },
+    {
+      "path": "tmp/review-closeout/replay-mobile.png",
+      "sha256": "f2acd51a2a55e472644da8f0b9e45359a6278930709927d8e54e82a4efa508f8",
+      "bytes": 52493
+    },
+    {
+      "path": "tmp/review-closeout/evaluation-mobile.png",
+      "sha256": "3961eba7e9d08db883abaf91e53014ea4c44ba9dc65e1c15720e12b4b8ac1dfb",
+      "bytes": 56981
+    }
+  ],
+  "sourceFingerprints": [
+    {
+      "path": "apps/emad-recordings/main.go",
+      "sha256": "7148015de0291da23941d45000133c52addb4a8f4343973b69652144f2e8afab",
+      "bytes": 3645
+    },
+    {
+      "path": "apps/emad-recordings/main_test.go",
+      "sha256": "acbb5774b1f473e87288f5139e43bb9f468f4f5e4065c51a141c513b4c03bc08",
+      "bytes": 2429
+    },
+    {
+      "path": "internal/recordings/domain.go",
+      "sha256": "49bbdba48bed17d6c79001ece2927be76f7376f875af7dce2e4bb6cef821fafc",
+      "bytes": 3279
+    },
+    {
+      "path": "internal/recordings/service.go",
+      "sha256": "6269c4c63da6bd1e444ecfc61127ad532de0834315bd137613f6bd8615d9f46b",
+      "bytes": 10167
+    },
+    {
+      "path": "internal/recordings/worker.go",
+      "sha256": "b43403a54d3a2175b0be4f6a537ca22fd04d720827fbc9224a970ac8abc1804f",
+      "bytes": 11254
+    },
+    {
+      "path": "internal/recordings/evaluation.go",
+      "sha256": "5039545d249c895d5481d5853827a72a1e44b960e6ae3da18b33ddfc1678d620",
+      "bytes": 14845
+    },
+    {
+      "path": "internal/recordings/evaluation_test.go",
+      "sha256": "8e4ca0e6573fce1b0f2201fb81699a7ae96271e66acaf10288920a71befc9037",
+      "bytes": 4933
+    },
+    {
+      "path": "internal/integration/recordings_test.go",
+      "sha256": "c8ad4192148bcf04e27b29273a257caef4e3b7a448d225d2935cee8e7ec26bf5",
+      "bytes": 19016
+    },
+    {
+      "path": "internal/integration/studio_browser_seed_test.go",
+      "sha256": "e6973583304c2f97e1ba459f58b096c4b23dd3034560892d8f7e08d635c2dfe0",
+      "bytes": 7291
+    },
+    {
+      "path": "api/openapi/openapi.yaml",
+      "sha256": "54890657a8f3a4a447e938abfe9d887616878143feea21123f0bb3586d369e80",
+      "bytes": 295613
+    },
+    {
+      "path": "apps/operator-ui/src/lib/openapi.generated.ts",
+      "sha256": "def17b7e819446b679c9893e303e7b6fa45484f6b30655e96746e60fb2df959f",
+      "bytes": 504204
+    },
+    {
+      "path": "apps/operator-ui/src/components/WorkspaceProvider.tsx",
+      "sha256": "146b0f76c3eae92ef400a95b49d5439baa5500706dffd3fbd8189db82002f5e0",
+      "bytes": 5820
+    },
+    {
+      "path": "apps/operator-ui/src/components/layout/TopBar.tsx",
+      "sha256": "b4bb2f6c995c656063dfed942d7d87a86f1fbf28c23c4e8b21b92dcf0aa27658",
+      "bytes": 18696
+    },
+    {
+      "path": "apps/operator-ui/src/routes/recordings.tsx",
+      "sha256": "df5d9d6f652bd9f99c043346b399bde8fd96e28dbde0b0ba7e0aafe6f324e9ef",
+      "bytes": 12272
+    },
+    {
+      "path": "apps/operator-ui/tests/integration/recordings.spec.ts",
+      "sha256": "981191e21ca626861b4900b9a298394d76c8fbdea6196f423e9744016d216776",
+      "bytes": 6261
+    },
+    {
+      "path": "apps/operator-ui/tests/e2e/recording-retries.spec.ts",
+      "sha256": "5a42cc1147d016d7cf199420bb905e04b116956ca2f5dc485b73a3c9e137bd2d",
+      "bytes": 1662
+    },
+    {
+      "path": "Taskfile.yml",
+      "sha256": "d26c8f6903fdd74822f7a5528da6e0f25a9daf6e0533b1f47b0f80c5913d1286",
+      "bytes": 9976
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "sha256": "30d8c23ac4a412073fd52fefcbfa55fef3b5175fe267c2146fe311418d2231de",
+      "bytes": 3337
+    }
+  ],
+  "protectedFiles": {
+    "db/migrations/00001_extensions.sql": "172f27a6ab2489d2d50dc889ca78e431756f75ccfc0d75bb6cfbb713e024647b",
+    "db/migrations/00002_sources.sql": "f48e99518ecd0cf9a72877ba13a18a6a3752acd551e7160019a3ccc33ce31675",
+    "db/migrations/00003_observations.sql": "d21cebcc5b633713068b723ded5817c44341d0fb3587fcd3c40f32e190e2d40e",
+    "db/migrations/00004_assets.sql": "2572dae324bec146a916ceac8d6f4ab4a19305417e8afce3853fcee1d00d7f51",
+    "db/migrations/00005_tracks.sql": "c44e093fbe0d1ee0955e3bec0f3fa3e74c1fe32fbfe6b1ea19ad0fdec02d4231",
+    "db/migrations/00006_classifications.sql": "e84adac5866be429eed3f972786d477b174a6c9ee20e928dde2b6a85783344bb",
+    "db/migrations/00007_geofences.sql": "dc58bf1d34a2769904fc94e6bf6dbfed5b1727b37b4ff70488be9d63e23fd4b0",
+    "db/migrations/00008_alerts.sql": "9cb92a6f1785f6d268cba2e605329580c6ecc3e9c7bdd52f031f29e1a31751a0",
+    "db/migrations/00009_incidents.sql": "6d36420294523e411401ffb9ad2e25fc8e0f8441d6de661174e963b3ecc67b84",
+    "db/migrations/00010_missions.sql": "4ea0b4cba6edcc3c40a858ec3207e407fe0240505f85fa90490e87974e654f90",
+    "db/migrations/00011_commands.sql": "8e63fe86220a888a822dea435dac8ea57714c2ad8d09e4fbab0637ecbfd71bcc",
+    "db/migrations/00012_assessments.sql": "07f3f217d966f484cc61a3cfdf2efe21a112500c728bbc4f3d5faf6e7832fb09",
+    "db/migrations/00013_audit.sql": "4c7b8418a4591b555697c0cde0bb7503a5cd6b1569388e97438e063d29c19cb1",
+    "db/migrations/00014_operators.sql": "ab1af707a02555fec1f23bd3f3e168d6d3e16a201b3602d3867f8a448d549328",
+    "db/migrations/00015_scenario_runs.sql": "37dfff9409912769ad440f1c4271d6a86f390c4565bf0a52a6a1b4db4ae9c1ff",
+    "db/migrations/00016_scenario_run_events.sql": "89742e03289acf28627445ae3b596540e44f46710fd7c410c257f957cbb5fe34",
+    "db/migrations/00017_concurrency_guards.sql": "ba18897c9f08c703943003e93cfa39a9055ed69dc569522d6c517dd80225d606",
+    "db/migrations/00018_area_observations.sql": "7961cbb22a60ff25c47b9c8a42bd62ae4fa2f76f93148fcc84546abd4f149101",
+    "db/migrations/00019_principals.sql": "a59b2abecc3889e0bd7ca3d1a5084a2e251957339a2dc5f5a2f5fe0ae5a45243",
+    "db/migrations/00020_resource_ownership.sql": "a467714aae4d96c68fc3474d2df9eb90c5c0fcb4d962fbe02585554fa4713440",
+    "db/migrations/00021_observation_public_references.sql": "7d758ab03c95aded7fc4130ffed4f9cebad98d554308efce21ef2befcb8c29e1",
+    "db/migrations/00022_public_source_ingestion.sql": "a07b36009e46cfafe21e609ddc4940535777fca5f804fca695b0a0da4d62fa76",
+    "db/migrations/00023_public_event_semantics.sql": "06aa9c0be96cd9819b1872e17723d1f89bebfee23ac45c646416ed2c708f3c0a",
+    "db/migrations/00024_reference_catalog.sql": "321141d74bd752bd46f5de715f130e5537b9223a517ff20aa68a02530cbdfafc",
+    "db/migrations/00025_simulation_foundations.sql": "349f3f1d8ac4c4e8a9b47b3d2871307267c93e585fe01780fa91a5a880ce7828",
+    "db/migrations/00026_synthetic_ingress.sql": "96902471651a3c56f058af689b9c3e01eeb23e98d6bfba0d038272385b04a816",
+    "db/migrations/00027_public_history_indexes.sql": "c370603ac4ce8dcc07cb49af6151b32cbf35cfc5b4594d72d7d5b9f667b94ea2",
+    "db/migrations/00028_imagery_artifacts.sql": "653a8f4b6ad16b02bf628fe5971f2834e5bd33f259f438ba9c6913190194f8a1",
+    "db/migrations/00029_imagery_analysis_jobs.sql": "10d60f7d3efe18f71db8b1ab0917d4f119a86e442ff0b85aa304e21aee347d01",
+    "db/migrations/00030_reviewed_imagery_assessments.sql": "1a8dd20fcb42cdb0760844c9c708d704293923e5296f34cdeb40d5075e007b3d",
+    "db/migrations/00031_context_export_previews.sql": "eaad5b8e127b2d1112bafab23c5d0a41f67575536402449ffad04f485cc9eb15",
+    "db/migrations/00032_external_moving_tracks.sql": "ce3a50aeb4cb4b898ccd5982614646b685d5602b11a958b65d3a273c44daea6b",
+    "db/migrations/00033_weather_report_context.sql": "3f04a7ba6317434d4eb6939ca04abc33e2b585123519734f225ae144bccd9f7a",
+    "db/migrations/00034_simulation_asset_registry.sql": "541bd8f1b40aa18bfc06dd14d1c9b967aaaaaaa8e5647f90f066131d8edba3d1",
+    "db/migrations/00035_simulation_studio_runtime.sql": "494b33452dae4a712032af93cb9c95120af2d2d7b06bbd532570c46d86e1e719",
+    "db/migrations/00036_native_exercise_gateway.sql": "c6070855cc62c77d191e16dc02e0f6496c123642e29e621b431945cebb554a3b",
+    "db/migrations/00037_simulation_recordings.sql": "6244a836bc7adc4a70b6c011fc16ce3e9b379f27e16b74d825d6e361d883865d",
+    "db/migrations/00038_sensor_quality_presets.sql": "a9805d185d6bf0e8d08f66407ce8f7b64330d10f87d75e5ec16845788b01401e",
+    "scripts/ops/migrate.sh": "1e8ee7d42d3a30869159488c93782921e79b2a4d5d190a9928df46be57e3c3f1",
+    ".gitattributes": "d508e0cb1deb4b2712e303fcc34c7b14ca8c370c98b7d65402b7cbe00c5bcfeb"
+  }
+}

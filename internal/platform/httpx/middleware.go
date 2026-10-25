@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
+	"github.com/go-chi/chi/v5"
 )
 
 type ctxKey int
@@ -55,6 +55,7 @@ type OperatorLookup func(contextT, string) (Identity, error)
 
 // AuthOptions configures the first-party bearer-token authenticator.
 type AuthOptions struct {
+	Resolve         func(contextT, *http.Request) (contextT, Identity, error)
 	Required        bool
 	Tokens          map[string]string // token -> operator id
 	DefaultOperator string
@@ -125,6 +126,21 @@ func Authenticate(options AuthOptions) func(http.Handler) http.Handler {
 				return
 			}
 
+			if options.Resolve != nil {
+				ctx, identity, err := options.Resolve(r.Context(), r)
+				if err != nil {
+					if options.OnFailure != nil {
+						options.OnFailure()
+					}
+					Error(w, err)
+					return
+				}
+				ctx = withOperatorID(ctx, identity.ID)
+				ctx = withOperatorRole(ctx, identity.Role)
+				ctx = withOperatorName(ctx, identity.Name)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
 			operatorID, ok := bearerSubject(r, options.Tokens)
 			if !ok && !options.Required {
 				operatorID = strings.TrimSpace(r.Header.Get(OperatorHeader))
@@ -167,7 +183,7 @@ func Authenticate(options AuthOptions) func(http.Handler) http.Handler {
 func bearerSubject(r *http.Request, tokens map[string]string) (string, bool) {
 	raw := strings.TrimSpace(r.Header.Get(AuthorizationHeader))
 	if raw == "" && strings.Contains(strings.ToLower(r.Header.Get("Upgrade")), "websocket") {
-		raw = strings.TrimSpace(r.URL.Query().Get("access_token"))
+		raw = strings.TrimSpace(RealtimeCredential(r))
 	} else {
 		parts := strings.Fields(raw)
 		if len(parts) == 2 && strings.EqualFold(parts[0], "bearer") {
@@ -201,6 +217,25 @@ func Authorization(next http.Handler) http.Handler {
 			return
 		}
 		policy := PolicyFor(r.Method, r.URL.Path)
+		if _, resource, scoped := access.From(r.Context()); scoped {
+			if resource.Partition != access.PublicEvidence && resource.Partition != access.ExerciseObservation && r.URL.Path != "/api/v1/auth/me" && !privilegedSimulationRoute(resource, r.Method, r.URL.Path, policy) {
+				access.Deny(r.Context(), "cop.subscribe", "ordinary transport partition denied")
+				Error(w, apperr.Forbidden("partition requires a separate privileged transport"))
+				return
+			}
+			if !policy.Known {
+				Error(w, apperr.Forbidden("unknown action"))
+				return
+			}
+			if policy.Permission != "" {
+				if err := access.Require(r.Context(), policy.Permission); err != nil {
+					Error(w, err)
+					return
+				}
+			}
+			next.ServeHTTP(w, r)
+			return
+		}
 		if policy.Known && (policy.Permission == "" || Allows(GetOperatorRole(r.Context()), policy.Permission)) {
 			next.ServeHTTP(w, r)
 			return
@@ -232,6 +267,154 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 	}
 	path = strings.TrimSuffix(path, "/")
 
+	parts := pathSegments(path)
+	if len(parts) == 2 && parts[0] == "geography" {
+		if method == http.MethodGet && parts[1] == "regions" {
+			return RoutePolicy{Known: true, Permission: "sources.read"}
+		}
+		if method == http.MethodPost && parts[1] == "editions" {
+			return RoutePolicy{Known: true, Permission: "sources.manage"}
+		}
+	}
+	if len(parts) > 0 && parts[0] == "map" {
+		// Each feature family enforces its own read permission inside the handler.
+		if len(parts) == 2 && parts[1] == "features" && method == http.MethodGet {
+			return RoutePolicy{Known: true}
+		}
+		if len(parts) == 2 && (parts[1] == "measure" || parts[1] == "surrounding-area") && method == http.MethodPost {
+			return RoutePolicy{Known: true, Permission: "sources.read"}
+		}
+		if len(parts) == 5 && parts[1] == "reference" && strings.HasSuffix(parts[4], ".pbf") && method == http.MethodGet {
+			return RoutePolicy{Known: true, Permission: "sources.read"}
+		}
+	}
+	if len(parts) >= 2 && parts[0] == "exercise-view" && method == http.MethodGet && (len(parts) == 2 || len(parts) == 3 && parts[2] == "content") {
+		return RoutePolicy{Known: true, Permission: "observations.read"}
+	}
+	if len(parts) >= 2 && parts[0] == "imagery" && parts[1] == "captures" {
+		if method == http.MethodGet && (len(parts) == 2 || len(parts) == 3) {
+			return RoutePolicy{Known: true, Permission: "sources.read"}
+		}
+		if method == http.MethodPost && ((len(parts) == 3 && parts[2] == "claim") || (len(parts) == 4 && parts[3] == "progress")) {
+			return RoutePolicy{Known: true, Permission: "imagery.capture.execute"}
+		}
+		if method == http.MethodPost && (len(parts) == 2 || (len(parts) == 4 && (parts[3] == "retry" || parts[3] == "cancel"))) {
+			return RoutePolicy{Known: true, Permission: "imagery.jobs.submit"}
+		}
+		return RoutePolicy{}
+	}
+	if len(parts) == 1 && parts[0] == "reference-features" && method == http.MethodGet {
+		return RoutePolicy{Known: true, Permission: "sources.read"}
+	}
+	if len(parts) == 2 && parts[0] == "simulation-runtime" && method == http.MethodGet {
+		if parts[1] == "queue" {
+			return RoutePolicy{Known: true, Permission: "sim.runtime.execute"}
+		}
+		if parts[1] == "capabilities" {
+			return RoutePolicy{Known: true, Permission: "sim.runtime.control"}
+		}
+	}
+	if len(parts) == 2 && parts[0] == "platform" && (method == http.MethodGet && parts[1] == "readiness" || method == http.MethodPost && parts[1] == "worker-heartbeats") {
+		if method == http.MethodPost {
+			return RoutePolicy{Known: true}
+		}
+		return RoutePolicy{Known: true, Permission: "operational.read"}
+	}
+	if len(parts) > 0 && parts[0] == "simulation-recordings" {
+		if method == http.MethodGet && len(parts) == 2 {
+			return RoutePolicy{Known: true, Permission: "sim.recordings.read"}
+		}
+		if len(parts) == 3 {
+			if method == http.MethodPost && parts[2] == "archive" {
+				return RoutePolicy{Known: true, Permission: "sim.recordings.manage"}
+			}
+			if method == http.MethodPost && parts[2] == "release" {
+				return RoutePolicy{Known: true, Permission: "sim.evaluation.release"}
+			}
+			if method == http.MethodGet {
+				switch parts[2] {
+				case "events", "frame", "checkpoint", "report":
+					return RoutePolicy{Known: true, Permission: "sim.recordings.read"}
+				case "evaluation", "spatial":
+					return RoutePolicy{Known: true, Permission: "sim.evaluation.read"}
+				}
+			}
+		}
+		return RoutePolicy{}
+	}
+	if len(parts) > 0 && parts[0] == "simulation-studio" {
+		if len(parts) == 2 && parts[1] == "context-packages" && method == http.MethodGet || len(parts) == 2 && (parts[1] == "scenes" || parts[1] == "sensor-presets") && (method == http.MethodGet || method == http.MethodPost) || len(parts) == 3 && (parts[1] == "scenes" || parts[1] == "sensor-presets") && method == http.MethodGet {
+			return RoutePolicy{Known: true, Permission: "sim.scenarios.author"}
+		}
+		return RoutePolicy{}
+	}
+	if len(parts) > 1 && parts[0] == "simulation-runtime" && parts[1] == "runs" {
+		if method == http.MethodGet && (len(parts) == 2 || len(parts) == 3) || method == http.MethodPost && len(parts) == 2 {
+			return RoutePolicy{Known: true, Permission: "sim.runtime.control"}
+		}
+		if len(parts) == 4 {
+			if method == http.MethodGet && parts[3] == "truth" {
+				return RoutePolicy{Known: true, Permission: "sim.truth.read"}
+			}
+			if method == http.MethodPost {
+				switch parts[3] {
+				case "pause", "resume", "stop":
+					return RoutePolicy{Known: true, Permission: "sim.runtime.control"}
+				case "attach", "heartbeat":
+					return RoutePolicy{Known: true, Permission: "sim.runtime.execute"}
+				}
+			}
+		}
+		return RoutePolicy{}
+	}
+	if len(parts) > 0 && parts[0] == "simulation-assets" {
+		if len(parts) >= 2 {
+			family := parts[1]
+			known := false
+			if method == http.MethodGet {
+				known = (len(parts) == 2 && (family == "uploads" || family == "models" || family == "templates" || family == "environments")) || (len(parts) == 3 && (family == "uploads" || family == "models" || family == "templates" || family == "environments")) || (len(parts) == 4 && (family == "uploads" && (parts[3] == "content" || parts[3] == "attempts") || family == "models" && parts[3] == "manifest"))
+			}
+			if method == http.MethodPost {
+				known = len(parts) == 2 && (family == "uploads" || family == "templates" || family == "environments")
+			}
+			if method == http.MethodPut {
+				known = len(parts) == 4 && family == "uploads" && parts[3] == "content"
+			}
+			if known {
+				return RoutePolicy{Known: true, Permission: "sim.scenarios.author"}
+			}
+		}
+		return RoutePolicy{}
+	}
+	if len(parts) > 0 && parts[0] == "artifacts" {
+		if method == http.MethodGet && (len(parts) == 2 || (len(parts) == 3 && parts[2] == "content")) {
+			return RoutePolicy{Known: true, Permission: "sources.read"}
+		}
+		if (method == http.MethodPost && len(parts) == 1) || (method == http.MethodPut && len(parts) == 3 && parts[2] == "content") || (method == http.MethodDelete && len(parts) == 2) {
+			return RoutePolicy{Known: true, Permission: "sources.manage"}
+		}
+		return RoutePolicy{}
+	}
+	if len(parts) > 0 && parts[0] == "imagery" {
+		if method == http.MethodGet && len(parts) >= 2 && (((parts[1] == "scenes" || parts[1] == "sensor-presets") && (len(parts) == 2 || len(parts) == 3)) || (parts[1] == "jobs" && (len(parts) == 2 || len(parts) == 3 || (len(parts) == 4 && (parts[3] == "attempts" || parts[3] == "result"))))) {
+			return RoutePolicy{Known: true, Permission: "sources.read"}
+		}
+		if method == http.MethodPost && ((len(parts) == 2 && parts[1] == "jobs") || (len(parts) == 4 && parts[1] == "jobs" && (parts[3] == "cancel" || parts[3] == "retry"))) {
+			return RoutePolicy{Known: true, Permission: "imagery.jobs.submit"}
+		}
+		return RoutePolicy{}
+	}
+	if len(parts) > 0 && parts[0] == "assessments" {
+		if method == http.MethodGet && ((len(parts) == 2 && (parts[1] == "intelligence" || parts[1] == "reports")) || ((len(parts) == 3 || len(parts) == 4) && parts[2] == "revisions")) {
+			return RoutePolicy{Known: true, Permission: "assessments.read"}
+		}
+		if method == http.MethodPost && ((len(parts) == 2 && (parts[1] == "imagery-proposals" || parts[1] == "report-proposals")) || (len(parts) == 3 && (parts[2] == "revisions" || parts[2] == "submit"))) {
+			return RoutePolicy{Known: true, Permission: "assessments.create"}
+		}
+		if method == http.MethodPost && len(parts) == 3 && parts[2] == "review" {
+			return RoutePolicy{Known: true, Permission: "assessments.review"}
+		}
+	}
 	if path == "/auth/me" {
 		return RoutePolicy{Known: method == http.MethodGet}
 	}
@@ -268,6 +451,12 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 				return RoutePolicy{Known: true, Permission: "operational.read"}
 			}
 		case "scenarios":
+			if len(segments) == 4 && segments[1] == "runs" && segments[3] == "synthetic-messages" {
+				return RoutePolicy{Known: true, Permission: "observations.read"}
+			}
+			if len(segments) == 4 && segments[1] == "runs" && segments[3] == "version" {
+				return RoutePolicy{Known: true, Permission: "sim.scenarios.author"}
+			}
 			if validScenarioGetPath(segments) {
 				return RoutePolicy{Known: true, Permission: "scenarios.read"}
 			}
@@ -278,6 +467,14 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 			if len(segments) == 3 && segments[2] == "telemetry" {
 				return RoutePolicy{Known: true, Permission: "telemetry.read"}
 			}
+		case "public-context":
+			if len(segments) >= 2 && segments[1] == "records" && (len(segments) == 2 || len(segments) == 3 || len(segments) == 4 && segments[3] == "history") {
+				return RoutePolicy{Known: true, Permission: "sources.read"}
+			}
+		case "external-tracks":
+			if len(segments) == 1 || len(segments) == 2 || (len(segments) == 3 && segments[2] == "associations") {
+				return RoutePolicy{Known: true, Permission: "tracks.read"}
+			}
 		case "tracks":
 			if len(segments) == 1 || len(segments) == 2 {
 				return RoutePolicy{Known: true, Permission: "tracks.read"}
@@ -285,7 +482,26 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 			if len(segments) == 3 && (segments[2] == "history" || segments[2] == "classifications") {
 				return RoutePolicy{Known: true, Permission: "tracks.read"}
 			}
-		case "sources", "observations", "geofences", "alerts", "incidents", "missions", "commands", "assessments":
+		case "context-packages":
+			if method == http.MethodPost && len(segments) == 2 && segments[1] == "preview" {
+				return RoutePolicy{Known: true, Permission: "context.export"}
+			}
+			if (method == http.MethodGet && (len(segments) == 1 || len(segments) == 2 || (len(segments) == 3 && segments[2] == "bundle"))) || (method == http.MethodPost && len(segments) == 1) {
+				return RoutePolicy{Known: true, Permission: "context.export"}
+			}
+		case "reference-datasets":
+			if len(segments) == 1 || len(segments) == 2 || (len(segments) == 3 && (segments[2] == "features" || segments[2] == "artifact")) {
+				return RoutePolicy{Known: true, Permission: "sources.read"}
+			}
+		case "public-events":
+			if method == http.MethodGet && (len(segments) == 1 || len(segments) == 2 || (len(segments) == 3 && segments[2] == "revisions")) {
+				return RoutePolicy{Known: true, Permission: "observations.read"}
+			}
+		case "sources":
+			if len(segments) == 1 || len(segments) == 2 || (len(segments) == 3 && (segments[2] == "admission" || segments[2] == "activation" || segments[2] == "health" || segments[2] == "evidence" || segments[2] == "connector-runs")) || (len(segments) == 4 && (segments[2] == "evidence" || segments[2] == "admissions")) || (len(segments) == 5 && segments[2] == "evidence" && segments[4] == "original") {
+				return RoutePolicy{Known: true, Permission: "sources.read"}
+			}
+		case "observations", "geofences", "alerts", "incidents", "missions", "commands", "assessments":
 			if len(segments) == 1 || len(segments) == 2 {
 				return RoutePolicy{Known: true, Permission: segments[0] + ".read"}
 			}
@@ -303,6 +519,17 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 			return RoutePolicy{}
 		}
 		switch segments[0] {
+		case "context-packages":
+			if method == http.MethodPost && len(segments) == 2 && segments[1] == "preview" {
+				return RoutePolicy{Known: true, Permission: "context.export"}
+			}
+			if (method == http.MethodGet && (len(segments) == 1 || len(segments) == 2 || (len(segments) == 3 && segments[2] == "bundle"))) || (method == http.MethodPost && len(segments) == 1) {
+				return RoutePolicy{Known: true, Permission: "context.export"}
+			}
+		case "reference-datasets":
+			if len(segments) == 1 {
+				return RoutePolicy{Known: true, Permission: "sources.manage"}
+			}
 		case "incidents":
 			if len(segments) == 1 {
 				return RoutePolicy{Known: true, Permission: "incidents.create"}
@@ -349,6 +576,12 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 				return RoutePolicy{Known: true, Permission: "alerts.resolve"}
 			}
 		case "sources":
+			if (len(segments) == 3 && segments[2] == "connector-runs") || (len(segments) == 4 && segments[2] == "publications" && segments[3] == "retry") {
+				return RoutePolicy{Known: true, Permission: "connectors.execute"}
+			}
+			if len(segments) == 3 && segments[2] == "admission" {
+				return RoutePolicy{Known: true, Permission: "sources.manage"}
+			}
 			if len(segments) == 1 || (len(segments) == 3 && segments[2] == "status") {
 				return RoutePolicy{Known: true, Permission: "sources.manage"}
 			}
@@ -397,7 +630,7 @@ func validScenarioGetPath(segments []string) bool {
 	if len(segments) == 1 || len(segments) == 2 {
 		return true
 	}
-	return len(segments) == 3 && segments[1] == "runs" || len(segments) == 4 && segments[1] == "runs" && segments[3] == "events"
+	return len(segments) == 3 && segments[1] == "runs" || len(segments) == 4 && segments[1] == "runs" && (segments[3] == "events" || segments[3] == "manifest" || segments[3] == "version")
 }
 
 func validScenarioPostPath(segments []string) bool {
@@ -446,7 +679,7 @@ func Allows(role, permission string) bool {
 	}
 	read := strings.HasSuffix(permission, ".read") || permission == "operational.read" || permission == "geospatial.read"
 	if role == "analyst" {
-		return read || permission == "assessments.create" || permission == "classifications.create"
+		return read || permission == "assessments.create" || permission == "classifications.create" || permission == "imagery.jobs.submit"
 	}
 	if role != "operator" && role != "supervisor" {
 		return false
@@ -463,7 +696,7 @@ func Allows(role, permission string) bool {
 		return true
 	case "observations.ingest", "telemetry.ingest",
 		"sources.manage", "assets.manage", "geofences.manage",
-		"assessments.create", "classifications.create", "operators.read":
+		"assessments.create", "classifications.create", "operators.read", "imagery.jobs.submit", "assessments.review", "context.export":
 		return role == "supervisor"
 	default:
 		return false
@@ -482,7 +715,7 @@ func PermissionsForRole(role string) []string {
 		"sources.manage", "assets.manage", "geofences.manage", "observations.ingest", "telemetry.ingest",
 		"alerts.acknowledge", "alerts.resolve", "incidents.create", "incidents.update",
 		"missions.create", "missions.update", "commands.issue", "commands.transition",
-		"assessments.create", "classifications.create", "scenarios.control", "admin.manage",
+		"assessments.create", "classifications.create", "scenarios.control", "admin.manage", "imagery.jobs.submit", "assessments.review", "context.export",
 	}
 	permissions := make([]string, 0, len(known))
 	for _, permission := range known {
@@ -561,7 +794,7 @@ func LoggerWithMetrics(logger *slog.Logger, metrics RequestMetrics) func(http.Ha
 
 			logger.Info("http request",
 				"method", r.Method,
-				"path", r.URL.Path,
+				"path", metricRoute(r),
 				"status", rec.status,
 				"bytes", rec.bytes,
 				"duration_ms", float64(time.Since(start).Microseconds())/1000,
@@ -596,9 +829,9 @@ func Recoverer(logger *slog.Logger) func(http.Handler) http.Handler {
 			defer func() {
 				if p := recover(); p != nil {
 					logger.Error("panic recovered",
-						"panic", p,
+						"panic", "handler failure",
 						"stack", string(debug.Stack()),
-						"path", r.URL.Path,
+						"path", metricRoute(r),
 						"request_id", GetRequestID(r.Context()),
 					)
 					JSON(w, http.StatusInternalServerError, ErrorBody{Error: ErrorDetail{
@@ -686,3 +919,20 @@ func (r *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 // Unwrap exposes the wrapped writer to http.ResponseController.
 func (r *statusRecorder) Unwrap() http.ResponseWriter { return r.ResponseWriter }
+
+// Input/truth transports are opt-in per known route; ordinary COP APIs remain closed.
+func privilegedSimulationRoute(resource access.Resource, method, path string, policy RoutePolicy) bool {
+	if !policy.Known {
+		return false
+	}
+	if resource.Partition == access.ExerciseTruth && strings.HasPrefix(path, "/api/v1/simulation-recordings/") {
+		return method == http.MethodGet && (policy.Permission == "sim.recordings.read" || policy.Permission == "sim.evaluation.read") || method == http.MethodPost && policy.Permission == "sim.evaluation.release"
+	}
+	if resource.Partition == access.ExerciseInput && resource.RunID == "" {
+		if path == "/api/v1/platform/readiness" && method == http.MethodGet || path == "/api/v1/platform/worker-heartbeats" && method == http.MethodPost {
+			return true
+		}
+		return strings.HasPrefix(path, "/api/v1/simulation-assets/") || strings.HasPrefix(path, "/api/v1/simulation-studio/") || strings.HasPrefix(path, "/api/v1/simulation-runtime/") && policy.Permission != "sim.truth.read"
+	}
+	return resource.Partition == access.ExerciseTruth && method == http.MethodGet && strings.HasPrefix(path, "/api/v1/simulation-runtime/runs/") && policy.Permission == "sim.truth.read"
+}

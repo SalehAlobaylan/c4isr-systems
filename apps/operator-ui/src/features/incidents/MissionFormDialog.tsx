@@ -1,4 +1,6 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useWorkspace } from '@/lib/workspaceContext'
+import { useMutation, useQuery } from '@/lib/scopedQueries'
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 
 import { AssetStatusBadge } from '@/components/shared/badges'
@@ -7,8 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { api, type Mission } from '@/lib/api'
-import { queryKeys } from '@/lib/queryKeys'
+import { useAPI, type Mission } from '@/lib/api'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { toast } from '@/stores/toasts'
 
 const PRIORITY_OPTIONS = [
@@ -29,6 +31,9 @@ export function MissionFormDialog({
   onOpenChange: (open: boolean) => void
   onCreated?: (mission: Mission) => void
 }) {
+  const { signal } = useWorkspace()
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const queryClient = useQueryClient()
 
   const assetsQuery = useQuery({
@@ -52,6 +57,7 @@ export function MissionFormDialog({
         incidentId,
         assets: value.assetIds,
       })
+      if (signal.aborted) return
       onCreated?.(mission)
       onOpenChange(false)
       form.reset()

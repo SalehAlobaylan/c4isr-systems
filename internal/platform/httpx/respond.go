@@ -8,8 +8,10 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/presentation"
 )
 
 const maxBodyBytes = 1 << 20 // 1 MiB
@@ -33,12 +35,18 @@ type ErrorDetail struct {
 
 // JSON writes v as a JSON response with the given status.
 func JSON(w http.ResponseWriter, status int, v any) {
+	raw, err := responseBytes(w, v)
+	if err != nil {
+		http.Error(w, "response unavailable", http.StatusInternalServerError)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
 	w.WriteHeader(status)
 	if v == nil {
 		return
 	}
-	if err := json.NewEncoder(w).Encode(v); err != nil {
+	if _, err := w.Write(append(raw, '\n')); err != nil {
 		slog.Default().Error("encode response", "error", err)
 	}
 }
@@ -60,7 +68,7 @@ func Error(w http.ResponseWriter, err error) {
 	}
 	if code == apperr.CodeInternal {
 		message = "internal error"
-		slog.Default().Error("request failed", "error", err)
+		slog.Default().Error("request failed", "code", code)
 	}
 
 	JSON(w, status, ErrorBody{Error: ErrorDetail{Code: string(code), Message: message}})
@@ -96,7 +104,7 @@ func DecodeJSON(r *http.Request, dst any) error {
 		if errors.Is(err, io.EOF) {
 			return apperr.BadRequest("request body is required")
 		}
-		return apperr.BadRequest("invalid JSON body: " + err.Error())
+		return apperr.BadRequest("invalid JSON body")
 	}
-	return nil
+	return presentation.ResolveInput(r.Context(), dst, strings.HasSuffix(r.URL.Path, "/observations"))
 }

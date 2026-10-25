@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
 )
@@ -30,6 +31,10 @@ func NewService(repo Repository, bus *events.Dispatcher) *Service {
 // Create opens an incident, attaches the supplied evidence relations, and
 // publishes incident.created.
 func (s *Service) Create(ctx context.Context, in CreateInput) (Incident, error) {
+	if scopeErr := access.Require(ctx, "incidents.create"); scopeErr != nil {
+		return Incident{}, scopeErr
+	}
+
 	in.Normalize()
 	if err := in.Validate(); err != nil {
 		return Incident{}, err
@@ -84,17 +89,29 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Incident, error) 
 
 // Get returns an incident together with its attached evidence.
 func (s *Service) Get(ctx context.Context, id string) (Detail, error) {
+	if scopeErr := access.Require(ctx, "incidents.read"); scopeErr != nil {
+		return Detail{}, scopeErr
+	}
+
 	return s.repo.GetDetail(ctx, id)
 }
 
 // List returns incidents newest first.
 func (s *Service) List(ctx context.Context, status string, limit, offset int) ([]Incident, int, error) {
+	if scopeErr := access.Require(ctx, "incidents.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	return s.repo.List(ctx, status, clampLimit(limit), max(offset, 0))
 }
 
 // UpdateStatus moves an incident through its lifecycle and publishes
 // incident.updated.
 func (s *Service) UpdateStatus(ctx context.Context, id string, status Status, actor string) (Incident, error) {
+	if scopeErr := access.Require(ctx, "incidents.update"); scopeErr != nil {
+		return Incident{}, scopeErr
+	}
+
 	if !validStatus(status) {
 		return Incident{}, apperr.Validation("incident status must be one of OPEN, ACKNOWLEDGED, INVESTIGATING, RESPONDING, RESOLVED, CLOSED")
 	}
@@ -115,6 +132,10 @@ func (s *Service) UpdateStatus(ctx context.Context, id string, status Status, ac
 
 // Update edits incident metadata and publishes incident.updated.
 func (s *Service) Update(ctx context.Context, id string, in UpdateInput, actor string) (Incident, error) {
+	if scopeErr := access.Require(ctx, "incidents.update"); scopeErr != nil {
+		return Incident{}, scopeErr
+	}
+
 	in.Normalize()
 	if err := in.Validate(); err != nil {
 		return Incident{}, err
@@ -145,28 +166,48 @@ func (s *Service) Update(ctx context.Context, id string, in UpdateInput, actor s
 
 // AttachAlert links an alert to an incident and publishes incident.updated.
 func (s *Service) AttachAlert(ctx context.Context, incidentID, alertID, actor string) (Incident, error) {
+	if scopeErr := access.Require(ctx, "incidents.update"); scopeErr != nil {
+		return Incident{}, scopeErr
+	}
+
 	return s.attach(ctx, incidentID, "alert", alertID, actor, s.repo.AttachAlert)
 }
 
 // AttachTrack links a track to an incident and publishes incident.updated.
 func (s *Service) AttachTrack(ctx context.Context, incidentID, trackID, actor string) (Incident, error) {
+	if scopeErr := access.Require(ctx, "incidents.update"); scopeErr != nil {
+		return Incident{}, scopeErr
+	}
+
 	return s.attach(ctx, incidentID, "track", trackID, actor, s.repo.AttachTrack)
 }
 
 // AttachAsset links an asset to an incident and publishes incident.updated.
 func (s *Service) AttachAsset(ctx context.Context, incidentID, assetID, actor string) (Incident, error) {
+	if scopeErr := access.Require(ctx, "incidents.update"); scopeErr != nil {
+		return Incident{}, scopeErr
+	}
+
 	return s.attach(ctx, incidentID, "asset", assetID, actor, s.repo.AttachAsset)
 }
 
 // AttachObservation links an observation to an incident and publishes
 // incident.updated.
 func (s *Service) AttachObservation(ctx context.Context, incidentID, observationID, actor string) (Incident, error) {
+	if scopeErr := access.Require(ctx, "incidents.update"); scopeErr != nil {
+		return Incident{}, scopeErr
+	}
+
 	return s.attach(ctx, incidentID, "observation", observationID, actor, s.repo.AttachObservation)
 }
 
 // AttachAssessment links an assessment to an incident and publishes
 // incident.updated.
 func (s *Service) AttachAssessment(ctx context.Context, incidentID, assessmentID, actor string) (Incident, error) {
+	if scopeErr := access.Require(ctx, "incidents.update"); scopeErr != nil {
+		return Incident{}, scopeErr
+	}
+
 	return s.attach(ctx, incidentID, "assessment", assessmentID, actor, s.repo.AttachAssessment)
 }
 

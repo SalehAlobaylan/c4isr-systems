@@ -1,0 +1,14 @@
+{
+  "observedOn": "2026-10-25",
+  "method": "Read-only authenticated geography country search followed by installed first-order region query for each returned country key",
+  "qualification": "Sample of the current installed catalog; not a statement about globally available source data and not the product's geographic boundary",
+  "samples": [
+    {"name": "Saudi Arabia", "countryFound": true, "installedFirstOrderRegionsReturned": 13},
+    {"name": "United Arab Emirates", "countryFound": true, "installedFirstOrderRegionsReturned": 0},
+    {"name": "Jordan", "countryFound": true, "installedFirstOrderRegionsReturned": 0},
+    {"name": "Egypt", "countryFound": true, "installedFirstOrderRegionsReturned": 0},
+    {"name": "France", "countryFound": true, "installedFirstOrderRegionsReturned": 0},
+    {"name": "Japan", "countryFound": true, "installedFirstOrderRegionsReturned": 0},
+    {"name": "Brazil", "countryFound": true, "installedFirstOrderRegionsReturned": 0}
+  ]
+}

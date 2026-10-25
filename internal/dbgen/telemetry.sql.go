@@ -33,7 +33,7 @@ INSERT INTO asset_telemetry (
          ELSE NULL END,
     $10, $11, $12, $13, $14
 )
-ON CONFLICT (message_id) WHERE message_id IS NOT NULL DO NOTHING
+ON CONFLICT (scope_id, message_id) WHERE message_id IS NOT NULL DO NOTHING
 RETURNING id
 `
 

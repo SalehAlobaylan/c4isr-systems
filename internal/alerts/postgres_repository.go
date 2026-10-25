@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 )
 
 // PostgresRepository stores alerts in PostgreSQL.
@@ -25,7 +25,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 // Create inserts an alert.
 func (r *PostgresRepository) Create(ctx context.Context, alert Alert) (Alert, error) {
-	row, err := dbgen.New(r.pool).CreateAlert(ctx, dbgen.CreateAlertParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CreateAlert(ctx, dbgen.CreateAlertParams{
 		ID:              alert.ID,
 		Type:            alert.Type,
 		Severity:        string(alert.Severity),
@@ -54,7 +54,7 @@ func (r *PostgresRepository) Create(ctx context.Context, alert Alert) (Alert, er
 
 // Get loads an alert by id.
 func (r *PostgresRepository) Get(ctx context.Context, id string) (Alert, error) {
-	row, err := dbgen.New(r.pool).GetAlert(ctx, id)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).GetAlert(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Alert{}, apperr.NotFound("alert", id)
@@ -67,7 +67,7 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Alert, error) 
 // List returns alerts newest first. Empty filter fields are passed as SQL NULL
 // so that they do not constrain the result.
 func (r *PostgresRepository) List(ctx context.Context, filter ListFilter, limit, offset int) ([]Alert, int, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	params := dbgen.ListAlertsParams{
 		State:       pgconv.TextPtr(filter.State),
 		Severity:    pgconv.TextPtr(filter.Severity),
@@ -99,7 +99,7 @@ func (r *PostgresRepository) List(ctx context.Context, filter ListFilter, limit,
 
 // Acknowledge moves an ACTIVE alert to ACKNOWLEDGED.
 func (r *PostgresRepository) Acknowledge(ctx context.Context, id, operator string) (Alert, error) {
-	row, err := dbgen.New(r.pool).AcknowledgeAlert(ctx, dbgen.AcknowledgeAlertParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).AcknowledgeAlert(ctx, dbgen.AcknowledgeAlertParams{
 		AcknowledgedBy: pgconv.TextPtr(operator),
 		ID:             id,
 	})
@@ -114,7 +114,7 @@ func (r *PostgresRepository) Acknowledge(ctx context.Context, id, operator strin
 
 // Resolve moves an ACTIVE or ACKNOWLEDGED alert to RESOLVED.
 func (r *PostgresRepository) Resolve(ctx context.Context, id, operator string) (Alert, error) {
-	row, err := dbgen.New(r.pool).ResolveAlert(ctx, dbgen.ResolveAlertParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).ResolveAlert(ctx, dbgen.ResolveAlertParams{
 		ResolvedBy: pgconv.TextPtr(operator),
 		ID:         id,
 	})
@@ -129,7 +129,7 @@ func (r *PostgresRepository) Resolve(ctx context.Context, id, operator string) (
 
 // SetIncident links an alert to an incident workspace.
 func (r *PostgresRepository) SetIncident(ctx context.Context, alertID, incidentID string) error {
-	return dbgen.New(r.pool).SetAlertIncident(ctx, dbgen.SetAlertIncidentParams{
+	return dbgen.New(platformdb.Scoped(r.pool)).SetAlertIncident(ctx, dbgen.SetAlertIncidentParams{
 		IncidentID: pgconv.TextPtr(incidentID),
 		ID:         alertID,
 	})
@@ -138,7 +138,7 @@ func (r *PostgresRepository) SetIncident(ctx context.Context, alertID, incidentI
 // FindUnresolvedForGeofenceTrack returns the newest unresolved alert for a
 // geofence and track pair, or nil when none exists.
 func (r *PostgresRepository) FindUnresolvedForGeofenceTrack(ctx context.Context, geofenceID, trackID string) (*Alert, error) {
-	row, err := dbgen.New(r.pool).FindUnresolvedAlertForGeofenceTrack(ctx, dbgen.FindUnresolvedAlertForGeofenceTrackParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).FindUnresolvedAlertForGeofenceTrack(ctx, dbgen.FindUnresolvedAlertForGeofenceTrackParams{
 		GeofenceID: pgconv.TextPtr(geofenceID),
 		TrackID:    pgconv.TextPtr(trackID),
 	})
@@ -155,7 +155,7 @@ func (r *PostgresRepository) FindUnresolvedForGeofenceTrack(ctx context.Context,
 // FindUnresolvedForObservationGeofence returns the newest unresolved area
 // overlap alert for an observation and zone pair, or nil when none exists.
 func (r *PostgresRepository) FindUnresolvedForObservationGeofence(ctx context.Context, observationID, geofenceID string) (*Alert, error) {
-	row, err := dbgen.New(r.pool).FindUnresolvedAlertForObservationGeofence(ctx,
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).FindUnresolvedAlertForObservationGeofence(ctx,
 		dbgen.FindUnresolvedAlertForObservationGeofenceParams{
 			GeofenceID:    pgconv.TextPtr(geofenceID),
 			ObservationID: observationID,

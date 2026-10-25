@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 )
 
 // PostgresRepository stores classifications in PostgreSQL.
@@ -25,7 +25,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 // Create inserts a classification hypothesis.
 func (r *PostgresRepository) Create(ctx context.Context, classification Classification) (Classification, error) {
-	row, err := dbgen.New(r.pool).CreateClassification(ctx, dbgen.CreateClassificationParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CreateClassification(ctx, dbgen.CreateClassificationParams{
 		ID:              classification.ID,
 		TrackID:         classification.TrackID,
 		Label:           classification.Label,
@@ -45,7 +45,7 @@ func (r *PostgresRepository) Create(ctx context.Context, classification Classifi
 
 // Get loads a classification by id.
 func (r *PostgresRepository) Get(ctx context.Context, id string) (Classification, error) {
-	row, err := dbgen.New(r.pool).GetClassification(ctx, id)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).GetClassification(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Classification{}, apperr.NotFound("classification", id)
@@ -58,7 +58,7 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Classification
 // ListByTrack returns a track's classifications newest first. The total is the
 // returned page size; classifications are append-only and paging is rare.
 func (r *PostgresRepository) ListByTrack(ctx context.Context, trackID string, limit, offset int) ([]Classification, int, error) {
-	rows, err := dbgen.New(r.pool).ListClassificationsByTrack(ctx, dbgen.ListClassificationsByTrackParams{
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).ListClassificationsByTrack(ctx, dbgen.ListClassificationsByTrackParams{
 		TrackID:     trackID,
 		LimitCount:  int32(limit),
 		OffsetCount: int32(offset),
@@ -76,7 +76,7 @@ func (r *PostgresRepository) ListByTrack(ctx context.Context, trackID string, li
 // LatestForTrack returns the most recent classification, or nil when the track
 // has none.
 func (r *PostgresRepository) LatestForTrack(ctx context.Context, trackID string) (*Classification, error) {
-	row, err := dbgen.New(r.pool).LatestClassificationForTrack(ctx, trackID)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).LatestClassificationForTrack(ctx, trackID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil

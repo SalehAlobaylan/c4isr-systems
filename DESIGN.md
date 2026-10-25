@@ -1,7 +1,8 @@
 # EMAD | Visual Identity & Operator Interface Design System
 
-**Version:** 2.0  
-**Date:** 2026-10-17  
+**Version:** 2.1
+
+**Date:** 2026-10-24
 **Status:** Approved design direction and implementation specification  
 **Identity:** **Alloy Pearl, Balanced**  
 **Product:** EMAD / عِماد  
@@ -14,11 +15,17 @@
 
 ---
 
+## Workspace redesign adoption · 24 October 2026
+
+The user authorized implementation of the [workspace UX specification](docs/design/EMAD_UX_UI_SPECIFICATION.md). The [implementation and acceptance record](docs/design/EMAD_UX_IMPLEMENTATION.md) supersedes conflicting older layout descriptions below: the two product areas, compact header/task navigation, rich Systems grid, clean map with a bounded preview dock, and focused intelligence/Studio/replay workspaces are the adopted interface.
+
+The neutral foundation values now come from `apps/operator-ui/src/styles/tokens.css`; shared workspace geometry comes from `styles/workspace.css`. Older mint-surface descriptions and historical contrast arithmetic below are retained as design history. Use the current token definitions and measured browser assertions for implementation. Semantic status meanings, provenance, uncertainty, accessibility and data isolation remain requirements.
+
 ## 1. Intent and design principles
 
 ### 1.1 EMAD's positioning
 
-EMAD is a software-first, C4ISR-oriented operational information platform, currently implementing **C2 and Operational Awareness**. Its future scope includes richer ISR, intelligence, and external integrations. EMAD's visual character should feel appropriate for a **premium Saudi defense-technology company** without implying corporate affiliation with SAMI, SAMI-AEC, or any other organization.
+EMAD has two product pillars: **Public Context & Intelligence** and **3D Modeling & Simulation**. Controlled operations supports exercises; it does not provide a real-world military hardware command network. EMAD's visual character should feel appropriate for a **premium Saudi defense-technology company** without implying corporate affiliation with SAMI, SAMI-AEC, or any other organization.
 
 Its promise is **clarity, control, evidence, and engineering confidence**. The interface is not a consumer social application, a game HUD, or a military-themed decoration layer. It is an operator tool for reading evolving, sometimes uncertain information and making accountable decisions.
 
@@ -73,14 +80,14 @@ Use these exact initial values. Primitive colors are source values; components m
 
 | Primitive | Hex | Role |
 | --- | --- | --- |
-| `--emad-mineral-canvas` | `#E3E9E2` | Default application canvas, non-white and low-glare |
-| `--emad-ceramic-surface` | `#F2F4ED` | Main cards, tables, inspector panels, dialogs |
-| `--emad-mist-surface` | `#D4DED8` | Recessed groups, map land base, secondary bands |
+| `--emad-mineral-canvas` | `#EDF0F2` | Default application canvas, non-white and low-glare |
+| `--emad-ceramic-surface` | `#FBFCFD` | Main cards, tables, inspector panels, dialogs |
+| `--emad-mist-surface` | `#E5EAED` | Recessed groups, map land base, secondary bands |
 | `--emad-industrial-graphite` | `#202B2D` | Structural brand anchor, navigation, dark controls |
-| `--emad-graphite-ink` | `#1D3030` | Primary readable text and data |
+| `--emad-graphite-ink` | `#24343D` | Primary readable text and data |
 | `--emad-energized-lime` | `#B7D36B` | Reserved brand signature on dark surfaces |
 | `--emad-signal-teal` | `#3C7780` | Data/technical accent, strokes, selected chart emphasis |
-| `--emad-structural-border` | `#B4C4B9` | Subtle, decorative separators |
+| `--emad-structural-border` | `#CDD6DC` | Subtle, decorative separators |
 
 ### 2.2 Functional additions needed to implement the palette
 
@@ -88,16 +95,16 @@ These are intentional companions to the eight foundation colors, not a competing
 
 | Role token | Hex | Correct use |
 | --- | --- | --- |
-| `--emad-text-primary` | `#1D3030` | Primary text on light surfaces |
-| `--emad-text-secondary` | `#4B6159` | Descriptions and supporting content, including mist surface |
+| `--emad-text-primary` | `#24343D` | Primary text on light surfaces |
+| `--emad-text-secondary` | `#536670` | Descriptions and supporting content, including mist surface |
 | `--emad-text-on-dark` | `#E9F2EA` | Text on graphite navigation/actions |
 | `--emad-text-on-lime` | `#202B2D` | Readable labels on lime fills |
 | `--emad-link` | `#2C626B` | Small actionable text on all core light surfaces |
 | `--emad-lime-on-light` | `#355A3F` | Legible green-toned *text* if a brand-related label is necessary |
-| `--emad-border-control` | `#607F77` | Essential control borders, not decorative dividers |
-| `--emad-surface-hover` | `#E8EEE7` | Hover over the default light card surface |
-| `--emad-surface-selected` | `#C7D9C8` | Selected background, with additional selection cue |
-| `--emad-surface-input` | `#F7F8F2` | Inputs and editable fields |
+| `--emad-border-control` | `#71858E` | Essential control borders, not decorative dividers |
+| `--emad-surface-hover` | `#F0F5F6` | Hover over the default light card surface |
+| `--emad-surface-selected` | `#E0EFF0` | Selected background, with additional selection cue |
+| `--emad-surface-input` | `#FFFFFF` | Inputs and editable fields |
 | `--emad-graphite-raised` | `#304044` | Secondary items on the dark navigation rail |
 | `--emad-graphite-muted` | `#B7CAC4` | Readable secondary navigation text |
 | `--emad-focus-light` | `#2C626B` | Focus indicator on light surfaces |
@@ -116,7 +123,7 @@ Operational states are **not brand colors**. The following colors have been chos
 | `--emad-status-caution` | `#7E5319` | Medium concern, degraded, delayed |
 | `--emad-status-high` | `#91451F` | High-severity attention |
 | `--emad-status-critical` | `#9A372F` | Critical severity, failed actions or explicit errors |
-| `--emad-status-neutral` | `#4B6159` | Closed, not applicable, neutral/unknown where supported by text |
+| `--emad-status-neutral` | `#536670` | Closed, not applicable, neutral/unknown where supported by text |
 | `--emad-status-review` | `#2C626B` | A provisional analytical assessment that needs review, accompanied by wording |
 
 Do not infer *confidence*, *affiliation*, *threat*, *health*, *connection*, *freshness*, or *selection* from one another. All are separate dimensions. Positive health is not evidence validity. An unknown classification is not automatically hostile. An offline asset is not necessarily a critical incident.
@@ -143,10 +150,10 @@ Ratios below are calculated using WCAG relative luminance for the specified **op
 
 | Pair | Ratio (approx.) | Use |
 | --- | ---: | --- |
-| Graphite Ink `#1D3030` on Mineral Canvas `#E3E9E2` | **11.21:1** | Primary text |
-| Graphite Ink on Ceramic `#F2F4ED` | **12.48:1** | Primary text |
-| Graphite Ink on Mist `#D4DED8` | **10.04:1** | Primary text |
-| Secondary `#4B6159` on Mist | **4.83:1** | Secondary text |
+| Graphite Ink `#24343D` on Mineral Canvas `#EDF0F2` | **11.21:1** | Primary text |
+| Graphite Ink on Ceramic `#FBFCFD` | **12.48:1** | Primary text |
+| Graphite Ink on Mist `#E5EAED` | **10.04:1** | Primary text |
+| Secondary `#536670` on Mist | **4.83:1** | Secondary text |
 | Link `#2C626B` on Mist | **4.97:1** | Link text |
 | Lime `#B7D36B` on Graphite `#202B2D` | **8.68:1** | Lime text/accent on graphite |
 | Graphite on Lime | **8.68:1** | Text in lime-filled controls |
@@ -156,7 +163,7 @@ Ratios below are calculated using WCAG relative luminance for the specified **op
 | Caution `#7E5319` on Mist | **4.86:1** | Warning text + icon |
 | High `#91451F` on Mist | **4.96:1** | High attention text + icon |
 | Critical `#9A372F` on Mist | **5.15:1** | Critical text + icon |
-| Control border `#607F77` on Mist | **3.18:1** | Necessary control edges, verify adjacent colors |
+| Control border `#71858E` on Mist | **3.18:1** | Necessary control edges, verify adjacent colors |
 
 Conformance goals: **WCAG 2.2 AA**, including 4.5:1 normal text; 3:1 large text; 3:1 meaningful non-text contrast against **relevant adjacent colors**; visible keyboard focus; no color-only communication. The ratio of a border to its *interior and exterior* matters if both are visually adjacent. Do not assume a token-level pass guarantees component-level compliance.
 
@@ -175,27 +182,27 @@ Create or centralize `apps/operator-ui/src/styles/tokens.css` and import it **on
 ```css
 :root {
   /* Foundation */
-  --emad-mineral-canvas: #e3e9e2;
-  --emad-ceramic-surface: #f2f4ed;
-  --emad-mist-surface: #d4ded8;
+  --emad-mineral-canvas: #edf0f2;
+  --emad-ceramic-surface: #fbfcfd;
+  --emad-mist-surface: #e5eaed;
   --emad-industrial-graphite: #202b2d;
-  --emad-graphite-ink: #1d3030;
+  --emad-graphite-ink: #24343d;
   --emad-energized-lime: #b7d36b;
   --emad-signal-teal: #3c7780;
-  --emad-structural-border: #b4c4b9;
+  --emad-structural-border: #cdd6dc;
 
   /* Semantic interface roles */
   --emad-surface-canvas: var(--emad-mineral-canvas);
   --emad-surface-panel: var(--emad-ceramic-surface);
   --emad-surface-inset: var(--emad-mist-surface);
-  --emad-surface-hover: #e8eee7;
-  --emad-surface-selected: #c7d9c8;
-  --emad-surface-input: #f7f8f2;
+  --emad-surface-hover: #f0f5f6;
+  --emad-surface-selected: #e0eff0;
+  --emad-surface-input: #ffffff;
   --emad-surface-nav: var(--emad-industrial-graphite);
   --emad-surface-nav-raised: #304044;
 
   --emad-text-primary: var(--emad-graphite-ink);
-  --emad-text-secondary: #4b6159;
+  --emad-text-secondary: #536670;
   --emad-text-on-dark: #e9f2ea;
   --emad-text-on-lime: var(--emad-industrial-graphite);
   --emad-text-nav-muted: #b7cac4;
@@ -203,7 +210,7 @@ Create or centralize `apps/operator-ui/src/styles/tokens.css` and import it **on
   --emad-lime-on-light: #355a3f;
 
   --emad-border-subtle: var(--emad-structural-border);
-  --emad-border-control: #607f77;
+  --emad-border-control: #71858e;
   --emad-focus-light: #2c626b;
   --emad-focus-dark: var(--emad-energized-lime);
 
@@ -213,7 +220,7 @@ Create or centralize `apps/operator-ui/src/styles/tokens.css` and import it **on
   --emad-status-caution: #7e5319;
   --emad-status-high: #91451f;
   --emad-status-critical: #9a372f;
-  --emad-status-neutral: #4b6159;
+  --emad-status-neutral: #536670;
   --emad-status-review: #2c626b;
 }
 
@@ -301,7 +308,7 @@ Use a 4px baseline: `4, 8, 12, 16, 20, 24, 32, 40, 48`. Dense operational views 
 
 - Corner radius: 4px by default; 6px for cards/dialogs; 2px for compact data controls. Avoid large, pill-like cards everywhere.
 - Keep large page areas calm and open; do not turn every data group into a nested card.
-- Use `#B4C4B9` for visual dividers and `#607F77` when the border is necessary to recognize a control.
+- Use `#CDD6DC` for visual dividers and `#71858E` when the border is necessary to recognize a control.
 - Use shadows rarely; hierarchy should come primarily from surface contrast, whitespace, typography, and grid alignment.
 - Use lime accent rules sparingly, for example a 2–3px line on a selected dark navigation item. Avoid decorative strips on every card.
 
@@ -309,14 +316,14 @@ Use a 4px baseline: `4, 8, 12, 16, 20, 24, 32, 40, 48`. Dense operational views 
 
 | Surface | Default |
 | --- | --- |
-| App workspace background | Mineral Canvas `#E3E9E2` |
-| Cards / main panels | Ceramic `#F2F4ED` |
-| Secondary region / grouped content | Mist `#D4DED8` |
+| App workspace background | Mineral Canvas `#EDF0F2` |
+| Cards / main panels | Ceramic `#FBFCFD` |
+| Secondary region / grouped content | Mist `#E5EAED` |
 | Dark brand navigation | Industrial Graphite `#202B2D` |
 | Dark navigation item hover | Graphite Raised `#304044` |
-| Light panel hover | `#E8EEE7` |
-| Selected light row / tab | `#C7D9C8` plus visible structural cue |
-| Inputs | `#F7F8F2`, control border `#607F77` |
+| Light panel hover | `#F0F5F6` |
+| Selected light row / tab | `#E0EFF0` plus visible structural cue |
+| Inputs | `#FFFFFF`, control border `#71858E` |
 | Modals and dialogs | Ceramic, with solid backdrop for spatial separation |
 
 One dark graphite structural rail/header is an intentional feature; **do not make the whole application graphite**. Conversely, do not convert every graphite region to pale grey, or the identity will lose its industrial character.
@@ -358,7 +365,7 @@ Keyboard focus: a clearly visible focus outline/ring that meets contrast against
 
 ### 6.3 Inputs and forms
 
-- Input fill: `#F7F8F2`; control border: `#607F77`; normal content text: `#1D3030`.
+- Input fill: `#FFFFFF`; control border: `#71858E`; normal content text: `#24343D`.
 - Keep labels visible and external to input; placeholders are hints, not replacements.
 - Invalid field: critical outline + icon + error text; do not signal through color only.
 - Readonly and disabled must look different, and must remain programmatically distinguished.
@@ -473,14 +480,14 @@ EMAD's branded map should feel related to Alloy Pearl but preserve real geograph
 
 | Map element | Candidate color | Notes |
 | --- | --- | --- |
-| Land | `#D4DED8` | Mineral-mist land base |
+| Land | `#E5EAED` | Mineral-mist land base |
 | Water | `#C7DCE0` | Muted blue-grey water, not electric cyan |
-| Major roads | `#F2F4ED` | Stronger path shape without glaring pure white |
+| Major roads | `#FBFCFD` | Stronger path shape without glaring pure white |
 | Minor roads | `#E7EDE6` | Reduced visual priority |
 | Administrative boundary | `#A6BDB0` | Subtle, can be dashed depending on map style |
 | Building mass | `#CBD8CE` | Do not obscure annotations |
 | Geographic label | `#334A47` | Clear contrast against base |
-| Map controls | Ceramic `#F2F4ED` | Control border + visible focus |
+| Map controls | Ceramic `#FBFCFD` | Control border + visible focus |
 | Track path | Signal Teal `#3C7780` | Direction / history, with line style and label |
 | Geofence / hazard | Severity-dependent, low-opacity fill + clear outline | Must not erase underlying geography |
 

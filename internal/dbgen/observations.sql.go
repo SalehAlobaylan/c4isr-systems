@@ -52,7 +52,7 @@ func (q *Queries) CountObservationsByTrack(ctx context.Context, trackID string) 
 const createObservation = `-- name: CreateObservation :one
 INSERT INTO observations (
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    position, payload, quality, track_hint, area, area_kind
+    position, payload, quality, track_hint, area, area_kind,semantic_kind,geometry_role
 ) VALUES (
     $1, $2, $3, $4, $5, $6,
     CASE WHEN $7::boolean
@@ -62,11 +62,11 @@ INSERT INTO observations (
     CASE WHEN $13::boolean
          THEN ST_SetSRID(ST_GeomFromGeoJSON($14::text), 4326)::geography
          ELSE NULL END,
-    $15
+    $15,$16,$17
 )
 RETURNING
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    payload, quality, track_hint, created_at, area_kind,
+    payload, quality, track_hint, created_at, area_kind,semantic_kind,geometry_role,
     (position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
     COALESCE(ST_X(position::geometry), 0)::float8 AS lng,
@@ -90,6 +90,8 @@ type CreateObservationParams struct {
 	HasArea         bool
 	AreaGeojson     string
 	AreaKind        *string
+	SemanticKind    string
+	GeometryRole    string
 }
 
 type CreateObservationRow struct {
@@ -104,6 +106,8 @@ type CreateObservationRow struct {
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
 	AreaKind        *string
+	SemanticKind    string
+	GeometryRole    string
 	HasPosition     bool
 	Lat             float64
 	Lng             float64
@@ -132,6 +136,8 @@ func (q *Queries) CreateObservation(ctx context.Context, arg CreateObservationPa
 		arg.HasArea,
 		arg.AreaGeojson,
 		arg.AreaKind,
+		arg.SemanticKind,
+		arg.GeometryRole,
 	)
 	var i CreateObservationRow
 	err := row.Scan(
@@ -146,6 +152,8 @@ func (q *Queries) CreateObservation(ctx context.Context, arg CreateObservationPa
 		&i.TrackHint,
 		&i.CreatedAt,
 		&i.AreaKind,
+		&i.SemanticKind,
+		&i.GeometryRole,
 		&i.HasPosition,
 		&i.Lat,
 		&i.Lng,
@@ -216,7 +224,7 @@ func (q *Queries) GeofencesIntersectingArea(ctx context.Context, areaGeojson str
 const getObservation = `-- name: GetObservation :one
 SELECT
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    payload, quality, track_hint, created_at, area_kind,
+    payload, quality, track_hint, created_at, area_kind,semantic_kind,geometry_role,
     (position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
     COALESCE(ST_X(position::geometry), 0)::float8 AS lng,
@@ -238,6 +246,8 @@ type GetObservationRow struct {
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
 	AreaKind        *string
+	SemanticKind    string
+	GeometryRole    string
 	HasPosition     bool
 	Lat             float64
 	Lng             float64
@@ -260,6 +270,8 @@ func (q *Queries) GetObservation(ctx context.Context, id string) (GetObservation
 		&i.TrackHint,
 		&i.CreatedAt,
 		&i.AreaKind,
+		&i.SemanticKind,
+		&i.GeometryRole,
 		&i.HasPosition,
 		&i.Lat,
 		&i.Lng,
@@ -272,7 +284,7 @@ func (q *Queries) GetObservation(ctx context.Context, id string) (GetObservation
 const listAreaObservations = `-- name: ListAreaObservations :many
 SELECT
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    payload, quality, track_hint, created_at, area_kind,
+    payload, quality, track_hint, created_at, area_kind,semantic_kind,geometry_role,
     (position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
     COALESCE(ST_X(position::geometry), 0)::float8 AS lng,
@@ -303,6 +315,8 @@ type ListAreaObservationsRow struct {
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
 	AreaKind        *string
+	SemanticKind    string
+	GeometryRole    string
 	HasPosition     bool
 	Lat             float64
 	Lng             float64
@@ -338,6 +352,8 @@ func (q *Queries) ListAreaObservations(ctx context.Context, arg ListAreaObservat
 			&i.TrackHint,
 			&i.CreatedAt,
 			&i.AreaKind,
+			&i.SemanticKind,
+			&i.GeometryRole,
 			&i.HasPosition,
 			&i.Lat,
 			&i.Lng,
@@ -357,7 +373,7 @@ func (q *Queries) ListAreaObservations(ctx context.Context, arg ListAreaObservat
 const listObservations = `-- name: ListObservations :many
 SELECT
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    payload, quality, track_hint, created_at, area_kind,
+    payload, quality, track_hint, created_at, area_kind,semantic_kind,geometry_role,
     (position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
     COALESCE(ST_X(position::geometry), 0)::float8 AS lng,
@@ -385,6 +401,8 @@ type ListObservationsRow struct {
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
 	AreaKind        *string
+	SemanticKind    string
+	GeometryRole    string
 	HasPosition     bool
 	Lat             float64
 	Lng             float64
@@ -413,6 +431,8 @@ func (q *Queries) ListObservations(ctx context.Context, arg ListObservationsPara
 			&i.TrackHint,
 			&i.CreatedAt,
 			&i.AreaKind,
+			&i.SemanticKind,
+			&i.GeometryRole,
 			&i.HasPosition,
 			&i.Lat,
 			&i.Lng,
@@ -432,7 +452,7 @@ func (q *Queries) ListObservations(ctx context.Context, arg ListObservationsPara
 const listObservationsByTrack = `-- name: ListObservationsByTrack :many
 SELECT
     o.id, o.source_id, o.observation_type, o.observed_at, o.received_at, o.processed_at,
-    o.payload, o.quality, o.track_hint, o.created_at, o.area_kind,
+    o.payload, o.quality, o.track_hint, o.created_at, o.area_kind,o.semantic_kind,o.geometry_role,
     (o.position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(o.position::geometry), 0)::float8 AS lat,
     COALESCE(ST_X(o.position::geometry), 0)::float8 AS lng,
@@ -463,6 +483,8 @@ type ListObservationsByTrackRow struct {
 	TrackHint       *string
 	CreatedAt       pgtype.Timestamptz
 	AreaKind        *string
+	SemanticKind    string
+	GeometryRole    string
 	HasPosition     bool
 	Lat             float64
 	Lng             float64
@@ -491,6 +513,8 @@ func (q *Queries) ListObservationsByTrack(ctx context.Context, arg ListObservati
 			&i.TrackHint,
 			&i.CreatedAt,
 			&i.AreaKind,
+			&i.SemanticKind,
+			&i.GeometryRole,
 			&i.HasPosition,
 			&i.Lat,
 			&i.Lng,

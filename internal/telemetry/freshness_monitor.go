@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness"
 )
 
@@ -53,19 +54,21 @@ type FreshnessMonitor struct {
 	policy   freshness.Policy
 	now      func() time.Time
 
-	mu       sync.Mutex
-	previous map[string]freshness.State
+	mu              sync.Mutex
+	previous        map[string]freshness.State
+	previousByScope map[string]map[string]freshness.State
 }
 
 // NewFreshnessMonitor wires the monitor. The observer may be nil.
 func NewFreshnessMonitor(repo Repository, bus *events.Dispatcher, observer FreshnessObserver, policy freshness.Policy) *FreshnessMonitor {
 	return &FreshnessMonitor{
-		repo:     repo,
-		bus:      bus,
-		observer: observer,
-		policy:   policy.Normalized(),
-		now:      func() time.Time { return time.Now().UTC() },
-		previous: map[string]freshness.State{},
+		repo:            repo,
+		bus:             bus,
+		observer:        observer,
+		policy:          policy.Normalized(),
+		now:             func() time.Time { return time.Now().UTC() },
+		previous:        map[string]freshness.State{},
+		previousByScope: map[string]map[string]freshness.State{},
 	}
 }
 
@@ -84,7 +87,7 @@ func (m *FreshnessMonitor) Reconcile(ctx context.Context) error {
 		return err
 	}
 
-	now := m.now()
+	now := freshness.Now(ctx, m.now())
 	current := make(map[string]freshness.State, len(assetSignals)+len(trackSignals))
 	for _, signal := range assetSignals {
 		current[entityKey(EntityTypeAsset, signal.AssetID)] = m.policy.ForAsset(freshness.AssetSignal{
@@ -101,7 +104,9 @@ func (m *FreshnessMonitor) Reconcile(ctx context.Context) error {
 	}
 
 	m.mu.Lock()
-	previous := m.previous
+	resource, _ := access.ResourceFrom(ctx)
+	previous := m.previousByScope[resource.ID()]
+	m.previousByScope[resource.ID()] = current
 	m.previous = current
 	m.mu.Unlock()
 

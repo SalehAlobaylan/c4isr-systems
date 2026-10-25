@@ -2,18 +2,18 @@ package incidents
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
-
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // PostgresRepository stores incidents in PostgreSQL.
@@ -28,7 +28,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 // Create inserts an incident.
 func (r *PostgresRepository) Create(ctx context.Context, incident Incident) (Incident, error) {
-	row, err := dbgen.New(r.pool).CreateIncident(ctx, dbgen.CreateIncidentParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CreateIncident(ctx, dbgen.CreateIncidentParams{
 		ID:               incident.ID,
 		Title:            incident.Title,
 		Description:      incident.Description,
@@ -100,7 +100,7 @@ func (r *PostgresRepository) CreateWithRelations(ctx context.Context, incident I
 
 // Get loads an incident by id.
 func (r *PostgresRepository) Get(ctx context.Context, id string) (Incident, error) {
-	row, err := dbgen.New(r.pool).GetIncident(ctx, id)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).GetIncident(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Incident{}, apperr.NotFound("incident", id)
@@ -112,7 +112,7 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Incident, erro
 
 // GetDetail loads an incident together with its attached evidence.
 func (r *PostgresRepository) GetDetail(ctx context.Context, id string) (Detail, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	row, err := q.GetIncident(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -167,7 +167,11 @@ func (r *PostgresRepository) GetDetail(ctx context.Context, id string) (Detail, 
 	}
 	detail.Assessments = make([]RelatedAssessment, 0, len(assessments))
 	for _, assessment := range assessments {
-		detail.Assessments = append(detail.Assessments, toRelatedAssessment(assessment))
+		projected, err := toRelatedAssessment(assessment)
+		if err != nil {
+			return Detail{}, err
+		}
+		detail.Assessments = append(detail.Assessments, projected)
 	}
 
 	return detail, nil
@@ -175,7 +179,7 @@ func (r *PostgresRepository) GetDetail(ctx context.Context, id string) (Detail, 
 
 // List returns incidents newest first with an optional status filter.
 func (r *PostgresRepository) List(ctx context.Context, status string, limit, offset int) ([]Incident, int, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	rows, err := q.ListIncidents(ctx, dbgen.ListIncidentsParams{
 		Status:      pgconv.TextPtr(status),
 		OffsetCount: int32(offset),
@@ -197,7 +201,7 @@ func (r *PostgresRepository) List(ctx context.Context, status string, limit, off
 
 // UpdateStatus changes incident lifecycle status.
 func (r *PostgresRepository) UpdateStatus(ctx context.Context, id string, status, expected Status) (Incident, error) {
-	row, err := dbgen.New(r.pool).UpdateIncidentStatus(ctx, dbgen.UpdateIncidentStatusParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).UpdateIncidentStatus(ctx, dbgen.UpdateIncidentStatusParams{
 		ID:             id,
 		Status:         string(status),
 		ExpectedStatus: string(expected),
@@ -216,7 +220,7 @@ func (r *PostgresRepository) UpdateStatus(ctx context.Context, id string, status
 
 // Update edits incident metadata.
 func (r *PostgresRepository) Update(ctx context.Context, incident Incident) (Incident, error) {
-	row, err := dbgen.New(r.pool).UpdateIncident(ctx, dbgen.UpdateIncidentParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).UpdateIncident(ctx, dbgen.UpdateIncidentParams{
 		Title:            incident.Title,
 		Description:      incident.Description,
 		Priority:         string(incident.Priority),
@@ -234,7 +238,7 @@ func (r *PostgresRepository) Update(ctx context.Context, incident Incident) (Inc
 
 // AttachAlert links an alert to an incident.
 func (r *PostgresRepository) AttachAlert(ctx context.Context, incidentID, alertID string) error {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	err := q.AddIncidentAlert(ctx, dbgen.AddIncidentAlertParams{
 		IncidentID: incidentID,
 		AlertID:    alertID,
@@ -256,7 +260,7 @@ func (r *PostgresRepository) AttachAlert(ctx context.Context, incidentID, alertI
 
 // AttachTrack links a track to an incident.
 func (r *PostgresRepository) AttachTrack(ctx context.Context, incidentID, trackID string) error {
-	err := dbgen.New(r.pool).AddIncidentTrack(ctx, dbgen.AddIncidentTrackParams{
+	err := dbgen.New(platformdb.Scoped(r.pool)).AddIncidentTrack(ctx, dbgen.AddIncidentTrackParams{
 		IncidentID: incidentID,
 		TrackID:    trackID,
 	})
@@ -265,7 +269,7 @@ func (r *PostgresRepository) AttachTrack(ctx context.Context, incidentID, trackI
 
 // AttachAsset links an asset to an incident.
 func (r *PostgresRepository) AttachAsset(ctx context.Context, incidentID, assetID string) error {
-	err := dbgen.New(r.pool).AddIncidentAsset(ctx, dbgen.AddIncidentAssetParams{
+	err := dbgen.New(platformdb.Scoped(r.pool)).AddIncidentAsset(ctx, dbgen.AddIncidentAssetParams{
 		IncidentID: incidentID,
 		AssetID:    assetID,
 	})
@@ -274,7 +278,7 @@ func (r *PostgresRepository) AttachAsset(ctx context.Context, incidentID, assetI
 
 // AttachObservation links an observation to an incident.
 func (r *PostgresRepository) AttachObservation(ctx context.Context, incidentID, observationID string) error {
-	err := dbgen.New(r.pool).AddIncidentObservation(ctx, dbgen.AddIncidentObservationParams{
+	err := dbgen.New(platformdb.Scoped(r.pool)).AddIncidentObservation(ctx, dbgen.AddIncidentObservationParams{
 		IncidentID:    incidentID,
 		ObservationID: observationID,
 	})
@@ -283,7 +287,7 @@ func (r *PostgresRepository) AttachObservation(ctx context.Context, incidentID, 
 
 // AttachAssessment links an assessment to an incident.
 func (r *PostgresRepository) AttachAssessment(ctx context.Context, incidentID, assessmentID string) error {
-	err := dbgen.New(r.pool).AddIncidentAssessment(ctx, dbgen.AddIncidentAssessmentParams{
+	err := dbgen.New(platformdb.Scoped(r.pool)).AddIncidentAssessment(ctx, dbgen.AddIncidentAssessmentParams{
 		IncidentID:   incidentID,
 		AssessmentID: assessmentID,
 	})
@@ -347,8 +351,9 @@ func toRelatedObservation(row dbgen.ListIncidentObservationsRow) RelatedObservat
 	}
 }
 
-func toRelatedAssessment(row dbgen.Assessment) RelatedAssessment {
-	return RelatedAssessment{
+func toRelatedAssessment(row dbgen.ListIncidentAssessmentsRow) (RelatedAssessment, error) {
+	out := RelatedAssessment{
+		ReviewStatus: row.ReviewStatus, RevisionID: row.RevisionID, PublishedRevisionID: row.PublishedRevisionID,
 		ID:          row.ID,
 		SubjectType: row.SubjectType,
 		SubjectID:   row.SubjectID,
@@ -358,6 +363,15 @@ func toRelatedAssessment(row dbgen.Assessment) RelatedAssessment {
 		Confidence:  row.Confidence,
 		CreatedAt:   pgconv.Time(row.CreatedAt),
 	}
+	if row.ReviewStatus != "" {
+		out.Confidence = nil
+		if len(row.ReviewConfidence) > 0 {
+			if err := json.Unmarshal(row.ReviewConfidence, &out.Confidence); err != nil {
+				return RelatedAssessment{}, err
+			}
+		}
+	}
+	return out, nil
 }
 
 func position(hasPosition bool, lat, lng float64) *geo.Point {

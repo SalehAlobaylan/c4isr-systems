@@ -9,7 +9,7 @@ INSERT INTO asset_telemetry (
          ELSE NULL END,
     @speed, @heading, @health, @connection_state, @payload
 )
-ON CONFLICT (message_id) WHERE message_id IS NOT NULL DO NOTHING
+ON CONFLICT (scope_id, message_id) WHERE message_id IS NOT NULL DO NOTHING
 RETURNING id;
 
 -- name: ListTelemetryByAsset :many

@@ -1,0 +1,131 @@
+{
+  "schema": "emad.opensky-acceptance.v1",
+  "acceptedAt": "2026-10-23T13:42:20.794929+00:00",
+  "activation": {
+    "schema": "emad.opensky-activation.v1",
+    "clientId": "devsaleh-api-client",
+    "apiAccess": "Standard",
+    "dailyCreditAllowance": 4000,
+    "dailyAllowanceIsRemainingBalance": false,
+    "coverage": {
+      "west": 39.144,
+      "south": 21.464,
+      "east": 39.216,
+      "north": 21.536
+    },
+    "minIntervalSeconds": 900,
+    "localMaxRequestsPerDay": 96,
+    "activation": {
+      "providerCredits": {
+        "bucket": "states",
+        "remaining": 3999,
+        "reportedAt": "2026-10-23T13:34:29.39783Z"
+      },
+      "sourceId": "scoped_cc8a43409a82eaa8647ac38c__source__local-opensky",
+      "state": "CONFIGURED",
+      "reason": "Server retrieval binding is present; health describes admitted retrieval and retained coverage.",
+      "nextAction": "Inspect retrieval history and coverage.",
+      "health": {
+        "state": "current",
+        "admissionId": "adm_01m5mffbvgmhpewxkb6gpezj93",
+        "originalProducer": "Contributing ADS-B receivers",
+        "upstreamProvider": "OpenSky Network",
+        "dataset": "opensky-state-vectors",
+        "productVersion": "v1",
+        "lastSuccessAt": "2026-10-23T16:34:29.39783+03:00",
+        "lastAttemptAt": "2026-10-23T16:34:28.682284+03:00",
+        "nextAttemptAt": "2026-10-23T16:49:29.39783+03:00",
+        "coverageFrom": "2026-10-23T16:29:28.682284+03:00",
+        "coverageTo": "2026-10-23T16:34:28.682284+03:00",
+        "pendingPublications": 0,
+        "meaning": "Provider query coverage only; missing records are not evidence of absence."
+      }
+    },
+    "run": {
+      "retrieval": {
+        "creditsRemaining": 3999,
+        "discontinuous": true,
+        "coverageMeaning": "One current bounded snapshot; lookback filters source timestamps and does not provide historical or complete reception coverage.",
+        "responseHash": "20b90800dfd98e77c30b6c442facad4c57df8e76bcf5fbf2eb31241dc4c459f0",
+        "locationId": "local-opensky",
+        "httpStatus": 200
+      },
+      "captureFrom": "2026-10-23T13:29:28.682284Z",
+      "captureTo": "2026-10-23T13:34:28.682284Z",
+      "id": "cnr_01m5mfgpacadgx7ymt6z969rje",
+      "sourceId": "scoped_cc8a43409a82eaa8647ac38c__source__local-opensky",
+      "admissionId": "adm_01m5mffbvgmhpewxkb6gpezj93",
+      "connectorId": "local-opensky",
+      "principalId": "worker-opensky",
+      "startedAt": "2026-10-23T13:34:28.6822842Z",
+      "finishedAt": "2026-10-23T13:34:29.39783Z",
+      "status": "SUCCEEDED",
+      "requests": 1,
+      "newEvidence": 0,
+      "duplicates": 0
+    },
+    "pairedBackupIncludesClient": true
+  },
+  "checks": {
+    "go": {
+      "status": "PASS",
+      "logSha256": "26ff2cc050d1ae59a04a0efa8f87b498f9c3e82a3649c343ebe1ed2884c2830c"
+    },
+    "integration": {
+      "status": "PASS",
+      "logSha256": "f5aa011638116683508508aff4cd45240de5e6636f2cc01ee6380300f4580e41"
+    },
+    "browser": {
+      "status": "PASS",
+      "logSha256": "9b86186137db67aee0c395253c41aab87feadba50dd16fe71d4d5ec7fe85c1bc"
+    },
+    "productionBuild": {
+      "status": "PASS",
+      "logSha256": "d66f42fadf2c7aa0ce4b8525a183197da33b71420fafb565ffee994755e607fb"
+    }
+  },
+  "meaning": "The remaining-credit value belongs to the retained provider response, not the account daily allowance or a continuously current balance. Empty bounded snapshots do not prove aircraft absence.",
+  "sourceFiles": {
+    "internal/publicingest/activation.go": "1e23a645b4e224413d84f8fc2294cb69e907ac1fee3bf8ee904edd69cdca0b05",
+    "internal/publicingest/retrieval.go": "7d34c04b8212128510c53a6f4e0cb043b09c5978c8df272839a5d0ae5f0e3bab",
+    "internal/publicingest/service.go": "4372fbb7c1aec021191fdd1f8f3075f1a71514fab5a78c8b3cd3b759dd7bd83d",
+    "internal/publicingest/repository.go": "4efd9cad55e05fc0666cc05ae385e0e8c6c4042d91972cfb256e0a23c17245bc",
+    "internal/publicingest/opensky_credits_test.go": "b200438de62fffc51ace64a6ac844a73fc928bda110185b8044560c31ad823c5",
+    "internal/integration/opensky_credits_test.go": "c0b39767ad88cb08086bf063dd7bc46b8a4fce24b8547c020c6e006ce5d395d9",
+    "api/openapi/openapi.yaml": "b8c073a441e4a59d7fe8a8c03ba95f56037d9ccdc289211b0aee4850cb3bab4e",
+    "apps/operator-ui/src/features/public-context/SourceStatus.tsx": "a70912dead1f19d40024e259d8a831c359766e84ac00eacd1ede1dab7b05fc0e",
+    "apps/operator-ui/src/lib/openapi.generated.ts": "0441b8e72a4837dd87b2e053259b44d794fc04c8518bc3d8bafb8193e833bbb4",
+    "apps/operator-ui/tests/recovery/opensky.spec.ts": "b4e50e474a16d37188a3332fa83ec844a5b738701015952f61b6594d4af6d944",
+    "scripts/ops/paired_backup.py": "8516a9c333960a59d984a93fb9253deb48fb6e5dcf411876936cdb9fb4029814",
+    "scripts/ops/collect_recovery_evidence.py": "1ff1ec27e0d4c1a360a433f988d5c7d45483847d257a6dcf2f8a9b41b7d941ed"
+  },
+  "screenshot": {
+    "file": "source-status.png",
+    "sha256": "6ce1e017adf207a421eae66559b6d79a1f4742e2d7a5dbbb79b0ea0e58c789a8"
+  },
+  "parentRecoveryAcceptanceSha256": "da4c655caf54b360a2053b912dccd4732e66b27a894e65cabd1bc6f0f549cba3",
+  "restoreAcceptance": {
+    "schema": "emad.restore-acceptance.v1",
+    "acceptedAt": "2026-10-23T13:41:15.672244+00:00",
+    "backupManifestSha256": "6bfafac8a58698eb0b2369ec4eafe904b7aad6550eb14981af6da92b5638bcb8",
+    "objectsVerified": 202,
+    "objectBytesVerified": 555321062,
+    "referenceVersions": 24,
+    "imageryCaptures": 4,
+    "modelsAndEnvironmentVerified": 7,
+    "recordings": [
+      {
+        "runId": "rt_398d340e726601cd309668c9dc9e0854eece4627b9a57f73b94a49f7cd6683d1",
+        "events": 124,
+        "frameSequence": 124
+      },
+      {
+        "runId": "rt_891e4456aa9e306e0114dff6d08d6f85407e5d7794ad3067670840213c5a31b2",
+        "events": 73259,
+        "frameSequence": 43
+      }
+    ],
+    "isolation": "New randomly named PostgreSQL and Garage containers/volumes; loopback ephemeral ports. Original installation was not modified.",
+    "reproducedAnalysisSha256": "54bfa7ffdef774485bbcb2d83d3edadceeeb1a4a21d70a4c79827c259a2ff975"
+  }
+}

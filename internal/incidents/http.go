@@ -110,14 +110,17 @@ type relatedObservationResponse struct {
 }
 
 type relatedAssessmentResponse struct {
-	ID          string    `json:"id"`
-	SubjectType string    `json:"subjectType"`
-	SubjectID   string    `json:"subjectId"`
-	Type        string    `json:"type"`
-	Conclusion  string    `json:"conclusion"`
-	Method      string    `json:"method"`
-	Confidence  *float64  `json:"confidence,omitempty"`
-	CreatedAt   time.Time `json:"createdAt"`
+	ReviewStatus        string    `json:"reviewStatus,omitempty"`
+	RevisionID          string    `json:"revisionId,omitempty"`
+	PublishedRevisionID string    `json:"publishedRevisionId,omitempty"`
+	ID                  string    `json:"id"`
+	SubjectType         string    `json:"subjectType"`
+	SubjectID           string    `json:"subjectId"`
+	Type                string    `json:"type"`
+	Conclusion          string    `json:"conclusion"`
+	Method              string    `json:"method"`
+	Confidence          *float64  `json:"confidence,omitempty"`
+	CreatedAt           time.Time `json:"createdAt"`
 }
 
 type detailResponse struct {
@@ -312,6 +315,7 @@ func toDetailResponse(detail Detail) detailResponse {
 	}
 	for _, assessment := range detail.Assessments {
 		resp.Assessments = append(resp.Assessments, relatedAssessmentResponse{
+			ReviewStatus: assessment.ReviewStatus, RevisionID: assessment.RevisionID, PublishedRevisionID: assessment.PublishedRevisionID,
 			ID:          assessment.ID,
 			SubjectType: assessment.SubjectType,
 			SubjectID:   assessment.SubjectID,

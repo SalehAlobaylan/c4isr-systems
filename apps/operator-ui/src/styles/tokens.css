@@ -32,14 +32,14 @@
      DESIGN.md §2.1. These eight are the *only* literal colour values in the
      file; every interface role below derives from them, so a change of
      foundation value propagates instead of leaving stale copies behind. */
-  --emad-mineral-canvas: #e3e9e2;
-  --emad-ceramic-surface: #f2f4ed;
-  --emad-mist-surface: #d4ded8;
+  --emad-mineral-canvas: #edf0f2;
+  --emad-ceramic-surface: #fbfcfd;
+  --emad-mist-surface: #e5eaed;
   --emad-industrial-graphite: #202b2d;
-  --emad-graphite-ink: #1d3030;
+  --emad-graphite-ink: #24343d;
   --emad-energized-lime: #b7d36b;
   --emad-signal-teal: #3c7780;
-  --emad-structural-border: #b4c4b9;
+  --emad-structural-border: #cdd6dc;
 
   /* ── Interface surfaces ──────────────────────────────────────────────
      Three low-glare light steps, deliberately close in value: separation is
@@ -53,10 +53,10 @@
      not a lighter one. */
   --emad-surface-inset: var(--emad-mist-surface);
   --emad-surface-raised: var(--emad-mist-surface);
-  --emad-surface-hover: #e8eee7;
+  --emad-surface-hover: #f0f5f6;
   --emad-surface-pressed: color-mix(in srgb, var(--emad-mist-surface) 76%, var(--emad-structural-border));
-  --emad-surface-selected: #c7d9c8;
-  --emad-surface-input: #f7f8f2;
+  --emad-surface-selected: #e0eff0;
+  --emad-surface-input: #ffffff;
 
   /* The one dark structural anchor. Navigation and primary actions live here
      so the workspace keeps its industrial character without the whole
@@ -66,10 +66,10 @@
 
   /* ── Interface text ────────────────────────────────────────────────── */
   --emad-text-primary: var(--emad-graphite-ink);
-  --emad-text-secondary: #4b6159;
+  --emad-text-secondary: #536670;
   /* Tertiary is low-emphasis, non-critical supporting copy on light surfaces.
      It is secondary-with-lower-contrast, never a body-text colour. */
-  --emad-text-tertiary: #5f7469;
+  --emad-text-tertiary: #61717b;
   /* Text that sits on graphite or another dark structural anchor. */
   --emad-text-on-dark: #e9f2ea;
   /* Text inside a lime-filled control: graphite on lime is 8.68:1. */
@@ -90,7 +90,7 @@
      `subtle` is decoration only and is below the 3:1 essential non-text
      threshold; `control` is for meaningful actionable boundaries. */
   --emad-border-subtle: var(--emad-structural-border);
-  --emad-border-control: #607f77;
+  --emad-border-control: #71858e;
 
   /* ── Operational semantics ───────────────────────────────────────────
      Meaning, not decoration. Chosen for usable text contrast on all three
@@ -102,7 +102,7 @@
   --emad-status-caution: #7e5319;
   --emad-status-high: #91451f;
   --emad-status-critical: #9a372f;
-  --emad-status-neutral: #4b6159;
+  --emad-status-neutral: #536670;
   /* A provisional assessment awaiting review. It is *not* "info" and must
      never stand in for it: the difference is whether the platform has a
      conclusion or the operator still has to make one. */

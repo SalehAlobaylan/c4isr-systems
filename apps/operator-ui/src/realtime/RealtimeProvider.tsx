@@ -8,8 +8,8 @@ import {
   type ReactNode,
 } from 'react'
 
-import { realtimeUrl, type RealtimeEnvelope } from '@/lib/api'
-import { queryKeys } from '@/lib/queryKeys'
+import { realtimeUrl, realtimeProtocols, type RealtimeEnvelope } from '@/lib/api'
+import { resourceKey, useWorkspace } from '@/lib/workspaceContext'
 import { applyRealtimeEvent } from '@/realtime/handlers'
 import { useScrubStore } from '@/stores/scrub'
 
@@ -37,6 +37,7 @@ const MAX_BACKOFF_MS = 30_000
  */
 export function RealtimeProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
+  const workspace = useWorkspace()
   const [status, setStatus] = useState<RealtimeStatus>('connecting')
   const [lastEventAt, setLastEventAt] = useState<string | null>(null)
   const queryClientRef = useRef(queryClient)
@@ -50,10 +51,13 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
   replayingRef.current = replaying
 
   useEffect(() => {
+    if (workspace.session.resource.partition !== 'PUBLIC_EVIDENCE' && workspace.session.resource.partition !== 'EXERCISE_OBSERVATION') { setStatus('disconnected'); return }
     let disposed = false
     let socket: WebSocket | null = null
     let reconnectTimer: number | undefined
     let attempt = 0
+    let ready = false
+    const expected = resourceKey(workspace.session.resource)
 
     const scheduleReconnect = () => {
       if (disposed) return
@@ -69,66 +73,72 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
       setStatus(attempt === 0 ? 'connecting' : 'reconnecting')
 
       try {
-        socket = new WebSocket(realtimeUrl())
+        socket = new WebSocket(realtimeUrl(workspace.session.resource), realtimeProtocols())
       } catch {
         scheduleReconnect()
         return
       }
 
-      socket.onopen = () => {
+      const connection = socket
+      connection.onopen = () => {
+        if (disposed || workspace.signal.aborted || socket !== connection) return
         attempt = 0
-        setStatus('connected')
-        // The stream has no replay cursor. Refresh active operational views
-        // after every reconnect so changes that happened while disconnected
-        // are reconciled from the API snapshot.
-        const client = queryClientRef.current
-        for (const queryKey of [
-          queryKeys.sources.all,
-          queryKeys.observations.all,
-          queryKeys.assets.all,
-          queryKeys.tracks.all,
-          queryKeys.geofences.all,
-          queryKeys.alerts.all,
-          queryKeys.incidents.all,
-          queryKeys.missions.all,
-          queryKeys.commands.all,
-          queryKeys.assessments.all,
-          queryKeys.audit.all,
-          queryKeys.scenarios.all,
-        ]) {
-          void client.invalidateQueries({ queryKey })
-        }
       }
 
       socket.onmessage = (message) => {
-        if (typeof message.data !== 'string') return
+        if (disposed || workspace.signal.aborted || socket !== connection || typeof message.data !== 'string') return
         try {
           const envelope = JSON.parse(message.data) as RealtimeEnvelope
+          if (envelope.version !== 2 || !envelope.resource || !['PUBLIC_EVIDENCE', 'EXERCISE_OBSERVATION'].includes(envelope.resource.partition)) return
+          if (resourceKey(envelope.resource) !== expected) return
+          if (envelope.type === 'realtime.ready') {
+            ready = true
+            setStatus('connected')
+            setLastEventAt(null)
+            void queryClient.invalidateQueries({ queryKey: workspace.prefix })
+            return
+          }
+          if (envelope.type === 'realtime.resync') {
+            // A grant/source change invalidates both snapshot authority and selection.
+            workspace.invalidate()
+            return
+          }
+          if (!ready) return
           setLastEventAt(envelope.occurredAt ?? new Date().toISOString())
-          applyRealtimeEvent(queryClientRef.current, envelope, replayingRef.current)
+          applyRealtimeEvent(queryClientRef.current, envelope, workspace.prefix, replayingRef.current)
         } catch {
-          // Ignore malformed frames; the stream remains the source of truth.
+          // Malformed/unknown frames cannot change cached state. API snapshots are authoritative.
         }
       }
 
-      socket.onclose = () => {
+      socket.onclose = (event) => {
+        if (disposed || workspace.signal.aborted || socket !== connection) return
+        ready = false
         socket = null
+        if (event.code === 1008) {
+          workspace.invalidate()
+          setStatus('disconnected')
+          return
+        }
         if (!disposed) scheduleReconnect()
       }
 
       socket.onerror = () => {
-        socket?.close()
+        connection.close()
       }
     }
 
-    connect()
+    // React StrictMode mounts, cleans up and mounts effects during development.
+    // Let that cleanup cancel startup before opening a socket: closing an
+    // in-flight upgrade can produce ECONNABORTED in the Windows Vite proxy.
+    reconnectTimer = window.setTimeout(connect, 0)
 
     return () => {
       disposed = true
       window.clearTimeout(reconnectTimer)
       socket?.close()
     }
-  }, [])
+  }, [queryClient, workspace])
 
   return (
     <RealtimeContext.Provider value={{ status, lastEventAt }}>

@@ -5,7 +5,7 @@
 -- fails at runtime. The empty string is already the "no area" value.
 INSERT INTO observations (
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    position, payload, quality, track_hint, area, area_kind
+    position, payload, quality, track_hint, area, area_kind,semantic_kind,geometry_role
 ) VALUES (
     @id, @source_id, @observation_type, @observed_at, @received_at, @processed_at,
     CASE WHEN @has_position::boolean
@@ -15,11 +15,11 @@ INSERT INTO observations (
     CASE WHEN @has_area::boolean
          THEN ST_SetSRID(ST_GeomFromGeoJSON(@area_geojson::text), 4326)::geography
          ELSE NULL END,
-    @area_kind
+    @area_kind,@semantic_kind,@geometry_role
 )
 RETURNING
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    payload, quality, track_hint, created_at, area_kind,
+    payload, quality, track_hint, created_at, area_kind,semantic_kind,geometry_role,
     (position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
     COALESCE(ST_X(position::geometry), 0)::float8 AS lng,
@@ -29,7 +29,7 @@ RETURNING
 -- name: GetObservation :one
 SELECT
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    payload, quality, track_hint, created_at, area_kind,
+    payload, quality, track_hint, created_at, area_kind,semantic_kind,geometry_role,
     (position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
     COALESCE(ST_X(position::geometry), 0)::float8 AS lng,
@@ -41,7 +41,7 @@ WHERE id = @id;
 -- name: ListObservations :many
 SELECT
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    payload, quality, track_hint, created_at, area_kind,
+    payload, quality, track_hint, created_at, area_kind,semantic_kind,geometry_role,
     (position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
     COALESCE(ST_X(position::geometry), 0)::float8 AS lng,
@@ -62,7 +62,7 @@ WHERE track_id = @track_id;
 -- name: ListObservationsByTrack :many
 SELECT
     o.id, o.source_id, o.observation_type, o.observed_at, o.received_at, o.processed_at,
-    o.payload, o.quality, o.track_hint, o.created_at, o.area_kind,
+    o.payload, o.quality, o.track_hint, o.created_at, o.area_kind,o.semantic_kind,o.geometry_role,
     (o.position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(o.position::geometry), 0)::float8 AS lat,
     COALESCE(ST_X(o.position::geometry), 0)::float8 AS lng,
@@ -110,7 +110,7 @@ ORDER BY overlap_m2 DESC;
 -- feed, so "newest N observations" would be almost entirely radar pings.
 SELECT
     id, source_id, observation_type, observed_at, received_at, processed_at,
-    payload, quality, track_hint, created_at, area_kind,
+    payload, quality, track_hint, created_at, area_kind,semantic_kind,geometry_role,
     (position IS NOT NULL)::boolean AS has_position,
     COALESCE(ST_Y(position::geometry), 0)::float8 AS lat,
     COALESCE(ST_X(position::geometry), 0)::float8 AS lng,

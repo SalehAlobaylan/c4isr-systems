@@ -8,6 +8,13 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type ActorTemplate struct {
+	ID             string
+	ScopeID        string
+	ModelVersionID string
+	Document       []byte
+}
+
 type Alert struct {
 	ID              string
 	Type            string
@@ -26,18 +33,37 @@ type Alert struct {
 	AcknowledgedBy  *string
 	ResolvedAt      pgtype.Timestamptz
 	ResolvedBy      *string
+	ScopeID         *string
+}
+
+type Artifact struct {
+	ID          string
+	ScopeID     string
+	SourceID    string
+	AdmissionID string
+	Sha256      string
+	SizeBytes   int64
+	MediaType   string
+	Kind        string
+	ObjectKey   string
+	Document    []byte
+	State       string
+	RetainUntil pgtype.Timestamptz
+	CreatedAt   pgtype.Timestamptz
 }
 
 type Assessment struct {
-	ID          string
-	SubjectType string
-	SubjectID   string
-	Type        string
-	Conclusion  string
-	Confidence  *float64
-	Method      string
-	CreatedBy   *string
-	CreatedAt   pgtype.Timestamptz
+	ID             string
+	SubjectType    string
+	SubjectID      string
+	Type           string
+	Conclusion     string
+	Confidence     *float64
+	Method         string
+	CreatedBy      *string
+	CreatedAt      pgtype.Timestamptz
+	ScopeID        *string
+	ReviewSourceID *string
 }
 
 type AssessmentEvidence struct {
@@ -45,6 +71,25 @@ type AssessmentEvidence struct {
 	EvidenceType string
 	EvidenceID   string
 	AddedAt      pgtype.Timestamptz
+	ScopeID      *string
+}
+
+type AssessmentReviewHead struct {
+	AssessmentID string
+	ScopeID      string
+	SourceID     string
+	LatestID     string
+	PublishedID  *string
+}
+
+type AssessmentRevision struct {
+	ID           string
+	AssessmentID string
+	ScopeID      string
+	SourceID     string
+	Version      int32
+	Status       string
+	Document     []byte
 }
 
 type Asset struct {
@@ -56,6 +101,7 @@ type Asset struct {
 	Metadata     []byte
 	CreatedAt    pgtype.Timestamptz
 	UpdatedAt    pgtype.Timestamptz
+	ScopeID      *string
 }
 
 type AssetState struct {
@@ -67,6 +113,7 @@ type AssetState struct {
 	ConnectionState string
 	LastSeenAt      pgtype.Timestamptz
 	UpdatedAt       pgtype.Timestamptz
+	ScopeID         *string
 }
 
 type AssetTelemetry struct {
@@ -83,6 +130,7 @@ type AssetTelemetry struct {
 	ConnectionState *string
 	Payload         []byte
 	CreatedAt       pgtype.Timestamptz
+	ScopeID         *string
 }
 
 type AuditEvent struct {
@@ -96,6 +144,24 @@ type AuditEvent struct {
 	CorrelationID *string
 	Data          []byte
 	CreatedAt     pgtype.Timestamptz
+	ScopeID       *string
+}
+
+type AuthorizationChange struct {
+	ID         int64
+	ActorID    string
+	SubjectID  string
+	Action     string
+	OccurredAt pgtype.Timestamptz
+}
+
+type AuthorizationDenial struct {
+	ID          int64
+	PrincipalID string
+	Permission  string
+	ScopeID     string
+	Reason      string
+	OccurredAt  pgtype.Timestamptz
 }
 
 type Classification struct {
@@ -107,6 +173,7 @@ type Classification struct {
 	SourceReference *string
 	CreatedBy       *string
 	CreatedAt       pgtype.Timestamptz
+	ScopeID         *string
 }
 
 type Command struct {
@@ -126,6 +193,97 @@ type Command struct {
 	AcknowledgedAt pgtype.Timestamptz
 	CompletedAt    pgtype.Timestamptz
 	FailureReason  *string
+	ScopeID        *string
+	RequestKey     *string
+	RequestOwner   string
+}
+
+type ConnectorRun struct {
+	ID          string
+	ScopeID     string
+	SourceID    string
+	AdmissionID string
+	Document    []byte
+}
+
+type ContextExportPreview struct {
+	ID        string
+	ScopeID   string
+	Creator   string
+	Sha256    string
+	Document  []byte
+	Bundle    []byte
+	ExpiresAt pgtype.Timestamptz
+}
+
+type ContextPackage struct {
+	ID       string
+	ScopeID  string
+	Document []byte
+	Bundle   []byte
+}
+
+type DataScope struct {
+	ID            string
+	WorkspaceID   string
+	EnvironmentID string
+	Partition     string
+	RunID         string
+}
+
+type EmadOwnershipReport struct {
+	TableName   string
+	Resolved    int64
+	Quarantined int64
+}
+
+type Environment struct {
+	WorkspaceID string
+	ID          string
+}
+
+type EnvironmentAsset struct {
+	ID             string
+	ScopeID        string
+	ModelVersionID string
+	Document       []byte
+}
+
+type ExerciseMessage struct {
+	ID          string
+	ScopeID     string
+	Kind        string
+	Sequence    int32
+	ElapsedMs   int64
+	VersionID   string
+	InputHash   string
+	Document    []byte
+	Status      string
+	ReceivedAt  pgtype.Timestamptz
+	ProcessedAt pgtype.Timestamptz
+	ErrorCode   string
+}
+
+type ExternalTrackAssociation struct {
+	EvidenceID    string
+	ScopeID       string
+	SourceID      string
+	TrackID       string
+	ObservationID string
+	ObservedAt    pgtype.Timestamptz
+	Document      []byte
+}
+
+type ExternalTrackSegment struct {
+	TrackID          string
+	ScopeID          string
+	SourceID         string
+	Kind             string
+	IdentityClaim    string
+	FirstSeenAt      pgtype.Timestamptz
+	LastSeenAt       pgtype.Timestamptz
+	LatestEvidenceID string
+	Document         []byte
 }
 
 type Geofence struct {
@@ -138,6 +296,7 @@ type Geofence struct {
 	Metadata  []byte
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
+	ScopeID   *string
 }
 
 type GeofenceState struct {
@@ -146,6 +305,56 @@ type GeofenceState struct {
 	Inside     bool
 	Since      pgtype.Timestamptz
 	UpdatedAt  pgtype.Timestamptz
+	ScopeID    *string
+}
+
+type ImageryJob struct {
+	ID          string
+	ScopeID     string
+	SourceID    string
+	Kind        string
+	Status      string
+	RequestKey  string
+	RequestHash string
+	Input       []byte
+	CreatedBy   string
+	CreatedAt   pgtype.Timestamptz
+	Attempt     int32
+	LeaseID     *string
+	LeaseUntil  pgtype.Timestamptz
+	WorkerBuild *string
+	ErrorCode   string
+	Result      []byte
+	FinishedAt  pgtype.Timestamptz
+}
+
+type ImageryJobAttempt struct {
+	JobID    string
+	ScopeID  string
+	SourceID string
+	Attempt  int32
+	Document []byte
+}
+
+type ImageryPreparation struct {
+	JobID      string
+	ScopeID    string
+	SourceID   string
+	SceneID    string
+	ArtifactID string
+	Document   []byte
+}
+
+type ImageryScene struct {
+	ID          string
+	ScopeID     string
+	SourceID    string
+	EvidenceID  string
+	AdmissionID string
+	ProviderID  string
+	AcquiredAt  pgtype.Timestamptz
+	Geometry    interface{}
+	Document    []byte
 }
 
 type Incident struct {
@@ -159,36 +368,42 @@ type Incident struct {
 	UpdatedAt        pgtype.Timestamptz
 	ResolvedAt       pgtype.Timestamptz
 	ClosedAt         pgtype.Timestamptz
+	ScopeID          *string
 }
 
 type IncidentAlert struct {
 	IncidentID string
 	AlertID    string
 	AddedAt    pgtype.Timestamptz
+	ScopeID    *string
 }
 
 type IncidentAssessment struct {
 	IncidentID   string
 	AssessmentID string
 	AddedAt      pgtype.Timestamptz
+	ScopeID      *string
 }
 
 type IncidentAsset struct {
 	IncidentID string
 	AssetID    string
 	AddedAt    pgtype.Timestamptz
+	ScopeID    *string
 }
 
 type IncidentObservation struct {
 	IncidentID    string
 	ObservationID string
 	AddedAt       pgtype.Timestamptz
+	ScopeID       *string
 }
 
 type IncidentTrack struct {
 	IncidentID string
 	TrackID    string
 	AddedAt    pgtype.Timestamptz
+	ScopeID    *string
 }
 
 type Mission struct {
@@ -202,12 +417,14 @@ type Mission struct {
 	UpdatedAt  pgtype.Timestamptz
 	StartedAt  pgtype.Timestamptz
 	EndedAt    pgtype.Timestamptz
+	ScopeID    *string
 }
 
 type MissionAsset struct {
 	MissionID  string
 	AssetID    string
 	AssignedAt pgtype.Timestamptz
+	ScopeID    *string
 }
 
 type MissionTask struct {
@@ -219,6 +436,71 @@ type MissionTask struct {
 	TargetPosition interface{}
 	CreatedAt      pgtype.Timestamptz
 	UpdatedAt      pgtype.Timestamptz
+	ScopeID        *string
+}
+
+type ModelAssetAttempt struct {
+	ID       string
+	ScopeID  string
+	UploadID string
+	Document []byte
+}
+
+type ModelAssetUpload struct {
+	ID              string
+	ScopeID         string
+	Kind            string
+	Document        []byte
+	ObjectKey       string
+	SizeBytes       int64
+	State           string
+	Attempts        int32
+	LeaseID         *string
+	LeaseUntil      pgtype.Timestamptz
+	ErrorCode       string
+	SourceFileID    *string
+	ParentVersionID *string
+}
+
+type ModelAssetVersion struct {
+	ID          string
+	ScopeID     string
+	UploadID    string
+	ManifestKey string
+	Document    []byte
+}
+
+type NativeControlledAsset struct {
+	ScopeID string
+	AssetID string
+}
+
+type NativeExercise struct {
+	ScopeID        string
+	Status         string
+	Desired        string
+	Epoch          pgtype.Timestamptz
+	ElapsedMs      int64
+	RuntimeVersion string
+	Scale          float64
+	LeaseUntil     pgtype.Timestamptz
+	StartedAt      pgtype.Timestamptz
+}
+
+type NativeProjectionBatch struct {
+	ScopeID   string
+	Sequence  int32
+	Document  []byte
+	Projected bool
+}
+
+type NativeTaskDispatch struct {
+	ScopeID    string
+	CommandID  string
+	IssuedMs   int64
+	DeadlineMs int64
+	TaskID     *string
+	Finished   bool
 }
 
 type Observation struct {
@@ -235,6 +517,10 @@ type Observation struct {
 	CreatedAt       pgtype.Timestamptz
 	Area            interface{}
 	AreaKind        *string
+	ScopeID         *string
+	PublicID        string
+	SemanticKind    string
+	GeometryRole    string
 }
 
 type Operator struct {
@@ -242,6 +528,117 @@ type Operator struct {
 	Name      string
 	Role      string
 	CreatedAt pgtype.Timestamptz
+}
+
+type Principal struct {
+	ID         string
+	Kind       string
+	OperatorID *string
+	Name       string
+	DisabledAt pgtype.Timestamptz
+	CreatedAt  pgtype.Timestamptz
+}
+
+type PrincipalCredential struct {
+	ID             string
+	PrincipalID    string
+	TokenHash      []byte
+	DefaultScopeID string
+	ExpiresAt      pgtype.Timestamptz
+	RevokedAt      pgtype.Timestamptz
+	CreatedAt      pgtype.Timestamptz
+}
+
+type PrincipalGrant struct {
+	ID            int64
+	PrincipalID   string
+	WorkspaceID   string
+	EnvironmentID string
+	Partition     string
+	RunID         string
+	Permissions   []string
+	SourceIds     []string
+}
+
+type PublicContextRecord struct {
+	EvidenceID string
+	ScopeID    string
+	SourceID   string
+	Kind       string
+	RecordKey  string
+	ValidFrom  pgtype.Timestamptz
+	ValidTo    pgtype.Timestamptz
+	RevisionAt pgtype.Timestamptz
+	KnownAt    pgtype.Timestamptz
+	Position   interface{}
+}
+
+type PublicEventCurrent struct {
+	ScopeID          string
+	SourceID         string
+	ProviderRecordID string
+	EvidenceID       string
+}
+
+type PublicEventRevision struct {
+	EvidenceID       string
+	ScopeID          string
+	SourceID         string
+	ProviderRecordID string
+	RevisionAt       pgtype.Timestamptz
+	ObservationID    *string
+	SupersedesID     *string
+	Document         []byte
+}
+
+type PublicEvidence struct {
+	ID               string
+	ScopeID          string
+	SourceID         string
+	AdmissionID      string
+	ConnectorRunID   string
+	ProviderRecordID string
+	ProviderRevision string
+	ContentHash      string
+	Document         []byte
+	OriginalRecord   []byte
+}
+
+type PublicEvidenceCatalog struct {
+	EvidenceID  string
+	ScopeID     string
+	SourceID    string
+	PublishedAt pgtype.Timestamptz
+}
+
+type PublicEvidenceOutbox struct {
+	EvidenceID    string
+	ScopeID       string
+	SourceID      string
+	Attempts      int32
+	DeliveredAt   pgtype.Timestamptz
+	NextAttemptAt pgtype.Timestamptz
+}
+
+type ReferenceDataset struct {
+	ID         string
+	ScopeID    string
+	SourceID   string
+	DatasetKey string
+	Version    string
+	Kind       string
+	Document   []byte
+	Artifact   []byte
+	SpecHash   string
+}
+
+type ReferenceFeature struct {
+	DatasetID  string
+	ScopeID    string
+	SourceID   string
+	FeatureID  string
+	Geometry   interface{}
+	Properties []byte
 }
 
 type ScenarioRun struct {
@@ -258,6 +655,8 @@ type ScenarioRun struct {
 	LastAction     *string
 	LastActionAtMs int64
 	ActionError    *string
+	ScopeID        *string
+	FrozenRun      []byte
 }
 
 type ScenarioRunEvent struct {
@@ -269,6 +668,123 @@ type ScenarioRunEvent struct {
 	Error         *string
 	CreatedAt     pgtype.Timestamptz
 	UpdatedAt     pgtype.Timestamptz
+	ScopeID       *string
+}
+
+type SimulationActorMapping struct {
+	ScopeID    string
+	MessageID  string
+	ActorID    string
+	ContactRef string
+	Kind       string
+}
+
+type SimulationAuthorizationHistory struct {
+	ID            int64
+	PrincipalID   string
+	WorkspaceID   string
+	EnvironmentID string
+	Partition     string
+	RunID         string
+	Kind          string
+	OccurredAt    pgtype.Timestamptz
+	Document      []byte
+}
+
+type SimulationEvaluation struct {
+	ScopeID   string
+	Document  []byte
+	CreatedAt pgtype.Timestamptz
+}
+
+type SimulationRecording struct {
+	ScopeID     string
+	Status      string
+	RequestedBy string
+	RequestedAt pgtype.Timestamptz
+	LeaseUntil  pgtype.Timestamptz
+	Attempts    int32
+	Manifest    []byte
+	ErrorCode   string
+	RetainUntil pgtype.Timestamptz
+}
+
+type SimulationRecordingEvent struct {
+	ScopeID    string
+	Sequence   int32
+	ElapsedMs  int64
+	ReceivedAt pgtype.Timestamptz
+	Kind       string
+	Entity     string
+	Operation  string
+	Document   []byte
+}
+
+type SimulationRecordingLimit struct {
+	ScopeID    string
+	EventCount int32
+	Bytes      int64
+	Truncated  bool
+}
+
+type SimulationReleasedReport struct {
+	ScopeID   string
+	Document  []byte
+	CreatedAt pgtype.Timestamptz
+}
+
+type SimulationRuntimeEvent struct {
+	ID      int64
+	ScopeID string
+	RunID   string
+	Kind    string
+	At      pgtype.Timestamptz
+}
+
+type SimulationRuntimeRun struct {
+	ID            string
+	ScopeID       string
+	SceneID       string
+	Configuration []byte
+	Status        string
+	Desired       string
+	WorkerID      *string
+	LeaseHash     *string
+	LeaseUntil    pgtype.Timestamptz
+	Sequence      int32
+	LastHash      string
+	ElapsedMs     int64
+	HeartbeatAt   pgtype.Timestamptz
+	FailureCode   string
+	CreatedAt     pgtype.Timestamptz
+	SampleCount   int32
+}
+
+type SimulationRuntimeTruth struct {
+	ScopeID   string
+	Document  []byte
+	UpdatedAt pgtype.Timestamptz
+}
+
+type SimulationScene struct {
+	ID        string
+	ScopeID   string
+	Name      string
+	Document  []byte
+	CreatedAt pgtype.Timestamptz
+}
+
+type SimulationSensorPreset struct {
+	ID        string
+	ScopeID   string
+	Document  []byte
+	CreatedAt pgtype.Timestamptz
+}
+
+type SimulationVersion struct {
+	ID       string
+	ScopeID  string
+	Document []byte
 }
 
 type Source struct {
@@ -279,18 +795,49 @@ type Source struct {
 	Metadata  []byte
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
+	ScopeID   *string
+}
+
+type SourceAdmission struct {
+	ID       string
+	ScopeID  string
+	SourceID string
+	Version  int32
+	Document []byte
+}
+
+type SourceConnectorState struct {
+	ScopeID         string
+	SourceID        string
+	AdmissionID     string
+	Checkpoint      string
+	NextAttemptAt   pgtype.Timestamptz
+	LastAttemptAt   pgtype.Timestamptz
+	LastSuccessAt   pgtype.Timestamptz
+	LastFailureCode string
+	Failures        int32
+	LeaseID         *string
+	LeaseUntil      pgtype.Timestamptz
+	QuotaDay        pgtype.Date
+	RequestsToday   int32
+	CoverageFrom    pgtype.Timestamptz
+	CoverageTo      pgtype.Timestamptz
+	QueryFrom       pgtype.Timestamptz
+	QueryTo         pgtype.Timestamptz
 }
 
 type Track struct {
-	ID          string
-	ExternalRef *string
-	Status      string
-	FirstSeenAt pgtype.Timestamptz
-	LastSeenAt  pgtype.Timestamptz
-	Metadata    []byte
-	CreatedAt   pgtype.Timestamptz
-	UpdatedAt   pgtype.Timestamptz
-	ClosedAt    pgtype.Timestamptz
+	ID               string
+	ExternalRef      *string
+	Status           string
+	FirstSeenAt      pgtype.Timestamptz
+	LastSeenAt       pgtype.Timestamptz
+	Metadata         []byte
+	CreatedAt        pgtype.Timestamptz
+	UpdatedAt        pgtype.Timestamptz
+	ClosedAt         pgtype.Timestamptz
+	ScopeID          *string
+	ExternalSourceID *string
 }
 
 type TrackHistory struct {
@@ -301,6 +848,7 @@ type TrackHistory struct {
 	Speed      *float64
 	Heading    *float64
 	CreatedAt  pgtype.Timestamptz
+	ScopeID    *string
 }
 
 type TrackObservation struct {
@@ -310,6 +858,7 @@ type TrackObservation struct {
 	ObservedAt    pgtype.Timestamptz
 	Position      interface{}
 	CreatedAt     pgtype.Timestamptz
+	ScopeID       *string
 }
 
 type TrackState struct {
@@ -318,4 +867,9 @@ type TrackState struct {
 	Speed     *float64
 	Heading   *float64
 	UpdatedAt pgtype.Timestamptz
+	ScopeID   *string
+}
+
+type Workspace struct {
+	ID string
 }

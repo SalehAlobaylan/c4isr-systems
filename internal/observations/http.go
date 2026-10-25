@@ -33,12 +33,14 @@ func (h *Handler) Mount(r chi.Router) {
 }
 
 type ingestRequest struct {
-	ID         string     `json:"id"`
-	SourceID   string     `json:"sourceId"`
-	Type       string     `json:"type"`
-	ObservedAt *time.Time `json:"observedAt"`
-	ReceivedAt *time.Time `json:"receivedAt"`
-	Position   *geo.Point `json:"position"`
+	SemanticKind string     `json:"semanticKind"`
+	GeometryRole string     `json:"geometryRole"`
+	ID           string     `json:"id"`
+	SourceID     string     `json:"sourceId"`
+	Type         string     `json:"type"`
+	ObservedAt   *time.Time `json:"observedAt"`
+	ReceivedAt   *time.Time `json:"receivedAt"`
+	Position     *geo.Point `json:"position"`
 	// Area reports an event with extent - a wildfire, an earthquake, a weather
 	// cell - instead of a moving object. It carries a footprint and never
 	// becomes a track.
@@ -54,19 +56,21 @@ type areaRequest struct {
 }
 
 type observationResponse struct {
-	ID          string         `json:"id"`
-	SourceID    string         `json:"sourceId"`
-	Type        string         `json:"type"`
-	ObservedAt  time.Time      `json:"observedAt"`
-	ReceivedAt  time.Time      `json:"receivedAt"`
-	ProcessedAt *time.Time     `json:"processedAt,omitempty"`
-	Position    *geo.Point     `json:"position,omitempty"`
-	Area        *areaResponse  `json:"area,omitempty"`
-	Payload     map[string]any `json:"payload"`
-	Quality     map[string]any `json:"quality,omitempty"`
-	TrackHint   string         `json:"trackHint,omitempty"`
-	CreatedAt   time.Time      `json:"createdAt"`
-	Duplicate   bool           `json:"duplicate,omitempty"`
+	SemanticKind string         `json:"semanticKind"`
+	GeometryRole string         `json:"geometryRole"`
+	ID           string         `json:"id"`
+	SourceID     string         `json:"sourceId"`
+	Type         string         `json:"type"`
+	ObservedAt   time.Time      `json:"observedAt"`
+	ReceivedAt   time.Time      `json:"receivedAt"`
+	ProcessedAt  *time.Time     `json:"processedAt,omitempty"`
+	Position     *geo.Point     `json:"position,omitempty"`
+	Area         *areaResponse  `json:"area,omitempty"`
+	Payload      map[string]any `json:"payload"`
+	Quality      map[string]any `json:"quality,omitempty"`
+	TrackHint    string         `json:"trackHint,omitempty"`
+	CreatedAt    time.Time      `json:"createdAt"`
+	Duplicate    bool           `json:"duplicate,omitempty"`
 }
 
 // areaResponse is the GeoJSON the browser renders. The polygon is returned in
@@ -94,6 +98,7 @@ func (h *Handler) ingest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	in := CreateInput{
+		SemanticKind: req.SemanticKind, GeometryRole: req.GeometryRole,
 		ID:        req.ID,
 		SourceID:  req.SourceID,
 		Type:      req.Type,
@@ -172,6 +177,7 @@ func toResponse(obs Observation, duplicate bool) observationResponse {
 		payload = map[string]any{}
 	}
 	return observationResponse{
+		SemanticKind: obs.SemanticKind, GeometryRole: obs.GeometryRole,
 		ID:          obs.ID,
 		SourceID:    obs.SourceID,
 		Type:        obs.Type,

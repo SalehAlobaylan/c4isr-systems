@@ -1,0 +1,136 @@
+{
+  "schema": "emad.firms-acceptance.v1",
+  "acceptedAt": "2026-10-23T16:16:08.861046+00:00",
+  "activation": {
+    "schema": "emad.firms-activation.v1",
+    "activation": {
+      "sourceId": "scoped_cc8a43409a82eaa8647ac38c__source__local-firms",
+      "state": "CONFIGURED",
+      "reason": "FIRMS accepted a bounded day page. The initial frozen lookback is being backfilled; complete query coverage has not been established yet.",
+      "nextAction": "The worker resumes the remaining UTC-day pages at the next scheduled attempt. Existing pacing and daily limits remain enforced.",
+      "health": {
+        "state": "unknown",
+        "admissionId": "adm_01m5mra4c0s4207vzfmpcypxta",
+        "originalProducer": "NASA LANCE / NOAA-20 VIIRS",
+        "upstreamProvider": "NASA FIRMS",
+        "dataset": "VIIRS_NOAA20_NRT",
+        "productVersion": "2.0NRT",
+        "lastAttemptAt": "2026-10-23T19:08:29.223405+03:00",
+        "nextAttemptAt": "2026-10-23T20:08:30.505025+03:00",
+        "failureCode": "page_budget",
+        "pendingPublications": 0,
+        "meaning": "Provider query coverage only; missing records are not evidence of absence."
+      }
+    },
+    "run": {
+      "retrieval": {
+        "responseHash": "2b11a44667d05367ecf77651b95fd3d34c545c7ec154856094b91245e41ae697",
+        "locationId": "local-firms",
+        "httpStatus": 200
+      },
+      "captureFrom": "2026-10-20T16:08:29.223405Z",
+      "captureTo": "2026-10-23T16:08:29.223405Z",
+      "id": "cnr_01m5mrap9ak2w46vt372bhpq1a",
+      "sourceId": "scoped_cc8a43409a82eaa8647ac38c__source__local-firms",
+      "admissionId": "adm_01m5mra4c0s4207vzfmpcypxta",
+      "connectorId": "local-firms",
+      "principalId": "worker-firms",
+      "startedAt": "2026-10-23T16:08:29.2234057Z",
+      "finishedAt": "2026-10-23T16:08:30.505025Z",
+      "status": "PARTIAL",
+      "failureCode": "page_budget",
+      "requests": 1,
+      "newEvidence": 0,
+      "duplicates": 0
+    },
+    "coverage": {
+      "west": 39.144,
+      "south": 21.464,
+      "east": 39.216,
+      "north": 21.536
+    },
+    "policy": {
+      "aoi": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      },
+      "lookbackSeconds": 259200,
+      "freshForSeconds": 86400,
+      "unavailableAfterSeconds": 604800,
+      "minIntervalSeconds": 3600,
+      "timeoutSeconds": 10,
+      "maxPages": 3,
+      "maxRecordsPerPage": 200,
+      "maxResponseBytes": 4194304,
+      "maxRequestsPerDay": 24
+    },
+    "dataset": "VIIRS_NOAA20_NRT",
+    "productVersion": "2.0NRT",
+    "keyLocation": "private/local/firms.key",
+    "secretDisplayed": false,
+    "liveAdapterVerification": "PASS",
+    "liveAdapterMeaning": "Authorized real NASA query and assembled evidence path completed in a disposable database; persistent source lookback remains paced and partial.",
+    "pairedBackupIncludesKey": true
+  },
+  "checks": {
+    "unit": {
+      "status": "PASS",
+      "logSha256": "3e88f8e71b06d9c37d6f698e82121f9e04a6eb769036798081859668552f927b"
+    },
+    "liveAdapter": {
+      "status": "PASS",
+      "logSha256": "b1c822d49e491bd18d62830eae9284f60627363db03ea632e578bc495291fb03"
+    },
+    "integration": {
+      "status": "PASS",
+      "logSha256": "2f910b2f03b333414b6565978275cd1b67a099538f59b29760b07902e0d1cb59"
+    },
+    "browser": {
+      "status": "PASS",
+      "logSha256": "50db5e7a6a2c929f1068cbf0793c6d8fade5d1beb84af0d81ad9c19731450f43"
+    },
+    "productionBuild": {
+      "status": "PASS",
+      "logSha256": "6125693213841310bdd83404da1928f7e9887a35533f671149ca05c51ae92e0f"
+    }
+  },
+  "coverageMeaning": "First installed day page accepted; complete three-day lookback is not yet established. No absence-of-fire claim.",
+  "sourceFiles": {
+    "internal/publicingest/activation.go": "99ffe54a8c9c26c8728133f0fe8b7f6a78d5c26dcd234d60e4d228f577460b86",
+    "internal/integration/firms_activation_test.go": "e944d264e9995fb156df7c3bf4f1fc2444714881c48a4fe4e4dd973fe0bdad9f",
+    "apps/operator-ui/src/features/public-context/SourceStatus.tsx": "b94f0d6fb8310fc49859f80e59399fe64249cfc5d9170270d5a6cd63a2fd9b10",
+    "apps/operator-ui/tests/recovery/firms.spec.ts": "b24af22d6a22b15c7911446ae2451d7ab9ec5e9549559929e695476aac15686f",
+    "scripts/ops/paired_backup.py": "08a8450c96d3b7ff2fa2f80b71bd572e30a120261fc8056f28c0986c5fe0e058",
+    "scripts/ops/collect_recovery_evidence.py": "9b0bd9150ed6f1434e2d0bcf0e424faf4426b5dcd4dc8e92ab65924fc61c5ef2"
+  },
+  "screenshot": {
+    "file": "source-status.png",
+    "sha256": "9ed2fa0693be1de8ce027d3904381c376f8e316f402c8c3ccd83b11a947268c9"
+  },
+  "restoreAcceptance": {
+    "schema": "emad.restore-acceptance.v1",
+    "acceptedAt": "2026-10-23T16:17:13.560280+00:00",
+    "backupManifestSha256": "3d34a8ec7252a6e4a37806847a35099e8686c2c312f7cb1efe2f590f9e5fbb2d",
+    "objectsVerified": 202,
+    "objectBytesVerified": 555321062,
+    "referenceVersions": 24,
+    "imageryCaptures": 4,
+    "modelsAndEnvironmentVerified": 7,
+    "recordings": [
+      {
+        "runId": "rt_398d340e726601cd309668c9dc9e0854eece4627b9a57f73b94a49f7cd6683d1",
+        "events": 124,
+        "frameSequence": 124
+      },
+      {
+        "runId": "rt_891e4456aa9e306e0114dff6d08d6f85407e5d7794ad3067670840213c5a31b2",
+        "events": 73259,
+        "frameSequence": 43
+      }
+    ],
+    "isolation": "New randomly named PostgreSQL and Garage containers/volumes; loopback ephemeral ports. Original installation was not modified.",
+    "reproducedAnalysisSha256": "54bfa7ffdef774485bbcb2d83d3edadceeeb1a4a21d70a4c79827c259a2ff975"
+  }
+}

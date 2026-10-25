@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
 )
@@ -31,6 +32,10 @@ func NewService(repo Repository, assets AssetRegistry, bus *events.Dispatcher) *
 // Create plans a mission, assigns its assets, creates its tasks, and publishes
 // mission.created.
 func (s *Service) Create(ctx context.Context, in CreateInput) (Mission, error) {
+	if scopeErr := access.Require(ctx, "missions.create"); scopeErr != nil {
+		return Mission{}, scopeErr
+	}
+
 	in.Normalize()
 	if err := in.Validate(); err != nil {
 		return Mission{}, err
@@ -99,17 +104,29 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Mission, error) {
 
 // Get returns a mission together with its assets and tasks.
 func (s *Service) Get(ctx context.Context, id string) (Mission, error) {
+	if scopeErr := access.Require(ctx, "missions.read"); scopeErr != nil {
+		return Mission{}, scopeErr
+	}
+
 	return s.repo.Get(ctx, id)
 }
 
 // List returns missions newest first.
 func (s *Service) List(ctx context.Context, status string, limit, offset int) ([]Mission, int, error) {
+	if scopeErr := access.Require(ctx, "missions.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	return s.repo.List(ctx, status, clampLimit(limit), max(offset, 0))
 }
 
 // UpdateStatus moves a mission through its lifecycle and publishes
 // mission.updated.
 func (s *Service) UpdateStatus(ctx context.Context, id string, status Status, actor string) (Mission, error) {
+	if scopeErr := access.Require(ctx, "missions.update"); scopeErr != nil {
+		return Mission{}, scopeErr
+	}
+
 	if !validStatus(status) {
 		return Mission{}, apperr.Validation("mission status must be one of PLANNED, ACTIVE, COMPLETED, ABORTED")
 	}
@@ -130,6 +147,10 @@ func (s *Service) UpdateStatus(ctx context.Context, id string, status Status, ac
 
 // AssignAsset assigns an asset to a mission and publishes mission.updated.
 func (s *Service) AssignAsset(ctx context.Context, missionID, assetID, actor string) (Mission, error) {
+	if scopeErr := access.Require(ctx, "missions.update"); scopeErr != nil {
+		return Mission{}, scopeErr
+	}
+
 	missionID = strings.TrimSpace(missionID)
 	assetID = strings.TrimSpace(assetID)
 	if missionID == "" {
@@ -158,6 +179,10 @@ func (s *Service) AssignAsset(ctx context.Context, missionID, assetID, actor str
 
 // AddTask adds a task to a mission and publishes mission.updated.
 func (s *Service) AddTask(ctx context.Context, missionID string, in TaskInput, actor string) (Task, error) {
+	if scopeErr := access.Require(ctx, "missions.update"); scopeErr != nil {
+		return Task{}, scopeErr
+	}
+
 	in.Normalize()
 	if err := in.Validate(); err != nil {
 		return Task{}, err
@@ -187,6 +212,10 @@ func (s *Service) AddTask(ctx context.Context, missionID string, in TaskInput, a
 
 // UpdateTaskStatus changes a task's status and publishes mission.updated.
 func (s *Service) UpdateTaskStatus(ctx context.Context, missionID, taskID string, status TaskStatus, actor string) (Task, error) {
+	if scopeErr := access.Require(ctx, "missions.update"); scopeErr != nil {
+		return Task{}, scopeErr
+	}
+
 	if !validTaskStatus(status) {
 		return Task{}, apperr.Validation("task status must be one of PENDING, ACTIVE, COMPLETED, FAILED, CANCELLED")
 	}

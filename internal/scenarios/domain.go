@@ -14,6 +14,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/assessments"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/simulation"
 )
 
 // Run statuses.
@@ -52,6 +53,7 @@ const (
 
 // Defaults for scenario timing.
 const (
+	maxRunMs              = int64(31 * 24 * time.Hour / time.Millisecond)
 	defaultPlaybackSpeed  = 1.0
 	defaultTelemetryMs    = 1000
 	defaultObserveUntilMs = 120000
@@ -62,39 +64,46 @@ const (
 
 // Scenario is the parsed YAML definition of a deterministic operational run.
 type Scenario struct {
-	Name              string          `yaml:"scenario" json:"name"`
-	Description       string          `yaml:"description" json:"description"`
-	Seed              int64           `yaml:"seed" json:"seed"`
-	PlaybackSpeed     float64         `yaml:"playback_speed" json:"playbackSpeed"`
-	Sources           []SourceSpec    `yaml:"sources" json:"sources"`
-	Assets            []AssetSpec     `yaml:"assets" json:"assets"`
-	Geofences         []GeofenceSpec  `yaml:"geofences" json:"geofences"`
-	Tracks            []TrackSpec     `yaml:"tracks" json:"tracks"`
-	Events            []EventSpec     `yaml:"events" json:"events"`
-	CommandSimulation *CommandSimSpec `yaml:"command_simulation" json:"commandSimulation"`
+	ContextAnchors    []ContextAnchor   `yaml:"context_anchors" json:"contextAnchors,omitempty"`
+	Clock             *ClockConfig      `yaml:"clock" json:"clock,omitempty"`
+	Frame             *simulation.Frame `yaml:"frame" json:"frame,omitempty"`
+	ContextPackages   []string          `yaml:"context_packages" json:"contextPackages,omitempty"`
+	Name              string            `yaml:"scenario" json:"name"`
+	Description       string            `yaml:"description" json:"description"`
+	Seed              int64             `yaml:"seed" json:"seed"`
+	PlaybackSpeed     float64           `yaml:"playback_speed" json:"playbackSpeed"`
+	Sources           []SourceSpec      `yaml:"sources" json:"sources"`
+	Assets            []AssetSpec       `yaml:"assets" json:"assets"`
+	Geofences         []GeofenceSpec    `yaml:"geofences" json:"geofences"`
+	Tracks            []TrackSpec       `yaml:"tracks" json:"tracks"`
+	Events            []EventSpec       `yaml:"events" json:"events"`
+	CommandSimulation *CommandSimSpec   `yaml:"command_simulation" json:"commandSimulation"`
 }
 
 // SourceSpec declares a synthetic source.
 type SourceSpec struct {
-	ID   string `yaml:"id" json:"id"`
-	Name string `yaml:"name" json:"name"`
-	Type string `yaml:"type" json:"type"`
+	Fidelity *simulation.Fidelity `yaml:"fidelity" json:"fidelity,omitempty"`
+	ID       string               `yaml:"id" json:"id"`
+	Name     string               `yaml:"name" json:"name"`
+	Type     string               `yaml:"type" json:"type"`
 }
 
 // AssetSpec declares a controlled asset and its initial placement.
 type AssetSpec struct {
-	ID       string    `yaml:"id" json:"id"`
-	Name     string    `yaml:"name" json:"name"`
-	Type     string    `yaml:"type" json:"type"`
-	Start    *Position `yaml:"start" json:"start"`
-	SpeedMPS *float64  `yaml:"speed_mps" json:"speedMps"`
+	Fidelity *simulation.Fidelity `yaml:"fidelity" json:"fidelity,omitempty"`
+	ID       string               `yaml:"id" json:"id"`
+	Name     string               `yaml:"name" json:"name"`
+	Type     string               `yaml:"type" json:"type"`
+	Start    *Position            `yaml:"start" json:"start"`
+	SpeedMPS *float64             `yaml:"speed_mps" json:"speedMps"`
 }
 
 // TrackSpec declares an observed entity. Tracks are created on first
 // observation through the track hint.
 type TrackSpec struct {
-	ID    string    `yaml:"id" json:"id"`
-	Start *Position `yaml:"start" json:"start"`
+	Fidelity *simulation.Fidelity `yaml:"fidelity" json:"fidelity,omitempty"`
+	ID       string               `yaml:"id" json:"id"`
+	Start    *Position            `yaml:"start" json:"start"`
 }
 
 // GeofenceSpec declares an authoritative PostGIS polygon.
@@ -198,6 +207,7 @@ func validAreaKind(kind string) bool {
 
 // Run is the persisted control-plane state of a scenario execution.
 type Run struct {
+	Frozen            FrozenRun
 	ID                string
 	ResourceNamespace string
 	ScenarioName      string
@@ -262,6 +272,9 @@ func ParseDurationMs(raw string) (int64, error) {
 	if err != nil {
 		return 0, apperr.Validation("invalid duration " + raw)
 	}
+	if d > 31*24*time.Hour {
+		return 0, apperr.Validation("scenario duration exceeds 31 days")
+	}
 	if d < 0 {
 		return 0, apperr.Validation("duration must not be negative: " + raw)
 	}
@@ -286,6 +299,54 @@ func validateLogicalID(kind, id string) error {
 
 // Validate checks scenario structure and cross references.
 func (s *Scenario) Validate() error {
+	if s.Clock != nil {
+		if err := s.Clock.Validate(); err != nil {
+			return err
+		}
+	}
+	if len(s.ContextPackages) > 16 {
+		return apperr.Validation("at most 16 context packages may be frozen")
+	}
+	seenPackages := map[string]bool{}
+	for _, id := range s.ContextPackages {
+		if len(id) != 68 || !strings.HasPrefix(id, "ctx_") || seenPackages[id] {
+			return apperr.Validation("invalid or duplicate context package ID")
+		}
+		seenPackages[id] = true
+	}
+	if s.Frame != nil {
+		if err := s.Frame.Validate(); err != nil {
+			return apperr.Validation(err.Error())
+		}
+	}
+	for i := range s.Sources {
+		if s.Sources[i].Fidelity == nil {
+			v := legacyFidelity("abstract_behavior")
+			s.Sources[i].Fidelity = &v
+		}
+		if err := s.Sources[i].Fidelity.Validate(); err != nil {
+			return apperr.Validation(err.Error())
+		}
+	}
+	for i := range s.Assets {
+		if s.Assets[i].Fidelity == nil {
+			v := legacyFidelity("kinematic")
+			s.Assets[i].Fidelity = &v
+		}
+		if err := s.Assets[i].Fidelity.Validate(); err != nil {
+			return apperr.Validation(err.Error())
+		}
+	}
+	for i := range s.Tracks {
+		if s.Tracks[i].Fidelity == nil {
+			v := legacyFidelity("kinematic")
+			s.Tracks[i].Fidelity = &v
+		}
+		if err := s.Tracks[i].Fidelity.Validate(); err != nil {
+			return apperr.Validation(err.Error())
+		}
+	}
+
 	if strings.TrimSpace(s.Name) == "" {
 		return apperr.Validation("scenario name is required")
 	}
@@ -374,6 +435,21 @@ func (s *Scenario) Validate() error {
 		}
 	}
 
+	if len(s.ContextAnchors) > 64 {
+		return apperr.Validation("at most 64 context anchors are allowed")
+	}
+	anchored := map[string]bool{}
+	for _, a := range s.ContextAnchors {
+		if !trackIDs[a.Track] || anchored[a.Track] || !seenPackages[a.PackageID] || a.DatasetID == "" || a.FeatureID == "" {
+			return apperr.Validation("invalid or ambiguous context anchor")
+		}
+		anchored[a.Track] = true
+		for _, t := range s.Tracks {
+			if t.ID == a.Track && t.Start != nil {
+				return apperr.Validation("context anchored track cannot also declare a start position")
+			}
+		}
+	}
 	geofenceIDs := map[string]bool{}
 	for _, gf := range s.Geofences {
 		if err := validateLogicalID("geofence", gf.ID); err != nil {

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "metar-region",
+    "sourceId": "REPLACE_WITH_REGISTERED_METAR_SOURCE_ID",
+    "resource": {
+      "workspaceId": "public-context",
+      "environmentId": "world",
+      "partition": "PUBLIC_EVIDENCE"
+    },
+    "url": "https://aviationweather.gov/api/data/metar",
+    "adapter": "noaa-metar-v1",
+    "maxRequestsPerDay": 96
+  },
+  {
+    "id": "gdacs-region",
+    "sourceId": "REPLACE_WITH_REGISTERED_GDACS_SOURCE_ID",
+    "resource": {
+      "workspaceId": "public-context",
+      "environmentId": "world",
+      "partition": "PUBLIC_EVIDENCE"
+    },
+    "url": "https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH",
+    "adapter": "gdacs-eq-bulletins-v1",
+    "maxRequestsPerDay": 96
+  }
+]

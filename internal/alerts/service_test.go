@@ -12,6 +12,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type fakeRepository struct {
@@ -143,7 +144,7 @@ func TestHandleGeofenceBreachedCreatesAlert(t *testing.T) {
 	svc, recorder := newTestService(repo)
 	svc.now = func() time.Time { return fixedNow }
 
-	svc.HandleGeofenceBreached(context.Background(), events.GeofenceBreached{
+	svc.HandleGeofenceBreached(testsupport.Context(), events.GeofenceBreached{
 		At:           fixedNow,
 		GeofenceID:   "geo_1",
 		GeofenceName: "No-Fly Zone",
@@ -199,7 +200,7 @@ func TestHandleGeofenceBreachedSuppressesDuplicate(t *testing.T) {
 	repo := &fakeRepository{unresolved: &Alert{ID: "alr_existing", State: StateAcknowledged}}
 	svc, recorder := newTestService(repo)
 
-	svc.HandleGeofenceBreached(context.Background(), events.GeofenceBreached{
+	svc.HandleGeofenceBreached(testsupport.Context(), events.GeofenceBreached{
 		GeofenceID: "geo_1",
 		TrackID:    "trk_1",
 		Severity:   "high",
@@ -218,7 +219,7 @@ func TestHandleGeofenceBreachedIncludesScenarioProvenance(t *testing.T) {
 	svc, _ := newTestService(repo)
 	scope := runctx.Scope{RunID: "run-1", ResourceNamespace: "run-1__"}
 
-	svc.HandleGeofenceBreached(runctx.WithScope(context.Background(), scope), events.GeofenceBreached{
+	svc.HandleGeofenceBreached(runctx.WithScope(testsupport.Context(), scope), events.GeofenceBreached{
 		GeofenceID:   "run-1__geofence__zone",
 		GeofenceName: "Scenario Zone",
 		GeofenceType: "restricted",
@@ -239,7 +240,7 @@ func TestHandleGeofenceBreachedDefaultsUnknownSeverity(t *testing.T) {
 	repo := &fakeRepository{}
 	svc, _ := newTestService(repo)
 
-	svc.HandleGeofenceBreached(context.Background(), events.GeofenceBreached{
+	svc.HandleGeofenceBreached(testsupport.Context(), events.GeofenceBreached{
 		GeofenceID: "geo_1",
 		TrackID:    "trk_1",
 		Severity:   "bogus",
@@ -256,7 +257,7 @@ func TestAlertLifecycle(t *testing.T) {
 	}}
 	svc, recorder := newTestService(repo)
 
-	acknowledged, err := svc.Acknowledge(context.Background(), "alr_1", "operator-07")
+	acknowledged, err := svc.Acknowledge(testsupport.Context(), "alr_1", "operator-07")
 	if err != nil {
 		t.Fatalf("unexpected acknowledge error: %v", err)
 	}
@@ -267,7 +268,7 @@ func TestAlertLifecycle(t *testing.T) {
 		t.Fatalf("expected acknowledgement event, got %+v", recorder.acknowledged)
 	}
 
-	resolved, err := svc.Resolve(context.Background(), "alr_1", "operator-07")
+	resolved, err := svc.Resolve(testsupport.Context(), "alr_1", "operator-07")
 	if err != nil {
 		t.Fatalf("unexpected resolve error: %v", err)
 	}
@@ -278,14 +279,14 @@ func TestAlertLifecycle(t *testing.T) {
 		t.Fatalf("expected resolve event, got %+v", recorder.resolved)
 	}
 
-	if _, err := svc.Resolve(context.Background(), "alr_1", "operator-07"); err == nil {
+	if _, err := svc.Resolve(testsupport.Context(), "alr_1", "operator-07"); err == nil {
 		t.Fatal("expected conflict resolving a resolved alert")
 	}
 	if len(recorder.resolved) != 1 {
 		t.Fatalf("expected no event for the rejected transition, got %d", len(recorder.resolved))
 	}
 
-	if _, err := svc.Acknowledge(context.Background(), "alr_1", "operator-07"); err == nil {
+	if _, err := svc.Acknowledge(testsupport.Context(), "alr_1", "operator-07"); err == nil {
 		t.Fatal("expected conflict acknowledging a resolved alert")
 	}
 	if len(recorder.acknowledged) != 1 {
@@ -298,7 +299,7 @@ func TestListClampsLimitAndOffset(t *testing.T) {
 	svc, _ := newTestService(repo)
 	filter := ListFilter{State: "ACTIVE", Severity: "high", TrackID: "trk_1", IncidentID: "inc_1"}
 
-	items, total, err := svc.List(context.Background(), filter, 5000, -3)
+	items, total, err := svc.List(testsupport.Context(), filter, 5000, -3)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -312,7 +313,7 @@ func TestListClampsLimitAndOffset(t *testing.T) {
 		t.Fatalf("expected filter %+v, got %+v", filter, repo.listFilter)
 	}
 
-	if _, _, err := svc.List(context.Background(), ListFilter{}, 0, 0); err != nil {
+	if _, _, err := svc.List(testsupport.Context(), ListFilter{}, 0, 0); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if repo.listLimit != DefaultLimit {
@@ -324,7 +325,7 @@ func TestSetIncidentDelegates(t *testing.T) {
 	repo := &fakeRepository{}
 	svc, _ := newTestService(repo)
 
-	if err := svc.SetIncident(context.Background(), "alr_1", "inc_1"); err != nil {
+	if err := svc.SetIncident(testsupport.Context(), "alr_1", "inc_1"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if repo.incidentSet != [2]string{"alr_1", "inc_1"} {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 type rejectionRepository struct{}
@@ -36,7 +37,7 @@ func TestIngestPublishesStableRejectionReason(t *testing.T) {
 	svc := NewService(rejectionRepository{}, rejectionSourceRegistry{err: errors.New("database password and relation leaked")}, bus)
 	svc.now = func() time.Time { return time.Date(2026, 9, 20, 12, 0, 0, 0, time.UTC) }
 
-	_, err := svc.Ingest(context.Background(), CreateInput{
+	_, err := svc.Ingest(testsupport.Context(), CreateInput{
 		ID:         "obs-1",
 		SourceID:   "source-1",
 		Type:       "track.observation",

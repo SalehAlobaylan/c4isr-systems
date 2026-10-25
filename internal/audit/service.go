@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
@@ -72,6 +73,10 @@ func (s *Service) SubscribeAll(bus *events.Dispatcher) {
 // Handle maps one domain event to an audit entry. Failures are logged and
 // swallowed: auditing must never break ingestion.
 func (s *Service) Handle(ctx context.Context, ev events.Event) {
+	if scopeErr := access.Require(ctx, "audit.append"); scopeErr != nil {
+		return
+	}
+
 	if ev == nil {
 		return
 	}
@@ -91,6 +96,15 @@ func (s *Service) Handle(ctx context.Context, ev events.Event) {
 			entry.ActorID = scope.ActorID()
 		}
 	}
+	if principal, _, ok := access.From(ctx); ok {
+		entry.Data["initiatorPrincipalId"] = principal.ID
+		entry.Data["initiatorKind"] = principal.Kind
+		if principal.Kind == "service" && !strings.HasPrefix(principal.ID, "internal:") {
+			entry.ActorType = ActorService
+			entry.ActorID = principal.ID
+		}
+
+	}
 	if _, err := s.Append(ctx, entry); err != nil {
 		slog.Default().Error("audit event not recorded", "topic", ev.Topic(), "error", err)
 	}
@@ -98,6 +112,10 @@ func (s *Service) Handle(ctx context.Context, ev events.Event) {
 
 // Append records an explicit entry, filling id and occurrence time when absent.
 func (s *Service) Append(ctx context.Context, entry Entry) (Entry, error) {
+	if scopeErr := access.Require(ctx, "audit.append"); scopeErr != nil {
+		return Entry{}, scopeErr
+	}
+
 	if entry.ID == "" {
 		entry.ID = ids.New("aud")
 	}
@@ -115,6 +133,10 @@ func (s *Service) Append(ctx context.Context, entry Entry) (Entry, error) {
 
 // List returns audit entries matching the filter, newest first.
 func (s *Service) List(ctx context.Context, filter ListFilter, limit, offset int) ([]Entry, int, error) {
+	if scopeErr := access.Require(ctx, "audit.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	limit = clampLimit(limit)
 	if offset < 0 {
 		offset = 0

@@ -1,0 +1,15 @@
+# Normalize line endings so POSIX shell scripts never receive CRLF from checkout.
+# Without this, `core.autocrlf=true` on Windows rewrites *.sh with \r and every
+# shell fails with "invalid option" / "$'\r': command not found".
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.bash text eol=lf
+*.sql text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Windows-native scripts keep CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf

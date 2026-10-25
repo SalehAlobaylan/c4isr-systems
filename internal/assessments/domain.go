@@ -54,16 +54,19 @@ type Evidence struct {
 
 // Assessment is an analytical conclusion about a subject.
 type Assessment struct {
-	ID          string
-	SubjectType SubjectType
-	SubjectID   string
-	Type        string
-	Conclusion  string
-	Confidence  *float64
-	Method      Method
-	CreatedBy   string
-	CreatedAt   time.Time
-	Evidence    []Evidence
+	ReviewStatus        string
+	RevisionID          string
+	PublishedRevisionID string
+	ID                  string
+	SubjectType         SubjectType
+	SubjectID           string
+	Type                string
+	Conclusion          string
+	Confidence          *float64
+	Method              Method
+	CreatedBy           string
+	CreatedAt           time.Time
+	Evidence            []Evidence
 }
 
 // CreateInput is the application input for recording an assessment.

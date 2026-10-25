@@ -1,10 +1,12 @@
+import { useMutation, useQuery } from '@/lib/scopedQueries'
+import { useWorkspace } from '@/lib/workspaceContext'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 
-import { api, type ScenarioRun } from '@/lib/api'
+import { useAPI, type ScenarioRun } from '@/lib/api'
 import { formatVirtualTime } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { cn } from '@/lib/utils'
 import { useLayoutStore } from '@/stores/layout'
 import { toast } from '@/stores/toasts'
@@ -21,7 +23,16 @@ const RUNS_FILTER = { limit: 20 } as const
 
 const ACTIVE_STATES = new Set(['RUNNING', 'PAUSED'])
 
-export function ScenarioBar({ variant = 'band' }: { variant?: 'band' | 'drawer' }) {
+export function ScenarioBar(props: { variant?: 'band' | 'drawer' }) {
+  const { session } = useWorkspace()
+  if (session.resource.partition !== 'EXERCISE_OBSERVATION' || !session.permissions.includes('scenarios.read')) return null
+  return <ExerciseScenarioBar {...props} />
+}
+
+function ExerciseScenarioBar({ variant = 'band' }: { variant?: 'band' | 'drawer' }) {
+  const workspace = useWorkspace()
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const queryClient = useQueryClient()
   const runOpen = useLayoutStore((state) => state.runOpen)
   const toggle = useLayoutStore((state) => state.toggle)
@@ -46,6 +57,7 @@ export function ScenarioBar({ variant = 'band' }: { variant?: 'band' | 'drawer' 
     mutationFn: ({ name, speed, seed }: { name: string; speed: number; seed?: number }) =>
       api.startScenario(name, { speed, seed }),
     onSuccess: (run) => {
+      void workspace.select({ ...workspace.session.resource, runId: run.id })
       toast({
         title: 'Scenario started',
         description: `${run.scenarioName} @ ${run.playbackSpeed}× · seed ${run.seed}`,
@@ -62,6 +74,7 @@ export function ScenarioBar({ variant = 'band' }: { variant?: 'band' | 'drawer' 
     },
   })
 
+  const nativeRun = runsQuery.data?.items.find(run => run.frozen?.runtime === 'emad-kinematic-v2')
   const activeRuns = useMemo(
     () => (runsQuery.data?.items ?? []).filter((run) => ACTIVE_STATES.has(run.status)),
     [runsQuery.data],
@@ -110,6 +123,7 @@ export function ScenarioBar({ variant = 'band' }: { variant?: 'band' | 'drawer' 
   const restartMutation = useMutation({
     mutationFn: (run: ScenarioRun) => api.restartScenarioRun(run.id),
     onSuccess: (run) => {
+      void workspace.select({ ...workspace.session.resource, runId: run.id })
       toast({
         title: 'Run restarted',
         description: `${run.scenarioName} @ ${run.playbackSpeed}× · seed ${run.seed}`,
@@ -145,6 +159,7 @@ export function ScenarioBar({ variant = 'band' }: { variant?: 'band' | 'drawer' 
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (nativeRun) return
       const target = event.target as HTMLElement | null
       const tag = target?.tagName.toLowerCase() ?? ''
       if (
@@ -168,7 +183,7 @@ export function ScenarioBar({ variant = 'band' }: { variant?: 'band' | 'drawer' 
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [activeRun, restartMutation])
+  }, [activeRun, restartMutation, nativeRun])
 
   const startPauseResume = () => {
     if (!activeRun) return
@@ -181,6 +196,7 @@ export function ScenarioBar({ variant = 'band' }: { variant?: 'band' | 'drawer' 
   // drawer that answer to the same word is a way to stop trusting both.
   const statusLabel = activeRun ? (activeRun.status === 'PAUSED' ? 'PAUSED' : 'RUNNING') : 'IDLE'
 
+  if (nativeRun) return <div className={cn('aegis-band', variant==='drawer' && 'aegis-band--drawer')} data-od-id="run-bar"><div className="aegis-brow"><strong>Native exercise · {nativeRun.status}</strong><span className="aegis-clock">T+{formatVirtualTime(nativeRun.virtualTimeMs)} · virtual · {nativeRun.playbackSpeed}×</span><Link to="/exercise" className="aegis-band-link">Exercise tasking</Link></div><p className="text-xs">Observed synthetic contacts and controlled virtual assets · author controls in Simulation Studio</p></div>
   return (
     <div
       className={cn('aegis-band', variant === 'drawer' && 'aegis-band--drawer')}

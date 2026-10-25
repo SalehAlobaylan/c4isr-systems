@@ -6,15 +6,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 )
 
 // PostgresRepository stores telemetry samples in PostgreSQL.
@@ -48,7 +48,7 @@ func (r *PostgresRepository) Create(ctx context.Context, sample Sample) (Sample,
 		params.Lng = sample.Position.Lng
 	}
 
-	if _, err := dbgen.New(r.pool).CreateTelemetry(ctx, params); err != nil {
+	if _, err := dbgen.New(platformdb.Scoped(r.pool)).CreateTelemetry(ctx, params); err != nil {
 		if sample.MessageID != "" && (errors.Is(err, pgx.ErrNoRows) || isUniqueViolation(err)) {
 			return Sample{}, ErrDuplicateMessage
 		}
@@ -67,7 +67,7 @@ func (r *PostgresRepository) Create(ctx context.Context, sample Sample) (Sample,
 // StateSnapshot loads the current projected state for an asset, creating the
 // projection row when it does not exist yet.
 func (r *PostgresRepository) StateSnapshot(ctx context.Context, assetID string) (StateSnapshot, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	if err := q.EnsureAssetState(ctx, assetID); err != nil {
 		return StateSnapshot{}, err
 	}
@@ -110,14 +110,14 @@ func (r *PostgresRepository) ApplyState(ctx context.Context, update StateUpdate,
 		params.Lat = update.Position.Lat
 		params.Lng = update.Position.Lng
 	}
-	return dbgen.New(r.pool).UpsertAssetState(ctx, params)
+	return dbgen.New(platformdb.Scoped(r.pool)).UpsertAssetState(ctx, params)
 }
 
 // ListFreshnessSignals returns every asset's declared and observed freshness
 // inputs. Reading all assets is deliberate: the monitor must also notice an
 // asset recovering, which a stale-only query can never report.
 func (r *PostgresRepository) ListFreshnessSignals(ctx context.Context) ([]FreshnessSignal, error) {
-	rows, err := dbgen.New(r.pool).ListAssetFreshnessSignals(ctx)
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).ListAssetFreshnessSignals(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (r *PostgresRepository) ListFreshnessSignals(ctx context.Context) ([]Freshn
 
 // ListTrackFreshnessSignals returns every track's status and last-seen time.
 func (r *PostgresRepository) ListTrackFreshnessSignals(ctx context.Context) ([]TrackFreshnessSignal, error) {
-	rows, err := dbgen.New(r.pool).ListTrackFreshnessSignals(ctx)
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).ListTrackFreshnessSignals(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (r *PostgresRepository) ListTrackFreshnessSignals(ctx context.Context) ([]T
 
 // ListByAsset returns telemetry for an asset newest first with a total count.
 func (r *PostgresRepository) ListByAsset(ctx context.Context, assetID string, limit, offset int) ([]Sample, int, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	rows, err := q.ListTelemetryByAsset(ctx, dbgen.ListTelemetryByAssetParams{
 		AssetID:     assetID,
 		OffsetCount: int32(offset),

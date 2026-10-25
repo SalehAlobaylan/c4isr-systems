@@ -1,0 +1,122 @@
+{
+  "schema": "emad.ux-audit.v1",
+  "recordedAt": "2026-10-23T17:02:11.665640+00:00",
+  "scope": "Read-only installed application and source-code UX inspection; design proposal only",
+  "desktopViewport": [
+    1440,
+    1000
+  ],
+  "phoneViewport": [
+    390,
+    844
+  ],
+  "inspectedDesktopRoutes": 9,
+  "screenshots": 10,
+  "applicationCodeChanged": false,
+  "domainWritesSubmitted": false,
+  "canvasTypecheck": "PASS",
+  "nativeCanvasRuntimePreview": "Not exercised outside the host; SDK runtime is not installed in the audit harness",
+  "conceptReview": "PENDING_USER_DESIGN_REVIEW",
+  "conceptGeography": "SCHEMATIC_NOT_EVIDENCE",
+  "secretScan": "PASS",
+  "localDocumentLinks": "PASS",
+  "functionalRegression": "Not rerun; no application implementation changed",
+  "sourceChecks": "Authenticated GET-only requests; browser screenshots from the real backend",
+  "artifacts": [
+    {
+      "path": "docs/design/EMAD_UX_REDESIGN_PROPOSAL.md",
+      "sha256": "a422ae600b7dcb1214e125659db0bd98295fcc2bbbc3533ec548cb5e626628f3",
+      "bytes": 41473
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-exercise.png",
+      "sha256": "2507a78900df21cb05e8c60e8c92660c4a81a5fac2ae4f8c655ddbdc2e58efb0",
+      "bytes": 298795
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-home.png",
+      "sha256": "92e4d0c0cbd47f789c722f87f5b5754f8438b7affa24b9c5ed4ca28d5e73c2f1",
+      "bytes": 112744
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-imagery.png",
+      "sha256": "fee42f544776783462901ee58b5c3a8a1683e792e544254b09efbfe9252c60da",
+      "bytes": 1055280
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-map-mobile.png",
+      "sha256": "fa77c3d3acc785b81e57b142075ce2153172b9dfdd43976717ed9cfd58b4b3f7",
+      "bytes": 62363
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-map.png",
+      "sha256": "2331b1143280093790a604058b2b58da64d9815d55f3abf26ab1a780fcca406a",
+      "bytes": 473576
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-models.png",
+      "sha256": "fb16882956f67d50d3517f4c8faf419629082df2191a951a2e6fea9b829cd490",
+      "bytes": 233245
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-replay.png",
+      "sha256": "366ed443f9265cf51251023630b1c0e8a9d338d6ad5c0554403f495736733941",
+      "bytes": 88039
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-studio.png",
+      "sha256": "5d78599ec6e4c008534722d8b6c2529cc4f78d85d27f812c94926d6bbdf775a5",
+      "bytes": 150927
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-tracks.png",
+      "sha256": "841703bf03b242948a5dd2e7d402c7b3fa4944abae177c04a513d38c03b13ae5",
+      "bytes": 66436
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-weather.png",
+      "sha256": "19d995233d5a3f92c90e468068f82a1af878db1aeba91337a24cfd52435970be",
+      "bytes": 125101
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-exercise-observations.json",
+      "sha256": "7537899a716980dc8161a1ccecdaf76fd5a4b598c2af9dfc541dd69b196940ed",
+      "bytes": 10598
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/current-ui-observations.json",
+      "sha256": "8ffcf556caa79efa1015cfc14d66cd55680e7d92580b519efb5bded26782237b",
+      "bytes": 56647
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/installation-snapshot.json",
+      "sha256": "b7cf344f907101e22e59d59cc4f1c642a58443f185e00c95dadb40dd28ed0f3c",
+      "bytes": 756933
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/concepts/generation.json",
+      "sha256": "3e0778f1d7ebec6c59877b69315c91d620ca129d3968b50dfeb5d65227f81dcb",
+      "bytes": 15238
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/concepts/imagery-desktop.png",
+      "sha256": "266340e61594dc1e0541d9eccb60664d091198f9fd391a593f3d3e3401b21576",
+      "bytes": 2374911
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/concepts/public-context-desktop.png",
+      "sha256": "4c7f15322db075a4799dbc4cf31f5f554b6d54a86217609d895809dd3ac9d068",
+      "bytes": 1725340
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/concepts/responsive-concepts.png",
+      "sha256": "64b9f3cd4427e5b22bd074230f3e8f3330f1ca9f639bcfaa5b771ab7e5a51f9d",
+      "bytes": 1931945
+    },
+    {
+      "path": "docs/design/ux-review-2026-10-23/concepts/simulation-studio-desktop.png",
+      "sha256": "cb7d918e491c77331cd1d48dc2e5b4d7686e8a0927f81d59d8d9ad97aedcbc21",
+      "bytes": 1638918
+    }
+  ]
+}

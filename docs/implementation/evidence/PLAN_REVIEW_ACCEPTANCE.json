@@ -1,0 +1,603 @@
+{
+  "date": "2026-10-22",
+  "reviewedBaselineCommit": "2c0c65548036ca73be8e8c259c60171ddecfc46b",
+  "reviewedState": "current uncommitted working tree; source fingerprints below identify reviewed fixes",
+  "scope": {
+    "originalTaskCount": 32,
+    "originalWorkstreams": [
+      "F0",
+      "P1",
+      "S0",
+      "P2",
+      "P3",
+      "S1",
+      "S2",
+      "S3"
+    ],
+    "additionalTask": "S4.1",
+    "authoritativeInputs": [
+      {
+        "path": "EMAD_ARCHITECTURE_AND_DIRECTION_v2.md",
+        "sha256": "d2a2b08ef7f9dddbc744f3e62af047a32e31b2f3da0ada07191d8ff0a6588f11",
+        "bytes": 38504
+      },
+      {
+        "path": "EMAD_FINAL_DATA_STRATEGY_v2.md",
+        "sha256": "b2dc4ee5cfd6c00acb10072f6ea419899b570896d6b552dac12d26c368b29df4",
+        "bytes": 27114
+      }
+    ],
+    "futureS4Expansion": "not part of this delivered scope"
+  },
+  "findingsFixed": [
+    {
+      "id": "R1",
+      "priority": "P1",
+      "finding": "Live refresh callback was lost after the first refresh",
+      "status": "fixed and verified"
+    },
+    {
+      "id": "R2",
+      "priority": "P2",
+      "finding": "Database lookup failures were misclassified as rejected credentials",
+      "status": "fixed and verified"
+    },
+    {
+      "id": "R3",
+      "priority": "P1",
+      "finding": "Recording artifact reads lacked a final live authorization/retention check",
+      "status": "fixed and verified"
+    },
+    {
+      "id": "R4",
+      "priority": "P2",
+      "finding": "Floating-point metric reduction depended on map iteration order",
+      "status": "fixed and verified"
+    },
+    {
+      "id": "R5",
+      "priority": "P2",
+      "finding": "Moving-track AOI field drifted from browser back/forward history",
+      "status": "fixed and verified"
+    },
+    {
+      "id": "R6",
+      "priority": "P3",
+      "finding": "Unknown scene cloud cover displayed with a percent sign",
+      "status": "fixed and production-build checked"
+    },
+    {
+      "id": "R7",
+      "priority": "P2",
+      "finding": "Git Bash converted Docker container paths and broke staging validation",
+      "status": "fixed and verified on Windows"
+    },
+    {
+      "id": "R8",
+      "priority": "P2",
+      "finding": "Mobile header clipped identity/help controls and navigation",
+      "status": "fixed and browser/visual verified"
+    }
+  ],
+  "unresolvedBlockingFindings": [],
+  "checks": {
+    "integration": {
+      "passed": 84,
+      "topLevel": 56,
+      "subcases": 28,
+      "skipped": [
+        "TestCDSEAuthorizedLiveCatalogueSmoke",
+        "TestFIRMSAuthorizedLiveSmoke",
+        "TestUSGSAuthorizedLiveSmoke",
+        "TestWorkspaceBrowserCompatibilityGate"
+      ]
+    },
+    "realBackendBrowser": {
+      "passed": 16
+    },
+    "browserRegressions": {
+      "passed": 76,
+      "intentionalProjectSkips": 50
+    },
+    "goTest": "passed",
+    "goVet": "passed",
+    "affectedPackageLinuxRace": "passed",
+    "allGoExecutableBuilds": "passed",
+    "uiProductionBuild": "passed; existing bundle-size advisory",
+    "modelValidator": {
+      "passed": 6
+    },
+    "rasterPreparation": {
+      "passed": 2
+    },
+    "noGPUAdapters": "both passed 20000-step coordinate/waypoint fixtures",
+    "openapiLint": "passed",
+    "protobufLint": "passed using pinned local container image",
+    "protobufCompatibility": "passed against committed HEAD baseline",
+    "generatedOpenAPIAndSqlc": "all files reproduced exactly",
+    "windowsStagingConfig": "Compose, Prometheus configuration/10 rules, Alloy and Loki passed",
+    "shellSyntax": "passed",
+    "gofmtAndDiffChecks": "passed",
+    "protectedFilesUnchanged": 40
+  },
+  "migrations": {
+    "new": [],
+    "all38AppliedFilesUnchanged": true,
+    "migrationScriptUnchanged": true,
+    "userProductionDatabaseInspectedOrModified": false
+  },
+  "nativeM6Measurements": {
+    "actors": 3,
+    "archiveMs": 34.265,
+    "controlledAssets": 1,
+    "durationVirtualMs": 8000,
+    "evaluation": {
+      "elapsedMs": 8000,
+      "limitations": [
+        "Abstract scheduled observers only; no physical sensor validation or weapon effectiveness claim.",
+        "Expected slots include active actors whose configured delivery time falls within the recorded interval; scheduled misses are included and reported separately.",
+        "Lateness threshold is configured delivery plus 1000 virtual ms; gateway publication may add delay at accelerated clock scales.",
+        "Position error is available only where an active sealed snapshot matches the exact sample millisecond; no interpolated position is inferred.",
+        "Track errors count recorded merge/fragmentation relationships, not semantic classification correctness. Missing denominators are null, never zero scores.",
+        "Scenario completion means runtime COMPLETED; workflow completion counts command outcomes independently. Cancelled/failed runs remain partial exercises."
+      ],
+      "metrics": [
+        {
+          "definition": "Commands with recorded final state COMPLETED.",
+          "denominator": 1,
+          "name": "command_completed",
+          "numerator": 1,
+          "unit": "fraction",
+          "value": 1
+        },
+        {
+          "definition": "Commands ending COMPLETED, REJECTED, FAILED, TIMED_OUT or CANCELLED.",
+          "denominator": 1,
+          "name": "command_terminal",
+          "numerator": 1,
+          "unit": "fraction",
+          "value": 1
+        },
+        {
+          "definition": "Repeated exact sample IDs in accepted sealed batches; rejected gateway retries are not new accepted events.",
+          "denominator": 21,
+          "name": "duplicate_samples",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Observed actors associated with more than one recorded track.",
+          "denominator": 3,
+          "name": "fragmented_actors",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Published observations received by the COP more than 1000 virtual ms after configured delivery.",
+          "denominator": 12,
+          "name": "late_observations",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Mean first runtime acknowledgment elapsed time minus command issue time; no-ACK commands excluded.",
+          "denominator": 1,
+          "name": "mean_command_ack",
+          "numerator": 1596,
+          "unit": "virtual_ms",
+          "value": 1596
+        },
+        {
+          "definition": "Mean runtime completion elapsed time minus command issue time for completed commands.",
+          "denominator": 1,
+          "name": "mean_command_completion",
+          "numerator": 2096,
+          "unit": "virtual_ms",
+          "value": 2096
+        },
+        {
+          "definition": "Mean local horizontal error only where a sealed active snapshot exists at the exact sample millisecond.",
+          "denominator": 3,
+          "name": "mean_horizontal_error",
+          "numerator": 26.508302288565634,
+          "unit": "m",
+          "value": 8.836100762855212
+        },
+        {
+          "definition": "Mean COP publication virtual time minus original sample time.",
+          "denominator": 12,
+          "name": "mean_observation_delay",
+          "numerator": 14022,
+          "unit": "virtual_ms",
+          "value": 1168.5
+        },
+        {
+          "definition": "Recorded tracks containing observations from more than one sealed actor.",
+          "denominator": 3,
+          "name": "merged_tracks",
+          "numerator": 0,
+          "unit": "fraction",
+          "value": 0
+        },
+        {
+          "definition": "Expected active actor/sensor slots due by final virtual time without a recorded published observation; includes configured scheduled misses.",
+          "denominator": 24,
+          "name": "missed_observations",
+          "numerator": 12,
+          "unit": "fraction",
+          "value": 0.5
+        },
+        {
+          "definition": "Run reached declared duration with runtime status COMPLETED.",
+          "denominator": 1,
+          "name": "scenario_completed",
+          "numerator": 1,
+          "unit": "fraction",
+          "value": 1
+        },
+        {
+          "definition": "Frozen dropEvery slots among expected slots.",
+          "denominator": 24,
+          "name": "scheduled_misses",
+          "numerator": 12,
+          "unit": "fraction",
+          "value": 0.5
+        }
+      ],
+      "operatorHash": "caf14a39c55ce120151f0f0a2e7ead61c62049af7275a22c08415e4b0568db56",
+      "runStatus": "COMPLETED",
+      "timeBasis": "integer virtual milliseconds; received_at is independent wall receipt time",
+      "truthHash": "76be4062728bb20609ee1d092f303bc5028923b3a29228863bbc0e59205b8362",
+      "version": "emad.abstract-evaluation.v2"
+    },
+    "finalFrameMs": 12.064,
+    "observations": 12,
+    "observers": 1,
+    "operatorManifest": {
+      "checkpoint": {
+        "bytes": 5281,
+        "first": 0,
+        "last": 0,
+        "sha256": "3a679bf51e2dfd9120208c9e24ff5a55c163cca6b3ff841c1be90a5d1c477f97"
+      },
+      "chunks": [
+        {
+          "bytes": 73594,
+          "first": 1,
+          "last": 132,
+          "sha256": "caf14a39c55ce120151f0f0a2e7ead61c62049af7275a22c08415e4b0568db56"
+        }
+      ],
+      "contentSha256": "caf14a39c55ce120151f0f0a2e7ead61c62049af7275a22c08415e4b0568db56",
+      "createdAt": "2026-10-22T14:26:38.1051736Z",
+      "elapsedMs": 8000,
+      "epoch": "2025-01-01T03:00:00+03:00",
+      "events": 132,
+      "partition": "EXERCISE_OBSERVATION",
+      "projectionSettled": true,
+      "replayGuarantee": "Ordered recorded output at virtual milliseconds and journal sequence; no command execution or re-simulation. Checkpoints restore selected recorded state only.",
+      "retainUntil": "2027-01-20T17:26:40.128247+03:00",
+      "runId": "rt_5b79d3505d543de7f5d89e7a2e32c10e7bbec11868d5e5383cffb5e33922d1df",
+      "runStatus": "COMPLETED",
+      "schema": "emad.recording.v1"
+    },
+    "scale": 2
+  },
+  "noGPUAdapterMeasurements": {
+    "three": {
+      "candidate": "three",
+      "loadMs": 47.56530000000001,
+      "totalMs": 54.74000000000001,
+      "cpuMs": 140,
+      "rssBytes": 71729152,
+      "heapUsedBytes": 15921160,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0
+    },
+    "babylon": {
+      "candidate": "babylon",
+      "loadMs": 22405.7966,
+      "totalMs": 22413.7364,
+      "cpuMs": 2719,
+      "rssBytes": 162734080,
+      "heapUsedBytes": 65677968,
+      "steps": 20000,
+      "terrainVertices": 9,
+      "coordinateFloat32ErrorM": 0.0005797081446523528,
+      "maxPositionErrorM": 0
+    }
+  },
+  "remainingConditions": [
+    "Live source credentials, provider agreements, dataset rights and reviewed admissions remain prerequisites for deployment activation.",
+    "Recorded fixtures and small-scene measurements do not certify maximum scale or specialist physical fidelity.",
+    "Existing retention/checkpoint limitations apply; recorded-output restoration is not process takeover.",
+    "Deployments must rebuild/restart affected binaries/UI and retain explicit native-build admission when replacing a runtime.",
+    "Further S4 increments remain scenario-driven future work."
+  ],
+  "evidence": [
+    {
+      "path": "tmp/plan-review/focused-final.log",
+      "sha256": "5d034ffba47223ad9da111c055ba2000584c6bc42aa7f1ef0fae0839ef58368f",
+      "bytes": 10215
+    },
+    {
+      "path": "tmp/plan-review/integration.jsonl",
+      "sha256": "6774ba65858e8314cac3f12dbc8b12a0c9856699f8a47e8b9f258139d0a08258",
+      "bytes": 277995
+    },
+    {
+      "path": "tmp/plan-review/go-test.log",
+      "sha256": "ab3a7b866ea6cd42dde96c601009b55b0219402b984ddbfaf0ed63f461f46f1a",
+      "bytes": 4993
+    },
+    {
+      "path": "tmp/plan-review/go-vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tmp/plan-review/build-all.log",
+      "sha256": "68b6be8766d83832decc09d39ab472a11e244a871e8d8af6e0cc3ef789763167",
+      "bytes": 47
+    },
+    {
+      "path": "tmp/plan-review/race.log",
+      "sha256": "e75beda1893446af48a07de549fa1b9c5bdf2a17d192a7b2a8d5cb02fc0f04fc",
+      "bytes": 1703
+    },
+    {
+      "path": "tmp/plan-review/browser-final.log",
+      "sha256": "f10b4b684e69ebf616acd6639fef41400312ec4cb8c4c986352fb0e83ef2e7de",
+      "bytes": 5586
+    },
+    {
+      "path": "tmp/plan-review/browser-regressions-final.log",
+      "sha256": "6e9b731f0411d229512667a1b674a28038d977fb9753666331dc29d51b1d10bb",
+      "bytes": 58512
+    },
+    {
+      "path": "tmp/plan-review/ui-build-final.log",
+      "sha256": "b85ad2b910782a868fb6488612771b14f0eaedb72d933bba18277ad40122363e",
+      "bytes": 3224
+    },
+    {
+      "path": "tmp/plan-review/model-validator.log",
+      "sha256": "ffaa17b63b0f3d946c973e410deafb125aab37c5927d75dee8e61e24f83a7203",
+      "bytes": 803
+    },
+    {
+      "path": "tmp/plan-review/headless-three.log",
+      "sha256": "fccb5671649a4253c8e9194c27a1fdb0183f041a40a43d455be3dd5fc5411096",
+      "bytes": 251
+    },
+    {
+      "path": "tmp/plan-review/headless-babylon.log",
+      "sha256": "7b5ab59ccdbedb5ca3aecd18fa1c805f10569aa5e9c3928851b1e4f136d7ffb5",
+      "bytes": 293
+    },
+    {
+      "path": "tmp/plan-review/raster-preparation-final.log",
+      "sha256": "9906e56fe27aed9eb97cf05338b4b615bce9c88726ab2dc878a13d5ecf1f777a",
+      "bytes": 673
+    },
+    {
+      "path": "tmp/plan-review/openapi-lint.log",
+      "sha256": "f86dfab389182a358e1051eca794602f0dedfa31a1ea28d1abf99d9b640f538d",
+      "bytes": 225
+    },
+    {
+      "path": "tmp/plan-review/proto-lint-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tmp/plan-review/proto-breaking.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tmp/plan-review/buf-image.txt",
+      "sha256": "f083ec46bb40fcce3f362d8ede3a014aab5a55f53c87093a9ae298143f622c56",
+      "bytes": 73
+    },
+    {
+      "path": "tmp/plan-review/shell-syntax.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tmp/plan-review/ops-validation-final.log",
+      "sha256": "92fdaa9a2bb8d542fe0fc4c2905d8aeed8894ffb83e1f2a12b7c02f813a20f6a",
+      "bytes": 506
+    },
+    {
+      "path": "tmp/plan-review/gofmt.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tmp/plan-review/diff-check.log",
+      "sha256": "cd07a9d5bc0d0918a4a09f65da95e637172f17b507380e28dd75d0dc603949f7",
+      "bytes": 388
+    },
+    {
+      "path": "tmp/plan-review/generated-before.json",
+      "sha256": "b80bf69331a5129536e146f5bdd93ae00dde658970f61a9d353ac2c70fb968b0",
+      "bytes": 2063
+    },
+    {
+      "path": "tmp/plan-review/generation.log",
+      "sha256": "9ac24df440a95623d990c203c2fac60b3429bd631fc0cd4cf4901bb3c4fcc865",
+      "bytes": 301
+    },
+    {
+      "path": "tmp/plan-review/replay-mobile.png",
+      "sha256": "3e93c747fa970f4074ee5d3a8bc83234938e8050817dd189b5f8f5d78650189d",
+      "bytes": 54118
+    },
+    {
+      "path": "tmp/plan-review/replay-desktop.png",
+      "sha256": "778812f825abddcb6c8ed94298b8449457d3fc9092c540295e0832be16ad5d6e",
+      "bytes": 75949
+    },
+    {
+      "path": "tmp/plan-review/evaluation-mobile.png",
+      "sha256": "91ccd2e75c6b670c55d7285af1eccd4481bf31a7723db092cd46257c568ae7e4",
+      "bytes": 55839
+    }
+  ],
+  "sourceFingerprints": [
+    {
+      "path": "internal/platform/access/access.go",
+      "sha256": "cdbee09f843550b6268698857b913fb1d3e18b6a262209d8304f3b3fb923f83f",
+      "bytes": 13597
+    },
+    {
+      "path": "internal/platform/access/access_test.go",
+      "sha256": "b9a4862bfc3b61d3186f83ab6c6986902296656432ff0bdc86077ad0b125eea2",
+      "bytes": 4645
+    },
+    {
+      "path": "internal/platform/access/store.go",
+      "sha256": "5c94a8667e5c794a9020f542a754e91b11385f6d36afe83e5a4bb592a29d40ac",
+      "bytes": 12624
+    },
+    {
+      "path": "internal/platform/access/store_test.go",
+      "sha256": "06dbf4b0d469b8a0e03f6e86c1fa63bdc9b082992a200e111604b4ae89f1077e",
+      "bytes": 801
+    },
+    {
+      "path": "internal/recordings/service.go",
+      "sha256": "860a90d7ff44585aecf768360c9c72ace8ceaddf209c4b264cae965620a94081",
+      "bytes": 10859
+    },
+    {
+      "path": "internal/recordings/evaluation.go",
+      "sha256": "cc8c565ebb8114df1f5d09d9dcc65007b0102cc4645d1927cbbd71a7d66074e4",
+      "bytes": 15033
+    },
+    {
+      "path": "internal/recordings/evaluation_test.go",
+      "sha256": "5329c7cad277ed5287cc51dc26fdead753d5214bf3b47aa2758d480d76383bc4",
+      "bytes": 6483
+    },
+    {
+      "path": "internal/integration/recordings_test.go",
+      "sha256": "4314aca97c0383dbd3c8f98224c685bf2342ff5db80d2e6725951676013003a4",
+      "bytes": 20751
+    },
+    {
+      "path": "apps/operator-ui/src/routes/external-tracks.tsx",
+      "sha256": "722e3088c1659aa23b7afd86150578c25007b146cd9a064d9d2cc20b14e4fa9a",
+      "bytes": 7213
+    },
+    {
+      "path": "apps/operator-ui/src/routes/intelligence.tsx",
+      "sha256": "364ab19569fa22cf21909f736695e745ecc5d30089b8aaf78850ada5a5d22b6c",
+      "bytes": 22623
+    },
+    {
+      "path": "apps/operator-ui/src/components/layout/TopBar.tsx",
+      "sha256": "3a9829cff59426668d9afa2b060ae14459778b27da87a112d4fb8bc405667895",
+      "bytes": 18817
+    },
+    {
+      "path": "apps/operator-ui/src/index.css",
+      "sha256": "9bdcf805ea17a4648910714f697dd4a9d5c4398990a0faf8a2d3e614b22cd44a",
+      "bytes": 79786
+    },
+    {
+      "path": "apps/operator-ui/tests/integration/moving.spec.ts",
+      "sha256": "fe50087e62f4d907c2796f7945ac41f02c4949fb6d20966da022880d85bb17ee",
+      "bytes": 3027
+    },
+    {
+      "path": "apps/operator-ui/tests/integration/recordings.spec.ts",
+      "sha256": "e2d8accac42532d52bed6d0f3899c9da90a0f8577cc1548691a2af667a24d9af",
+      "bytes": 6878
+    },
+    {
+      "path": "scripts/ops/validate-staging.sh",
+      "sha256": "86aba2bf6b6143a2d2d91106144911a40de8b79fc30c78e6548a702bd34c4af4",
+      "bytes": 2277
+    },
+    {
+      "path": "docs/implementation/PLAN_REVIEW.md",
+      "sha256": "136a2d80553d919a6cee6d45ff11797a79dd476fbe1396a8bd0b2caf5b066277",
+      "bytes": 13183
+    },
+    {
+      "path": "README.md",
+      "sha256": "c844fd9b5e609a7300e10c63314b3ca7a5de73b5b97af0e27ac319cdd3eba174",
+      "bytes": 33025
+    },
+    {
+      "path": "ARCHITECTURE.md",
+      "sha256": "d574d9e62f394bf15a56aa5d9d84522e58bce5e2f5553847096136219f52f759",
+      "bytes": 30833
+    },
+    {
+      "path": "PRODUCT.md",
+      "sha256": "30cea84caa083edb417b7fc19f7b8ea324bba2d5123e075837d3cc0a5675c59c",
+      "bytes": 35755
+    },
+    {
+      "path": "IMPLEMENTATION_PLAN.md",
+      "sha256": "99bf3622e2bf0ff7a8aa02075ab685ed3e993384aba1019ee000752f32894728",
+      "bytes": 23069
+    },
+    {
+      "path": "EMAD_IMPLEMENTATION_PLAN_v2.md",
+      "sha256": "26e3829ef45e818819030187e992c43acca5a99536476889bf8d76fb6af5686e",
+      "bytes": 69528
+    }
+  ],
+  "protectedFiles": {
+    "db/migrations/00001_extensions.sql": "172f27a6ab2489d2d50dc889ca78e431756f75ccfc0d75bb6cfbb713e024647b",
+    "db/migrations/00002_sources.sql": "f48e99518ecd0cf9a72877ba13a18a6a3752acd551e7160019a3ccc33ce31675",
+    "db/migrations/00003_observations.sql": "d21cebcc5b633713068b723ded5817c44341d0fb3587fcd3c40f32e190e2d40e",
+    "db/migrations/00004_assets.sql": "2572dae324bec146a916ceac8d6f4ab4a19305417e8afce3853fcee1d00d7f51",
+    "db/migrations/00005_tracks.sql": "c44e093fbe0d1ee0955e3bec0f3fa3e74c1fe32fbfe6b1ea19ad0fdec02d4231",
+    "db/migrations/00006_classifications.sql": "e84adac5866be429eed3f972786d477b174a6c9ee20e928dde2b6a85783344bb",
+    "db/migrations/00007_geofences.sql": "dc58bf1d34a2769904fc94e6bf6dbfed5b1727b37b4ff70488be9d63e23fd4b0",
+    "db/migrations/00008_alerts.sql": "9cb92a6f1785f6d268cba2e605329580c6ecc3e9c7bdd52f031f29e1a31751a0",
+    "db/migrations/00009_incidents.sql": "6d36420294523e411401ffb9ad2e25fc8e0f8441d6de661174e963b3ecc67b84",
+    "db/migrations/00010_missions.sql": "4ea0b4cba6edcc3c40a858ec3207e407fe0240505f85fa90490e87974e654f90",
+    "db/migrations/00011_commands.sql": "8e63fe86220a888a822dea435dac8ea57714c2ad8d09e4fbab0637ecbfd71bcc",
+    "db/migrations/00012_assessments.sql": "07f3f217d966f484cc61a3cfdf2efe21a112500c728bbc4f3d5faf6e7832fb09",
+    "db/migrations/00013_audit.sql": "4c7b8418a4591b555697c0cde0bb7503a5cd6b1569388e97438e063d29c19cb1",
+    "db/migrations/00014_operators.sql": "ab1af707a02555fec1f23bd3f3e168d6d3e16a201b3602d3867f8a448d549328",
+    "db/migrations/00015_scenario_runs.sql": "37dfff9409912769ad440f1c4271d6a86f390c4565bf0a52a6a1b4db4ae9c1ff",
+    "db/migrations/00016_scenario_run_events.sql": "89742e03289acf28627445ae3b596540e44f46710fd7c410c257f957cbb5fe34",
+    "db/migrations/00017_concurrency_guards.sql": "ba18897c9f08c703943003e93cfa39a9055ed69dc569522d6c517dd80225d606",
+    "db/migrations/00018_area_observations.sql": "7961cbb22a60ff25c47b9c8a42bd62ae4fa2f76f93148fcc84546abd4f149101",
+    "db/migrations/00019_principals.sql": "a59b2abecc3889e0bd7ca3d1a5084a2e251957339a2dc5f5a2f5fe0ae5a45243",
+    "db/migrations/00020_resource_ownership.sql": "a467714aae4d96c68fc3474d2df9eb90c5c0fcb4d962fbe02585554fa4713440",
+    "db/migrations/00021_observation_public_references.sql": "7d758ab03c95aded7fc4130ffed4f9cebad98d554308efce21ef2befcb8c29e1",
+    "db/migrations/00022_public_source_ingestion.sql": "a07b36009e46cfafe21e609ddc4940535777fca5f804fca695b0a0da4d62fa76",
+    "db/migrations/00023_public_event_semantics.sql": "06aa9c0be96cd9819b1872e17723d1f89bebfee23ac45c646416ed2c708f3c0a",
+    "db/migrations/00024_reference_catalog.sql": "321141d74bd752bd46f5de715f130e5537b9223a517ff20aa68a02530cbdfafc",
+    "db/migrations/00025_simulation_foundations.sql": "349f3f1d8ac4c4e8a9b47b3d2871307267c93e585fe01780fa91a5a880ce7828",
+    "db/migrations/00026_synthetic_ingress.sql": "96902471651a3c56f058af689b9c3e01eeb23e98d6bfba0d038272385b04a816",
+    "db/migrations/00027_public_history_indexes.sql": "c370603ac4ce8dcc07cb49af6151b32cbf35cfc5b4594d72d7d5b9f667b94ea2",
+    "db/migrations/00028_imagery_artifacts.sql": "653a8f4b6ad16b02bf628fe5971f2834e5bd33f259f438ba9c6913190194f8a1",
+    "db/migrations/00029_imagery_analysis_jobs.sql": "10d60f7d3efe18f71db8b1ab0917d4f119a86e442ff0b85aa304e21aee347d01",
+    "db/migrations/00030_reviewed_imagery_assessments.sql": "1a8dd20fcb42cdb0760844c9c708d704293923e5296f34cdeb40d5075e007b3d",
+    "db/migrations/00031_context_export_previews.sql": "eaad5b8e127b2d1112bafab23c5d0a41f67575536402449ffad04f485cc9eb15",
+    "db/migrations/00032_external_moving_tracks.sql": "ce3a50aeb4cb4b898ccd5982614646b685d5602b11a958b65d3a273c44daea6b",
+    "db/migrations/00033_weather_report_context.sql": "3f04a7ba6317434d4eb6939ca04abc33e2b585123519734f225ae144bccd9f7a",
+    "db/migrations/00034_simulation_asset_registry.sql": "541bd8f1b40aa18bfc06dd14d1c9b967aaaaaaa8e5647f90f066131d8edba3d1",
+    "db/migrations/00035_simulation_studio_runtime.sql": "494b33452dae4a712032af93cb9c95120af2d2d7b06bbd532570c46d86e1e719",
+    "db/migrations/00036_native_exercise_gateway.sql": "c6070855cc62c77d191e16dc02e0f6496c123642e29e621b431945cebb554a3b",
+    "db/migrations/00037_simulation_recordings.sql": "6244a836bc7adc4a70b6c011fc16ce3e9b379f27e16b74d825d6e361d883865d",
+    "db/migrations/00038_sensor_quality_presets.sql": "a9805d185d6bf0e8d08f66407ce8f7b64330d10f87d75e5ec16845788b01401e",
+    "scripts/ops/migrate.sh": "1e8ee7d42d3a30869159488c93782921e79b2a4d5d190a9928df46be57e3c3f1",
+    ".gitattributes": "d508e0cb1deb4b2712e303fcc34c7b14ca8c370c98b7d65402b7cbe00c5bcfeb"
+  }
+}

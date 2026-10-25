@@ -1,10 +1,11 @@
 package integration
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 // TestAreaOverlapSQLIsSound isolates the spatial query from the alert pipeline.
@@ -14,7 +15,7 @@ import (
 // works is to ask PostGIS directly rather than infer it from a downstream alert.
 func TestAreaOverlapSQLIsSound(t *testing.T) {
 	h := newHarness(t)
-	ctx := context.Background()
+	ctx := testsupport.Context()
 	h.createSource("firms")
 
 	if status := h.do(http.MethodPost, "/api/v1/geofences", map[string]any{
@@ -92,7 +93,7 @@ func TestAreaOverlapSQLIsSound(t *testing.T) {
 // the event, the rule would silently evaluate nothing and no alert would fire.
 func TestAreaObservationEventCarriesTheFootprint(t *testing.T) {
 	h := newHarness(t)
-	ctx := context.Background()
+	ctx := testsupport.Context()
 	h.createSource("firms")
 
 	if status := h.do(http.MethodPost, "/api/v1/geofences", map[string]any{

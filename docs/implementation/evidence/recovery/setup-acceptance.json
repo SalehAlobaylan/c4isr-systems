@@ -1,0 +1,15 @@
+{
+  "schema": "emad.setup-acceptance.v1",
+  "contentCounts": {
+    "references": 24,
+    "models": 7,
+    "templates": 6,
+    "scenes": 2,
+    "presets": 2
+  },
+  "contentIdentitiesPreserved": true,
+  "credentialsPreserved": true,
+  "credentialFilesChecked": 19,
+  "migrationsAppliedThrough": 43,
+  "supportedStopPreservesInfrastructure": true
+}

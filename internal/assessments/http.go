@@ -1,6 +1,7 @@
 package assessments
 
 import (
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/presentation"
 	"net/http"
 	"strconv"
 	"time"
@@ -53,16 +54,19 @@ type evidenceResponse struct {
 }
 
 type assessmentResponse struct {
-	ID          string             `json:"id"`
-	SubjectType string             `json:"subjectType"`
-	SubjectID   string             `json:"subjectId"`
-	Type        string             `json:"type"`
-	Conclusion  string             `json:"conclusion"`
-	Confidence  *float64           `json:"confidence"`
-	Method      string             `json:"method"`
-	CreatedBy   string             `json:"createdBy"`
-	CreatedAt   time.Time          `json:"createdAt"`
-	Evidence    []evidenceResponse `json:"evidence"`
+	ReviewStatus        string             `json:"reviewStatus,omitempty"`
+	RevisionID          string             `json:"revisionId,omitempty"`
+	PublishedRevisionID string             `json:"publishedRevisionId,omitempty"`
+	ID                  string             `json:"id"`
+	SubjectType         string             `json:"subjectType"`
+	SubjectID           string             `json:"subjectId"`
+	Type                string             `json:"type"`
+	Conclusion          string             `json:"conclusion"`
+	Confidence          *float64           `json:"confidence"`
+	Method              string             `json:"method"`
+	CreatedBy           string             `json:"createdBy"`
+	CreatedAt           time.Time          `json:"createdAt"`
+	Evidence            []evidenceResponse `json:"evidence"`
 }
 
 func (h *Handler) create(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +111,16 @@ func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 
-	items, total, err := h.svc.List(r.Context(), r.URL.Query().Get("subject_type"), r.URL.Query().Get("subject_id"), limit, offset)
+	subjectID := r.URL.Query().Get("subject_id")
+	if r.URL.Query().Get("subject_type") == "observation" {
+		actual, err := presentation.ResolveObservation(r.Context(), subjectID)
+		if err != nil {
+			httpx.Error(w, err)
+			return
+		}
+		subjectID = actual
+	}
+	items, total, err := h.svc.List(r.Context(), r.URL.Query().Get("subject_type"), subjectID, limit, offset)
 	if err != nil {
 		httpx.Error(w, err)
 		return
@@ -132,7 +145,7 @@ func toResponse(a Assessment) assessmentResponse {
 			AddedAt: e.AddedAt,
 		})
 	}
-	return assessmentResponse{
+	return assessmentResponse{ReviewStatus: a.ReviewStatus, RevisionID: a.RevisionID, PublishedRevisionID: a.PublishedRevisionID,
 		ID:          a.ID,
 		SubjectType: string(a.SubjectType),
 		SubjectID:   a.SubjectID,

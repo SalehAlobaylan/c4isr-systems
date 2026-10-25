@@ -1,0 +1,18 @@
+{
+  "schema": "emad.development-review-acceptance.v1",
+  "assessmentId": "asm_01m5m90qd2wc2vxq82jdqct6fk",
+  "developmentOnly": true,
+  "twoActualHumansVerified": false,
+  "publishedRevisionId": "asrv_01m5m96pvsefam9983cj3eee37",
+  "authorHumanId": "operator-01",
+  "reviewerHumanId": "local-review-human",
+  "reviewIdentityStatus": "DISTINCT_REGISTERED_HUMANS",
+  "contextPackageId": "ctx_98ef132f7e48d1c1df7837a325c1a3a4de2bbdb1195705352a309f1521e594b9",
+  "sameHumanAliasDenied": [
+    "review",
+    "publish",
+    "reject"
+  ],
+  "realProposal": "Unchanged; awaits actual human review",
+  "manifestAssets": 5
+}

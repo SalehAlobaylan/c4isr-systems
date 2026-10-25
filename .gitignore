@@ -3,6 +3,9 @@
 .env.local
 bin/
 tmp/
+private/
+.venv-imagery/
+.venv-recovery/
 coverage/
 *.out
 *.test
@@ -19,3 +22,6 @@ dist/
 .vite/
 apps/operator-ui/playwright-report/
 apps/operator-ui/test-results/
+
+# Local raster preparation
+__pycache__/

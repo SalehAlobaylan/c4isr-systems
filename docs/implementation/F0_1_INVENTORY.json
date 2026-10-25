@@ -1,0 +1,2689 @@
+{
+  "baseline_commit": "2c0c65548036ca73be8e8c259c60171ddecfc46b",
+  "events": [
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:21",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "source.created"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:22",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "source.updated"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:24",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "observation.received"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:25",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "observation.rejected"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:27",
+      "target_scope_family": "exercise_observation",
+      "topic": "asset.created"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:28",
+      "target_scope_family": "exercise_observation",
+      "topic": "asset.updated"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:29",
+      "target_scope_family": "exercise_observation",
+      "topic": "asset.position.updated"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:30",
+      "target_scope_family": "exercise_observation",
+      "topic": "asset.connection.changed"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:31",
+      "target_scope_family": "exercise_observation",
+      "topic": "telemetry.received"
+    },
+    {
+      "audit_explicit_subscription": false,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:37",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "entity.freshness.changed"
+    },
+    {
+      "audit_explicit_subscription": false,
+      "explicit_browser_mapping": false,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:43",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "area.geofence.overlapped"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:45",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "track.created"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:46",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "track.updated"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:47",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "track.closed"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:49",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "classification.created"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:51",
+      "target_scope_family": "public_reference_or_exercise_input",
+      "topic": "geofence.created"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:52",
+      "target_scope_family": "public_reference_or_exercise_input",
+      "topic": "geofence.breached"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:53",
+      "target_scope_family": "public_reference_or_exercise_input",
+      "topic": "geofence.exited"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:55",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "alert.created"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:56",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "alert.acknowledged"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:57",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "alert.resolved"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:59",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "incident.created"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:60",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "incident.updated"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:62",
+      "target_scope_family": "exercise_observation",
+      "topic": "mission.created"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:63",
+      "target_scope_family": "exercise_observation",
+      "topic": "mission.updated"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:65",
+      "target_scope_family": "exercise_observation",
+      "topic": "command.issued"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:66",
+      "target_scope_family": "exercise_observation",
+      "topic": "command.status.changed"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:68",
+      "target_scope_family": "public_evidence_or_exercise_observation",
+      "topic": "assessment.created"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:70",
+      "target_scope_family": "exercise_input_and_run_control",
+      "topic": "scenario.run.started"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:71",
+      "target_scope_family": "exercise_input_and_run_control",
+      "topic": "scenario.run.updated"
+    },
+    {
+      "audit_explicit_subscription": true,
+      "explicit_browser_mapping": true,
+      "hub_subscribed": true,
+      "source": "internal/events/events.go:72",
+      "target_scope_family": "exercise_input_and_run_control",
+      "topic": "scenario.run.ended"
+    }
+  ],
+  "fixtures": [
+    {
+      "file": "scenarios/area-hazard-intrusion.yaml",
+      "migration": "freeze definition; preserve logical IDs and event order; generated outputs belong to the run",
+      "name": "area-hazard-intrusion",
+      "seed": 2211,
+      "target": "exercise_input"
+    },
+    {
+      "file": "scenarios/multi-source-track.yaml",
+      "migration": "freeze definition; preserve logical IDs and event order; generated outputs belong to the run",
+      "name": "multi-source-track",
+      "seed": 2027,
+      "target": "exercise_input"
+    },
+    {
+      "file": "scenarios/normal-patrol.yaml",
+      "migration": "freeze definition; preserve logical IDs and event order; generated outputs belong to the run",
+      "name": "normal-patrol",
+      "seed": 42,
+      "target": "exercise_input"
+    },
+    {
+      "file": "scenarios/operational-failure-matrix.yaml",
+      "migration": "freeze definition; preserve logical IDs and event order; generated outputs belong to the run",
+      "name": "operational-failure-matrix",
+      "seed": 9090,
+      "target": "exercise_input"
+    },
+    {
+      "file": "scenarios/restricted-area-intrusion.yaml",
+      "migration": "freeze definition; preserve logical IDs and event order; generated outputs belong to the run",
+      "name": "restricted-area-intrusion",
+      "seed": 1007,
+      "target": "exercise_input"
+    }
+  ],
+  "method": "Static source snapshot, then route-policy evaluation and manual review. Target scope labels are migration classifications, not current enforcement.",
+  "query_files": [
+    {
+      "file": "db/queries/alerts.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateAlert",
+          "source": "db/queries/alerts.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetAlert",
+          "source": "db/queries/alerts.sql:11"
+        },
+        {
+          "mode": "many",
+          "name": "ListAlerts",
+          "source": "db/queries/alerts.sql:14"
+        },
+        {
+          "mode": "one",
+          "name": "CountAlerts",
+          "source": "db/queries/alerts.sql:23"
+        },
+        {
+          "mode": "one",
+          "name": "CountActiveAlerts",
+          "source": "db/queries/alerts.sql:30"
+        },
+        {
+          "mode": "one",
+          "name": "AcknowledgeAlert",
+          "source": "db/queries/alerts.sql:33"
+        },
+        {
+          "mode": "one",
+          "name": "ResolveAlert",
+          "source": "db/queries/alerts.sql:39"
+        },
+        {
+          "mode": "exec",
+          "name": "SetAlertIncident",
+          "source": "db/queries/alerts.sql:45"
+        },
+        {
+          "mode": "one",
+          "name": "FindUnresolvedAlertForGeofenceTrack",
+          "source": "db/queries/alerts.sql:48"
+        },
+        {
+          "mode": "one",
+          "name": "FindUnresolvedAlertForObservationGeofence",
+          "source": "db/queries/alerts.sql:54"
+        },
+        {
+          "mode": "many",
+          "name": "ListAlertsByIncident",
+          "source": "db/queries/alerts.sql:68"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/assessments.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateAssessment",
+          "source": "db/queries/assessments.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetAssessment",
+          "source": "db/queries/assessments.sql:9"
+        },
+        {
+          "mode": "many",
+          "name": "ListAssessments",
+          "source": "db/queries/assessments.sql:12"
+        },
+        {
+          "mode": "one",
+          "name": "CountAssessments",
+          "source": "db/queries/assessments.sql:19"
+        },
+        {
+          "mode": "exec",
+          "name": "AddAssessmentEvidence",
+          "source": "db/queries/assessments.sql:24"
+        },
+        {
+          "mode": "many",
+          "name": "ListAssessmentEvidence",
+          "source": "db/queries/assessments.sql:29"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/assets.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateAsset",
+          "source": "db/queries/assets.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetAsset",
+          "source": "db/queries/assets.sql:6"
+        },
+        {
+          "mode": "many",
+          "name": "ListAssets",
+          "source": "db/queries/assets.sql:9"
+        },
+        {
+          "mode": "one",
+          "name": "CountAssets",
+          "source": "db/queries/assets.sql:14"
+        },
+        {
+          "mode": "one",
+          "name": "UpdateAssetStatus",
+          "source": "db/queries/assets.sql:17"
+        },
+        {
+          "mode": "one",
+          "name": "AssetExists",
+          "source": "db/queries/assets.sql:23"
+        },
+        {
+          "mode": "exec",
+          "name": "EnsureAssetState",
+          "source": "db/queries/assets.sql:26"
+        },
+        {
+          "mode": "one",
+          "name": "GetAssetState",
+          "source": "db/queries/assets.sql:31"
+        },
+        {
+          "mode": "one",
+          "name": "UpsertAssetState",
+          "source": "db/queries/assets.sql:40"
+        },
+        {
+          "mode": "many",
+          "name": "ListStaleAssetIDs",
+          "source": "db/queries/assets.sql:74"
+        },
+        {
+          "mode": "many",
+          "name": "ListAssetFreshnessSignals",
+          "source": "db/queries/assets.sql:81"
+        },
+        {
+          "mode": "many",
+          "name": "ListAssetsWithState",
+          "source": "db/queries/assets.sql:94"
+        },
+        {
+          "mode": "one",
+          "name": "GetAssetDetail",
+          "source": "db/queries/assets.sql:106"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/audit.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateAuditEvent",
+          "source": "db/queries/audit.sql:1"
+        },
+        {
+          "mode": "many",
+          "name": "ListAuditEvents",
+          "source": "db/queries/audit.sql:11"
+        },
+        {
+          "mode": "one",
+          "name": "CountAuditEvents",
+          "source": "db/queries/audit.sql:20"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/classifications.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateClassification",
+          "source": "db/queries/classifications.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetClassification",
+          "source": "db/queries/classifications.sql:9"
+        },
+        {
+          "mode": "many",
+          "name": "ListClassificationsByTrack",
+          "source": "db/queries/classifications.sql:12"
+        },
+        {
+          "mode": "one",
+          "name": "LatestClassificationForTrack",
+          "source": "db/queries/classifications.sql:18"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/commands.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateCommand",
+          "source": "db/queries/commands.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetCommand",
+          "source": "db/queries/commands.sql:11"
+        },
+        {
+          "mode": "many",
+          "name": "ListCommands",
+          "source": "db/queries/commands.sql:14"
+        },
+        {
+          "mode": "one",
+          "name": "CountCommands",
+          "source": "db/queries/commands.sql:22"
+        },
+        {
+          "mode": "one",
+          "name": "TransitionCommand",
+          "source": "db/queries/commands.sql:28"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/geofences.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateGeofence",
+          "source": "db/queries/geofences.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetGeofence",
+          "source": "db/queries/geofences.sql:12"
+        },
+        {
+          "mode": "many",
+          "name": "ListGeofences",
+          "source": "db/queries/geofences.sql:19"
+        },
+        {
+          "mode": "one",
+          "name": "CountGeofences",
+          "source": "db/queries/geofences.sql:27"
+        },
+        {
+          "mode": "many",
+          "name": "ListActiveGeofencesContainingPoint",
+          "source": "db/queries/geofences.sql:30"
+        },
+        {
+          "mode": "one",
+          "name": "UpdateGeofenceActive",
+          "source": "db/queries/geofences.sql:39"
+        },
+        {
+          "mode": "one",
+          "name": "GetGeofenceState",
+          "source": "db/queries/geofences.sql:46"
+        },
+        {
+          "mode": "exec",
+          "name": "UpsertGeofenceState",
+          "source": "db/queries/geofences.sql:51"
+        },
+        {
+          "mode": "many",
+          "name": "ListGeofenceStatesByTrack",
+          "source": "db/queries/geofences.sql:60"
+        },
+        {
+          "mode": "many",
+          "name": "ReconcileGeofenceStates",
+          "source": "db/queries/geofences.sql:65"
+        },
+        {
+          "mode": "exec",
+          "name": "DeleteGeofenceStateForTrack",
+          "source": "db/queries/geofences.sql:114"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/geospatial.sql",
+      "queries": [
+        {
+          "mode": "many",
+          "name": "ListAssetsWithinRadius",
+          "source": "db/queries/geospatial.sql:1"
+        },
+        {
+          "mode": "many",
+          "name": "NearestAssets",
+          "source": "db/queries/geospatial.sql:23"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/incidents.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateIncident",
+          "source": "db/queries/incidents.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetIncident",
+          "source": "db/queries/incidents.sql:9"
+        },
+        {
+          "mode": "many",
+          "name": "ListIncidents",
+          "source": "db/queries/incidents.sql:12"
+        },
+        {
+          "mode": "one",
+          "name": "CountIncidents",
+          "source": "db/queries/incidents.sql:18"
+        },
+        {
+          "mode": "one",
+          "name": "UpdateIncidentStatus",
+          "source": "db/queries/incidents.sql:22"
+        },
+        {
+          "mode": "one",
+          "name": "UpdateIncident",
+          "source": "db/queries/incidents.sql:32"
+        },
+        {
+          "mode": "exec",
+          "name": "AddIncidentAlert",
+          "source": "db/queries/incidents.sql:39"
+        },
+        {
+          "mode": "exec",
+          "name": "AddIncidentTrack",
+          "source": "db/queries/incidents.sql:44"
+        },
+        {
+          "mode": "exec",
+          "name": "AddIncidentAsset",
+          "source": "db/queries/incidents.sql:49"
+        },
+        {
+          "mode": "exec",
+          "name": "AddIncidentObservation",
+          "source": "db/queries/incidents.sql:54"
+        },
+        {
+          "mode": "exec",
+          "name": "AddIncidentAssessment",
+          "source": "db/queries/incidents.sql:59"
+        },
+        {
+          "mode": "many",
+          "name": "ListIncidentAlerts",
+          "source": "db/queries/incidents.sql:64"
+        },
+        {
+          "mode": "many",
+          "name": "ListIncidentTracks",
+          "source": "db/queries/incidents.sql:70"
+        },
+        {
+          "mode": "many",
+          "name": "ListIncidentAssets",
+          "source": "db/queries/incidents.sql:84"
+        },
+        {
+          "mode": "many",
+          "name": "ListIncidentObservations",
+          "source": "db/queries/incidents.sql:97"
+        },
+        {
+          "mode": "many",
+          "name": "ListIncidentAssessments",
+          "source": "db/queries/incidents.sql:110"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/missions.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateMission",
+          "source": "db/queries/missions.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetMission",
+          "source": "db/queries/missions.sql:9"
+        },
+        {
+          "mode": "many",
+          "name": "ListMissions",
+          "source": "db/queries/missions.sql:12"
+        },
+        {
+          "mode": "one",
+          "name": "CountMissions",
+          "source": "db/queries/missions.sql:18"
+        },
+        {
+          "mode": "one",
+          "name": "UpdateMissionStatus",
+          "source": "db/queries/missions.sql:22"
+        },
+        {
+          "mode": "exec",
+          "name": "AssignAssetToMission",
+          "source": "db/queries/missions.sql:32"
+        },
+        {
+          "mode": "many",
+          "name": "ListMissionAssets",
+          "source": "db/queries/missions.sql:37"
+        },
+        {
+          "mode": "one",
+          "name": "CreateMissionTask",
+          "source": "db/queries/missions.sql:50"
+        },
+        {
+          "mode": "many",
+          "name": "ListMissionTasks",
+          "source": "db/queries/missions.sql:63"
+        },
+        {
+          "mode": "one",
+          "name": "UpdateMissionTaskStatus",
+          "source": "db/queries/missions.sql:73"
+        },
+        {
+          "mode": "many",
+          "name": "ListMissionsForAsset",
+          "source": "db/queries/missions.sql:83"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/observations.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateObservation",
+          "source": "db/queries/observations.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetObservation",
+          "source": "db/queries/observations.sql:29"
+        },
+        {
+          "mode": "many",
+          "name": "ListObservations",
+          "source": "db/queries/observations.sql:41"
+        },
+        {
+          "mode": "one",
+          "name": "CountObservations",
+          "source": "db/queries/observations.sql:54"
+        },
+        {
+          "mode": "one",
+          "name": "CountObservationsByTrack",
+          "source": "db/queries/observations.sql:57"
+        },
+        {
+          "mode": "many",
+          "name": "ListObservationsByTrack",
+          "source": "db/queries/observations.sql:62"
+        },
+        {
+          "mode": "exec",
+          "name": "MarkObservationProcessed",
+          "source": "db/queries/observations.sql:77"
+        },
+        {
+          "mode": "many",
+          "name": "GeofencesIntersectingArea",
+          "source": "db/queries/observations.sql:80"
+        },
+        {
+          "mode": "many",
+          "name": "ListAreaObservations",
+          "source": "db/queries/observations.sql:103"
+        },
+        {
+          "mode": "one",
+          "name": "CountAreaObservations",
+          "source": "db/queries/observations.sql:125"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/picture.sql",
+      "queries": [
+        {
+          "mode": "many",
+          "name": "TracksAt",
+          "source": "db/queries/picture.sql:9"
+        },
+        {
+          "mode": "many",
+          "name": "AssetsAt",
+          "source": "db/queries/picture.sql:31"
+        },
+        {
+          "mode": "many",
+          "name": "AlertsAt",
+          "source": "db/queries/picture.sql:56"
+        },
+        {
+          "mode": "many",
+          "name": "GeofencesAt",
+          "source": "db/queries/picture.sql:65"
+        },
+        {
+          "mode": "one",
+          "name": "TrackHistoryWindow",
+          "source": "db/queries/picture.sql:72"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/scenario_run_events.sql",
+      "queries": [
+        {
+          "mode": "exec",
+          "name": "CreateScenarioRunEvent",
+          "source": "db/queries/scenario_run_events.sql:1"
+        },
+        {
+          "mode": "exec",
+          "name": "UpdateScenarioRunEvent",
+          "source": "db/queries/scenario_run_events.sql:14"
+        },
+        {
+          "mode": "many",
+          "name": "ListScenarioRunEvents",
+          "source": "db/queries/scenario_run_events.sql:21"
+        },
+        {
+          "mode": "exec",
+          "name": "SkipPendingScenarioRunEvents",
+          "source": "db/queries/scenario_run_events.sql:27"
+        },
+        {
+          "mode": "one",
+          "name": "UpdateScenarioRunCursor",
+          "source": "db/queries/scenario_run_events.sql:34"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/scenario_runs.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateScenarioRun",
+          "source": "db/queries/scenario_runs.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetScenarioRun",
+          "source": "db/queries/scenario_runs.sql:9"
+        },
+        {
+          "mode": "many",
+          "name": "ListScenarioRuns",
+          "source": "db/queries/scenario_runs.sql:12"
+        },
+        {
+          "mode": "one",
+          "name": "CountScenarioRuns",
+          "source": "db/queries/scenario_runs.sql:17"
+        },
+        {
+          "mode": "one",
+          "name": "UpdateScenarioRunStatus",
+          "source": "db/queries/scenario_runs.sql:20"
+        },
+        {
+          "mode": "one",
+          "name": "UpdateScenarioRunSpeed",
+          "source": "db/queries/scenario_runs.sql:28"
+        },
+        {
+          "mode": "exec",
+          "name": "UpdateScenarioRunProgress",
+          "source": "db/queries/scenario_runs.sql:34"
+        },
+        {
+          "mode": "many",
+          "name": "ListActiveScenarioRuns",
+          "source": "db/queries/scenario_runs.sql:39"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/sources.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateSource",
+          "source": "db/queries/sources.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetSource",
+          "source": "db/queries/sources.sql:6"
+        },
+        {
+          "mode": "many",
+          "name": "ListSources",
+          "source": "db/queries/sources.sql:9"
+        },
+        {
+          "mode": "one",
+          "name": "CountSources",
+          "source": "db/queries/sources.sql:14"
+        },
+        {
+          "mode": "one",
+          "name": "SourceExists",
+          "source": "db/queries/sources.sql:17"
+        },
+        {
+          "mode": "one",
+          "name": "UpdateSourceStatus",
+          "source": "db/queries/sources.sql:20"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/telemetry.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateTelemetry",
+          "source": "db/queries/telemetry.sql:1"
+        },
+        {
+          "mode": "many",
+          "name": "ListTelemetryByAsset",
+          "source": "db/queries/telemetry.sql:15"
+        },
+        {
+          "mode": "one",
+          "name": "CountTelemetryByAsset",
+          "source": "db/queries/telemetry.sql:27"
+        },
+        {
+          "mode": "one",
+          "name": "LatestTelemetryForAsset",
+          "source": "db/queries/telemetry.sql:30"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    },
+    {
+      "file": "db/queries/tracks.sql",
+      "queries": [
+        {
+          "mode": "one",
+          "name": "CreateTrack",
+          "source": "db/queries/tracks.sql:1"
+        },
+        {
+          "mode": "one",
+          "name": "GetTrackDetail",
+          "source": "db/queries/tracks.sql:6"
+        },
+        {
+          "mode": "many",
+          "name": "ListTrackDetails",
+          "source": "db/queries/tracks.sql:19"
+        },
+        {
+          "mode": "one",
+          "name": "CountTracks",
+          "source": "db/queries/tracks.sql:33"
+        },
+        {
+          "mode": "many",
+          "name": "ListTrackFreshnessSignals",
+          "source": "db/queries/tracks.sql:36"
+        },
+        {
+          "mode": "one",
+          "name": "FindTrackByExternalRef",
+          "source": "db/queries/tracks.sql:51"
+        },
+        {
+          "mode": "one",
+          "name": "FindTrackByObservationID",
+          "source": "db/queries/tracks.sql:63"
+        },
+        {
+          "mode": "exec",
+          "name": "TouchTrack",
+          "source": "db/queries/tracks.sql:80"
+        },
+        {
+          "mode": "one",
+          "name": "ApplyTrackObservation",
+          "source": "db/queries/tracks.sql:85"
+        },
+        {
+          "mode": "one",
+          "name": "CloseTrack",
+          "source": "db/queries/tracks.sql:114"
+        },
+        {
+          "mode": "exec",
+          "name": "UpsertTrackState",
+          "source": "db/queries/tracks.sql:120"
+        },
+        {
+          "mode": "execrows",
+          "name": "AttachObservationToTrack",
+          "source": "db/queries/tracks.sql:135"
+        },
+        {
+          "mode": "exec",
+          "name": "CreateTrackHistoryEntry",
+          "source": "db/queries/tracks.sql:142"
+        },
+        {
+          "mode": "many",
+          "name": "ListTrackHistory",
+          "source": "db/queries/tracks.sql:152"
+        },
+        {
+          "mode": "one",
+          "name": "CountTrackObservations",
+          "source": "db/queries/tracks.sql:163"
+        },
+        {
+          "mode": "many",
+          "name": "CountObservationsBySourceForTrack",
+          "source": "db/queries/tracks.sql:166"
+        }
+      ],
+      "scope_requirement": "authorize reads, counts, mutations and related IDs; parent scope does not follow from an ID or filter"
+    }
+  ],
+  "routes": [
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "alerts.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/alerts",
+      "source": "internal/alerts/http.go:26",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "alerts.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/alerts/{id}",
+      "source": "internal/alerts/http.go:27",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "alerts.acknowledge",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/alerts/{id}/acknowledge",
+      "source": "internal/alerts/http.go:28",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "alerts.resolve",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/alerts/{id}/resolve",
+      "source": "internal/alerts/http.go:29",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "assessments.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/assessments",
+      "source": "internal/assessments/http.go:27",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "assessments.create",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/assessments",
+      "source": "internal/assessments/http.go:28",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "assessments.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/assessments/{id}",
+      "source": "internal/assessments/http.go:29",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "assets.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/assets",
+      "source": "internal/assets/http.go:27",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "assets.manage",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/assets",
+      "source": "internal/assets/http.go:28",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "assets.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/assets/{id}",
+      "source": "internal/assets/http.go:29",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "assets.manage",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/assets/{id}/status",
+      "source": "internal/assets/http.go:30",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "telemetry.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/assets/{id}/telemetry",
+      "source": "internal/telemetry/http.go:41",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "audit.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/audit",
+      "source": "internal/audit/http.go:28",
+      "target_scope_family": "partitioned_audit"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "source": "internal/app/app.go:306",
+      "target_scope_family": "platform"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "classifications.create",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/classifications",
+      "source": "internal/classifications/http.go:25",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "classifications.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/classifications/{id}",
+      "source": "internal/classifications/http.go:26",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "commands.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/commands",
+      "source": "internal/commands/http.go:26",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "commands.issue",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/commands",
+      "source": "internal/commands/http.go:27",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "commands.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/commands/{id}",
+      "source": "internal/commands/http.go:28",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "commands.transition",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/commands/{id}/transition",
+      "source": "internal/commands/http.go:29",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "geofences.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/geofences",
+      "source": "internal/geospatial/http.go:28",
+      "target_scope_family": "public_reference_or_exercise_input"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "geofences.manage",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/geofences",
+      "source": "internal/geospatial/http.go:29",
+      "target_scope_family": "public_reference_or_exercise_input"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "geofences.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/geofences/{id}",
+      "source": "internal/geospatial/http.go:30",
+      "target_scope_family": "public_reference_or_exercise_input"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "geofences.manage",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/geofences/{id}/active",
+      "source": "internal/geospatial/http.go:31",
+      "target_scope_family": "public_reference_or_exercise_input"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "geospatial.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/geospatial/assets-within",
+      "source": "internal/geospatial/http.go:35",
+      "target_scope_family": "spatial_query_by_authorized_resource"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "geospatial.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/geospatial/geofences-containing",
+      "source": "internal/geospatial/http.go:34",
+      "target_scope_family": "spatial_query_by_authorized_resource"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "geospatial.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/geospatial/nearest-assets",
+      "source": "internal/geospatial/http.go:36",
+      "target_scope_family": "spatial_query_by_authorized_resource"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "incidents.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/incidents",
+      "source": "internal/incidents/http.go:29",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "incidents.create",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/incidents",
+      "source": "internal/incidents/http.go:30",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "incidents.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/incidents/{id}",
+      "source": "internal/incidents/http.go:31",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "incidents.update",
+      "known_policy": true,
+      "method": "PATCH",
+      "path": "/api/v1/incidents/{id}",
+      "source": "internal/incidents/http.go:32",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "incidents.update",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/incidents/{id}/relations",
+      "source": "internal/incidents/http.go:34",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "incidents.update",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/incidents/{id}/status",
+      "source": "internal/incidents/http.go:33",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "missions.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/missions",
+      "source": "internal/missions/http.go:27",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "missions.create",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/missions",
+      "source": "internal/missions/http.go:28",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "missions.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/missions/{id}",
+      "source": "internal/missions/http.go:29",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "missions.update",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/missions/{id}/assets",
+      "source": "internal/missions/http.go:31",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "missions.update",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/missions/{id}/status",
+      "source": "internal/missions/http.go:30",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "missions.update",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/missions/{id}/tasks",
+      "source": "internal/missions/http.go:32",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "missions.update",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/missions/{id}/tasks/{taskId}/status",
+      "source": "internal/missions/http.go:33",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "observations.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/observations",
+      "source": "internal/observations/http.go:29",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "observations.ingest",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/observations",
+      "source": "internal/observations/http.go:30",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "observations.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/observations/{id}",
+      "source": "internal/observations/http.go:31",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "operators.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/operators",
+      "source": "internal/operators/http.go:27",
+      "target_scope_family": "platform"
+    },
+    {
+      "current_allowed_roles": [
+        "administrator"
+      ],
+      "current_permission": "admin.manage",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/operators",
+      "source": "internal/operators/http.go:28",
+      "target_scope_family": "platform"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "operators.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/operators/{id}",
+      "source": "internal/operators/http.go:29",
+      "target_scope_family": "platform"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "operational.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/picture",
+      "source": "internal/picture/http.go:30",
+      "target_scope_family": "authorized_projection"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "operational.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/picture/window",
+      "source": "internal/picture/http.go:31",
+      "target_scope_family": "authorized_projection"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "operational.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/realtime",
+      "source": "internal/realtime/hub.go:65",
+      "target_scope_family": "authorized_projection"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "scenarios.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/scenarios",
+      "source": "internal/scenarios/http.go:26",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "scenarios.control",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/scenarios/definitions/{name}/start",
+      "source": "internal/scenarios/http.go:39",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "scenarios.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/scenarios/runs",
+      "source": "internal/scenarios/http.go:27",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "scenarios.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/scenarios/runs/{id}",
+      "source": "internal/scenarios/http.go:28",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "scenarios.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/scenarios/runs/{id}/events",
+      "source": "internal/scenarios/http.go:29",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "scenarios.control",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/scenarios/runs/{id}/pause",
+      "source": "internal/scenarios/http.go:30",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "scenarios.control",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/scenarios/runs/{id}/restart",
+      "source": "internal/scenarios/http.go:33",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "scenarios.control",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/scenarios/runs/{id}/resume",
+      "source": "internal/scenarios/http.go:31",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "scenarios.control",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/scenarios/runs/{id}/speed",
+      "source": "internal/scenarios/http.go:34",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "scenarios.control",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/scenarios/runs/{id}/stop",
+      "source": "internal/scenarios/http.go:32",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "scenarios.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/scenarios/{name}",
+      "source": "internal/scenarios/http.go:35",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "scenarios.control",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/scenarios/{name}/start",
+      "source": "internal/scenarios/http.go:40",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "sources.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/sources",
+      "source": "internal/sources/http.go:27",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "sources.manage",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/sources",
+      "source": "internal/sources/http.go:28",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "sources.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/sources/{id}",
+      "source": "internal/sources/http.go:29",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "sources.manage",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/sources/{id}/status",
+      "source": "internal/sources/http.go:30",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "supervisor",
+        "administrator"
+      ],
+      "current_permission": "telemetry.ingest",
+      "known_policy": true,
+      "method": "POST",
+      "path": "/api/v1/telemetry",
+      "source": "internal/telemetry/http.go:40",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "tracks.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/tracks",
+      "source": "internal/tracks/http.go:28",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "tracks.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/tracks/{id}",
+      "source": "internal/tracks/http.go:29",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "tracks.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/tracks/{id}/classifications",
+      "source": "internal/classifications/http.go:27",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_allowed_roles": [
+        "operator",
+        "supervisor",
+        "administrator",
+        "analyst"
+      ],
+      "current_permission": "tracks.read",
+      "known_policy": true,
+      "method": "GET",
+      "path": "/api/v1/tracks/{id}/history",
+      "source": "internal/tracks/http.go:30",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "current_access": "public probe",
+      "method": "GET",
+      "path": "/health",
+      "source": "internal/app/app.go:302",
+      "target_scope_family": "platform"
+    },
+    {
+      "current_access": "public probe",
+      "method": "GET",
+      "path": "/metrics",
+      "source": "internal/app/app.go:303",
+      "target_scope_family": "platform"
+    }
+  ],
+  "snapshot_date": "2026-10-20",
+  "tables": [
+    {
+      "migration_evidence": "explicit producer/run provenance; type alone is insufficient",
+      "source": "db/migrations/00002_sources.sql:2",
+      "table": "sources",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "migration_evidence": "payload + source + recorded run; retain point/area semantics",
+      "source": "db/migrations/00003_observations.sql:5",
+      "table": "observations",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "migration_evidence": "metadata and namespaced resource ID",
+      "source": "db/migrations/00004_assets.sql:5",
+      "table": "assets",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "migration_evidence": "inherit verified asset ownership",
+      "source": "db/migrations/00004_assets.sql:18",
+      "table": "asset_state",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "migration_evidence": "message_id, payload, asset and optional source",
+      "source": "db/migrations/00004_assets.sql:33",
+      "table": "asset_telemetry",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "migration_evidence": "metadata, external_ref and supporting observations; ID is generated",
+      "source": "db/migrations/00005_tracks.sql:5",
+      "table": "tracks",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "migration_evidence": "inherit verified track ownership",
+      "source": "db/migrations/00005_tracks.sql:20",
+      "table": "track_state",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "migration_evidence": "track, observation and source must agree",
+      "source": "db/migrations/00005_tracks.sql:32",
+      "table": "track_observations",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "migration_evidence": "inherit verified track ownership",
+      "source": "db/migrations/00005_tracks.sql:45",
+      "table": "track_history",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "migration_evidence": "track, creator and source_reference",
+      "source": "db/migrations/00006_classifications.sql:4",
+      "table": "classifications",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "migration_evidence": "metadata and run namespace; public reference is not inferred",
+      "source": "db/migrations/00007_geofences.sql:3",
+      "table": "geofences",
+      "target_scope_family": "public_reference_or_exercise_input"
+    },
+    {
+      "migration_evidence": "geofence and track ownership must be compatible",
+      "source": "db/migrations/00007_geofences.sql:20",
+      "table": "geofence_states",
+      "target_scope_family": "exercise_or_public_projection"
+    },
+    {
+      "migration_evidence": "source_reference plus all related subjects; handle area alerts",
+      "source": "db/migrations/00008_alerts.sql:2",
+      "table": "alerts",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "migration_evidence": "creator audit and all evidence relations must agree",
+      "source": "db/migrations/00009_incidents.sql:2",
+      "table": "incidents",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "migration_evidence": "incident and alert",
+      "source": "db/migrations/00009_incidents.sql:23",
+      "table": "incident_alerts",
+      "target_scope_family": "inherit_parent"
+    },
+    {
+      "migration_evidence": "incident and track",
+      "source": "db/migrations/00009_incidents.sql:30",
+      "table": "incident_tracks",
+      "target_scope_family": "inherit_parent"
+    },
+    {
+      "migration_evidence": "incident and asset",
+      "source": "db/migrations/00009_incidents.sql:37",
+      "table": "incident_assets",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "migration_evidence": "incident and observation",
+      "source": "db/migrations/00009_incidents.sql:44",
+      "table": "incident_observations",
+      "target_scope_family": "inherit_parent"
+    },
+    {
+      "migration_evidence": "creator audit, incident and assigned assets",
+      "source": "db/migrations/00010_missions.sql:2",
+      "table": "missions",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "migration_evidence": "mission and asset",
+      "source": "db/migrations/00010_missions.sql:19",
+      "table": "mission_assets",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "migration_evidence": "mission and task location",
+      "source": "db/migrations/00010_missions.sql:26",
+      "table": "mission_tasks",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "migration_evidence": "asset, mission, incident, issuer audit and outcome",
+      "source": "db/migrations/00011_commands.sql:2",
+      "table": "commands",
+      "target_scope_family": "exercise_observation"
+    },
+    {
+      "migration_evidence": "subject, creator audit and evidence; no automatic truth access",
+      "source": "db/migrations/00012_assessments.sql:4",
+      "table": "assessments",
+      "target_scope_family": "public_evidence_or_exercise_observation"
+    },
+    {
+      "migration_evidence": "polymorphic evidence references require application checks",
+      "source": "db/migrations/00012_assessments.sql:18",
+      "table": "assessment_evidence",
+      "target_scope_family": "inherit_parent"
+    },
+    {
+      "migration_evidence": "incident and assessment",
+      "source": "db/migrations/00012_assessments.sql:26",
+      "table": "incident_assessments",
+      "target_scope_family": "inherit_parent"
+    },
+    {
+      "migration_evidence": "recorded run context, subject and actor; system/human events may be ambiguous",
+      "source": "db/migrations/00013_audit.sql:4",
+      "table": "audit_events",
+      "target_scope_family": "partitioned_audit"
+    },
+    {
+      "migration_evidence": "human identity; no implicit workspace or truth grant",
+      "source": "db/migrations/00014_operators.sql:4",
+      "table": "operators",
+      "target_scope_family": "platform"
+    },
+    {
+      "migration_evidence": "recorded run ID; add workspace/environment ownership",
+      "source": "db/migrations/00015_scenario_runs.sql:5",
+      "table": "scenario_runs",
+      "target_scope_family": "exercise_input_and_run_control"
+    },
+    {
+      "migration_evidence": "run FK; names/errors may expose scenario input",
+      "source": "db/migrations/00016_scenario_run_events.sql:9",
+      "table": "scenario_run_events",
+      "target_scope_family": "restricted_run_control"
+    }
+  ],
+  "ui_query_sites": [
+    {
+      "expression": "queryKey: queryKeys.sources.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/layout/ChainRibbon.tsx:39"
+    },
+    {
+      "expression": "queryKey: queryKeys.observations.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/layout/ChainRibbon.tsx:45"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/layout/ChainRibbon.tsx:51"
+    },
+    {
+      "expression": "queryKey: queryKeys.assets.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/layout/ChainRibbon.tsx:57"
+    },
+    {
+      "expression": "queryKey: queryKeys.incidents.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/layout/ChainRibbon.tsx:63"
+    },
+    {
+      "expression": "queryKey: queryKeys.commands.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/layout/ChainRibbon.tsx:69"
+    },
+    {
+      "expression": "queryKey: queryKeys.scenarios.runs(RUNS_FILTER),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/layout/ScenarioBar.tsx:30"
+    },
+    {
+      "expression": "queryKey: queryKeys.scenarios.list(),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/layout/ScenarioBar.tsx:36"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.scenarios.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/layout/ScenarioBar.tsx:86"
+    },
+    {
+      "expression": "queryKey: queryKeys.health(),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/layout/TopBar.tsx:99"
+    },
+    {
+      "expression": "queryKey: queryKeys.currentOperator(),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/layout/TopBar.tsx:106"
+    },
+    {
+      "expression": "queryKey: ['picture', replayAt ?? 'live'],",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/map/AssetDetailPanel.tsx:24"
+    },
+    {
+      "expression": "queryKey: queryKeys.assets.detail(assetId),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/map/AssetDetailPanel.tsx:31"
+    },
+    {
+      "expression": "queryKey: queryKeys.assets.telemetry(assetId),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/map/AssetDetailPanel.tsx:37"
+    },
+    {
+      "expression": "queryKey: queryKeys.commands.list({ asset_id: assetId, limit: 10 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/map/AssetDetailPanel.tsx:44"
+    },
+    {
+      "expression": "queryKey: ['picture-window'],",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/map/Scrubber.tsx:33"
+    },
+    {
+      "expression": "queryKey: ['picture', replayAt ?? 'live'],",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/map/TrackDetailPanel.tsx:32"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.detail(trackId),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/map/TrackDetailPanel.tsx:40"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.classifications(trackId),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/map/TrackDetailPanel.tsx:51"
+    },
+    {
+      "expression": "queryKey: queryKeys.observations.list({ track_id: trackId, limit: 20 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/map/TrackDetailPanel.tsx:56"
+    },
+    {
+      "expression": "queryKey: queryKeys.alerts.list({ track_id: trackId, limit: 10 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/map/TrackDetailPanel.tsx:61"
+    },
+    {
+      "expression": "queryKey: queryKeys.assessments.list({ subject_type: 'track', subject_id: trackId }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/components/map/TrackDetailPanel.tsx:66"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.list({ limit: 200 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AssessmentFormDialog.tsx:69"
+    },
+    {
+      "expression": "queryKey: queryKeys.assets.list({ limit: 200 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AssessmentFormDialog.tsx:74"
+    },
+    {
+      "expression": "queryKey: queryKeys.alerts.list({ limit: 100 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AssessmentFormDialog.tsx:79"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.assessments.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AssessmentFormDialog.tsx:88"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.tracks.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AssessmentFormDialog.tsx:89"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.audit.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AssessmentFormDialog.tsx:90"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.incidents.detail(incidentId) })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AssessmentFormDialog.tsx:92"
+    },
+    {
+      "expression": "queryKey: queryKeys.assets.list({ limit: 200 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AttachRelationDialog.tsx:37"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.list({ limit: 200 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AttachRelationDialog.tsx:42"
+    },
+    {
+      "expression": "queryKey: queryKeys.alerts.list({ limit: 100 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AttachRelationDialog.tsx:47"
+    },
+    {
+      "expression": "queryKey: queryKeys.observations.list({ limit: 50 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AttachRelationDialog.tsx:52"
+    },
+    {
+      "expression": "queryKey: queryKeys.assessments.list({ limit: 50 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AttachRelationDialog.tsx:57"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.incidents.detail(incidentId) })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AttachRelationDialog.tsx:86"
+    },
+    {
+      "expression": "queryKey: queryKeys.audit.list({ subject_type: 'incident', subject_id: incidentId, limit: 100 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/AttachRelationDialog.tsx:88"
+    },
+    {
+      "expression": "queryKey: queryKeys.missions.list({ limit: 100 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/CommandConsole.tsx:46"
+    },
+    {
+      "expression": "queryKey: queryKeys.assets.list({ limit: 200 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/CommandConsole.tsx:50"
+    },
+    {
+      "expression": "queryKey: queryKeys.commands.list({ limit: 200 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/CommandConsole.tsx:54"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.commands.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/CommandConsole.tsx:120"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: incidentAuditKey })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/CommandConsole.tsx:121"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.commands.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/CommandConsole.tsx:137"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: incidentAuditKey })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/CommandConsole.tsx:138"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.missions.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/CommandConsole.tsx:154"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: incidentAuditKey })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/CommandConsole.tsx:155"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.incidents.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/IncidentFormDialog.tsx:82"
+    },
+    {
+      "expression": "queryKey: queryKeys.assets.list({ limit: 200 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/MissionFormDialog.tsx:35"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.missions.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/MissionFormDialog.tsx:65"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.incidents.detail(incidentId) })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/MissionFormDialog.tsx:66"
+    },
+    {
+      "expression": "queryKey: queryKeys.audit.list({ subject_type: 'incident', subject_id: incidentId, limit: 100 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/features/incidents/MissionFormDialog.tsx:68"
+    },
+    {
+      "expression": "queryKey: queryKeys.alerts.list(filters),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/alerts.tsx:64"
+    },
+    {
+      "expression": "const invalidateAlerts = () =\u003e queryClient.invalidateQueries({ queryKey: queryKeys.alerts.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/alerts.tsx:68"
+    },
+    {
+      "expression": "queryKey: queryKeys.assets.list(ASSET_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/assets.tsx:32"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.list(TRACK_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/board.tsx:132"
+    },
+    {
+      "expression": "queryKey: queryKeys.assets.list(ASSET_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/board.tsx:136"
+    },
+    {
+      "expression": "queryKey: queryKeys.observations.list(OBSERVATION_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/board.tsx:140"
+    },
+    {
+      "expression": "queryKey: queryKeys.alerts.list(ALERT_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/board.tsx:144"
+    },
+    {
+      "expression": "queryKey: queryKeys.sources.list(SOURCE_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/board.tsx:148"
+    },
+    {
+      "expression": "queryKey: queryKeys.incidents.detail(id),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/incident-detail.tsx:59"
+    },
+    {
+      "expression": "queryKey: queryKeys.audit.list(auditFilters),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/incident-detail.tsx:66"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.incidents.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/incident-detail.tsx:74"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.audit.list(auditFilters) })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/incident-detail.tsx:75"
+    },
+    {
+      "expression": "queryKey: queryKeys.incidents.list(filters),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/incidents.tsx:39"
+    },
+    {
+      "expression": "queryKey: queryKeys.geofences.list(),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/map.tsx:209"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.list(TRACK_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/map.tsx:213"
+    },
+    {
+      "expression": "queryKey: queryKeys.assets.list(ASSET_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/map.tsx:217"
+    },
+    {
+      "expression": "queryKey: queryKeys.observations.list(COUNT_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/map.tsx:221"
+    },
+    {
+      "expression": "queryKey: queryKeys.alerts.list(OPEN_ALERTS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/map.tsx:225"
+    },
+    {
+      "expression": "queryKey: queryKeys.observations.list(AREA_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/map.tsx:233"
+    },
+    {
+      "expression": "queryKey: queryKeys.commands.list(COMMAND_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/map.tsx:237"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.history(selectedTrackId ?? 'none'),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/map.tsx:243"
+    },
+    {
+      "expression": "queryKey: ['picture', replayAt ?? 'live'],",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/map.tsx:306"
+    },
+    {
+      "expression": "queryKey: queryKeys.scenarios.list(),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/scenarios.tsx:43"
+    },
+    {
+      "expression": "queryKey: queryKeys.scenarios.runs(runsFilters),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/scenarios.tsx:49"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.scenarios.all })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/scenarios.tsx:55"
+    },
+    {
+      "expression": "queryKey: queryKeys.scenarios.events(inspectedRunId ?? ''),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/scenarios.tsx:142"
+    },
+    {
+      "expression": "queryKey: queryKeys.health(),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/systems.tsx:169"
+    },
+    {
+      "expression": "queryKey: queryKeys.sources.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/systems.tsx:175"
+    },
+    {
+      "expression": "queryKey: queryKeys.observations.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/systems.tsx:180"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/systems.tsx:185"
+    },
+    {
+      "expression": "queryKey: queryKeys.assets.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/systems.tsx:190"
+    },
+    {
+      "expression": "queryKey: queryKeys.alerts.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/systems.tsx:195"
+    },
+    {
+      "expression": "queryKey: queryKeys.incidents.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/systems.tsx:200"
+    },
+    {
+      "expression": "queryKey: queryKeys.commands.list({ limit: LIST_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/systems.tsx:205"
+    },
+    {
+      "expression": "queryKey: queryKeys.audit.list(filters),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/timeline.tsx:44"
+    },
+    {
+      "expression": "void queryClient.invalidateQueries({ queryKey: queryKeys.tracks.classifications(trackId) })",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/track-inspector.tsx:160"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.detail(id),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/track-inspector.tsx:243"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.history(id),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/track-inspector.tsx:248"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.classifications(id),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/track-inspector.tsx:253"
+    },
+    {
+      "expression": "queryKey: queryKeys.observations.list({ track_id: id, limit: OBSERVATION_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/track-inspector.tsx:261"
+    },
+    {
+      "expression": "queryKey: queryKeys.assessments.list({ subject_type: 'track', subject_id: id, limit: 50 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/track-inspector.tsx:266"
+    },
+    {
+      "expression": "queryKey: queryKeys.alerts.list({ track_id: id, limit: 50 }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/track-inspector.tsx:271"
+    },
+    {
+      "expression": "queryKey: queryKeys.audit.list({ subject_type: 'track', subject_id: id, limit: LEDGER_LIMIT }),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/track-inspector.tsx:276"
+    },
+    {
+      "expression": "queryKey: queryKeys.tracks.list(TRACK_FILTERS),",
+      "scope_present": false,
+      "source": "apps/operator-ui/src/routes/tracks.tsx:30"
+    }
+  ],
+  "ui_views": [
+    "/",
+    "/board",
+    "/map",
+    "/tracks",
+    "/tracks/$id",
+    "/systems",
+    "/assets",
+    "/alerts",
+    "/incidents",
+    "/incidents/$id",
+    "/timeline",
+    "/scenarios"
+  ]
+}

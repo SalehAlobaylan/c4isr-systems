@@ -1,5 +1,11 @@
 # PRODUCT.md
 
+> **Current phase — user correction, 25 October 2026:** Build a map-centered Public Context and Intelligence product for the **Middle East and the rest of the world**. Simulation is limited to **geographic environment preparation** until a later dedicated design discussion. [Current scope](EMAD_CURRENT_SCOPE.md) supersedes conflicting earlier implementation sequences; the [map-first gap report](docs/implementation/MAP_FIRST_GAP_REPORT_2026_10_25.md) proposes the next delivery gates. Historical simulation implementation is not authorization to continue it.
+
+> **Historical product baseline:** EMAD's current direction has two pillars: Public Context & Intelligence and native 3D Modeling & Simulation. Existing Controlled Operations supports exercises. [Architecture and Direction v2](EMAD_ARCHITECTURE_AND_DIRECTION_v2.md), [Final Data Strategy v2](EMAD_FINAL_DATA_STRATEGY_v2.md), and [Implementation Plan v2](EMAD_IMPLEMENTATION_PLAN_v2.md) govern new work. Earlier C2-first, external-simulator, and live hardware assumptions below are retained as history, not current product commitments.
+
+> **Current implementation:** The v2 plan has delivered F0–S3 and the selected S4.1 increment within documented acceptance scopes. See the [implementation review and fixes](docs/implementation/PLAN_REVIEW.md) for current coverage, evidence and remaining deployment/S4 limits.
+
 # C4ISR-Oriented Platform Product Requirements Document
 
 ## 1. Product Overview
@@ -1770,3 +1776,27 @@ TypeScript Operator UI
 The first implementation should prove that the platform can transform source observations into a traceable operational picture and allow a human operator to coordinate a response.
 
 That is the first step toward the larger C4ISR vision.
+
+
+## P3.3 delivery update
+
+Public Context now includes a Weather and source reports view for station samples, selected official earthquake bulletin claims, exact provenance/history and independent analyst review. Unknown measurements, cited-time/location uncertainty, provider alert levels and shared upstream lineage remain visible. This is a bounded pilot, separate from exercise control. See [implementation, acceptance and rollout](docs/implementation/P3_3_WEATHER_AND_REPORTS.md).
+
+
+## S1.1 delivery update
+
+Simulation authors can now admit licensed portable model sources, inspect validated bounds/materials/fidelity and preserve separate original/native artifacts in the integrated asset registry. Actor templates and explicit georeferenced visual environment records are independent authoring definitions. The existing Exercise COP links to this protected authoring view; runtime actor execution and the 3D Studio viewport remain later tasks. See [implementation, acceptance and rollout](docs/implementation/S1_1_MODEL_ASSET_REGISTRY.md).
+
+
+## S1.2-S1.3 / S2.1 delivery update
+
+The first Simulation Studio viewport uses measured Three.js rendering over immutable georeferenced authoring scenes. A separate native Go executable owns abstract actor kinematics, virtual time and authenticated runtime lifecycle. Authoring, latest sealed runtime truth and ordinary operator perception remain separate. Migration 35 is required. M4 is accepted within the documented reference/synthetic-terrain visual-only scope; native sensing and Exercise COP integration remain S2.2-S2.3. See [engine comparison and decision](docs/implementation/S1_2_ENGINE_DECISION.md) and [implementation, acceptance and rollout](docs/implementation/S1_3_S2_1_STUDIO_AND_NATIVE_RUNTIME.md).
+
+
+## S2.2-S2.3 / S3.1 delivery update
+
+Native scenes now freeze abstract synthetic observer profiles and explicit controlled actors. The independent runtime publishes lease-bound private batches through a durable scoped gateway, and the existing observation/track/PostGIS/telemetry pipeline supplies the Exercise COP without hidden actor identities. Exercise operations reuse incident-linked missions, commands, operators and audit for virtual HOLD/RESUME_ROUTE actions with bounded deadlines, ACK/completion/rejection/failure/timeout, cancellation and idempotent retry. Migration **36** is required after 35. M5 was accepted for this abstract profile; the subsequent S3.2–S3.3 delivery also completes M6 within its declared scope. See [implementation, acceptance and rollout](docs/implementation/S2_2_S2_3_S3_1_PERCEPTION_AND_TASKING.md).
+
+## S3.2-S3.3 / S4.1 delivery update
+
+The original F0–S3 task backlog is complete within its recorded acceptance scopes. Native exercises now retain separate operator/truth journals and private content-addressed archives with selected-state checkpoints. Recorded output can be sought by virtual time and sequence without reissuing commands or consulting current COP state. Audited evaluators receive defined perception/workflow metrics; numeric operator summaries require an explicit human release. Studio also saves and pins reusable abstract sensor-quality presets. Apply migrations **37 then 38**, rebuild/admit the runtime binary, and run `apps/emad-recordings` with a separate environment-bound service credential. M6 is accepted for the documented abstract/reference/synthetic-terrain profile; further S4 expansion remains backlog. [Implementation, limits, verification and rollout](docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md).

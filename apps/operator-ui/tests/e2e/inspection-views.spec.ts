@@ -151,27 +151,7 @@ test.describe('picture telemetry dock', () => {
 })
 
 test.describe('chain of custody', () => {
-  test('the footer states what is at each stage, not a slogan about the pipeline', async ({
-    page,
-  }, testInfo) => {
-    test.skip(testInfo.project.name !== 'no-token', MOCKED)
-    await mockOperationalWorkflow(page)
-    await page.goto('/map')
-
-    const ribbon = page.getByRole('navigation', { name: 'Chain of custody' })
-    await expect(ribbon).toBeVisible()
-    // The counts are what the API returned: three registered sources, one
-    // observation. A chain printed as a string is a claim about how the
-    // system is built; a chain printed as counts is a reading of it.
-    await expect(ribbon).toContainText('3 sources')
-    await expect(ribbon).toContainText('1 observation')
-    // A count of one is one.
-    await expect(ribbon).not.toContainText('1 observations')
-    // The stages that have a view are links, so the footer is also the
-    // shortest route to them.
-    await expect(ribbon.getByRole('link', { name: /tracks/i })).toBeVisible()
-    await expect(ribbon.getByRole('link', { name: /entities/i })).toBeVisible()
-  })
+  test('the footer names the trust boundary while detailed counts stay in Systems',async({page},info)=>{test.skip(info.project.name!=='no-token',MOCKED);await mockOperationalWorkflow(page);await page.goto('/map');await expect(page.getByTestId('workspace-basis')).toContainText('Synthetic observations');await expect(page.getByRole('navigation',{name:'Chain of custody'})).toHaveCount(0);await page.goto('/systems');await page.getByRole('button',{name:'Operations diagnostics',exact:true}).click();await expect(page.locator('.aegis-xsystem').first()).toContainText('3');await expect(page.locator('.aegis-xsystem').nth(1)).toContainText('1')})
 })
 
 test.describe('picture panel', () => {
@@ -227,6 +207,7 @@ test.describe('systems grid', () => {
     test.skip(testInfo.project.name !== 'no-token', MOCKED)
     await mockOperationalWorkflow(page)
     await page.goto('/systems')
+    await page.getByRole('button',{name:'Operations diagnostics',exact:true}).click()
 
     await expect(page.getByRole('heading', { name: 'Systems' })).toBeVisible()
     await expect(page.locator('.aegis-xsystem')).toHaveCount(6)
@@ -248,6 +229,7 @@ test.describe('systems grid', () => {
     test.skip(testInfo.project.name !== 'no-token', MOCKED)
     await mockOperationalWorkflow(page)
     await page.goto('/systems')
+    await page.getByRole('button',{name:'Operations diagnostics',exact:true}).click()
 
     const inventory = page.locator('.aegis-xsystem-inventory')
     await expect(inventory).toHaveCount(1)
@@ -265,6 +247,7 @@ test.describe('systems grid', () => {
     test.skip(testInfo.project.name !== 'no-token', MOCKED)
     await mockOperationalWorkflow(page)
     await page.goto('/systems')
+    await page.getByRole('button',{name:'Operations diagnostics',exact:true}).click()
 
     const literals = await page.evaluate(() => {
       const found = new Set<string>()

@@ -1,0 +1,134 @@
+# Add after staging/docker-compose.yml. Provider credentials are optional and
+# remain gated in the trusted connector registry until admitted by a human.
+x-worker: &worker
+  image: emad-delivery:${C4ISR_VERSION:-staging}
+  build:
+    context: ../..
+    dockerfile: deployments/Dockerfile.workers
+  environment: &worker-env
+    C4ISR_ENV: staging
+    C4ISR_DATABASE_AUTH: 'true'
+    C4ISR_DATABASE_URL_FILE: /run/secrets/database_url
+    C4ISR_ARTIFACT_S3_ENDPOINT: http://garage:3900
+    C4ISR_ARTIFACT_S3_ALLOW_HTTP: 'true' # isolated Compose network; no host port
+    C4ISR_ARTIFACT_S3_BUCKET: ${EMAD_BUCKET:-emad-staging}
+    C4ISR_ARTIFACT_S3_REGION: garage
+    C4ISR_ARTIFACT_S3_ACCESS_KEY_FILE: /run/secrets/object_access_key
+    C4ISR_ARTIFACT_S3_SECRET_KEY_FILE: /run/secrets/object_secret_key
+    C4ISR_PUBLIC_CONNECTORS_FILE: /run/secrets/connectors.json
+    C4ISR_RUNTIME_BUILDS_FILE: /app/bin/runtime-builds.txt
+    EMAD_API_URL: http://api:8080
+  secrets:
+    - database_url
+    - object_access_key
+    - object_secret_key
+    - source: connectors
+      target: connectors.json
+  depends_on:
+    api: {condition: service_healthy}
+  restart: unless-stopped
+  read_only: true
+  tmpfs: [/tmp]
+
+services:
+  api:
+    image: emad-delivery:${C4ISR_VERSION:-staging}
+    build:
+      context: ../..
+      dockerfile: deployments/Dockerfile.workers
+    entrypoint: [/app/bin/c4isr-server]
+    environment:
+      <<: *worker-env
+      C4ISR_HTTP_ADDR: :8080
+    secrets:
+      - object_access_key
+      - object_secret_key
+      - source: connectors
+        target: connectors.json
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=2)"]
+    depends_on:
+      garage: {condition: service_started}
+  garage:
+    image: dxflrs/garage:v2.4.1@sha256:9c96caa2612d3411acc5b0e6701fb238dbfba33e533a6d7d3d811a4b12d0d020
+    command: [/garage, server, --single-node, --default-bucket]
+    env_file: ${STAGING_SECRET_DIR:-./.secrets}/garage.env
+    volumes:
+      - ${STAGING_SECRET_DIR:-./.secrets}/garage.toml:/etc/garage.toml:ro
+      - emad-staging-objects:/var/lib/garage/data
+      - emad-staging-object-meta:/var/lib/garage/meta
+    restart: unless-stopped
+  imagery:
+    <<: *worker
+    command: [--name, worker-imagery, --feature, imagery, --, /app/bin/emad-imagery, -token-file, /run/secrets/worker-imagery.token]
+    secrets:
+      - database_url
+      - object_access_key
+      - object_secret_key
+      - source: imagery_worker
+        target: worker-imagery.token
+  assets:
+    <<: *worker
+    command: [--name, worker-assets, --feature, assets, --, /app/bin/emad-assets, -token-file, /run/secrets/worker-assets.token]
+    secrets:
+      - database_url
+      - object_access_key
+      - object_secret_key
+      - source: asset_worker
+        target: worker-assets.token
+  recordings:
+    <<: *worker
+    command: [--name, worker-recordings, --feature, recordings, --, /app/bin/emad-recordings, -token-file, /run/secrets/worker-recordings.token]
+    secrets:
+      - database_url
+      - object_access_key
+      - object_secret_key
+      - source: recording_worker
+        target: worker-recordings.token
+  runtime:
+    <<: *worker
+    network_mode: service:api
+    environment:
+      EMAD_API_URL: http://127.0.0.1:8080
+    command: [--name, worker-runtime, --feature, runtime, --, /app/bin/emad-runtime, -worker, -url, http://127.0.0.1:8080, -token-file, /run/secrets/worker-runtime.token]
+    secrets:
+      - source: runtime_worker
+        target: worker-runtime.token
+  preparation:
+    <<: *worker
+    command: [--name, worker-preparation, --feature, preparation, --, python, /app/scripts/data/capture_worker.py]
+    volumes: [emad-staging-preparation:/data]
+    secrets:
+      - database_url
+      - object_access_key
+      - object_secret_key
+      - source: preparation_worker
+        target: worker-preparation.token
+      - source: imagery_worker
+        target: worker-imagery.token
+  connectors:
+    <<: *worker
+    # One exact-source identity per instance. Create separate services for each
+    # additional binding; do not give one process every provider's credential.
+    command: [--name, worker-usgs, --feature, connectors, --, /app/bin/emad-connectors, -token-file, /run/secrets/worker-usgs.token, -source, '${EMAD_CONNECTOR_SOURCE_ID}']
+    secrets:
+      - database_url
+      - source: connectors
+        target: connectors.json
+      - source: connector_worker
+        target: worker-usgs.token
+
+volumes:
+  emad-staging-objects:
+  emad-staging-object-meta:
+  emad-staging-preparation:
+secrets:
+  object_access_key: {file: '${STAGING_SECRET_DIR:-./.secrets}/object_access_key'}
+  object_secret_key: {file: '${STAGING_SECRET_DIR:-./.secrets}/object_secret_key'}
+  connectors: {file: '${STAGING_SECRET_DIR:-./.secrets}/connectors.json'}
+  imagery_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-imagery.token'}
+  asset_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-assets.token'}
+  runtime_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-runtime.token'}
+  recording_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-recordings.token'}
+  preparation_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-preparation.token'}
+  connector_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-usgs.token'}

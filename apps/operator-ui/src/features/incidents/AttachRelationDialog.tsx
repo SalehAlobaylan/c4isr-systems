@@ -1,4 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@/lib/scopedQueries'
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm, useStore } from '@tanstack/react-form'
 import { useEffect } from 'react'
 
@@ -6,8 +7,8 @@ import { Field, fieldError } from '@/components/shared/form'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
 import { Select, type SelectOption } from '@/components/ui/select'
-import { api } from '@/lib/api'
-import { queryKeys } from '@/lib/queryKeys'
+import { useAPI } from '@/lib/api'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { toast } from '@/stores/toasts'
 
 export type RelationKind = 'asset' | 'track' | 'alert' | 'observation' | 'assessment'
@@ -31,6 +32,8 @@ export function AttachRelationDialog({
   onOpenChange: (open: boolean) => void
   initialKind?: RelationKind
 }) {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const queryClient = useQueryClient()
 
   const assetsQuery = useQuery({
@@ -123,7 +126,7 @@ export function AttachRelationDialog({
       case 'assessment':
         return (assessmentsQuery.data?.items ?? []).map((assessment) => ({
           value: assessment.id,
-          label: `${assessment.conclusion} (${assessment.id})`,
+          label: `${assessment.reviewStatus ? `[${assessment.reviewStatus}] ` : ''}${assessment.conclusion} (${assessment.id})`,
         }))
       default:
         return []

@@ -5,14 +5,14 @@ import (
 	"errors"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
-
-	"github.com/SalehAlobaylan/c4isr-systems/internal/dbgen"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv"
 )
 
 // PostgresRepository stores geofences and containment state in PostgreSQL.
@@ -27,7 +27,7 @@ func NewPostgresRepository(pool *pgxpool.Pool) *PostgresRepository {
 
 // Create inserts a geofence with its geometry.
 func (r *PostgresRepository) Create(ctx context.Context, geofence Geofence) (Geofence, error) {
-	row, err := dbgen.New(r.pool).CreateGeofence(ctx, dbgen.CreateGeofenceParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).CreateGeofence(ctx, dbgen.CreateGeofenceParams{
 		ID:       geofence.ID,
 		Name:     geofence.Name,
 		Type:     string(geofence.Type),
@@ -44,7 +44,7 @@ func (r *PostgresRepository) Create(ctx context.Context, geofence Geofence) (Geo
 
 // Get loads a geofence by id.
 func (r *PostgresRepository) Get(ctx context.Context, id string) (Geofence, error) {
-	row, err := dbgen.New(r.pool).GetGeofence(ctx, id)
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).GetGeofence(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Geofence{}, apperr.NotFound("geofence", id)
@@ -56,7 +56,7 @@ func (r *PostgresRepository) Get(ctx context.Context, id string) (Geofence, erro
 
 // List returns geofences newest first with a total count.
 func (r *PostgresRepository) List(ctx context.Context, limit, offset int) ([]Geofence, int, error) {
-	q := dbgen.New(r.pool)
+	q := dbgen.New(platformdb.Scoped(r.pool))
 	rows, err := q.ListGeofences(ctx, dbgen.ListGeofencesParams{
 		OffsetCount: int32(offset),
 		LimitCount:  int32(limit),
@@ -77,7 +77,7 @@ func (r *PostgresRepository) List(ctx context.Context, limit, offset int) ([]Geo
 
 // SetActive enables or disables a geofence.
 func (r *PostgresRepository) SetActive(ctx context.Context, id string, active bool) (Geofence, error) {
-	row, err := dbgen.New(r.pool).UpdateGeofenceActive(ctx, dbgen.UpdateGeofenceActiveParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).UpdateGeofenceActive(ctx, dbgen.UpdateGeofenceActiveParams{
 		Active: active,
 		ID:     id,
 	})
@@ -92,7 +92,7 @@ func (r *PostgresRepository) SetActive(ctx context.Context, id string, active bo
 
 // ContainingPoint lists active geofences containing the point.
 func (r *PostgresRepository) ContainingPoint(ctx context.Context, point geo.Point) ([]Geofence, error) {
-	rows, err := dbgen.New(r.pool).ListActiveGeofencesContainingPoint(ctx, dbgen.ListActiveGeofencesContainingPointParams{
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).ListActiveGeofencesContainingPoint(ctx, dbgen.ListActiveGeofencesContainingPointParams{
 		Lng: point.Lng,
 		Lat: point.Lat,
 	})
@@ -109,7 +109,7 @@ func (r *PostgresRepository) ContainingPoint(ctx context.Context, point geo.Poin
 // StateFor returns the persisted containment state for a geofence and track,
 // or nil when no state has ever been recorded.
 func (r *PostgresRepository) StateFor(ctx context.Context, geofenceID, trackID string) (*bool, error) {
-	row, err := dbgen.New(r.pool).GetGeofenceState(ctx, dbgen.GetGeofenceStateParams{
+	row, err := dbgen.New(platformdb.Scoped(r.pool)).GetGeofenceState(ctx, dbgen.GetGeofenceStateParams{
 		GeofenceID: geofenceID,
 		TrackID:    trackID,
 	})
@@ -125,7 +125,7 @@ func (r *PostgresRepository) StateFor(ctx context.Context, geofenceID, trackID s
 
 // SetState persists a containment transition.
 func (r *PostgresRepository) SetState(ctx context.Context, geofenceID, trackID string, inside bool) error {
-	return dbgen.New(r.pool).UpsertGeofenceState(ctx, dbgen.UpsertGeofenceStateParams{
+	return dbgen.New(platformdb.Scoped(r.pool)).UpsertGeofenceState(ctx, dbgen.UpsertGeofenceStateParams{
 		GeofenceID: geofenceID,
 		TrackID:    trackID,
 		Inside:     inside,
@@ -135,7 +135,7 @@ func (r *PostgresRepository) SetState(ctx context.Context, geofenceID, trackID s
 // StatesForTrack returns the persisted containment state of every geofence the
 // track has been evaluated against.
 func (r *PostgresRepository) StatesForTrack(ctx context.Context, trackID string) (map[string]bool, error) {
-	rows, err := dbgen.New(r.pool).ListGeofenceStatesByTrack(ctx, trackID)
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).ListGeofenceStatesByTrack(ctx, trackID)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +150,7 @@ func (r *PostgresRepository) StatesForTrack(ctx context.Context, trackID string)
 // transaction-scoped advisory lock. The query returns only state transitions,
 // so concurrent evaluations cannot duplicate breach or exit events.
 func (r *PostgresRepository) ReconcileStates(ctx context.Context, trackID string, containingIDs []string, scopePrefix string, observedAt time.Time) ([]StateTransition, error) {
-	rows, err := dbgen.New(r.pool).ReconcileGeofenceStates(ctx, dbgen.ReconcileGeofenceStatesParams{
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).ReconcileGeofenceStates(ctx, dbgen.ReconcileGeofenceStatesParams{
 		TrackID:       trackID,
 		ContainingIds: containingIDs,
 		ScopePrefix:   scopePrefix,
@@ -171,7 +171,7 @@ func (r *PostgresRepository) ReconcileStates(ctx context.Context, trackID string
 // ST_Intersects rather than ST_Contains: a wildfire burning across a boundary
 // is an operational fact even though the geofence does not contain it.
 func (r *PostgresRepository) IntersectingArea(ctx context.Context, area AreaOverlap) ([]Geofence, error) {
-	rows, err := dbgen.New(r.pool).GeofencesIntersectingArea(ctx, area.GeoJSON)
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).GeofencesIntersectingArea(ctx, area.GeoJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -194,7 +194,7 @@ func (r *PostgresRepository) IntersectingArea(ctx context.Context, area AreaOver
 // AssetsWithinRadius lists assets with a position inside the radius, nearest
 // first.
 func (r *PostgresRepository) AssetsWithinRadius(ctx context.Context, center geo.Point, radiusM float64, limit int) ([]AssetDistance, error) {
-	rows, err := dbgen.New(r.pool).ListAssetsWithinRadius(ctx, dbgen.ListAssetsWithinRadiusParams{
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).ListAssetsWithinRadius(ctx, dbgen.ListAssetsWithinRadiusParams{
 		Lng:        center.Lng,
 		Lat:        center.Lat,
 		RadiusM:    radiusM,
@@ -212,7 +212,7 @@ func (r *PostgresRepository) AssetsWithinRadius(ctx context.Context, center geo.
 
 // NearestAssets lists assets with a position, nearest first.
 func (r *PostgresRepository) NearestAssets(ctx context.Context, center geo.Point, limit int) ([]AssetDistance, error) {
-	rows, err := dbgen.New(r.pool).NearestAssets(ctx, dbgen.NearestAssetsParams{
+	rows, err := dbgen.New(platformdb.Scoped(r.pool)).NearestAssets(ctx, dbgen.NearestAssetsParams{
 		Lng:        center.Lng,
 		Lat:        center.Lat,
 		LimitCount: int32(limit),

@@ -3,188 +3,327 @@ package realtime
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
-	"net/http"
-	"sync"
-	"time"
-
+	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/presentation"
 	"github.com/coder/websocket"
 	"github.com/go-chi/chi/v5"
-
-	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
-	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
-	"go.opentelemetry.io/otel/attribute"
+	"log/slog"
+	"net/http"
+	"sort"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 )
 
 const (
-	clientBufferSize = 256
-	writeTimeout     = 10 * time.Second
-	pingInterval     = 30 * time.Second
+	clientBufferSize      = 256
+	maxFrameBytes         = 64 * 1024
+	writeTimeout          = 5 * time.Second
+	pingInterval          = 30 * time.Second
+	authorizationInterval = time.Second
 )
 
-// Hub fans domain events out to connected operator clients. It never owns
-// domain state and never blocks event processing: a client that cannot keep
-// up is disconnected.
+// Hub is a bounded best-effort COP stream. Each immutable queued frame carries
+// its resource, and authorization is repeated immediately before delivery.
 type Hub struct {
 	logger   *slog.Logger
 	mu       sync.RWMutex
 	clients  map[*client]struct{}
 	observer PublishObserver
 }
+type PublishObserver interface{ ObserveWebSocketPublish(time.Duration) }
 
-// PublishObserver receives the duration of each attempted WebSocket write,
-// including failed writes that are useful when diagnosing slow or disconnected
-// clients.
-type PublishObserver interface {
-	ObserveWebSocketPublish(time.Duration)
-}
-
-// NewHub creates a hub and subscribes it to every domain topic. Register the
-// hub after other subscribers so operator notifications observe final state.
 func NewHub(logger *slog.Logger, bus *events.Dispatcher, observers ...PublishObserver) *Hub {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	var observer PublishObserver
+	h := &Hub{logger: logger, clients: map[*client]struct{}{}}
 	if len(observers) > 0 {
-		observer = observers[0]
+		h.observer = observers[0]
 	}
-	h := &Hub{
-		logger:   logger,
-		clients:  make(map[*client]struct{}),
-		observer: observer,
-	}
-	for _, topic := range events.AllTopics() {
+	for topic := range topicPermissions {
 		bus.Subscribe(topic, h.handleEvent)
 	}
 	return h
 }
+func (h *Hub) Mount(r chi.Router) { r.Get("/realtime", h.serveWS) }
 
-// Mount registers the realtime endpoint on the router.
-func (h *Hub) Mount(r chi.Router) {
-	r.Get("/realtime", h.serveWS)
+type frame struct {
+	resource access.Resource
+	topic    string
+	policy   eventPolicy
+	payload  []byte
 }
 
+func ordinary(r access.Resource) bool {
+	return r.Partition == access.PublicEvidence || r.Partition == access.ExerciseObservation
+}
 func (h *Hub) handleEvent(ctx context.Context, ev events.Event) {
-	_, span := observability.StartSpan(ctx, "c4isr.websocket.publish",
-		attribute.String("event.type", ev.Topic()),
-	)
-	var spanErr error
-	defer func() { observability.EndSpan(span, spanErr) }()
-
-	envelope := MapEnvelope(ev)
-	payload, err := json.Marshal(envelope)
-	if err != nil {
-		spanErr = err
-		h.logger.Error("marshal realtime envelope", "topic", ev.Topic(), "error", err)
+	r, err := access.ResourceFrom(ctx)
+	if err != nil || !ordinary(r) {
 		return
 	}
-
+	env := MapEnvelope(ev)
+	p, ok := policy(env)
+	if !ok {
+		return
+	}
+	env.Resource = r
+	// Apply the same exercise disclosure policy as authorized HTTP snapshots.
+	kind := map[string]string{"observation": "observations", "source": "sources", "geofence": "geofences", "alert": "alerts", "scenario": "scenarios"}[strings.Split(ev.Topic(), ".")[0]]
+	raw, err := presentation.Encode(ctx, "/api/v1/"+kind, env.Data)
+	if err != nil {
+		return
+	}
+	if err = json.Unmarshal(raw, &env.Data); err != nil {
+		return
+	}
+	payload, err := json.Marshal(env)
+	if err != nil {
+		return
+	}
+	f := frame{r, ev.Topic(), p, payload}
 	h.mu.RLock()
 	targets := make([]*client, 0, len(h.clients))
 	for c := range h.clients {
 		targets = append(targets, c)
 	}
 	h.mu.RUnlock()
-
 	for _, c := range targets {
+		if !c.topics[f.topic] {
+			continue
+		}
+		fresh, err := c.refresh(ctx)
+		if err != nil {
+			c.close(websocket.StatusPolicyViolation)
+			continue
+		}
+		selected, _ := access.ResourceFrom(fresh)
+		if selected != r || !p.allowed(fresh) {
+			continue
+		}
+		if len(payload) > maxFrameBytes {
+			c.close(websocket.StatusTryAgainLater)
+			continue
+		}
 		select {
-		case c.send <- payload:
+		case <-c.done:
+		case c.send <- f:
 		default:
-			h.logger.Warn("disconnecting slow realtime client", "client_id", c.id)
-			c.close()
+			c.close(websocket.StatusTryAgainLater)
 		}
 	}
 }
-
 func (h *Hub) serveWS(w http.ResponseWriter, r *http.Request) {
-	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		CompressionMode: websocket.CompressionDisabled,
-	})
+	ctx := r.Context()
+	resource, err := access.ResourceFrom(ctx)
 	if err != nil {
-		h.logger.Warn("websocket accept failed", "error", err)
+		httpx.Error(w, err)
 		return
 	}
-
-	c := &client{
-		id:   r.Header.Get("X-Request-ID"),
-		conn: conn,
-		send: make(chan []byte, clientBufferSize),
-		hub:  h,
+	if !ordinary(resource) {
+		access.Deny(ctx, "cop.subscribe", "ordinary partition required")
+		httpx.Error(w, apperr.Forbidden("ordinary subscription requires public evidence or exercise observations"))
+		return
 	}
-	h.add(c)
-	defer h.remove(c)
-
-	ctx := conn.CloseRead(r.Context())
-	go h.writeLoop(ctx, c)
-
-	<-ctx.Done()
-}
-
-func (h *Hub) add(c *client) {
+	if err = access.Require(ctx, "operational.read"); err != nil {
+		httpx.Error(w, err)
+		return
+	}
+	topics, ok := selectTopics(ctx, r.URL.Query().Get("topics"))
+	if !ok {
+		access.Deny(ctx, "cop.subscribe", "topic permission required")
+		httpx.Error(w, apperr.Forbidden("subscription is not authorized"))
+		return
+	}
+	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{CompressionMode: websocket.CompressionDisabled, Subprotocols: []string{"emad.realtime.v2"}})
+	if err != nil {
+		return
+	}
+	stream, cancel := context.WithCancel(ctx)
+	stop := make(chan struct{})
+	c := &client{auth: ctx, conn: conn, send: make(chan frame, clientBufferSize), topics: topics, resource: resource, cancel: cancel, done: stop, stop: stop}
 	h.mu.Lock()
 	h.clients[c] = struct{}{}
 	h.mu.Unlock()
-	h.logger.Info("realtime client connected", "client_id", c.id, "clients", h.count())
-}
-
-func (h *Hub) remove(c *client) {
-	h.mu.Lock()
-	if _, ok := h.clients[c]; ok {
+	defer func() {
+		h.mu.Lock()
 		delete(h.clients, c)
-	}
-	h.mu.Unlock()
-	c.close()
-	h.logger.Info("realtime client disconnected", "client_id", c.id, "clients", h.count())
-}
-
-func (h *Hub) count() int {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-	return len(h.clients)
+		h.mu.Unlock()
+		c.close(websocket.StatusNormalClosure)
+		// Complete the close handshake before cancelling the read context so
+		// browser clients can distinguish policy denial from a network failure.
+		_ = conn.Close(websocket.StatusCode(c.closeCode.Load()), "resynchronize using authorized snapshots")
+		cancel()
+	}()
+	h.writeLoop(conn.CloseRead(stream), c)
 }
 
 type client struct {
-	id     string
-	conn   *websocket.Conn
-	send   chan []byte
-	hub    *Hub
-	closed sync.Once
+	auth        context.Context
+	conn        *websocket.Conn
+	send        chan frame
+	topics      map[string]bool
+	resource    access.Resource
+	cancel      context.CancelFunc
+	done        <-chan struct{}
+	closed      sync.Once
+	fingerprint string
+	stop        chan struct{}
+	closeCode   atomic.Int32
 }
 
-func (c *client) close() {
+func (c *client) close(code websocket.StatusCode) {
 	c.closed.Do(func() {
-		_ = c.conn.Close(websocket.StatusNormalClosure, "closing")
+		c.closeCode.Store(int32(code))
+		if c.stop != nil {
+			close(c.stop)
+		} else if c.cancel != nil {
+			c.cancel()
+		}
 	})
 }
-
+func (c *client) refresh(ctx context.Context) (context.Context, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	bounded, cancel := context.WithTimeout(ctx, writeTimeout)
+	defer cancel()
+	return access.RefreshWithContext(c.auth, bounded)
+}
+func (c *client) authorize(ctx context.Context, f frame) (bool, error) {
+	fresh, err := c.refresh(ctx)
+	if err != nil {
+		return false, err
+	}
+	r, _ := access.ResourceFrom(fresh)
+	if !ordinary(r) || !access.Allows(fresh, "operational.read") {
+		return false, apperr.Forbidden("subscription expired")
+	}
+	return r == f.resource && c.topics[f.topic] && f.policy.allowed(fresh), nil
+}
 func (h *Hub) writeLoop(ctx context.Context, c *client) {
-	ticker := time.NewTicker(pingInterval)
-	defer ticker.Stop()
-
+	if !h.control(ctx, c, "realtime.ready") {
+		return
+	}
+	authTick := time.NewTicker(authorizationInterval)
+	defer authTick.Stop()
+	ping := time.NewTicker(pingInterval)
+	defer ping.Stop()
 	for {
 		select {
+		case <-c.done:
+			return
 		case <-ctx.Done():
 			return
-		case payload := <-c.send:
-			writeCtx, cancel := context.WithTimeout(ctx, writeTimeout)
-			started := time.Now()
-			err := c.conn.Write(writeCtx, websocket.MessageText, payload)
-			cancel()
-			if h.observer != nil {
-				h.observer.ObserveWebSocketPublish(time.Since(started))
-			}
+		case f := <-c.send:
+			allowed, err := c.authorize(ctx, f)
 			if err != nil {
-				h.logger.Debug("realtime write failed", "client_id", c.id, "error", err)
+				c.close(websocket.StatusPolicyViolation)
 				return
 			}
-		case <-ticker.C:
-			pingCtx, cancel := context.WithTimeout(ctx, writeTimeout)
-			err := c.conn.Ping(pingCtx)
+			if !allowed {
+				continue
+			}
+			if c.resource != f.resource {
+				c.resource = f.resource
+				if !h.control(ctx, c, "realtime.resync") {
+					return
+				}
+			}
+			// A blocked control write is another opportunity for a grant to change.
+			allowed, err = c.authorize(ctx, f)
+			if err != nil {
+				c.close(websocket.StatusPolicyViolation)
+				return
+			}
+			if allowed && !h.write(ctx, c, f.payload) {
+				return
+			}
+		case <-authTick.C:
+			fresh, err := c.refresh(ctx)
+			if err != nil {
+				c.close(websocket.StatusPolicyViolation)
+				return
+			}
+			r, _ := access.ResourceFrom(fresh)
+			if !ordinary(r) || !access.Allows(fresh, "operational.read") {
+				c.close(websocket.StatusPolicyViolation)
+				return
+			}
+			if c.resource != r || c.fingerprint != c.subscriptionFingerprint(fresh) {
+				c.resource = r
+				if !h.control(ctx, c, "realtime.resync") {
+					return
+				}
+			}
+		case <-ping.C:
+			bounded, cancel := context.WithTimeout(ctx, writeTimeout)
+			err := c.conn.Ping(bounded)
 			cancel()
 			if err != nil {
 				return
 			}
 		}
 	}
+}
+func (h *Hub) control(ctx context.Context, c *client, kind string) bool {
+	fresh, err := c.refresh(ctx)
+	if err != nil {
+		c.close(websocket.StatusPolicyViolation)
+		return false
+	}
+	r, _ := access.ResourceFrom(fresh)
+	if !ordinary(r) || !access.Allows(fresh, "operational.read") {
+		c.close(websocket.StatusPolicyViolation)
+		return false
+	}
+	c.resource = r
+	c.fingerprint = c.subscriptionFingerprint(fresh)
+	// Report only topics still allowed; event checks also apply source restrictions.
+	visible := map[string]bool{}
+	for topic := range c.topics {
+		if topicAllowed(fresh, topic) {
+			visible[topic] = true
+		}
+	}
+	raw, err := json.Marshal(Envelope{ID: ids.New("evt"), Type: kind, Version: EnvelopeVersion, OccurredAt: time.Now().UTC(), Resource: r, Data: map[string]any{"resyncRequired": true, "topics": sortedTopics(visible)}})
+	return err == nil && h.write(ctx, c, raw)
+}
+func (h *Hub) write(ctx context.Context, c *client, payload []byte) bool {
+	select {
+	case <-c.done:
+		return false
+	default:
+	}
+	bounded, cancel := context.WithTimeout(ctx, writeTimeout)
+	defer cancel()
+	started := time.Now()
+	err := c.conn.Write(bounded, websocket.MessageText, payload)
+	if h.observer != nil {
+		h.observer.ObserveWebSocketPublish(time.Since(started))
+	}
+	if err != nil {
+		c.close(websocket.StatusTryAgainLater)
+	}
+	return err == nil
+}
+
+func (c *client) subscriptionFingerprint(ctx context.Context) string {
+	topics := map[string]bool{}
+	for topic := range c.topics {
+		if topicAllowed(ctx, topic) {
+			topics[topic] = true
+		}
+	}
+	sources := access.SourceIDs(ctx)
+	sort.Strings(sources)
+	r, _ := access.ResourceFrom(ctx)
+	raw, _ := json.Marshal([]any{r, sortedTopics(topics), sources})
+	return string(raw)
 }

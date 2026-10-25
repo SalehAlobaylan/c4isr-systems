@@ -33,7 +33,7 @@ const defaults = {
   // workspace, so it starts collapsed and the operator opens it deliberately —
   // the same reasoning as the telemetry dock. It is one keystroke away.
   overlayOpen: false,
-  railOpen: true,
+  railOpen: false,
   railWidth: 380,
   layersOpen: false,
   trayOpen: false,
@@ -51,7 +51,7 @@ export const useLayoutStore = create<LayoutState>()(
       reset: () => set(defaults),
     }),
     {
-      name: 'aegis.c2.layout.v1',
+      name: 'emad.exercise.layout.v2',
       partialize: ({ density, chipsOpen, runOpen, overlayOpen, railOpen, railWidth, layersOpen, trayOpen }) => ({
         density, chipsOpen, runOpen, overlayOpen, railOpen, railWidth, layersOpen, trayOpen,
       }),

@@ -1,10 +1,11 @@
 package integration
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/SalehAlobaylan/c4isr-systems/internal/testsupport"
 )
 
 // Replay must reconstruct from the same evidence the live picture was built
@@ -13,7 +14,7 @@ import (
 // yet been raised.
 func TestPictureReconstructsFromEvidence(t *testing.T) {
 	h := newHarness(t)
-	ctx := context.Background()
+	ctx := testsupport.Context()
 	h.startScenario(t, "restricted-area-intrusion")
 
 	// Let the run produce a breach so there is real evidence to reconstruct.

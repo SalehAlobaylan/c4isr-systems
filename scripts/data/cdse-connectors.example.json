@@ -1,0 +1,10 @@
+[
+  {
+    "id": "cdse-sentinel2-region",
+    "sourceId": "REPLACE_WITH_REGISTERED_SOURCE_ID",
+    "resource": { "workspaceId": "public-context", "environmentId": "world", "partition": "PUBLIC_EVIDENCE" },
+    "url": "https://stac.dataspace.copernicus.eu/v1/search",
+    "adapter": "cdse-sentinel2-stac-v1",
+    "maxRequestsPerDay": 100
+  }
+]

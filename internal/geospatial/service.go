@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
@@ -58,6 +59,10 @@ func (s *Service) SetObserver(observer EvaluationObserver) {
 // HandleTrackUpdated derives breach and exit events from real containment
 // transitions, persisting state before publishing.
 func (s *Service) HandleTrackUpdated(ctx context.Context, ev events.TrackUpdated) {
+	if scopeErr := access.Require(ctx, "geofences.evaluate"); scopeErr != nil {
+		return
+	}
+
 	if ev.Position == nil {
 		return
 	}
@@ -166,7 +171,12 @@ func scopedStates(ctx context.Context, states map[string]bool) map[string]bool {
 
 // Create registers a geofence and publishes geofence.created.
 func (s *Service) Create(ctx context.Context, in CreateInput) (Geofence, error) {
+	if scopeErr := access.Require(ctx, "geofences.manage"); scopeErr != nil {
+		return Geofence{}, scopeErr
+	}
+
 	in.Normalize()
+	in.ID = access.ResourceID(ctx, "geofence", in.ID)
 	if err := in.Validate(); err != nil {
 		return Geofence{}, err
 	}
@@ -197,7 +207,12 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (Geofence, error) 
 // Ensure idempotently registers a geofence, returning whether it was created.
 // Scenario setup uses this so runs are repeatable.
 func (s *Service) Ensure(ctx context.Context, in CreateInput) (Geofence, bool, error) {
+	if scopeErr := access.Require(ctx, "geofences.manage"); scopeErr != nil {
+		return Geofence{}, false, scopeErr
+	}
+
 	in.Normalize()
+	in.ID = access.ResourceID(ctx, "geofence", in.ID)
 	if err := in.Validate(); err != nil {
 		return Geofence{}, false, err
 	}
@@ -219,21 +234,37 @@ func (s *Service) Ensure(ctx context.Context, in CreateInput) (Geofence, bool, e
 
 // Get returns a geofence by id.
 func (s *Service) Get(ctx context.Context, id string) (Geofence, error) {
+	if scopeErr := access.Require(ctx, "geofences.read"); scopeErr != nil {
+		return Geofence{}, scopeErr
+	}
+
 	return s.repo.Get(ctx, id)
 }
 
 // List returns geofences newest first.
 func (s *Service) List(ctx context.Context, limit, offset int) ([]Geofence, int, error) {
+	if scopeErr := access.Require(ctx, "geofences.read"); scopeErr != nil {
+		return nil, 0, scopeErr
+	}
+
 	return s.repo.List(ctx, clampLimit(limit), clampOffset(offset))
 }
 
 // SetActive enables or disables a geofence.
 func (s *Service) SetActive(ctx context.Context, id string, active bool) (Geofence, error) {
+	if scopeErr := access.Require(ctx, "geofences.manage"); scopeErr != nil {
+		return Geofence{}, scopeErr
+	}
+
 	return s.repo.SetActive(ctx, id, active)
 }
 
 // ContainingPoint lists active geofences containing a point.
 func (s *Service) ContainingPoint(ctx context.Context, point geo.Point) ([]Geofence, error) {
+	if scopeErr := access.Require(ctx, "geospatial.read"); scopeErr != nil {
+		return nil, scopeErr
+	}
+
 	if !point.Valid() {
 		return nil, apperr.Validation("point must be a valid WGS84 coordinate")
 	}
@@ -242,6 +273,10 @@ func (s *Service) ContainingPoint(ctx context.Context, point geo.Point) ([]Geofe
 
 // IntersectingArea lists active geofences a footprint overlaps.
 func (s *Service) IntersectingArea(ctx context.Context, area AreaOverlap) ([]Geofence, error) {
+	if scopeErr := access.Require(ctx, "geospatial.read"); scopeErr != nil {
+		return nil, scopeErr
+	}
+
 	if area.GeoJSON == "" {
 		return nil, apperr.Validation("area geometry is required")
 	}
@@ -250,6 +285,10 @@ func (s *Service) IntersectingArea(ctx context.Context, area AreaOverlap) ([]Geo
 
 // AssetsWithinRadius lists assets inside a radius, nearest first.
 func (s *Service) AssetsWithinRadius(ctx context.Context, center geo.Point, radiusM float64, limit int) ([]AssetDistance, error) {
+	if scopeErr := access.Require(ctx, "geospatial.read"); scopeErr != nil {
+		return nil, scopeErr
+	}
+
 	if !center.Valid() {
 		return nil, apperr.Validation("center must be a valid WGS84 coordinate")
 	}
@@ -261,6 +300,10 @@ func (s *Service) AssetsWithinRadius(ctx context.Context, center geo.Point, radi
 
 // NearestAssets lists assets by distance from a point, nearest first.
 func (s *Service) NearestAssets(ctx context.Context, center geo.Point, limit int) ([]AssetDistance, error) {
+	if scopeErr := access.Require(ctx, "geospatial.read"); scopeErr != nil {
+		return nil, scopeErr
+	}
+
 	if !center.Valid() {
 		return nil, apperr.Validation("center must be a valid WGS84 coordinate")
 	}

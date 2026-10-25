@@ -1,7 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@/lib/scopedQueries'
+import { useQueryClient } from '@tanstack/react-query'
 import { useForm, useStore } from '@tanstack/react-form'
 import type { ColumnDef } from '@tanstack/react-table'
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 
 import { Field } from '@/components/shared/form'
 import { CommandStateBadge, MissionStatusBadge, PriorityBadge } from '@/components/shared/badges'
@@ -10,9 +11,10 @@ import { SectionTitle } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
-import { api, type Command } from '@/lib/api'
+import { useWorkspace } from '@/lib/workspaceContext'
+import { useAPI, type Command } from '@/lib/api'
 import { formatRelative, formatTimestamp } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 import { toast } from '@/stores/toasts'
 
 const COMMAND_TRANSITIONS: Record<string, string[]> = {
@@ -35,6 +37,9 @@ const COMMAND_TYPES = [
 ]
 
 export function CommandConsole({ incidentId }: { incidentId: string }) {
+  const api = useAPI()
+  const native = /^rt_[a-f0-9]{64}$/.test(useWorkspace().session.resource.runId ?? '')
+  const queryKeys = useQueryKeys()
   const queryClient = useQueryClient()
   const incidentAuditKey = queryKeys.audit.list({
     subject_type: 'incident',
@@ -86,11 +91,12 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
     [assetsQuery.data],
   )
 
+  const requestKey = useRef({signature: '',key: ''})
   const form = useForm({
     defaultValues: {
       assetId: '',
       missionId: '',
-      type: 'move_to',
+      type: native ? 'HOLD' : 'move_to',
       lat: '',
       lng: '',
     },
@@ -101,13 +107,17 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
         payload.lat = Number(value.lat)
         payload.lng = Number(value.lng)
       }
-      await issueMutation.mutateAsync({
+      const input = {
         assetId: value.assetId,
         missionId: value.missionId || undefined,
         incidentId,
         type: value.type,
         payload,
-      })
+      }
+      const signature = JSON.stringify(input)
+      if(requestKey.current.signature !== signature) requestKey.current = {signature,key:crypto.randomUUID()}
+      await issueMutation.mutateAsync({...input,requestKey:requestKey.current.key})
+      requestKey.current = {signature:'',key:''}
       form.reset()
     },
   })
@@ -205,7 +215,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
         header: 'Transition',
         enableSorting: false,
         cell: ({ row }) => {
-          const nextStates = COMMAND_TRANSITIONS[row.original.state] ?? []
+          const nextStates = (COMMAND_TRANSITIONS[row.original.state] ?? []).filter(state => !native || state === 'CANCELLED')
           if (nextStates.length === 0) {
             return <span className="text-[12px] text-ink-faint">terminal</span>
           }
@@ -230,7 +240,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
         },
       },
     ],
-    [transitionMutation],
+    [transitionMutation, native],
   )
 
   return (
@@ -290,13 +300,13 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
                   id="command-type"
                   value={field.state.value}
                   onValueChange={(value) => field.handleChange(value)}
-                  options={COMMAND_TYPES}
+                  options={native ? [{value:'HOLD',label:'Hold position'},{value:'RESUME_ROUTE',label:'Resume route'}] : COMMAND_TYPES}
                 />
               </Field>
             )}
           </form.Field>
 
-          <form.Field name="lat">
+          {!native && <><form.Field name="lat">
             {(field) => (
               <Field label="Target lat" htmlFor="command-lat" className="md:col-span-2">
                 <Input
@@ -323,6 +333,7 @@ export function CommandConsole({ incidentId }: { incidentId: string }) {
               </Field>
             )}
           </form.Field>
+          </>}
 
           <div className="flex items-end md:col-span-2">
             <Button

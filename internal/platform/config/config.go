@@ -2,6 +2,7 @@
 package config
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strings"
@@ -12,13 +13,22 @@ import (
 
 // Config is the runtime configuration of the C4ISR server.
 type Config struct {
-	HTTPAddr       string
-	DatabaseURL    string
-	LogLevel       string
-	LogFormat      string
-	ScenariosDir   string
-	AllowedOrigins []string
-	Version        string
+	ArtifactS3Endpoint  string
+	ArtifactS3Bucket    string
+	ArtifactS3Region    string
+	ArtifactS3AccessKey string
+	ArtifactS3SecretKey string
+	ArtifactS3AllowHTTP bool
+	// PublicConnectorsFile is an optional trusted location manifest; empty means no external retrieval.
+	PublicConnectorsFile string
+	RuntimeBuilds        []string
+	HTTPAddr             string
+	DatabaseURL          string
+	LogLevel             string
+	LogFormat            string
+	ScenariosDir         string
+	AllowedOrigins       []string
+	Version              string
 	// TelemetryStaleAfter is the age at which an entity stops being
 	// considered current. It retains its original name because it was the
 	// first freshness threshold configured; it is now the middle band of
@@ -37,9 +47,12 @@ type Config struct {
 	// enabled by Load; in-process harnesses must still declare an environment
 	// explicitly so a zero-value config cannot silently bypass the safety policy.
 	AuthRequired bool
-	// AuthTokens maps a bearer token to an operator id. Tokens are intentionally
-	// configuration-only for the first RBAC milestone; an external IdP can be
-	// introduced later without changing domain services.
+	// DatabaseAuth permits startup with provisioned database credentials and no
+	// configuration-backed bootstrap tokens. Authentication remains required.
+	DatabaseAuth bool
+	// AuthTokens maps bootstrap bearer tokens to legacy operator identities.
+	// The identity store persists hashes, expiry, and revocation. Provisioned
+	// database credentials can replace these with DatabaseAuth enabled.
 	AuthTokens map[string]string
 }
 
@@ -63,15 +76,20 @@ func Load() (Config, error) {
 		defaultLogFormat = "text"
 	}
 	cfg := Config{
-		HTTPAddr:            envOr("C4ISR_HTTP_ADDR", ":8080"),
-		DatabaseURL:         "",
-		LogLevel:            envOr("C4ISR_LOG_LEVEL", "info"),
-		LogFormat:           envOr("C4ISR_LOG_FORMAT", defaultLogFormat),
-		ScenariosDir:        envOr("C4ISR_SCENARIOS_DIR", "./scenarios"),
-		Environment:         environment,
-		Version:             envOr("C4ISR_VERSION", "dev"),
-		TelemetryStaleAfter: 5 * time.Minute,
-		AuthRequired:        true,
+		ArtifactS3Endpoint:   strings.TrimSpace(os.Getenv("C4ISR_ARTIFACT_S3_ENDPOINT")),
+		ArtifactS3Bucket:     strings.TrimSpace(os.Getenv("C4ISR_ARTIFACT_S3_BUCKET")),
+		ArtifactS3Region:     envOr("C4ISR_ARTIFACT_S3_REGION", "us-east-1"),
+		PublicConnectorsFile: strings.TrimSpace(os.Getenv("C4ISR_PUBLIC_CONNECTORS_FILE")),
+		RuntimeBuilds:        strings.Fields(os.Getenv("C4ISR_RUNTIME_BUILDS")),
+		HTTPAddr:             envOr("C4ISR_HTTP_ADDR", ":8080"),
+		DatabaseURL:          "",
+		LogLevel:             envOr("C4ISR_LOG_LEVEL", "info"),
+		LogFormat:            envOr("C4ISR_LOG_FORMAT", defaultLogFormat),
+		ScenariosDir:         envOr("C4ISR_SCENARIOS_DIR", "./scenarios"),
+		Environment:          environment,
+		Version:              envOr("C4ISR_VERSION", "dev"),
+		TelemetryStaleAfter:  5 * time.Minute,
+		AuthRequired:         true,
 	}
 	defaults := freshness.DefaultPolicy()
 	var err error
@@ -95,11 +113,8 @@ func Load() (Config, error) {
 	cfg.FreshnessDelayedAfter = policy.DelayedAfter
 	cfg.TelemetryStaleAfter = policy.StaleAfter
 	cfg.FreshnessUnavailableAfter = policy.UnavailableAfter
-	if cfg.DatabaseURL, err = secretEnv("C4ISR_DATABASE_URL"); err != nil {
+	if cfg.DatabaseURL, err = LoadDatabaseURL(); err != nil {
 		return Config{}, err
-	}
-	if cfg.DatabaseURL == "" {
-		return Config{}, fmt.Errorf("C4ISR_DATABASE_URL or C4ISR_DATABASE_URL_FILE is required")
 	}
 	if raw := os.Getenv("C4ISR_ALLOWED_ORIGINS"); raw != "" {
 		for _, origin := range strings.Split(raw, ",") {
@@ -117,6 +132,12 @@ func Load() (Config, error) {
 		}
 		cfg.AuthRequired = parsed
 	}
+	if raw, ok := os.LookupEnv("C4ISR_DATABASE_AUTH"); ok {
+		cfg.DatabaseAuth, err = parseBool("C4ISR_DATABASE_AUTH", raw)
+		if err != nil {
+			return Config{}, err
+		}
+	}
 	if raw, err := secretEnv("C4ISR_AUTH_TOKENS"); err != nil {
 		return Config{}, err
 	} else if raw != "" {
@@ -125,12 +146,29 @@ func Load() (Config, error) {
 			return Config{}, parseErr
 		}
 		cfg.AuthTokens = parsed
-	} else if cfg.Environment == EnvironmentDevelopment {
+	} else if cfg.Environment == EnvironmentDevelopment && !cfg.DatabaseAuth {
 		// The default token is deliberately obvious and local-development only.
 		// Deployments must replace it with a secret token list.
 		cfg.AuthTokens = map[string]string{"dev-operator-token": "operator-01"}
-	} else if cfg.AuthRequired && cfg.Environment != EnvironmentTest {
+	} else if cfg.AuthRequired && !cfg.DatabaseAuth && cfg.Environment != EnvironmentTest {
 		return Config{}, fmt.Errorf("C4ISR_AUTH_TOKENS is required when authentication is enabled outside development")
+	}
+	if cfg.ArtifactS3AccessKey, err = secretEnv("C4ISR_ARTIFACT_S3_ACCESS_KEY"); err != nil {
+		return Config{}, err
+	}
+	if cfg.ArtifactS3SecretKey, err = secretEnv("C4ISR_ARTIFACT_S3_SECRET_KEY"); err != nil {
+		return Config{}, err
+	}
+	if value, e := secretEnv("C4ISR_RUNTIME_BUILDS"); e != nil {
+		return Config{}, e
+	} else if value != "" {
+		cfg.RuntimeBuilds = strings.Fields(value)
+	}
+	if value := os.Getenv("C4ISR_ARTIFACT_S3_ALLOW_HTTP"); value != "" {
+		cfg.ArtifactS3AllowHTTP, err = parseBool("C4ISR_ARTIFACT_S3_ALLOW_HTTP", value)
+		if err != nil {
+			return Config{}, err
+		}
 	}
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
@@ -161,6 +199,25 @@ func (cfg Config) Validate() error {
 	if err := validateEnvironment(environment); err != nil {
 		return err
 	}
+	if cfg.ArtifactS3AllowHTTP && environment == EnvironmentProduction {
+		return fmt.Errorf("production object storage requires HTTPS")
+	}
+	if len(cfg.RuntimeBuilds) > 16 {
+		return fmt.Errorf("at most 16 runtime builds may be admitted")
+	}
+	for _, build := range cfg.RuntimeBuilds {
+		if len(build) != 64 {
+			return fmt.Errorf("runtime admission requires SHA-256 identities")
+		}
+		if _, e := hex.DecodeString(build); e != nil {
+			return fmt.Errorf("runtime admission requires SHA-256 identities")
+		}
+	}
+	if cfg.ArtifactS3Endpoint != "" || cfg.ArtifactS3Bucket != "" || cfg.ArtifactS3AccessKey != "" || cfg.ArtifactS3SecretKey != "" {
+		if cfg.ArtifactS3Endpoint == "" || cfg.ArtifactS3Bucket == "" || cfg.ArtifactS3AccessKey == "" || cfg.ArtifactS3SecretKey == "" {
+			return fmt.Errorf("artifact storage requires endpoint, bucket, access key and secret key together")
+		}
+	}
 	for token, operatorID := range cfg.AuthTokens {
 		if strings.TrimSpace(token) == "" || strings.TrimSpace(operatorID) == "" {
 			return fmt.Errorf("C4ISR_AUTH_TOKENS entries require an operator id and token")
@@ -169,13 +226,26 @@ func (cfg Config) Validate() error {
 	if !cfg.AuthRequired && environment != EnvironmentDevelopment && environment != EnvironmentTest {
 		return fmt.Errorf("C4ISR_AUTH_REQUIRED=false is only permitted in development or test")
 	}
-	if cfg.AuthRequired && len(cfg.AuthTokens) == 0 && environment != EnvironmentDevelopment && environment != EnvironmentTest {
+	if cfg.AuthRequired && !cfg.DatabaseAuth && len(cfg.AuthTokens) == 0 && environment != EnvironmentDevelopment && environment != EnvironmentTest {
 		return fmt.Errorf("C4ISR_AUTH_TOKENS is required when authentication is enabled outside development and test")
 	}
 	if environment != EnvironmentDevelopment && environment != EnvironmentTest && !strings.EqualFold(strings.TrimSpace(cfg.LogFormat), "json") {
 		return fmt.Errorf("C4ISR_LOG_FORMAT=json is required in staging and production")
 	}
 	return nil
+}
+
+// LoadDatabaseURL loads only the database secret. Maintenance tools do not
+// require HTTP bearer tokens or unrelated server configuration.
+func LoadDatabaseURL() (string, error) {
+	url, err := secretEnv("C4ISR_DATABASE_URL")
+	if err != nil {
+		return "", err
+	}
+	if url == "" {
+		return "", fmt.Errorf("C4ISR_DATABASE_URL or C4ISR_DATABASE_URL_FILE is required")
+	}
+	return url, nil
 }
 
 func envOr(key, fallback string) string {

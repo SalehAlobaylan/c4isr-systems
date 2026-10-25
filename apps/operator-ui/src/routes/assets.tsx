@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@/lib/scopedQueries'
+
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useMemo } from 'react'
@@ -8,10 +9,10 @@ import { AssetStatusBadge, ConnectionBadge, FreshnessBadge, HealthBadge } from '
 import { DataTable } from '@/components/shared/data-table'
 import { ErrorState } from '@/components/shared/states'
 import { Select } from '@/components/ui/select'
-import { api, type Asset } from '@/lib/api'
+import { useAPI, type Asset } from '@/lib/api'
 import { isActionable } from '@/lib/freshness'
 import { formatCoord, formatRelative, formatTimestamp } from '@/lib/format'
-import { queryKeys } from '@/lib/queryKeys'
+import { useQueryKeys } from '@/lib/queryKeys'
 
 const ASSET_FILTERS = { limit: 200 }
 
@@ -25,6 +26,8 @@ const STATUS_OPTIONS = [
 ]
 
 export function AssetsPage() {
+  const api = useAPI()
+  const queryKeys = useQueryKeys()
   const search = useSearch({ from: '/assets' })
   const navigate = useNavigate()
 
