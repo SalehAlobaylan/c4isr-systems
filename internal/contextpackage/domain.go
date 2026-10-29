@@ -10,6 +10,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/analystscope"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/jsoncanon"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/reference"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/simulation"
@@ -27,18 +30,19 @@ type Approval struct {
 	Statement string    `json:"statement"`
 }
 type ImageryLineage struct {
-	AuthorHumanID   string              `json:"authorHumanId,omitempty"`
-	ReviewerHumanID string              `json:"reviewerHumanId,omitempty"`
-	CurrentRights   publicingest.Rights `json:"currentRights"`
-	AdmissionID     string              `json:"admissionId"`
-	ArtifactSHA256  string              `json:"artifactSha256,omitempty"`
-	SceneIDs        []string            `json:"sceneIds"`
-	EvidenceIDs     []string            `json:"evidenceIds"`
-	ArtifactID      string              `json:"artifactId,omitempty"`
-	JobID           string              `json:"jobId,omitempty"`
-	RevisionID      string              `json:"revisionId,omitempty"`
-	Synthetic       bool                `json:"synthetic"`
-	Role            string              `json:"role"`
+	ProfileRevisionID string              `json:"profileRevisionId,omitempty"`
+	AuthorHumanID     string              `json:"authorHumanId,omitempty"`
+	ReviewerHumanID   string              `json:"reviewerHumanId,omitempty"`
+	CurrentRights     publicingest.Rights `json:"currentRights"`
+	AdmissionID       string              `json:"admissionId"`
+	ArtifactSHA256    string              `json:"artifactSha256,omitempty"`
+	SceneIDs          []string            `json:"sceneIds"`
+	EvidenceIDs       []string            `json:"evidenceIds"`
+	ArtifactID        string              `json:"artifactId,omitempty"`
+	JobID             string              `json:"jobId,omitempty"`
+	RevisionID        string              `json:"revisionId,omitempty"`
+	Synthetic         bool                `json:"synthetic"`
+	Role              string              `json:"role"`
 }
 type Asset struct {
 	Lineage              *ImageryLineage      `json:"lineage,omitempty"`
@@ -66,20 +70,21 @@ type Asset struct {
 	Retention            string               `json:"retention"`
 }
 type Manifest struct {
-	Omissions         []string            `json:"omissions,omitempty"`
-	Schema            string              `json:"schema"`
-	AOI               publicingest.Bounds `json:"aoi"`
-	TimeWindow        Window              `json:"timeWindow"`
-	CreatedAt         time.Time           `json:"createdAt"`
-	Creator           string              `json:"creator"`
-	Approval          Approval            `json:"approval"`
-	TransformVersion  string              `json:"transformVersion"`
-	ProcessingVersion string              `json:"processingVersion"`
-	GeometryQuality   string              `json:"geometryQuality"`
-	ImageryQuality    string              `json:"imageryQuality"`
-	Reproduction      string              `json:"reproduction"`
-	SyntheticDerived  bool                `json:"syntheticDerived"`
-	Assets            []Asset             `json:"assets"`
+	Scope             *analystscope.Snapshot `json:"scope,omitempty"`
+	Omissions         []string               `json:"omissions,omitempty"`
+	Schema            string                 `json:"schema"`
+	AOI               publicingest.Bounds    `json:"aoi"`
+	TimeWindow        Window                 `json:"timeWindow"`
+	CreatedAt         time.Time              `json:"createdAt"`
+	Creator           string                 `json:"creator"`
+	Approval          Approval               `json:"approval"`
+	TransformVersion  string                 `json:"transformVersion"`
+	ProcessingVersion string                 `json:"processingVersion"`
+	GeometryQuality   string                 `json:"geometryQuality"`
+	ImageryQuality    string                 `json:"imageryQuality"`
+	Reproduction      string                 `json:"reproduction"`
+	SyntheticDerived  bool                   `json:"syntheticDerived"`
+	Assets            []Asset                `json:"assets"`
 }
 type Bundle struct {
 	ID       string            `json:"id"`
@@ -87,14 +92,29 @@ type Bundle struct {
 	Assets   map[string][]byte `json:"assets"`
 }
 
-func ID(m Manifest) string { raw, _ := json.Marshal(m); return "ctx_" + reference.Hash(raw) }
+func ID(m Manifest) string {
+	raw, e := json.Marshal(m)
+	// Existing manifests keep their original identity algorithm. Scope-bearing
+	// manifests use exact-decimal canonical JSON (v1) across ordinary JSON clients.
+	if m.Scope != nil {
+		raw, e = jsoncanon.Canonical(raw)
+	}
+	if e != nil {
+		return "ctx_invalid"
+	}
+	return "ctx_" + reference.Hash(raw)
+}
 
 // Validate checks an offline bundle, including missing dependencies and rights.
 // requireOffline rejects reference-only packages. No URL is dereferenced.
 func (b Bundle) Validate(now time.Time, requireOffline bool) error {
 	fail := func() error { return fmt.Errorf("invalid, incomplete, expired, or corrupt context package") }
 	m := b.Manifest
-	if m.Schema != Schema || b.ID != ID(m) || m.AOI.Validate() != nil || m.TimeWindow.From.IsZero() || m.TimeWindow.To.Before(m.TimeWindow.From) || m.TimeWindow.To.Sub(m.TimeWindow.From) > 366*24*time.Hour || m.Creator == "" || m.Approval.By == "" || m.Approval.Statement == "" || m.Approval.At.IsZero() || m.CreatedAt.IsZero() || m.Approval.At.Before(m.CreatedAt) || m.TransformVersion != simulation.TransformVersion || (m.ProcessingVersion != "reference-snapshot-v1" && m.ProcessingVersion != "context-snapshot-v2") || m.GeometryQuality == "" || m.ImageryQuality == "" || (m.ProcessingVersion == "reference-snapshot-v1" && (m.ImageryQuality != "not_included" || m.SyntheticDerived)) || len(m.Assets) < 1 || len(m.Assets) > 16 {
+	maxInterval := 366 * 24 * time.Hour
+	if m.Scope != nil {
+		maxInterval = queryscope.MaxInterval
+	}
+	if m.Schema != Schema || b.ID != ID(m) || m.AOI.Validate() != nil || m.TimeWindow.From.IsZero() || m.TimeWindow.To.Before(m.TimeWindow.From) || m.TimeWindow.To.Sub(m.TimeWindow.From) > maxInterval || m.Creator == "" || m.Approval.By == "" || m.Approval.Statement == "" || m.Approval.At.IsZero() || m.CreatedAt.IsZero() || m.Approval.At.Before(m.CreatedAt) || m.TransformVersion != simulation.TransformVersion || (m.ProcessingVersion != "reference-snapshot-v1" && m.ProcessingVersion != "context-snapshot-v2") || m.GeometryQuality == "" || m.ImageryQuality == "" || (m.ProcessingVersion == "reference-snapshot-v1" && (m.ImageryQuality != "not_included" || m.SyntheticDerived)) || len(m.Assets) < 1 || len(m.Assets) > 16 {
 		return fail()
 	}
 	if m.Reproduction != "retained_offline" && m.Reproduction != "external_dependencies" {

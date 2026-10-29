@@ -1,0 +1,323 @@
+{
+  "schema": "emad.map-first-workload-result.v1",
+  "sampleStatus": "FAIL",
+  "qualification": "NOT_QUALIFIED",
+  "profile": {
+    "analysts": 5,
+    "areas": 10,
+    "detailedReferenceFeatures": 50000,
+    "durationSeconds": 60,
+    "fullDataset": true,
+    "goVersion": "go1.25.0",
+    "historyRows": 1000,
+    "kind": "profile",
+    "reportRevisions": 100000,
+    "scheduledProfiles": 10,
+    "schema": "emad.workload-sample.v1",
+    "scope": "Full declared read volumes coexist; scoped cold POST and warm pinned GET maps. Does not qualify raster concurrency, browser, real-provider or 24-hour gates.",
+    "startedAt": "2026-10-29T14:04:00.7752973Z",
+    "synthetic": true,
+    "weatherMovingRecords": 10000
+  },
+  "end": {
+    "completed": true,
+    "elapsedSeconds": 64.5123409,
+    "failures": 10,
+    "kind": "end",
+    "observedHumans": "NOT_RUN",
+    "rasterConcurrency": "NOT_RUN",
+    "workerRestart": "NOT_RUN"
+  },
+  "telemetrySamples": 58,
+  "telemetryErrors": 0,
+  "operations": [
+    {
+      "operation": "catalog_search",
+      "condition": "cold",
+      "requests": 5,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 141.989,
+      "p95Ms": 164.245,
+      "p99Ms": 164.245,
+      "maxResponseBytes": 30212,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "catalog_search",
+      "condition": "warm",
+      "requests": 80,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 68.983,
+      "p95Ms": 182.938,
+      "p99Ms": 216.339,
+      "maxResponseBytes": 30212,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "geography_search",
+      "condition": "cold",
+      "requests": 10,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 946.573,
+      "p95Ms": 982.699,
+      "p99Ms": 982.699,
+      "maxResponseBytes": 69163,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "geography_search",
+      "condition": "warm",
+      "requests": 75,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 957.021,
+      "p95Ms": 1079.928,
+      "p99Ms": 1229.027,
+      "maxResponseBytes": 69163,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "map_family",
+      "condition": "cold",
+      "requests": 10,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 2688.716,
+      "p95Ms": 2854.619,
+      "p99Ms": 2854.619,
+      "maxResponseBytes": 18627,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "map_family",
+      "condition": "warm",
+      "requests": 75,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 5.624,
+      "p95Ms": 6.811,
+      "p99Ms": 7.659,
+      "maxResponseBytes": 1412,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scheduled_retrieval",
+      "condition": "cold",
+      "requests": 10,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 565.433,
+      "p95Ms": 590.104,
+      "p99Ms": 590.104,
+      "maxResponseBytes": 817,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scheduled_retrieval",
+      "condition": "warm",
+      "requests": 4,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 630.51,
+      "p95Ms": 699.625,
+      "p99Ms": 699.625,
+      "maxResponseBytes": 817,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scope_resolve",
+      "condition": "cold",
+      "requests": 5,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 14.631,
+      "p95Ms": 16.379,
+      "p99Ms": 16.379,
+      "maxResponseBytes": 2913,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scope_resolve",
+      "condition": "warm",
+      "requests": 80,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 4.886,
+      "p95Ms": 16.717,
+      "p99Ms": 17.382,
+      "maxResponseBytes": 2913,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "weather_query",
+      "condition": "cold",
+      "requests": 5,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 911.017,
+      "p95Ms": 952.06,
+      "p99Ms": 952.06,
+      "maxResponseBytes": 162630,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "weather_query",
+      "condition": "warm",
+      "requests": 80,
+      "errors": 10,
+      "timeouts": 10,
+      "errorRate": 0.125,
+      "timeoutRate": 0.125,
+      "p50Ms": 929.913,
+      "p95Ms": 5000.23,
+      "p99Ms": 5000.474,
+      "maxResponseBytes": 162632,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    }
+  ],
+  "sampleBudgetChecks": [
+    {
+      "operation": "catalog_search",
+      "condition": "cold",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 164.245,
+      "status": "PASS"
+    },
+    {
+      "operation": "catalog_search",
+      "condition": "warm",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 182.938,
+      "status": "PASS"
+    },
+    {
+      "operation": "geography_search",
+      "condition": "cold",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 982.699,
+      "status": "PASS"
+    },
+    {
+      "operation": "geography_search",
+      "condition": "warm",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 1079.928,
+      "status": "FAIL"
+    },
+    {
+      "operation": "map_family",
+      "condition": "cold",
+      "targetP95Ms": 2000,
+      "observedP95Ms": 2854.619,
+      "status": "FAIL"
+    },
+    {
+      "operation": "map_family",
+      "condition": "warm",
+      "targetP95Ms": 2000,
+      "observedP95Ms": 6.811,
+      "status": "PASS"
+    },
+    {
+      "operation": "weather_query",
+      "condition": "cold",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 952.06,
+      "status": "PASS"
+    },
+    {
+      "operation": "weather_query",
+      "condition": "warm",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 5000.23,
+      "status": "FAIL"
+    }
+  ],
+  "datasetChecks": [
+    {
+      "field": "reportRevisions",
+      "target": 100000,
+      "observed": 100000,
+      "status": "PASS"
+    },
+    {
+      "field": "detailedReferenceFeatures",
+      "target": 50000,
+      "observed": 50000,
+      "status": "PASS"
+    },
+    {
+      "field": "weatherMovingRecords",
+      "target": 10000,
+      "observed": 10000,
+      "status": "PASS"
+    },
+    {
+      "field": "historyRows",
+      "target": 1000,
+      "observed": 1000,
+      "status": "PASS"
+    },
+    {
+      "field": "areas",
+      "target": 10,
+      "observed": 10,
+      "status": "PASS"
+    },
+    {
+      "field": "analysts",
+      "target": 5,
+      "observed": 5,
+      "status": "PASS"
+    },
+    {
+      "field": "scheduledProfiles",
+      "target": 10,
+      "observed": 10,
+      "status": "PASS"
+    }
+  ],
+  "budgetProfileContentSha256": "c41f9ba2cee362183be617bb5f5239d5424f558af95f62658fffaae4490a959e",
+  "durationComplete": true,
+  "missingOperations": [],
+  "incomplete": false,
+  "outcomeCountsConsistent": true,
+  "limitations": [
+    "Full declared read volumes with scoped cold computations and warm pinned reads; no raster concurrency or browser timing.",
+    "Heap telemetry is not process/container RSS; no measured retained-object/freshness-growth qualification.",
+    "No real process restart, paired restore, actual rollback binary or independent target users in this sample.",
+    "A longer sample measures actual elapsed time but does not close missing workload/recovery gates."
+  ],
+  "samplesSha256": "b7002218f78106a18417869581a0c615a480b0f3c6f10ffb68a54a8eea0ca901",
+  "commandExitCode": 1,
+  "runnerFailure": null,
+  "runnerElapsedSeconds": 120.95299999999997,
+  "frozenDurationMatched": true,
+  "frozenDatasetMatched": true,
+  "sourceUnchanged": true
+}

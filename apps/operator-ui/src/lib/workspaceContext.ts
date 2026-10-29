@@ -16,6 +16,7 @@ export interface WorkspaceSession {
   select: (resource: Resource, preserveRoute?:boolean) => Promise<void>
   revalidate: () => Promise<void>
   invalidate: () => void
+  connectionWarning?: string
 }
 
 export const WorkspaceContext = createContext<WorkspaceSession | null>(null)

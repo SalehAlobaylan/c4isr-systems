@@ -232,7 +232,7 @@ func TestP3AISNativePartialCaptureAndRecovery(t *testing.T) {
 		t.Fatal(disabled)
 	}
 
-	// A source stops at a finite retained-evidence budget. The rejected page
+	// A source stops at a finite retained-byte budget. The rejected page
 	// cannot partially advance evidence or association state.
 	f.admission.Enabled = true
 	f.admit(t)
@@ -242,11 +242,24 @@ func TestP3AISNativePartialCaptureAndRecovery(t *testing.T) {
 	}
 	empty = false
 	at = time.Now().UTC().Add(-time.Second)
+	// Historical row count no longer blocks a bounded new capture. Byte and
+	// active-work limits are independent of the immutable lifetime history.
+	if run := f.execute(t); run["status"] != "PARTIAL" || run["newEvidence"] != float64(1) {
+		t.Fatal("legacy row ceiling still blocked moving capture", run)
+	}
+	// Synthetic byte-budget records have no publication catalog entries and
+	// do not fabricate provider observations. Each retained raw object respects
+	// the per-record SQL bound; together they exhaust the source byte budget.
+	if _, err := f.h.pool.Exec(context.Background(), `INSERT INTO public_evidence(id,scope_id,source_id,admission_id,connector_run_id,provider_record_id,provider_revision,content_hash,document,original_record) SELECT 'byte_quota_'||n,e.scope_id,e.source_id,e.admission_id,e.connector_run_id,'byte-quota:'||n,e.provider_revision,e.content_hash,'{"synthetic":true,"purpose":"storage-budget-fixture"}'::jsonb,convert_to(repeat('x',262144),'UTF8') FROM public_evidence e CROSS JOIN generate_series(1,256)n WHERE e.id=$1`, track["latestEvidenceId"]); err != nil {
+		t.Fatal(err)
+	}
+	f.ready(t)
+	at = time.Now().UTC().Add(-time.Second)
 	if run := f.execute(t); run["status"] != "FAILED" || run["failureCode"] != "source_storage_budget" || run["newEvidence"] != float64(0) {
 		t.Fatal("storage budget was not atomic", run)
 	}
 	var n int
-	if err := f.h.pool.QueryRow(context.Background(), `SELECT count(*) FROM public_evidence WHERE source_id=$1`, f.source).Scan(&n); err != nil || n != 10000 {
+	if err := f.h.pool.QueryRow(context.Background(), `SELECT count(*) FROM public_evidence WHERE source_id=$1`, f.source).Scan(&n); err != nil || n != 10257 {
 		t.Fatal(n, err)
 	}
 }

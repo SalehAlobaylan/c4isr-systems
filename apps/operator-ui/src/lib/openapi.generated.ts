@@ -4,6 +4,803 @@
  */
 
 export interface paths {
+    "/api/v1/investigations/{id}/delivery-jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listCaseDeliveries"];
+        put?: never;
+        post: operations["submitCaseDelivery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/delivery-jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCaseDelivery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/delivery-jobs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelCaseDelivery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/delivery-jobs/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["retryCaseDelivery"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outputs/{id}/bundle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getOutputBundle"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outputs/{id}/attestation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getOutputAttestation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/investigations/{id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CaseReviewInput"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/investigations/{id}/outputs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CompositeOutputInput"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/investigations/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["historyCaseWorkflow"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/investigations/{id}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["reviewsCaseWorkflow"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/investigations/review-inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["reviewinboxCaseWorkflow"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outputs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCompositeOutput"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outputs/{id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["downloadCompositeOutput"];
+        put: operations["stageCompositeOutput"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/outputs/{id}/expire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["expireCompositeOutput"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/reads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["catalogInput"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/capture-proposal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["captureProposalInput"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imagery/comparison-check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["pairInput"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analyst-scope/reads/{id}/records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["readIndividualRecords"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/acquisitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listAcquisitions"];
+        put?: never;
+        post: operations["createAcquisition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/acquisitions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["getAcquisition"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/acquisitions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelAcquisition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coverage/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["queryCoverage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/coverage/adapters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["coverageAdapters"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/scheduler/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["runScheduledAcquisition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/acquisition-metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["acquisitionMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geography/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGeographicAvailability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geography/reference-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listGeographicDepthRequests"];
+        put?: never;
+        post: operations["requestGeographicDepth"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geography/reference-requests/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolveGeographicDepthRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["listRetrievalProfiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/profiles/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["approveRetrievalProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/profiles/{key}/execution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["grantRetrievalProfileExecution"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sources/{id}/profiles/{key}/connector-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["executeRetrievalProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/investigations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listInvestigations"];
+        put?: never;
+        post: operations["createInvestigation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/investigations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get: operations["getInvestigation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/investigations/{id}/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["saveInvestigation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/investigations/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["changeInvestigationMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/areas/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolveArea"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/areas/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["retainAreaRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/areas/revisions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAreaRevision"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analyst-scope/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resolveAnalystScope"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analyst-scope/freeze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["freezeAnalystScope"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analyst-scope/snapshots/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAnalystScope"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analyst-scope/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["readAnalystScope"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analyst-scope/reads/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAnalystReadPage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geography/releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listGeographicReleaseHeads"];
+        put?: never;
+        post: operations["createGeographicReleases"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geography/releases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGeographicReleases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geography/profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createGeographicProfiles"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geography/profiles/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getGeographicProfiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/map/surrounding-area": {
         parameters: {
             query?: never;
@@ -566,6 +1363,33 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/content-purpose": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        /** Review authorized catalog purpose without changing evidence */
+        get: operations["listContentPurpose"];
+        put?: never;
+        /** Append a purpose classification with verified provenance */
+        post: operations["classifyContentPurpose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/me": {
         parameters: {
             query?: never;
@@ -676,7 +1500,10 @@ export interface paths {
     };
     "/api/v1/reference-datasets": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description ordinary includes unclassified; other views require sources.manage */
+                content_view?: "ordinary" | "working" | "unclassified" | "all";
+            };
             header?: {
                 /** @description Select an existing authorized workspace; defaults to the credential resource. */
                 "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
@@ -2170,7 +2997,10 @@ export interface paths {
     };
     "/api/v1/context-packages": {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description ordinary includes unclassified; other views require sources.manage */
+                content_view?: "ordinary" | "working" | "unclassified" | "all";
+            };
             header?: {
                 /** @description Select an existing authorized workspace; defaults to the credential resource. */
                 "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
@@ -4158,7 +4988,722 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        DeliveryJob: {
+            id: string;
+            caseId: string;
+            outputId: string;
+            creatorHumanId: string;
+            kind: string;
+            state: string;
+            workerBuild: string;
+            failureReason: string;
+            attempt: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            leaseUntil?: string | null;
+            /** Format: date-time */
+            nextAttemptAt?: string;
+        };
+        DeliveryInput: {
+            /** @enum {string} */
+            kind: "brief" | "environment";
+            output: components["schemas"]["CompositeOutputInput"];
+            environment?: components["schemas"]["EnvironmentPreparationInput"];
+        };
+        EnvironmentPreparationInput: {
+            datasetIds: string[];
+            geoidId?: string;
+            /** @enum {string} */
+            horizontalCrs: "EPSG:4326";
+            /** @enum {string} */
+            outputVerticalDatum: "WGS84_ELLIPSOID";
+            origin: {
+                longitude: number;
+                latitude: number;
+                height: number;
+            };
+            qualification: {
+                horizontalToleranceM: number;
+                verticalToleranceM: number;
+                method: string;
+                controls: {
+                    longitude: number;
+                    latitude: number;
+                    ellipsoidHeight: number;
+                    east: number;
+                    north: number;
+                    up: number;
+                    provenance: string;
+                }[];
+                maxPixels: number;
+                maxFeatures: number;
+                maxTriangles: number;
+                maxBytes: number;
+                maxRamBytes: number;
+                maxTempBytes: number;
+                maxSeconds: number;
+            };
+        };
+        FindingInput: {
+            id?: string;
+            expectedRevisionId?: string;
+            title: string;
+            conclusion: string;
+            confidence: string;
+            uncertainty: string;
+            /** @enum {string} */
+            purpose: "working" | "development" | "acceptance" | "unclassified";
+            evidence: components["schemas"]["InvestigationEvidence"][];
+        };
+        FindingRevision: components["schemas"]["FindingInput"] & {
+            revisionId: string;
+            previousId?: string;
+            actorHumanId: string;
+            scopeHash: string;
+            requiredSources: string[];
+            recordedAt: string;
+        };
+        CaseNotice: {
+            kind: string;
+            id: string;
+            state: string;
+            meaning: string;
+        };
+        CaseReviewInput: {
+            action: string;
+            expectedRevisionId: string;
+            expectedEventId: string;
+            reviewerHumanId?: string;
+            reason: string;
+            outputId?: string;
+        };
+        CaseReviewEvent: {
+            id: string;
+            caseId: string;
+            revisionId: string;
+            action: string;
+            reviewerHumanId: string;
+            actorHumanId: string;
+            contentDigest: string;
+            reason: string;
+            outputId?: string;
+            renderSha256?: string;
+            recordedAt: string;
+            contributors: string[];
+            outputContentDigest?: string;
+        };
+        CompositeOutputInput: {
+            requestKey: string;
+            expectedRevisionId: string;
+            /** @enum {string} */
+            purpose: "internal" | "distribution" | "environment";
+            sourceUses: {
+                [key: string]: "reference" | "imagery" | "raw" | "internal" | "environment";
+            };
+            assetIds: string[];
+            rendererVersion: string;
+            styleVersion: string;
+            /** Format: date-time */
+            retainUntil: string;
+            expectedBytes: number;
+        };
+        CompositeOutput: {
+            id: string;
+            caseId: string;
+            revisionId: string;
+            contentDigest: string;
+            state: string;
+            renderSha256: string;
+            mediaType: string;
+            retainUntil: string;
+            unavailableReason: string;
+            bytes: number;
+            manifest: {
+                [key: string]: unknown;
+            };
+            creatorHumanId: string;
+            renderHumanId: string;
+            superseded: boolean;
+        };
+        OutputPermissions: {
+            internalAnalysis?: boolean | null;
+            citation?: boolean | null;
+            includedImagery?: boolean | null;
+            rawDistribution?: boolean | null;
+            geographicEnvironment?: boolean | null;
+            metadataRetention?: boolean | null;
+        };
+        InvestigationRevision: {
+            id: string;
+            caseId: string;
+            version: number;
+            previousId?: string;
+            title: string;
+            question: string;
+            notes: string;
+            /** @enum {string} */
+            state: "DRAFT" | "ACTIVE" | "ARCHIVED";
+            scope: components["schemas"]["ScopeSnapshot"];
+            evidence: components["schemas"]["InvestigationEvidence"][];
+            actorHumanId: string;
+            /** Format: date-time */
+            recordedAt: string;
+            findings?: components["schemas"]["FindingRevision"][] | null;
+        };
+        CaseRevision: {
+            caseId: string;
+            revisionId: string;
+        };
+        CatalogInput: {
+            /** @enum {string} */
+            kind: "geography" | "scenes" | "captures" | "jobs" | "findings" | "investigations";
+            scope?: components["schemas"]["ScopeInput"];
+            filters?: {
+                sourceId?: string;
+                query?: string;
+                parent?: string;
+                kind?: string;
+                releaseId?: string;
+                editionId?: string;
+                status?: string;
+            };
+            limit?: number;
+            zoom?: number;
+            snapshotId?: string;
+            cursor?: string;
+            replaceSnapshotId?: string;
+        };
+        CatalogPage: {
+            snapshotId: string;
+            kind: string;
+            items: {
+                [key: string]: unknown;
+            }[];
+            total: number | null;
+            returned: number;
+            offset: number;
+            representation: string;
+            state: string;
+            countMeaning: string;
+            evaluatedAt: string;
+            expiresAt: string;
+            hasMore: boolean;
+            nextCursor?: string;
+        };
+        RecordPage: {
+            snapshotId: string;
+            family: string;
+            items: {
+                [key: string]: unknown;
+            }[];
+            total: number;
+            returned: number;
+            hasMore: boolean;
+            nextCursor?: string;
+        };
+        CaptureProposalInput: {
+            scope: components["schemas"]["ScopeInput"];
+            sceneId: string;
+            aoi?: components["schemas"]["SourceAOI"];
+        };
+        CaptureProposal: {
+            scope: components["schemas"]["ScopeSnapshot"];
+            sceneId: string;
+            sceneGeometry: {
+                [key: string]: unknown;
+            };
+            suggestedAoi?: components["schemas"]["SourceAOI"];
+            proposedAoi?: components["schemas"]["SourceAOI"];
+            supported: boolean;
+            valid: boolean;
+            reasons: string[];
+            meaning: string;
+        };
+        PairInput: {
+            scope: components["schemas"]["ScopeInput"];
+            beforeId: string;
+            afterId: string;
+            parameters: components["schemas"]["ImageryParameters"];
+        };
+        PairCheck: {
+            compatible: boolean;
+            reasons: string[];
+            validCells: number;
+            totalCells: number;
+            clearFraction: number;
+            limitations: string[];
+            evaluatedAt: string;
+        };
+        GeographicAvailability: {
+            regionId: string;
+            sourceId: string;
+            releaseId: string;
+            logicalKey: string;
+            regions: number;
+            places: number;
+            /** @enum {string} */
+            state: "legacy_unqualified" | "partial_reference_depth" | "reference_depth_retained";
+            meaning: string;
+            nextAction: string;
+        };
+        ReferenceDepthRequestInput: {
+            requestKey: string;
+            regionId: string;
+            reason: string;
+        };
+        ReferenceDepthRequest: {
+            id: string;
+            input: components["schemas"]["ReferenceDepthRequestInput"];
+            requestedBy: string;
+            /** Format: date-time */
+            recordedAt: string;
+            state: string;
+            sourceId: string;
+            logicalKey: string;
+            meaning: string;
+            resolution?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        RetrievalProfile: {
+            id: string;
+            key: string;
+            sourceId: string;
+            admissionId: string;
+            version: number;
+            admission: components["schemas"]["SourceAdmission"];
+        };
+        RetrievalProfileInput: {
+            expectedRevisionId: string;
+            admission: components["schemas"]["SourceAdmissionInput"];
+        };
+        RetrievalExecutionGrant: {
+            profileRevisionId: string;
+            principalId: string;
+            enabled: boolean;
+        };
+        AdapterCapability: {
+            adapter: string;
+            family: string;
+            discovery: boolean;
+            historical: boolean;
+            retention: string;
+            analysis: boolean;
+            capture: boolean;
+            credentials: string;
+            limitMeaning: string;
+        };
+        CoverageAction: {
+            kind: string;
+            sourceId?: string;
+            profileKey?: string;
+            profileRevisionId?: string;
+            requestId?: string;
+            owner: string;
+            reason: string;
+        };
+        CoverageProfile: {
+            key: string;
+            revisionId: string;
+            gate: string;
+            spatialRelation: string;
+            executionGranted: boolean;
+            rights: {
+                [key: string]: unknown;
+            };
+        };
+        CoverageWindow: {
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+        };
+        RetrievalReceipt: {
+            runId: string;
+            sourceId: string;
+            profileRevisionId: string;
+            admissionId: string;
+            requestId?: string;
+            adapter: components["schemas"]["AdapterCapability"];
+            aoi: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+            /** Format: date-time */
+            completedAt: string;
+            status: string;
+            failureCode?: string;
+            pages: number;
+            rejectedRecords: number;
+            providerTruncated: boolean;
+            retainedRecords: number;
+            unpublishedRecords: number;
+            queryComplete: boolean;
+            observationCompleteness: string;
+            recordedUnpublishedRecords?: number;
+            publicationReconciled?: boolean;
+        };
+        CoverageSource: {
+            id: string;
+            name: string;
+            family: string;
+            support: string;
+            supportReason: string;
+            capability: components["schemas"]["AdapterCapability"];
+            profiles: components["schemas"]["CoverageProfile"][];
+            spatialRelation: string;
+            retrieval: string;
+            dataResult: string;
+            usableRetainedRecords: number | null;
+            completedWindows: components["schemas"]["CoverageWindow"][];
+            missingWindows: components["schemas"]["CoverageWindow"][];
+            /** Format: date-time */
+            latestRetrieval?: string;
+            /** Format: date-time */
+            latestEvidenceAt?: string;
+            freshness: string;
+            observationCompleteness: string;
+            receipts: components["schemas"]["RetrievalReceipt"][];
+            receiptsTruncated: boolean;
+            actions: components["schemas"]["CoverageAction"][];
+        };
+        CoverageInput: {
+            scope: components["schemas"]["ScopeInput"];
+            sourceId?: string;
+        };
+        CoverageResult: {
+            schema: string;
+            scope: components["schemas"]["ScopeSnapshot"];
+            /** Format: date-time */
+            evaluatedAt: string;
+            sources: components["schemas"]["CoverageSource"][];
+            referenceDepth?: {
+                [key: string]: unknown;
+            };
+            storage: string;
+            meaning: string;
+            recoveryOwner: string;
+        };
+        AcquisitionInput: {
+            requestKey: string;
+            sourceId: string;
+            profileKey: string;
+            profileRevisionId: string;
+            investigationId?: string;
+            /** @enum {string} */
+            purpose: "discovery" | "analysis";
+            scope: components["schemas"]["ScopeInput"];
+        };
+        AcquisitionPart: {
+            id: string;
+            requestId: string;
+            sourceId: string;
+            profileKey: string;
+            profileRevisionId: string;
+            status: string;
+            reason?: string;
+            recoveryOwner: string;
+            aoi: {
+                west: number;
+                south: number;
+                east: number;
+                north: number;
+            };
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+            attempts: number;
+            /** Format: date-time */
+            nextAttemptAt?: string;
+            runId?: string | null;
+        };
+        AcquisitionRequest: {
+            id: string;
+            input: components["schemas"]["AcquisitionInput"];
+            scope: components["schemas"]["ScopeSnapshot"];
+            kind: string;
+            status: string;
+            reason: string;
+            recoveryOwner: string;
+            requesterId: string;
+            /** Format: date-time */
+            createdAt: string;
+            parts: components["schemas"]["AcquisitionPart"][];
+        };
+        AcquisitionList: {
+            items: components["schemas"]["AcquisitionRequest"][];
+            returned: number;
+            limit: number;
+            historyMeaning: string;
+        };
+        EvidenceValidity: {
+            evidenceId: string;
+            currentEvidenceId?: string;
+            state: string;
+            /** Format: date-time */
+            evaluatedAt: string;
+            meaning: string;
+        };
+        Investigation: {
+            id: string;
+            membershipVersion: number;
+            ownerHumanId: string;
+            members: string[];
+            revision: components["schemas"]["InvestigationRevision"];
+            evidenceValidity?: components["schemas"]["EvidenceValidity"][];
+            notices?: components["schemas"]["CaseNotice"][];
+            workflow?: components["schemas"]["CaseReviewEvent"];
+        };
+        InvestigationInput: {
+            expectedRevisionId?: string;
+            title: string;
+            question: string;
+            notes: string;
+            /** @enum {string} */
+            state: "DRAFT" | "ACTIVE" | "ARCHIVED";
+            scope: components["schemas"]["ScopeInput"];
+            evidence: components["schemas"]["InvestigationEvidence"][];
+            requestKey?: string;
+            findings?: components["schemas"]["FindingInput"][];
+        };
+        InvestigationMembership: {
+            expectedRevisionId: string;
+            expectedMembershipVersion: number;
+            ownerHumanId: string;
+            members: string[];
+        };
+        InvestigationEvidence: {
+            /** @enum {string} */
+            kind: "observation" | "artifact" | "reference" | "assessment" | "job" | "capture" | "analysis";
+            id: string;
+            sha256?: string;
+            sourceId?: string;
+        };
+        AreaSelection: {
+            revisionId?: string;
+            kind?: string;
+            name?: string;
+            regionId?: string;
+            sourceId?: string;
+            logicalKey?: string;
+            releaseId?: string;
+            geometry?: {
+                [key: string]: unknown;
+            };
+            parentRevisionId?: string;
+        };
+        AreaComponent: {
+            geometry: {
+                [key: string]: unknown;
+            };
+            bounds: number[];
+            areaM2: number;
+        };
+        AreaDisplay: {
+            state: string;
+            latitudeLimit: number;
+            message: string;
+        };
+        AreaGeography: {
+            sourceId: string;
+            logicalKey: string;
+            regionId: string;
+            editionId: string;
+            releaseId?: string;
+            parentRegionId?: string;
+            attribution: string;
+            editionSha256: string;
+            meaning: string;
+        };
+        AreaRevision: {
+            schema: string;
+            normalizationVersion: string;
+            areaId: string;
+            revisionId: string;
+            resource: components["schemas"]["AccessResource"];
+            name: string;
+            kind: string;
+            geometry?: {
+                [key: string]: unknown;
+            };
+            originalGeometry?: {
+                [key: string]: unknown;
+            };
+            geometrySha256?: string;
+            normalized: boolean;
+            components: components["schemas"]["AreaComponent"][];
+            areaM2: number;
+            display: components["schemas"]["AreaDisplay"];
+            geography?: components["schemas"]["AreaGeography"];
+            parentRevisionId?: string;
+            relationship?: string;
+            requiredSources: string[];
+            persistent: boolean;
+        };
+        TemporalInterval: {
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+        };
+        TemporalScope: {
+            /** @enum {string} */
+            mode: "monitoring" | "historical";
+            interval?: components["schemas"]["TemporalInterval"];
+            rollingSeconds?: number;
+            /** @enum {string} */
+            revisionView: "latest" | "known_at" | "effective_at";
+            /** Format: date-time */
+            asOf?: string;
+            timezone: string;
+            backgroundImagery: boolean;
+            /** @description Legacy import adapter only. Converts the old inclusive end into an exclusive end at the next nanosecond; evaluated scopes omit it. */
+            legacyEndInclusive?: boolean;
+        };
+        EvaluatedTemporalScope: {
+            /** @enum {string} */
+            mode: "monitoring" | "historical";
+            interval: components["schemas"]["TemporalInterval"];
+            rollingSeconds?: number;
+            /** @enum {string} */
+            revisionView: "latest" | "known_at" | "effective_at";
+            /** Format: date-time */
+            asOf?: string;
+            timezone: string;
+            backgroundImagery: boolean;
+            /** Format: date-time */
+            evaluatedAt: string;
+            bounds: string;
+            frozen: boolean;
+            legacyEndInclusive?: boolean;
+        };
+        ScopeInput: {
+            area: components["schemas"]["AreaSelection"];
+            temporal: components["schemas"]["TemporalScope"];
+            readSnapshotId?: string;
+        };
+        ScopeCapability: {
+            state: string;
+            clock: string;
+            reason?: string;
+        };
+        ScopeSnapshot: {
+            schema: string;
+            id: string;
+            scopeHash: string;
+            area: components["schemas"]["AreaRevision"];
+            temporal: components["schemas"]["EvaluatedTemporalScope"];
+            authorizationRevision: string;
+            capabilities: {
+                [key: string]: components["schemas"]["ScopeCapability"];
+            };
+            readManifest?: {
+                [key: string]: unknown;
+            };
+            requiredSources: string[];
+        };
+        ScopeQueryFilters: {
+            sourceId?: string;
+            quality?: string;
+            phenomenon?: string;
+            revisions?: string;
+        };
+        ScopeReadInput: {
+            area: components["schemas"]["AreaSelection"];
+            temporal: components["schemas"]["TemporalScope"];
+            families: string[];
+            filters: components["schemas"]["ScopeQueryFilters"];
+            zoom: number;
+            includeEvents: boolean;
+        };
+        ScopedMapCollection: {
+            type: string;
+            features: {
+                [key: string]: unknown;
+            }[];
+            total: number | null;
+            truncated: boolean;
+            state: string;
+            scope?: string;
+            countMeaning?: string;
+            unlocated?: number;
+            scopeHash: string;
+            /** Format: date-time */
+            evaluatedAt: string;
+            support?: components["schemas"]["ScopeCapability"];
+        };
+        ScopeReadSnapshot: {
+            id: string;
+            queryFingerprint: string;
+            scope: components["schemas"]["ScopeSnapshot"];
+            /** Format: date-time */
+            expiresAt: string;
+            layers: {
+                [key: string]: components["schemas"]["ScopedMapCollection"];
+            };
+            events?: components["schemas"]["PublicEventList"];
+            coverageReceipts: {
+                [key: string]: unknown;
+            }[];
+            receiptMeaning: string;
+            errors?: {
+                [key: string]: {
+                    code: string;
+                    meaning: string;
+                    recoveryOwner: string;
+                };
+            };
+            eventState?: string;
+        };
+        GeographicReleaseInput: {
+            sourceId: string;
+            key: string;
+            version: string;
+            editionIds: string[];
+            expectedHead: string;
+            activate: boolean;
+        };
+        GeographicRelease: {
+            sourceId: string;
+            key: string;
+            version: string;
+            editionIds: string[];
+            expectedHead: string;
+            activate: boolean;
+            id: string;
+            sha256: string;
+            actorId: string;
+            /** Format: date-time */
+            recordedAt: string;
+            editions: {
+                [key: string]: unknown;
+            }[];
+        };
+        RegionProfileInput: {
+            key: string;
+            version: string;
+            name: string;
+            definition: string;
+            members: components["schemas"]["AreaSelection"][];
+        };
+        RegionProfile: {
+            id: string;
+            sha256: string;
+            key: string;
+            version: string;
+            name: string;
+            definition: string;
+            members: components["schemas"]["AreaRevision"][];
+            requiredSources: string[];
+        };
         MapFeatureCollection: {
+            offset?: number;
+            nextOffset?: number;
             /** @enum {string} */
             type: "FeatureCollection";
             features: {
@@ -4725,6 +6270,7 @@ export interface components {
             reportEvidenceId: string;
         };
         ContextPackageSelection: {
+            scope?: components["schemas"]["ScopeInput"];
             datasetIds?: string[];
             aoi: components["schemas"]["SourceAOI"];
             timeWindow: components["schemas"]["ContextWindow"];
@@ -4815,6 +6361,11 @@ export interface components {
             reported: components["schemas"]["MovingProviderObservation"];
         };
         ArtifactInput: {
+            /** @description Source-backed admitted horizontal accuracy in metres; missing blocks qualified geographic imagery export. */
+            horizontalAccuracyM?: number;
+            profileKey?: string;
+            requestedAdmissionId?: string;
+            dependencyAdmissionIds?: string[];
             requestKey: string;
             sourceId: string;
             sha256: string;
@@ -4896,6 +6447,9 @@ export interface components {
             minValidFraction: number;
         };
         ImagerySubmit: {
+            caseRevision?: components["schemas"]["CaseRevision"];
+            captureId?: string;
+            scope?: components["schemas"]["ScopeInput"];
             requestKey: string;
             /** @enum {string} */
             kind: "PREPARE" | "NDVI_CHANGE";
@@ -4905,6 +6459,9 @@ export interface components {
             parameters?: components["schemas"]["ImageryParameters"];
         };
         ImageryJobInput: {
+            caseRevision?: components["schemas"]["CaseRevision"];
+            captureId?: string;
+            scope?: components["schemas"]["ScopeSnapshot"];
             schema: string;
             /** @enum {string} */
             kind: "PREPARE" | "NDVI_CHANGE";
@@ -5179,6 +6736,7 @@ export interface components {
             syntheticDerived?: boolean;
         };
         ContextManifest: {
+            scope?: components["schemas"]["ScopeSnapshot"];
             /** @enum {string} */
             schema: "emad.context.v1";
             aoi: components["schemas"]["SourceAOI"];
@@ -5242,6 +6800,7 @@ export interface components {
             } | null;
         };
         PublicEvent: {
+            currentValidity?: components["schemas"]["EvidenceValidity"];
             /** Format: date-time */
             knownAt?: string;
             /** Format: date-time */
@@ -5271,6 +6830,22 @@ export interface components {
             view?: components["schemas"]["PublicEventView"];
         };
         ReferenceMetadata: {
+            parents?: {
+                sha256: string;
+                bytes: number;
+                sourceId: string;
+                /** Format: uri */
+                reference: string;
+                /** Format: date-time */
+                retrievedAt: string;
+                crs: string;
+                verticalDatum?: string;
+            }[];
+            accuracy?: {
+                horizontalM: number;
+                verticalM: number;
+                provenance: string;
+            };
             sourceId: string;
             datasetKey: string;
             version: string;
@@ -5383,6 +6958,7 @@ export interface components {
             meaning: string;
         };
         SourceRights: {
+            outputPermissions?: components["schemas"]["OutputPermissions"];
             id: string;
             legalBasis: string;
             /** Format: uri */
@@ -6209,6 +7785,28 @@ export interface components {
             items: components["schemas"]["ScenarioEvent"][];
             total: number;
         };
+        ContentPurposeInput: {
+            /** @enum {string} */
+            kind: "reference" | "scene" | "capture" | "job" | "assessment" | "package" | "artifact";
+            entityId: string;
+            /** @enum {string} */
+            purpose: "working" | "development" | "acceptance" | "unclassified";
+            reason: string;
+            receiptReference: string;
+            expectedVersion: number;
+        };
+        ContentPurposeEntry: {
+            kind: string;
+            entityId: string;
+            /** @enum {string} */
+            purpose: "working" | "development" | "acceptance" | "unclassified";
+            version: number;
+            reason: string;
+            receiptReference: string;
+            actorId: string;
+            /** Format: date-time */
+            recordedAt?: string;
+        };
         FeatureReadiness: {
             checkedAt: string;
             resource: {
@@ -6219,6 +7817,8 @@ export interface components {
                 state: string;
                 count: number;
                 nextAction: string;
+                countMeaning?: string;
+                unclassifiedCount?: number;
             }[];
             workers: {
                 feature: string;
@@ -6247,6 +7847,8 @@ export interface components {
             truncated: boolean;
         };
         ImageryCaptureInput: {
+            caseRevision?: components["schemas"]["CaseRevision"];
+            scope?: components["schemas"]["ScopeInput"];
             requestKey: string;
             sceneId: string;
             aoi: components["schemas"]["SourceAOI"];
@@ -6263,6 +7865,8 @@ export interface components {
             id: string;
             sourceId: string;
             input: {
+                scope?: components["schemas"]["ScopeSnapshot"];
+                caseRevision?: components["schemas"]["CaseRevision"];
                 scene: components["schemas"]["ImageryScene"];
                 aoi: components["schemas"]["SourceAOI"];
                 method: string;
@@ -6336,6 +7940,12 @@ export interface components {
                 confidence: number;
             }[];
             limitations: string[];
+        };
+        InvestigationList: {
+            items: components["schemas"]["Investigation"][];
+            total: number;
+            offset: number;
+            hasMore: boolean;
         };
     };
     responses: {
@@ -6701,6 +8311,10 @@ export interface components {
         };
     };
     parameters: {
+        /** @description JSON ScopeInput with fixed evaluated interval; legacy area/time conflicts are rejected. */
+        AnalystScopeQuery: string;
+        /** @description Expected scope hash; replies echo X-Analyst-Scope-Hash and X-Query-Evaluated-At. */
+        AnalystScopeHashQuery: string;
         /** @description Select an existing authorized workspace; defaults to the credential resource. */
         WorkspaceHeader: string;
         /** @description Select an existing authorized environment within the workspace. */
@@ -6876,6 +8490,1395 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    listCaseDeliveries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Durable case delivery operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["DeliveryJob"][];
+                        limit: number;
+                    };
+                };
+            };
+        };
+    };
+    submitCaseDelivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeliveryInput"];
+            };
+        };
+        responses: {
+            /** @description Durable case delivery operation */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryJob"];
+                };
+            };
+        };
+    };
+    getCaseDelivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Durable case delivery operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryJob"];
+                };
+            };
+        };
+    };
+    cancelCaseDelivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedAttempt: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Durable case delivery operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryJob"];
+                };
+            };
+        };
+    };
+    retryCaseDelivery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    expectedAttempt: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Durable case delivery operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeliveryJob"];
+                };
+            };
+        };
+    };
+    getOutputBundle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Durable case delivery operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+        };
+    };
+    getOutputAttestation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Durable case delivery operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseReviewEvent"];
+                };
+            };
+        };
+    };
+    CaseReviewInput: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaseReviewInput"];
+            };
+        };
+        responses: {
+            /** @description Exact saved revision operation */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaseReviewEvent"];
+                };
+            };
+        };
+    };
+    CompositeOutputInput: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompositeOutputInput"];
+            };
+        };
+        responses: {
+            /** @description Exact saved revision operation */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompositeOutput"];
+                };
+            };
+        };
+    };
+    historyCaseWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized immutable history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["InvestigationRevision"][];
+                    };
+                };
+            };
+        };
+    };
+    reviewsCaseWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized immutable history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["CaseReviewEvent"][];
+                    };
+                };
+            };
+        };
+    };
+    reviewinboxCaseWorkflow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized immutable history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["CaseReviewEvent"][];
+                    };
+                };
+            };
+        };
+    };
+    getCompositeOutput: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized output/tombstone */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompositeOutput"];
+                };
+            };
+        };
+    };
+    downloadCompositeOutput: {
+        parameters: {
+            query?: {
+                distribution?: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Verified immutable bytes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+        };
+    };
+    stageCompositeOutput: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Immutable render committed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompositeOutput"];
+                };
+            };
+        };
+    };
+    expireCompositeOutput: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retained tombstone */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    catalogInput: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogInput"];
+            };
+        };
+        responses: {
+            /** @description Bounded current-authority read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogPage"];
+                };
+            };
+        };
+    };
+    captureProposalInput: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaptureProposalInput"];
+            };
+        };
+        responses: {
+            /** @description Bounded current-authority read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CaptureProposal"];
+                };
+            };
+        };
+    };
+    pairInput: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PairInput"];
+            };
+        };
+        responses: {
+            /** @description Bounded current-authority read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairCheck"];
+                };
+            };
+        };
+    };
+    readIndividualRecords: {
+        parameters: {
+            query: {
+                family: string;
+                aggregate_id?: string;
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Original individual revisions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordPage"];
+                };
+            };
+        };
+    };
+    listAcquisitions: {
+        parameters: {
+            query?: {
+                source_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcquisitionList"];
+                };
+            };
+        };
+    };
+    createAcquisition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcquisitionInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized result */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcquisitionRequest"];
+                };
+            };
+        };
+    };
+    getAcquisition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcquisitionRequest"];
+                };
+            };
+        };
+    };
+    cancelAcquisition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcquisitionRequest"];
+                };
+            };
+        };
+    };
+    queryCoverage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CoverageInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageResult"];
+                };
+            };
+        };
+    };
+    coverageAdapters: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Installed capability inventory */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["AdapterCapability"][];
+                        meaning: string;
+                    };
+                };
+            };
+        };
+    };
+    runScheduledAcquisition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One bounded scheduled run */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    acquisitionMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Durable authorized source metrics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    getGeographicAvailability: {
+        parameters: {
+            query: {
+                region_id: string;
+                release_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retained navigation depth */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeographicAvailability"];
+                };
+            };
+        };
+    };
+    listGeographicDepthRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Source-authorized administrative queue */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ReferenceDepthRequest"][];
+                        limit: number;
+                    };
+                };
+            };
+        };
+    };
+    requestGeographicDepth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferenceDepthRequestInput"];
+            };
+        };
+        responses: {
+            /** @description Durable idempotent reference request */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceDepthRequest"];
+                };
+            };
+        };
+    };
+    resolveGeographicDepthRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    releaseId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Verified installed depth */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    listRetrievalProfiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exact current approved profile revisions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["RetrievalProfile"][];
+                        limit: number;
+                    };
+                };
+            };
+        };
+    };
+    approveRetrievalProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetrievalProfileInput"];
+            };
+        };
+        responses: {
+            /** @description Approved immutable admission/profile revision */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceAdmission"];
+                };
+            };
+        };
+    };
+    grantRetrievalProfileExecution: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetrievalExecutionGrant"];
+            };
+        };
+        responses: {
+            /** @description Audited revision-specific grant */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        profileRevisionId: string;
+                        enabled: boolean;
+                    };
+                };
+            };
+        };
+    };
+    executeRetrievalProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** Format: date-time */
+                    from: string;
+                    /** Format: date-time */
+                    to: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Bounded profile invocation; service grant required */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    listInvestigations: {
+        parameters: {
+            query?: {
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized current cases, including archived cases */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvestigationList"];
+                };
+            };
+        };
+    };
+    createInvestigation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestigationInput"];
+            };
+        };
+        responses: {
+            /** @description Saved case */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Investigation"];
+                };
+            };
+        };
+    };
+    getInvestigation: {
+        parameters: {
+            query?: {
+                revision?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exact authorized case revision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Investigation"];
+                };
+            };
+        };
+    };
+    saveInvestigation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestigationInput"];
+            };
+        };
+        responses: {
+            /** @description New immutable revision */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Investigation"];
+                };
+            };
+            /** @description Head changed; submitted draft was not applied */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    changeInvestigationMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvestigationMembership"];
+            };
+        };
+        responses: {
+            /** @description Audited membership */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Investigation"];
+                };
+            };
+        };
+    };
+    resolveArea: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaSelection"];
+            };
+        };
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaRevision"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    retainAreaRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaSelection"];
+            };
+        };
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaRevision"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getAreaRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AreaRevision"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    resolveAnalystScope: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScopeInput"];
+            };
+        };
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScopeSnapshot"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    freezeAnalystScope: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScopeInput"];
+            };
+        };
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScopeSnapshot"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getAnalystScope: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScopeSnapshot"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    readAnalystScope: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScopeReadInput"];
+            };
+        };
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScopeReadSnapshot"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getAnalystReadPage: {
+        parameters: {
+            query: {
+                family: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listGeographicReleaseHeads: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Currently activated source releases */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: {
+                            sourceId: string;
+                            releaseId: string;
+                        }[];
+                    };
+                };
+            };
+        };
+    };
+    createGeographicReleases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GeographicReleaseInput"];
+            };
+        };
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeographicRelease"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getGeographicReleases: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeographicRelease"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    createGeographicProfiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegionProfileInput"];
+            };
+        };
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegionProfile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getGeographicProfiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped result; exact retained identity and current authorization are preserved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegionProfile"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     createSurroundingArea: {
         parameters: {
             query?: never;
@@ -6948,6 +9951,9 @@ export interface operations {
     listGeographicRegions: {
         parameters: {
             query?: {
+                source_id?: string;
+                release_id?: string;
+                edition_id?: string;
                 q?: string;
                 parent?: string;
                 kind?: "country" | "region" | "governorate" | "place" | "study";
@@ -6982,6 +9988,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    /** @description Hidden from discovery until a complete release activates; exact admitted bytes remain retained */
+                    staged?: boolean;
                     sourceId: string;
                     label: string;
                     version: string;
@@ -7805,6 +10813,81 @@ export interface operations {
             400: components["responses"]["BadRequest"];
         };
     };
+    listContentPurpose: {
+        parameters: {
+            query?: {
+                view?: "all" | "unclassified";
+                kind?: "reference" | "scene" | "capture" | "job" | "assessment" | "package" | "artifact";
+                offset?: number;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Source-administrator inventory, at most 100 rows per page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["ContentPurposeEntry"][];
+                        total: number;
+                        offset: number;
+                        hasMore: boolean;
+                    };
+                };
+            };
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    classifyContentPurpose: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentPurposeInput"];
+            };
+        };
+        responses: {
+            /** @description Classification recorded, or identical receipt already recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentPurposeEntry"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     getCurrentOperator: {
         parameters: {
             query?: never;
@@ -7842,6 +10925,11 @@ export interface operations {
                             /** Format: date-time */
                             startedAt?: string;
                         }[];
+                        /**
+                         * @description Active deployment profile; map entry never restores an exercise resource.
+                         * @enum {string}
+                         */
+                        productProfile?: "map" | "historical-full";
                         /** @description Opaque access fingerprint; changes when grants or source restrictions change. */
                         accessRevision?: string;
                         principal: components["schemas"]["Principal"];
@@ -7857,6 +10945,10 @@ export interface operations {
     listPublicEvents: {
         parameters: {
             query?: {
+                /** @description JSON ScopeInput with fixed evaluated interval; legacy area/time conflicts are rejected. */
+                scope?: components["parameters"]["AnalystScopeQuery"];
+                /** @description Expected scope hash; replies echo X-Analyst-Scope-Hash and X-Query-Evaluated-At. */
+                scope_hash?: components["parameters"]["AnalystScopeHashQuery"];
                 /** @description Bounded WGS84 analyst study polygon */
                 geometry?: string;
                 /** @description Versioned admitted polygon scope */
@@ -8012,6 +11104,8 @@ export interface operations {
     listReferenceDatasets: {
         parameters: {
             query?: {
+                /** @description ordinary includes unclassified; other views require sources.manage */
+                content_view?: "ordinary" | "working" | "unclassified" | "all";
                 eligible?: boolean;
             };
             header?: {
@@ -8045,7 +11139,10 @@ export interface operations {
     };
     importReferenceDataset: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description ordinary includes unclassified; other views require sources.manage */
+                content_view?: "ordinary" | "working" | "unclassified" | "all";
+            };
             header?: {
                 /** @description Select an existing authorized workspace; defaults to the credential resource. */
                 "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
@@ -10112,7 +13209,10 @@ export interface operations {
     };
     listContextPackages: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description ordinary includes unclassified; other views require sources.manage */
+                content_view?: "ordinary" | "working" | "unclassified" | "all";
+            };
             header?: {
                 /** @description Select an existing authorized workspace; defaults to the credential resource. */
                 "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
@@ -10143,7 +13243,10 @@ export interface operations {
     };
     buildContextPackage: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description ordinary includes unclassified; other views require sources.manage */
+                content_view?: "ordinary" | "working" | "unclassified" | "all";
+            };
             header?: {
                 /** @description Select an existing authorized workspace; defaults to the credential resource. */
                 "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
@@ -10975,6 +14078,10 @@ export interface operations {
     listImageryScenes: {
         parameters: {
             query?: {
+                /** @description JSON ScopeInput with fixed evaluated interval; legacy area/time conflicts are rejected. */
+                scope?: components["parameters"]["AnalystScopeQuery"];
+                /** @description Expected scope hash; replies echo X-Analyst-Scope-Hash and X-Query-Evaluated-At. */
+                scope_hash?: components["parameters"]["AnalystScopeHashQuery"];
                 /** @description Bounded WGS84 analyst study polygon */
                 geometry?: string;
                 /** @description Versioned admitted polygon scope */
@@ -11005,7 +14112,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         items: components["schemas"]["ImageryScene"][];
-                        total: number;
+                        total: number | null;
                         truncated: boolean;
                     };
                 };
@@ -11055,7 +14162,12 @@ export interface operations {
     };
     listImageryJobs: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description JSON ScopeInput with fixed evaluated interval; legacy area/time conflicts are rejected. */
+                scope?: components["parameters"]["AnalystScopeQuery"];
+                /** @description Expected scope hash; replies echo X-Analyst-Scope-Hash and X-Query-Evaluated-At. */
+                scope_hash?: components["parameters"]["AnalystScopeHashQuery"];
+            };
             header?: {
                 /** @description Select an existing authorized workspace; defaults to the credential resource. */
                 "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
@@ -11079,7 +14191,7 @@ export interface operations {
                 content: {
                     "application/json": {
                         items: components["schemas"]["ImageryJob"][];
-                        total: number;
+                        total: number | null;
                         truncated: boolean;
                     };
                 };
@@ -11280,7 +14392,12 @@ export interface operations {
     };
     listIntelligenceAssessments: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description JSON ScopeInput with fixed evaluated interval; legacy area/time conflicts are rejected. */
+                scope?: components["parameters"]["AnalystScopeQuery"];
+                /** @description Expected scope hash; replies echo X-Analyst-Scope-Hash and X-Query-Evaluated-At. */
+                scope_hash?: components["parameters"]["AnalystScopeHashQuery"];
+            };
             header?: {
                 /** @description Select an existing authorized workspace; defaults to the credential resource. */
                 "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
@@ -11625,6 +14742,10 @@ export interface operations {
     listExternalTracks: {
         parameters: {
             query?: {
+                /** @description JSON ScopeInput with fixed evaluated interval; legacy area/time conflicts are rejected. */
+                scope?: components["parameters"]["AnalystScopeQuery"];
+                /** @description Expected scope hash; replies echo X-Analyst-Scope-Hash and X-Query-Evaluated-At. */
+                scope_hash?: components["parameters"]["AnalystScopeHashQuery"];
                 /** @description Bounded WGS84 analyst study polygon */
                 geometry?: string;
                 /** @description Versioned admitted polygon scope */
@@ -11745,7 +14866,12 @@ export interface operations {
     };
     listReportAssessments: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description JSON ScopeInput with fixed evaluated interval; legacy area/time conflicts are rejected. */
+                scope?: components["parameters"]["AnalystScopeQuery"];
+                /** @description Expected scope hash; replies echo X-Analyst-Scope-Hash and X-Query-Evaluated-At. */
+                scope_hash?: components["parameters"]["AnalystScopeHashQuery"];
+            };
             header?: {
                 /** @description Select an existing authorized workspace; defaults to the credential resource. */
                 "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
@@ -11822,6 +14948,10 @@ export interface operations {
     listContextRecords: {
         parameters: {
             query?: {
+                /** @description JSON ScopeInput with fixed evaluated interval; legacy area/time conflicts are rejected. */
+                scope?: components["parameters"]["AnalystScopeQuery"];
+                /** @description Expected scope hash; replies echo X-Analyst-Scope-Hash and X-Query-Evaluated-At. */
+                scope_hash?: components["parameters"]["AnalystScopeHashQuery"];
                 /** @description Bounded WGS84 analyst study polygon */
                 geometry?: string;
                 /** @description Versioned admitted polygon scope */
@@ -12685,6 +15815,10 @@ export interface operations {
     listImageryCaptures: {
         parameters: {
             query?: {
+                /** @description JSON ScopeInput with fixed evaluated interval; legacy area/time conflicts are rejected. */
+                scope?: components["parameters"]["AnalystScopeQuery"];
+                /** @description Expected scope hash; replies echo X-Analyst-Scope-Hash and X-Query-Evaluated-At. */
+                scope_hash?: components["parameters"]["AnalystScopeHashQuery"];
                 /** @description Bounded WGS84 analyst study polygon */
                 geometry?: string;
                 /** @description Versioned admitted polygon scope */

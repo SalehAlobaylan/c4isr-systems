@@ -66,6 +66,15 @@ def configure(env):
         states[key] = {'state': state, 'nextAction': action}
         entry = {'id': 'local-' + key, 'sourceId': source_id(key), 'resource': RESOURCE, 'url': url,
                  'adapter': adapter, 'maxRequestsPerDay': quota}
+        # Opaque account identity is trusted local configuration. The two
+        # USGS endpoints share one allowance. Custom credential/account groups
+        # can be reviewed in the private configuration without exposing keys.
+        account_key = 'usgs' if key == 'usgs-history' else key
+        entry['accountBudget'] = record.get('accountBudget', {
+            'group': 'local-account-' + account_key,
+            'dailyCost': PROVIDERS[account_key][2],
+            'requestCost': 4 if key == 'opensky' else 1,
+            'concurrency': 1, 'minIntervalSeconds': 1})
         if state!='CONFIGURED':entry.update(gateState=state,gateNextAction=action)
         if token_env: entry['authTokenEnv'] = token_env
         if oauth:entry.update(oauthClientIdEnv='OPENSKY_CLIENT_ID',oauthClientSecretEnv='OPENSKY_CLIENT_SECRET')

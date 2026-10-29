@@ -1,0 +1,40 @@
+{
+  "schema": "emad.observed-map-sessions.v1",
+  "status": "NOT_RUN",
+  "synthetic": false,
+  "releaseFingerprint": null,
+  "caseContributorHumanIds": [],
+  "assistiveTechnologyEvidence": null,
+  "sessions": [],
+  "sessionRecordFields": {
+    "participantId": "Consented anonymous identifier; omit personal names",
+    "canonicalHumanId": "Opaque canonical identity; aliases remain the same person",
+    "observerId": "Appointed observer identifier",
+    "role": "analyst | reviewer | source-administrator | restricted-reader",
+    "startedAt": "ISO 8601 with timezone",
+    "endedAt": "ISO 8601 with timezone",
+    "locale": "Observed locale",
+    "timezone": "Observed timezone",
+    "device": "Browser/device/viewport/text enlargement",
+    "inputMethod": "Keyboard, pointer or assistive technology",
+    "baselineWorkflow": "Present workflow and comparable task",
+    "baselineSeconds": "Observed numeric duration",
+    "completionSeconds": "Observed numeric duration",
+    "assistance": "Observed interventions, including none",
+    "usefulness": "Participant assessment with limitations",
+    "explanation": "Participant explanation of exact area/period, coverage and uncertainty",
+    "outcome": "PASS | FAIL | BLOCKED",
+    "geography": [],
+    "selectionForms": [],
+    "evidenceStates": [],
+    "corrections": [],
+    "retestEvidence": [],
+    "evidence": [
+      {
+        "path": "Repository-local redacted observation record",
+        "sha256": "Exact file hash"
+      }
+    ],
+    "workflowChecks": []
+  }
+}

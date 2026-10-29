@@ -5,7 +5,10 @@ x-worker: &worker
   build:
     context: ../..
     dockerfile: deployments/Dockerfile.workers
+    args:
+      EMAD_PRODUCT_PROFILE: ${C4ISR_PRODUCT_PROFILE:-map}
   environment: &worker-env
+    C4ISR_PRODUCT_PROFILE: ${C4ISR_PRODUCT_PROFILE:-map}
     C4ISR_ENV: staging
     C4ISR_DATABASE_AUTH: 'true'
     C4ISR_DATABASE_URL_FILE: /run/secrets/database_url
@@ -36,6 +39,8 @@ services:
     build:
       context: ../..
       dockerfile: deployments/Dockerfile.workers
+      args:
+        EMAD_PRODUCT_PROFILE: ${C4ISR_PRODUCT_PROFILE:-map}
     entrypoint: [/app/bin/c4isr-server]
     environment:
       <<: *worker-env
@@ -68,6 +73,7 @@ services:
       - source: imagery_worker
         target: worker-imagery.token
   assets:
+    profiles: [historical-full]
     <<: *worker
     command: [--name, worker-assets, --feature, assets, --, /app/bin/emad-assets, -token-file, /run/secrets/worker-assets.token]
     secrets:
@@ -77,6 +83,7 @@ services:
       - source: asset_worker
         target: worker-assets.token
   recordings:
+    profiles: [historical-full]
     <<: *worker
     command: [--name, worker-recordings, --feature, recordings, --, /app/bin/emad-recordings, -token-file, /run/secrets/worker-recordings.token]
     secrets:
@@ -86,6 +93,7 @@ services:
       - source: recording_worker
         target: worker-recordings.token
   runtime:
+    profiles: [historical-full]
     <<: *worker
     network_mode: service:api
     environment:
@@ -106,6 +114,17 @@ services:
         target: worker-preparation.token
       - source: imagery_worker
         target: worker-imagery.token
+  case-delivery:
+    <<: *worker
+    profiles: [case-delivery]
+    entrypoint: [/app/bin/emad-delivery]
+    command: [-token-file, /run/secrets/delivery-author.token]
+    secrets:
+      - database_url
+      - object_access_key
+      - object_secret_key
+      - source: delivery_author
+        target: delivery-author.token
   connectors:
     <<: *worker
     # One exact-source identity per instance. Create separate services for each
@@ -132,3 +151,5 @@ secrets:
   recording_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-recordings.token'}
   preparation_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-preparation.token'}
   connector_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-usgs.token'}
+
+  delivery_author: {file: '${STAGING_SECRET_DIR:-./.secrets}/delivery-author.token'}

@@ -9,15 +9,21 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/acquisition"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/alerts"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/analystscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/arearule"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/areas"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/artifacts"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/assessments"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/assets"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/audit"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/catalog"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/classifications"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/commands"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/contentpurpose"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/contextpackage"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/coverage"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/eventrules"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/exerciseingest"
@@ -25,6 +31,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/geospatial"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/imagery"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/incidents"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/investigations"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/missions"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/modelassets"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/nativeexercise"
@@ -209,35 +216,43 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, options ..
 	// the state changes their handlers produced.
 	hub := realtime.NewHub(logger, bus, metrics)
 
-	scenarioSvc := scenarios.NewService(
-		scenarios.NewPostgresRepository(pool),
-		scenarios.NewLoader(func() string {
-			if ingestion.scenariosDir != "" {
-				return ingestion.scenariosDir
-			}
-			return cfg.ScenariosDir
-		}()),
-		scenarios.EngineDeps{
-			Ingress:         exerciseingest.NewService(pool, observationSvc, telemetrySvc),
-			ContextPackages: contextpackage.NewService(pool, artifactSvc),
-			Sources:         sourceSvc,
-			Assets:          assetSvc,
-			Observations:    observationSvc,
-			Telemetry:       telemetrySvc,
-			Geofences:       geofenceSvc,
-			Classifications: classificationSvc,
-			Assessments:     assessmentSvc,
-			Incidents:       incidentSvc,
-			Commands:        commandSvc,
-			Tracks:          trackSvc,
-			Logger:          logger,
-		},
-		bus,
-	)
+	var scenarioSvc *scenarios.Service
+	if !cfg.MapOnly() {
+		scenarioSvc = scenarios.NewService(
+			scenarios.NewPostgresRepository(pool),
+			scenarios.NewLoader(func() string {
+				if ingestion.scenariosDir != "" {
+					return ingestion.scenariosDir
+				}
+				return cfg.ScenariosDir
+			}()),
+			scenarios.EngineDeps{
+				Ingress:         exerciseingest.NewService(pool, observationSvc, telemetrySvc),
+				ContextPackages: contextpackage.NewService(pool, artifactSvc),
+				Sources:         sourceSvc,
+				Assets:          assetSvc,
+				Observations:    observationSvc,
+				Telemetry:       telemetrySvc,
+				Geofences:       geofenceSvc,
+				Classifications: classificationSvc,
+				Assessments:     assessmentSvc,
+				Incidents:       incidentSvc,
+				Commands:        commandSvc,
+				Tracks:          trackSvc,
+				Logger:          logger,
+			},
+			bus,
+		)
 
+	}
 	native := &nativeexercise.Service{Pool: pool, Sources: sourceSvc, Assets: assetSvc, Observations: observationSvc, Telemetry: telemetrySvc, Commands: commandSvc, Missions: missionSvc}
-	scenarioSvc.NativeRun = native.GetRun
+	if scenarioSvc != nil {
+		scenarioSvc.NativeRun = native.GetRun
+	}
 	clock := func(ctx context.Context, wall time.Time) time.Time {
+		if cfg.MapOnly() {
+			return wall
+		}
 		n := native.Clock(ctx, wall)
 		if n != wall {
 			return n
@@ -261,6 +276,8 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, options ..
 		publicevents:    publicevents.NewHandler(pool),
 		reference:       reference.NewHandler(reference.NewService(pool)),
 		contextPackages: contextpackage.NewHandler(contextpackage.NewService(pool, artifactSvc)),
+		acquisition:     acquisition.Service{Pool: pool, Ingestion: ingestionSvc},
+		coverage:        coverage.Service{Pool: pool, Ingestion: ingestionSvc},
 		publicingest:    publicingest.NewHandler(ingestionSvc),
 		observations:    observations.NewHandler(observationSvc),
 		assets:          assets.NewHandler(assetSvc),
@@ -281,7 +298,11 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, options ..
 		hub:             hub,
 	})
 	freshnessMonitor := telemetry.NewFreshnessMonitor(telemetry.NewPostgresRepository(pool), bus, metrics, freshnessPolicy)
-	staleMonitorCancel, staleMonitorDone := startFreshnessMonitor(freshnessMonitor, freshnessPolicy, logger, identityStore, clock)
+	var staleMonitorCancel context.CancelFunc
+	var staleMonitorDone <-chan struct{}
+	if !cfg.MapOnly() {
+		staleMonitorCancel, staleMonitorDone = startFreshnessMonitor(freshnessMonitor, freshnessPolicy, logger, identityStore, clock)
+	}
 
 	poolClosed = true
 	return &App{
@@ -387,6 +408,8 @@ type moduleHandlers struct {
 	clock           freshness.Clock
 	reference       *reference.Handler
 	publicevents    *publicevents.Handler
+	acquisition     acquisition.Service
+	coverage        coverage.Service
 	publicingest    *publicingest.Handler
 	sources         *sources.Handler
 	observations    *observations.Handler
@@ -435,16 +458,32 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 	router.Get("/metrics", metrics.Handler())
 
 	router.Route("/api/v1", func(r chi.Router) {
+		r.Use(contentpurpose.CatalogView)
+		r.Use(analystscope.Service{Pool: pool}.CatalogQueries)
+		contentpurpose.Service{Pool: pool}.Mount(r)
+		areas.Service{Pool: pool}.Mount(r)
+		analystscope.Service{Pool: pool}.Mount(r)
+		catalog.Service{Pool: pool}.Mount(r)
+		investigations.Service{Pool: pool, Store: h.blobStore}.Mount(r)
 		blobStore := h.blobStore
 		if blobStore == nil {
 			blobStore = artifacts.Unavailable{}
 		}
-		readiness.Service{Pool: pool, Store: blobStore, RuntimeBuilds: cfg.RuntimeBuilds}.Mount(r)
+		readiness.Service{Pool: pool, Store: blobStore, RuntimeBuilds: cfg.RuntimeBuilds, MapOnly: cfg.MapOnly()}.Mount(r)
 		r.Get("/auth/me", func(w http.ResponseWriter, req *http.Request) {
 			resources, err := store.SelectableResources(req.Context())
 			if err != nil {
 				httpx.Error(w, err)
 				return
+			}
+			if cfg.MapOnly() {
+				visible := resources[:0]
+				for _, resource := range resources {
+					if resource.Partition == access.PublicEvidence {
+						visible = append(visible, resource)
+					}
+				}
+				resources = visible
 			}
 			details, err := store.ResourceDetails(req.Context(), resources)
 			if err != nil {
@@ -458,6 +497,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 			}
 			httpx.JSON(w, http.StatusOK, map[string]any{
 				"operator":        identity,
+				"productProfile":  cfg.Profile(),
 				"permissions":     access.EffectivePermissions(req.Context()),
 				"resources":       resources,
 				"resourceDetails": details,
@@ -466,16 +506,16 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 				"resource":        func() access.Resource { _, resource, _ := access.From(req.Context()); return resource }(),
 			})
 		})
-		if h.studio != nil {
+		if !cfg.MapOnly() && h.studio != nil {
 			h.studio.Mount(r)
 		}
-		if h.runtime != nil {
+		if !cfg.MapOnly() && h.runtime != nil {
 			h.runtime.Mount(r)
 			if h.recordings != nil {
 				h.recordings.Mount(r)
 			}
 		}
-		if h.modelAssets != nil {
+		if !cfg.MapOnly() && h.modelAssets != nil {
 			h.modelAssets.Mount(r)
 		}
 		h.contextRecords.Mount(r)
@@ -487,6 +527,8 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 		}
 		h.sources.Mount(r)
 		h.publicingest.Mount(r)
+		h.acquisition.Mount(r)
+		h.coverage.Mount(r)
 		h.publicevents.Mount(r)
 		h.reference.Mount(r)
 		h.contextPackages.Mount(r)
@@ -503,7 +545,9 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 		h.assessments.Mount(r)
 		h.audit.Mount(r)
 		h.operators.Mount(r)
-		h.scenarios.Mount(r)
+		if !cfg.MapOnly() && h.scenarios != nil {
+			h.scenarios.Mount(r)
+		}
 		h.picture.Mount(r)
 		h.hub.Mount(r)
 	})
@@ -556,7 +600,7 @@ func verifyDatabase(ctx context.Context, pool *pgxpool.Pool) error {
 	}
 
 	var table *string
-	if err := pool.QueryRow(ctx, "SELECT CASE WHEN to_regclass('public.simulation_sensor_presets') IS NOT NULL AND to_regclass('public.simulation_recording_events') IS NOT NULL AND to_regclass('public.native_exercises') IS NOT NULL AND to_regclass('public.native_task_dispatch') IS NOT NULL AND to_regclass('public.native_projection_batches') IS NOT NULL AND to_regclass('public.simulation_scenes') IS NOT NULL AND to_regclass('public.simulation_runtime_runs') IS NOT NULL AND to_regclass('public.simulation_runtime_events') IS NOT NULL AND to_regclass('public.simulation_runtime_truth') IS NOT NULL AND to_regclass('public.model_asset_versions') IS NOT NULL AND to_regclass('public.model_asset_uploads') IS NOT NULL AND to_regclass('public.public_context_records') IS NOT NULL AND to_regclass('public.external_track_segments') IS NOT NULL AND to_regclass('public.external_track_associations') IS NOT NULL AND to_regclass('public.context_export_previews') IS NOT NULL AND to_regclass('public.assessment_revisions') IS NOT NULL AND to_regclass('public.imagery_jobs') IS NOT NULL AND to_regclass('public.imagery_scenes') IS NOT NULL AND to_regclass('public.artifacts') IS NOT NULL AND to_regclass('public.exercise_messages') IS NOT NULL AND to_regclass('public.simulation_actor_mappings') IS NOT NULL AND to_regclass('public.simulation_versions') IS NOT NULL AND to_regclass('public.context_packages') IS NOT NULL AND EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='observations' AND column_name='semantic_kind') THEN 'reference_datasets' END").Scan(&table); err != nil {
+	if err := pool.QueryRow(ctx, "SELECT CASE WHEN to_regclass('public.analyst_read_cursors') IS NOT NULL AND to_regclass('public.acquisition_requests') IS NOT NULL AND to_regclass('public.retrieval_profiles') IS NOT NULL AND to_regclass('public.investigations') IS NOT NULL AND to_regclass('public.geography_reference_requests') IS NOT NULL AND to_regclass('public.analyst_read_snapshots') IS NOT NULL AND to_regclass('public.content_purpose_revisions') IS NOT NULL AND to_regclass('public.simulation_sensor_presets') IS NOT NULL AND to_regclass('public.simulation_recording_events') IS NOT NULL AND to_regclass('public.native_exercises') IS NOT NULL AND to_regclass('public.native_task_dispatch') IS NOT NULL AND to_regclass('public.native_projection_batches') IS NOT NULL AND to_regclass('public.simulation_scenes') IS NOT NULL AND to_regclass('public.simulation_runtime_runs') IS NOT NULL AND to_regclass('public.simulation_runtime_events') IS NOT NULL AND to_regclass('public.simulation_runtime_truth') IS NOT NULL AND to_regclass('public.model_asset_versions') IS NOT NULL AND to_regclass('public.model_asset_uploads') IS NOT NULL AND to_regclass('public.public_context_records') IS NOT NULL AND to_regclass('public.external_track_segments') IS NOT NULL AND to_regclass('public.external_track_associations') IS NOT NULL AND to_regclass('public.context_export_previews') IS NOT NULL AND to_regclass('public.assessment_revisions') IS NOT NULL AND to_regclass('public.imagery_jobs') IS NOT NULL AND to_regclass('public.imagery_scenes') IS NOT NULL AND to_regclass('public.artifacts') IS NOT NULL AND to_regclass('public.exercise_messages') IS NOT NULL AND to_regclass('public.simulation_actor_mappings') IS NOT NULL AND to_regclass('public.simulation_versions') IS NOT NULL AND to_regclass('public.context_packages') IS NOT NULL AND EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='observations' AND column_name='semantic_kind') THEN 'reference_datasets' END").Scan(&table); err != nil {
 		return fmt.Errorf("check schema: %w", err)
 	}
 	if table == nil || *table == "" {

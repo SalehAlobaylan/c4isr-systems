@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "tasks": 24,
+  "gaps": 18,
+  "requirements": 54,
+  "acceptanceScenarios": 24,
+  "hardeningChecks": 12,
+  "qualification": "Planning consistency only; this checker does not execute application acceptance.",
+  "errors": [],
+  "faultsInjected": 12,
+  "faultsMissed": []
+}

@@ -6,12 +6,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/analystscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/app"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/areas"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/artifacts"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/imagery"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/imageryanalysis"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"io"
 	"net/http"
@@ -167,6 +170,33 @@ func TestP2CatalogueS3WorkerReproducibilityAndIndependentReview(t *testing.T) {
 		prepared = append(prepared, jid)
 	}
 	request := map[string]any{"requestKey": "change-1", "kind": "NDVI_CHANGE", "preparationIds": prepared, "parameters": map[string]any{"declineThreshold": .2, "minValidFraction": .5}}
+	scopeInput := analystscope.Input{Area: areas.Selection{Kind: "drawn", Name: "Scoped imagery fixture", Geometry: json.RawMessage(`{"type":"Polygon","coordinates":[[[39.15,21.48],[39.18,21.48],[39.18,21.50],[39.15,21.50],[39.15,21.48]]]}`)}, Temporal: queryscope.Temporal{Mode: "historical", Interval: &queryscope.Interval{From: time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2025, 3, 1, 0, 0, 0, 0, time.UTC)}, RevisionView: "latest", Timezone: "UTC"}}
+	scopeResolved, scopeErr := (analystscope.Service{Pool: f.h.pool}).Resolve(scopeContext(t, f.h, f.resource), scopeInput)
+	if scopeErr != nil {
+		t.Fatal(scopeErr)
+	}
+	for _, path := range []string{"/api/v1/imagery/scenes", "/api/v1/imagery/jobs", "/api/v1/imagery/captures", "/api/v1/assessments/intelligence"} {
+		call(f.manager, "GET", scopedCatalogURL(path, scopeResolved), nil, 200)
+	}
+	pairCheck := call(f.manager, "POST", "/api/v1/imagery/comparison-check", imagery.PairInput{Scope: scopeInput, BeforeID: prepared[0], AfterID: prepared[1], Parameters: imageryanalysis.Parameters{DeclineThreshold: .2, MinValidFraction: .5}}, 200)
+	if pairCheck["compatible"] != true || pairCheck["validCells"] != float64(15) {
+		t.Fatal("exact retained pair preflight", pairCheck)
+	}
+	insufficient := call(f.manager, "POST", "/api/v1/imagery/comparison-check", imagery.PairInput{Scope: scopeInput, BeforeID: prepared[0], AfterID: prepared[1], Parameters: imageryanalysis.Parameters{DeclineThreshold: .2, MinValidFraction: .99}}, 200)
+	if insufficient["compatible"] != false || insufficient["validCells"] != float64(15) {
+		t.Fatal("clear mask preflight accepted insufficient coverage", insufficient)
+	}
+	scopedRequest := map[string]any{"requestKey": "scope-contract-check", "kind": "NDVI_CHANGE", "preparationIds": prepared, "parameters": map[string]any{"declineThreshold": .2, "minValidFraction": .5}, "scope": scopeInput}
+	queuedScoped := call(f.manager, "POST", "/api/v1/imagery/jobs", scopedRequest, 201)
+	if queuedScoped["input"].(map[string]any)["scope"].(map[string]any)["scopeHash"] != scopeResolved.ScopeHash {
+		t.Fatalf("job lost area/period lineage: expected %s area %s got %s", p2JSON(scopeResolved), scopeResolved.Area.RevisionID, p2JSON(queuedScoped["input"].(map[string]any)["scope"]))
+	}
+	call(f.manager, "POST", "/api/v1/imagery/jobs/"+queuedScoped["id"].(string)+"/cancel", nil, 200)
+	badScope := scopeInput
+	badScope.Area = areas.Selection{Kind: "drawn", Geometry: json.RawMessage(`{"type":"Polygon","coordinates":[[[46,24],[47,24],[47,25],[46,25],[46,24]]]}`)}
+	scopedRequest["requestKey"] = "wrong-scope-check"
+	scopedRequest["scope"] = badScope
+	call(f.manager, "POST", "/api/v1/imagery/jobs", scopedRequest, 400)
 	submitted := call(f.manager, "POST", "/api/v1/imagery/jobs", request, 201)
 	jobID := submitted["id"].(string)
 	if again := call(f.manager, "POST", "/api/v1/imagery/jobs", request, 201); again["id"] != jobID {

@@ -21,15 +21,18 @@ def work(api, claim):
         directory,metadata=capture(job['input']['scene'],job['input']['aoi'],cancelled=stopped)
         if stopped.is_set():return
         source=job['sourceId']
-        subset=artifact(api,directory/'subset.json',source,'imagery_subset')
-        rgb=artifact(api,directory/'rgb.png',source,'imagery_preview','image/png')
-        quality=artifact(api,directory/'quality.png',source,'imagery_preview','image/png')
-        receipt=artifact(api,directory/'receipts.json',source,'imagery_capture')
+        admission=job['input']['scene']['admissionId']
+        subset=artifact(api,directory/'subset.json',source,'imagery_subset',admission_id=admission)
+        rgb=artifact(api,directory/'rgb.png',source,'imagery_preview','image/png',admission_id=admission)
+        quality=artifact(api,directory/'quality.png',source,'imagery_preview','image/png',admission_id=admission)
+        receipt=artifact(api,directory/'receipts.json',source,'imagery_capture',admission_id=admission)
         windows=[]
         for name in ['B04_10m.tif','B08_10m.tif','SCL_20m.tif','B03_10m.tif','B02_10m.tif']:
             if stopped.is_set():return
-            windows.append(artifact(api,directory/name,source,'imagery_window','image/tiff')['id'])
-        prepared=api.call('POST','/imagery/jobs',{'requestKey':'capture-prepare-'+subset['sha256'][:32],'kind':'PREPARE','sceneId':job['input']['scene']['id'],'artifactId':subset['id']})
+            windows.append(artifact(api,directory/name,source,'imagery_window','image/tiff',admission_id=admission)['id'])
+        scope=job['input'].get('scope')
+        scope_input={'scope':{'area':{'revisionId':scope['area']['revisionId']},'temporal':{k:v for k,v in scope['temporal'].items() if k in ('mode','interval','revisionView','asOf','timezone','backgroundImagery')}}} if scope else {}
+        prepared=api.call('POST','/imagery/jobs',{'requestKey':'capture-prepare-'+subset['sha256'][:32]+('-'+scope['scopeHash'][:16] if scope else ''),'kind':'PREPARE','captureId':job['id'],'sceneId':job['input']['scene']['id'],'artifactId':subset['id'],**scope_input})
         if prepared['status']!='SUCCEEDED':work_once('worker-imagery','emad-imagery')
         for _ in range(120):
             if stopped.is_set():return

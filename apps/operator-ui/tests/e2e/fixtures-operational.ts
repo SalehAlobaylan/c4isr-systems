@@ -1,4 +1,5 @@
 import { mockSession } from './session'
+import {mockAnalystScope} from './fixtures-analyst-scope'
 /**
  * Deterministic operational fixture shared by the end-to-end suites.
  *
@@ -183,9 +184,15 @@ export function list<T>(items: T[]) {
 }
 
 export async function json(route: Route, body: unknown, status = 200): Promise<void> {
+  const query=new URL(route.request().url()).searchParams,rawScope=query.get('scope')
+  if(rawScope&&body&&typeof body==='object'&&'items'in body&&Array.isArray(body.items)){
+    const input=JSON.parse(rawScope),interval=input.temporal?.interval
+    if(interval){body={...body,items:body.items.filter((item:any)=>{const stamp=item.acquiredAt??item.input?.scene?.acquiredAt;return !stamp||Date.parse(stamp)>=Date.parse(interval.from)&&Date.parse(stamp)<Date.parse(interval.to)})};(body as any).total=(body as any).items.length}
+  }
   await route.fulfill({
     status,
     contentType: 'application/json',
+    headers: {'X-Analyst-Scope-Hash':new URL(route.request().url()).searchParams.get('scope_hash')??''},
     body: JSON.stringify(body),
   })
 }
@@ -228,6 +235,10 @@ export async function mockOperationalWorkflow(page: Page): Promise<void> {
     const method = request.method()
     const path = new URL(request.url()).pathname
     const query = new URL(request.url()).searchParams
+    if(method==='GET'&&path==='/api/v1/geography/availability'){await json(route,{regionId:query.get('region_id'),sourceId:'fixture-geography',releaseId:query.get('release_id')??'',logicalKey:'fixture',regions:0,places:0,state:'legacy_unqualified',meaning:'Synthetic protocol fixture, no installed reference-depth qualification.',nextAction:'request_reference_import'});return}
+    if(method==='GET'&&path==='/api/v1/geography/reference-requests'){await json(route,{items:[],limit:100});return}
+    if(method==='GET'&&path.startsWith('/api/v1/sources/')&&path.endsWith('/profiles')){await json(route,{items:[],limit:64});return}
+
 
     if (path === '/api/v1/picture/window') {
       await json(route, { earliest: windowStart.toISOString(), latest: windowEnd.toISOString() })
@@ -544,4 +555,5 @@ export async function mockOperationalWorkflow(page: Page): Promise<void> {
 // a component. Failing here names the route instead.
 await json(route, { error: { code: 'not_mocked', message: `no mock for ${method} ${path}` } }, 501)
   })
+  await mockAnalystScope(page)
 }

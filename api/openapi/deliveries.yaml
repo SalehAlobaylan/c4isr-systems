@@ -1,0 +1,257 @@
+paths:
+  /api/v1/investigations/{id}/delivery-jobs:
+    post:
+      operationId: submitCaseDelivery
+      parameters:
+      - &id001
+        name: id
+        in: path
+        required: true
+        schema: &id003
+          type: string
+      responses:
+        '202':
+          description: Durable case delivery operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryJob'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryInput'
+    get:
+      operationId: listCaseDeliveries
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: Durable case delivery operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DeliveryJob'
+                  limit: &id002
+                    type: integer
+                required:
+                - items
+                - limit
+  /api/v1/delivery-jobs/{id}:
+    get:
+      operationId: getCaseDelivery
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: Durable case delivery operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryJob'
+  /api/v1/delivery-jobs/{id}/cancel:
+    post:
+      operationId: cancelCaseDelivery
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: Durable case delivery operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryJob'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expectedAttempt: *id002
+              required:
+              - expectedAttempt
+  /api/v1/delivery-jobs/{id}/retry:
+    post:
+      operationId: retryCaseDelivery
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: Durable case delivery operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryJob'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expectedAttempt: *id002
+              required:
+              - expectedAttempt
+  /api/v1/outputs/{id}/bundle:
+    get:
+      operationId: getOutputBundle
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: Durable case delivery operation
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+  /api/v1/outputs/{id}/attestation:
+    get:
+      operationId: getOutputAttestation
+      parameters:
+      - *id001
+      responses:
+        '200':
+          description: Durable case delivery operation
+          content:
+            application/json:
+              schema:
+                $ref: ./case-workflows.yaml#/components/schemas/CaseReviewEvent
+components:
+  schemas:
+    EnvironmentPreparationInput:
+      type: object
+      properties:
+        datasetIds:
+          type: array
+          maxItems: 16
+          items: *id003
+        geoidId: *id003
+        horizontalCrs:
+          type: string
+          enum:
+          - EPSG:4326
+        outputVerticalDatum:
+          type: string
+          enum:
+          - WGS84_ELLIPSOID
+        origin:
+          type: object
+          properties:
+            longitude: &id004
+              type: number
+            latitude: *id004
+            height: *id004
+          required:
+          - longitude
+          - latitude
+          - height
+        qualification:
+          type: object
+          properties:
+            horizontalToleranceM: *id004
+            verticalToleranceM: *id004
+            method: *id003
+            controls:
+              type: array
+              minItems: 3
+              maxItems: 32
+              items:
+                type: object
+                properties:
+                  longitude: *id004
+                  latitude: *id004
+                  ellipsoidHeight: *id004
+                  east: *id004
+                  north: *id004
+                  up: *id004
+                  provenance: *id003
+                required:
+                - longitude
+                - latitude
+                - ellipsoidHeight
+                - east
+                - north
+                - up
+                - provenance
+            maxPixels: *id002
+            maxFeatures: *id002
+            maxTriangles: *id002
+            maxBytes: *id002
+            maxRamBytes: *id002
+            maxTempBytes: *id002
+            maxSeconds: *id002
+          required:
+          - horizontalToleranceM
+          - verticalToleranceM
+          - method
+          - controls
+          - maxPixels
+          - maxFeatures
+          - maxTriangles
+          - maxBytes
+          - maxRamBytes
+          - maxTempBytes
+          - maxSeconds
+      required:
+      - datasetIds
+      - horizontalCrs
+      - outputVerticalDatum
+      - origin
+      - qualification
+    DeliveryInput:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+          - brief
+          - environment
+        output:
+          $ref: ./case-workflows.yaml#/components/schemas/CompositeOutputInput
+        environment:
+          $ref: '#/components/schemas/EnvironmentPreparationInput'
+      required:
+      - kind
+      - output
+    DeliveryJob:
+      type: object
+      properties:
+        id: *id003
+        caseId: *id003
+        outputId: *id003
+        creatorHumanId: *id003
+        kind: *id003
+        state: *id003
+        workerBuild: *id003
+        failureReason: *id003
+        attempt: *id002
+        createdAt:
+          type: string
+          format: date-time
+        leaseUntil:
+          type:
+          - string
+          - 'null'
+          format: date-time
+        nextAttemptAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - caseId
+      - outputId
+      - creatorHumanId
+      - kind
+      - state
+      - workerBuild
+      - failureReason
+      - attempt
+      - createdAt

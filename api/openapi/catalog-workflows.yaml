@@ -1,0 +1,249 @@
+paths:
+  /api/v1/catalog/reads:
+    post:
+      operationId: catalogInput
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogInput'
+      responses:
+        '200':
+          description: Bounded current-authority read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogPage'
+  /api/v1/imagery/capture-proposal:
+    post:
+      operationId: captureProposalInput
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaptureProposalInput'
+      responses:
+        '200':
+          description: Bounded current-authority read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaptureProposal'
+  /api/v1/imagery/comparison-check:
+    post:
+      operationId: pairInput
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PairInput'
+      responses:
+        '200':
+          description: Bounded current-authority read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PairCheck'
+  /api/v1/analyst-scope/reads/{id}/records:
+    get:
+      operationId: readIndividualRecords
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: &id001
+          type: string
+      - name: family
+        in: query
+        required: true
+        schema: *id001
+      - name: aggregate_id
+        in: query
+        required: false
+        schema: *id001
+      - name: cursor
+        in: query
+        required: false
+        schema: *id001
+      - name: limit
+        in: query
+        required: false
+        schema: &id002
+          type: integer
+      responses:
+        '200':
+          description: Original individual revisions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordPage'
+components:
+  schemas:
+    CaseRevision:
+      type: object
+      properties:
+        caseId: *id001
+        revisionId: *id001
+      required:
+      - caseId
+      - revisionId
+    CatalogInput:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+          - geography
+          - scenes
+          - captures
+          - jobs
+          - findings
+          - investigations
+        scope:
+          $ref: ./openapi.yaml#/components/schemas/ScopeInput
+        filters:
+          type: object
+          properties:
+            sourceId: *id001
+            query: *id001
+            parent: *id001
+            kind: *id001
+            releaseId: *id001
+            editionId: *id001
+            status: *id001
+          required: []
+        limit: *id002
+        zoom: *id002
+        snapshotId: *id001
+        cursor: *id001
+        replaceSnapshotId: *id001
+      required:
+      - kind
+    CatalogPage:
+      type: object
+      properties:
+        snapshotId: *id001
+        kind: *id001
+        items:
+          type: array
+          items: &id003
+            type: object
+            additionalProperties: true
+        total:
+          type:
+          - integer
+          - 'null'
+        returned: *id002
+        offset: *id002
+        representation: *id001
+        state: *id001
+        countMeaning: *id001
+        evaluatedAt: *id001
+        expiresAt: *id001
+        hasMore: &id004
+          type: boolean
+        nextCursor: *id001
+      required:
+      - snapshotId
+      - kind
+      - items
+      - total
+      - returned
+      - offset
+      - representation
+      - state
+      - countMeaning
+      - evaluatedAt
+      - expiresAt
+      - hasMore
+    RecordPage:
+      type: object
+      properties:
+        snapshotId: *id001
+        family: *id001
+        items:
+          type: array
+          items: *id003
+        total: *id002
+        returned: *id002
+        hasMore: *id004
+        nextCursor: *id001
+      required:
+      - snapshotId
+      - family
+      - items
+      - total
+      - returned
+      - hasMore
+    CaptureProposalInput:
+      type: object
+      properties:
+        scope:
+          $ref: ./openapi.yaml#/components/schemas/ScopeInput
+        sceneId: *id001
+        aoi:
+          $ref: ./openapi.yaml#/components/schemas/SourceAOI
+      required:
+      - scope
+      - sceneId
+    CaptureProposal:
+      type: object
+      properties:
+        scope:
+          $ref: ./openapi.yaml#/components/schemas/ScopeSnapshot
+        sceneId: *id001
+        sceneGeometry: *id003
+        suggestedAoi:
+          $ref: ./openapi.yaml#/components/schemas/SourceAOI
+        proposedAoi:
+          $ref: ./openapi.yaml#/components/schemas/SourceAOI
+        supported: *id004
+        valid: *id004
+        reasons: &id005
+          type: array
+          items: *id001
+        meaning: *id001
+      required:
+      - scope
+      - sceneId
+      - sceneGeometry
+      - supported
+      - valid
+      - reasons
+      - meaning
+    PairInput:
+      type: object
+      properties:
+        scope:
+          $ref: ./openapi.yaml#/components/schemas/ScopeInput
+        beforeId: *id001
+        afterId: *id001
+        parameters:
+          $ref: ./openapi.yaml#/components/schemas/ImageryParameters
+      required:
+      - scope
+      - beforeId
+      - afterId
+      - parameters
+    PairCheck:
+      type: object
+      properties:
+        compatible: *id004
+        reasons: *id005
+        validCells: *id002
+        totalCells: *id002
+        clearFraction:
+          type: number
+        limitations: *id005
+        evaluatedAt: *id001
+      required:
+      - compatible
+      - reasons
+      - validCells
+      - totalCells
+      - clearFraction
+      - limitations
+      - evaluatedAt

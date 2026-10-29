@@ -1,4 +1,4 @@
-"""Retain and admit world navigation and Saudi subdivisions; no feed expansion."""
+"""Install source-backed regional navigation profiles; retain the historical import explicitly."""
 import io
 import json
 import zipfile
@@ -20,7 +20,7 @@ def records(dataset, name):
         return [(row.record.as_dict(),shape(row.shape.__geo_interface__)) for row in reader.iterShapeRecords()],acquisition
 
 
-def install(api):
+def install_legacy(api):
     editions=[]
     countries,receipt=records('110m_cultural/ne_110m_admin_0_countries','navigation-world-countries')
     features=[]
@@ -70,6 +70,11 @@ def install(api):
     return admitted
 
 
+def install(api, profile=None):
+    from regional_geography import install as install_regional
+    return install_regional(api,profile,loader=records)
+
+
 if __name__=='__main__':
-    from install_local import API
-    install(API())
+    from regional_geography import main
+    main()

@@ -73,7 +73,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		result, executeErr := svc.Execute(fresh, *source)
+		result, executeErr := svc.RunScheduled(fresh, *source)
 		if *once {
 			if executeErr != nil {
 				return executeErr

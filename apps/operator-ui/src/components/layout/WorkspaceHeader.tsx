@@ -10,7 +10,7 @@ import { WorkspaceChooser } from '@/components/navigation/WorkspaceChooser'
 
 /** Navigation chooses authorized resources; it never changes account identity. */
 export function WorkspaceHeader() {
-  const { session, select, prefix, signal } = useWorkspace()
+  const { session, select, prefix, signal, connectionWarning, revalidate } = useWorkspace()
   const { status } = useRealtime()
   const location = useLocation(),path=location.pathname
   const more=useRef<HTMLDetailsElement>(null)
@@ -23,6 +23,7 @@ export function WorkspaceHeader() {
   const [chooserRequest,setChooserRequest]=useState(0)
   const chooseExercise=()=>{if(more.current)more.current.open=false;setChooserRequest(value=>value+1)}
   const cache=useQueryClient()
+  const mapOnly=session.productProfile==='map'
   const publicArea = session.resource.partition === 'PUBLIC_EVIDENCE'
   const input = session.resource.partition === 'EXERCISE_INPUT'
   const can = (p: string) => session.permissions.includes(p)
@@ -62,7 +63,7 @@ export function WorkspaceHeader() {
       <Link to="/" className="workspace-brand" aria-label="EMAD Home"><span aria-hidden="true">E</span> EMAD</Link>
       <div className="workspace-area" aria-label="Product area">
         <button className={publicArea ? 'is-active' : ''} aria-pressed={publicArea} disabled={!publicResource} title={publicResource?'Open Public Context':'This account has no Public Context grant'} onClick={()=>publicResource&&void change(resourceKey(publicResource))}>Public Context</button>
-        <button className={!publicArea ? 'is-active' : ''} aria-pressed={!publicArea} disabled={openingSimulation} onClick={()=>void openSimulation()}>{openingSimulation?'Opening…':'Simulation'}</button>
+        {!mapOnly&&<button className={!publicArea ? 'is-active' : ''} aria-pressed={!publicArea} disabled={openingSimulation} onClick={()=>void openSimulation()}>{openingSimulation?'Opening…':'Simulation'}</button>}
       </div>
       <div className="workspace-identity">
         <span className="workspace-account" title={`Registered operator: ${session.operator.id}`}>{session.operator.name}</span>
@@ -87,12 +88,13 @@ export function WorkspaceHeader() {
         <WorkspaceChooser resources={resources} onChoose={change} openRequest={chooserRequest}/>
         {!input && <span className="workspace-connection" data-connected={status === 'connected'} title="Event connection only. Source freshness is reported separately.">{status === 'connected' ? 'Events connected' : `Events ${status}`}</span>}
         <details ref={more} className="workspace-more" onKeyDown={e=>{if(e.key==='Escape'&&more.current){more.current.open=false;more.current.querySelector('summary')?.focus()}}}><summary aria-label="More workspaces">More</summary><nav aria-label="Supporting workspaces">
-          <Link to="/">Home</Link>{publicArea ? <><Link to="/weather-reports">Weather & official reports</Link><Link to="/external-tracks">Aircraft & vessels</Link><Link to="/simulation-studio">Simulation Studio</Link></> : !input && <><Link to="/scenarios">Legacy scenarios</Link><Link to="/assets">Controlled assets</Link><Link to="/board">Operations board</Link><Link to="/alerts">Alerts</Link><Link to="/incidents">Incidents</Link></>}
-          {exerciseResource&&publicArea&&<button className="text-left p-2" onClick={chooseExercise}>Choose exercise COP</button>}
+          <Link to="/">Home</Link>{publicArea ? <><Link to="/weather-reports">Weather & official reports</Link><Link to="/external-tracks">Aircraft & vessels</Link>{!mapOnly&&<Link to="/simulation-studio">Simulation Studio</Link>}</> : !input && <><Link to="/scenarios">Legacy scenarios</Link><Link to="/assets">Controlled assets</Link><Link to="/board">Operations board</Link><Link to="/alerts">Alerts</Link><Link to="/incidents">Incidents</Link></>}
+          {!mapOnly&&exerciseResource&&publicArea&&<button className="text-left p-2" onClick={chooseExercise}>Choose exercise COP</button>}
           {!input && <Link to="/timeline">Audit history</Link>}
         </nav></details>
       </div>
     </div>
+    {connectionWarning&&<div className="workspace-connection-warning" role="status">{connectionWarning} <button className="ux-button" onClick={()=>void revalidate()}>Retry connection</button></div>}
     {error && <p className="workspace-error" role="alert">{error}</p>}
   </div>
 }

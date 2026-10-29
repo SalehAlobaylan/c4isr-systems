@@ -25,18 +25,41 @@ tasks:
     desc: Stop the supported development supervisor and workers, preserving database and storage
     cmds:
       - python scripts/ops/local.py stop
-  local:backup:
-    desc: Create and verify a paired private database and object backup (stop task dev first)
+  local:web:entry:
+    desc: Keep the stable loopback browser address connected to the regular running local UI
     cmds:
-      - '"{{.RECOVERY_PYTHON}}" scripts/ops/paired_backup.py backup'
+      - node scripts/ops/local_web_entry.mjs --port 5198 --target "{{.C4ISR_WEB_ORIGIN | default "http://localhost:5173"}}"
+  local:backup:
+    desc: Create a paired backup after stopping every writer (requires QUIESCED=true)
+    requires:
+      vars: [QUIESCED]
+    preconditions:
+      - sh: 'test "{{.QUIESCED}}" = "true"'
+        msg: Stop all writers and explicitly confirm QUIESCED=true
+    cmds:
+      - '"{{.RECOVERY_PYTHON}}" scripts/ops/paired_backup.py backup --quiesced'
+  map:qualify:sample:
+    desc: Run an isolated synthetic five-session ten-profile sample (does not qualify MAP-6)
+    requires:
+      vars: [OUTPUT]
+    cmds:
+      - '"{{.RECOVERY_PYTHON}}" scripts/ops/qualify_map_first.py sample --output "{{.OUTPUT}}" --seconds {{.SECONDS | default "5"}}'
   local:restore:test:
     desc: Restore the latest paired backup into isolated containers and verify referenced content
     cmds:
       - '"{{.RECOVERY_PYTHON}}" scripts/ops/paired_backup.py restore-test'
   dev:
-    desc: Start the complete local API, web application and scoped workers
+    desc: Start the map API, web application and public workers
     cmds:
       - python scripts/ops/local.py dev
+  dev:historical:
+    desc: Start the preserved full historical installation explicitly
+    cmds:
+      - python scripts/ops/local.py dev --profile historical-full
+  local:setup:historical:
+    desc: Install preserved historical workers and development identities explicitly
+    cmds:
+      - python scripts/ops/local.py setup --profile historical-full
   default:
     desc: List available tasks
     cmds:
@@ -156,6 +179,7 @@ tasks:
     dir: apps/operator-ui
     env:
       VITE_API_TOKEN: '{{.C4ISR_API_TOKEN | default "dev-operator-token"}}'
+      VITE_LOCAL_AUTO_ENTRY: '{{if .C4ISR_API_TOKEN}}false{{else}}true{{end}}'
       VITE_API_PROXY_TARGET: '{{.C4ISR_API_PROXY_TARGET | default (printf "http://localhost:%s" (.C4ISR_DEV_PORT | default "8080"))}}'
     cmds:
       - pnpm dev

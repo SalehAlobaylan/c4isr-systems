@@ -13,25 +13,28 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Filters struct {
-	Geometry      string               `json:"geometry,omitempty"`
-	HideWithdrawn bool                 `json:"-"`
-	RegionID      string               `json:"regionId,omitempty"`
-	View          string               `json:"view"`
-	AsOf          *time.Time           `json:"asOf,omitempty"`
-	Revisions     string               `json:"revisions"`
-	SourceID      string               `json:"sourceId,omitempty"`
-	Phenomenon    string               `json:"phenomenon,omitempty"`
-	Quality       string               `json:"quality,omitempty"`
-	ObservedFrom  *time.Time           `json:"observedFrom,omitempty"`
-	ObservedTo    *time.Time           `json:"observedTo,omitempty"`
-	Bounds        *publicingest.Bounds `json:"bounds,omitempty"`
-	Limit         int                  `json:"limit"`
-	Offset        int                  `json:"offset"`
+	EndExclusive     bool                 `json:"endExclusive,omitempty"`
+	ResolvedGeometry bool                 `json:"-"`
+	Geometry         string               `json:"geometry,omitempty"`
+	HideWithdrawn    bool                 `json:"-"`
+	RegionID         string               `json:"regionId,omitempty"`
+	View             string               `json:"view"`
+	AsOf             *time.Time           `json:"asOf,omitempty"`
+	Revisions        string               `json:"revisions"`
+	SourceID         string               `json:"sourceId,omitempty"`
+	Phenomenon       string               `json:"phenomenon,omitempty"`
+	Quality          string               `json:"quality,omitempty"`
+	ObservedFrom     *time.Time           `json:"observedFrom,omitempty"`
+	ObservedTo       *time.Time           `json:"observedTo,omitempty"`
+	Bounds           *publicingest.Bounds `json:"bounds,omitempty"`
+	Limit            int                  `json:"limit"`
+	Offset           int                  `json:"offset"`
 }
 type ViewMeaning struct {
 	Mode           string     `json:"mode"`
@@ -46,7 +49,18 @@ func (f Filters) Meaning() ViewMeaning {
 	return ViewMeaning{f.View, f.AsOf, meaning, "Catalogue publication time recorded in its transaction, not a physical commit timestamp; separate from provider revision/acquisition and receipt time.", "Provider VIIRS confidence class or USGS review status; not an EMAD assessment confidence."}
 }
 func ParseFilters(q url.Values, now time.Time) (Filters, error) {
+	return parseFilters(q, now, false)
+}
+
+// ParseScopeFilters accepts geometry already validated by the area resolver.
+// Legacy filter semantics and geometry budgets remain unchanged.
+func ParseScopeFilters(q url.Values, now time.Time) (Filters, error) {
+	return parseFilters(q, now, true)
+}
+func parseFilters(q url.Values, now time.Time, resolved bool) (Filters, error) {
 	f := Filters{View: q.Get("view"), Revisions: q.Get("revisions"), SourceID: q.Get("source_id"), Phenomenon: q.Get("phenomenon"), Quality: q.Get("quality"), Limit: 100}
+	f.EndExclusive = resolved
+	f.ResolvedGeometry = resolved
 	bad := func() (Filters, error) {
 		return f, apperr.Validation("invalid public evidence filter or historical time selection")
 	}
@@ -80,7 +94,7 @@ func ParseFilters(q url.Values, now time.Time) (Filters, error) {
 		return &t, nil
 	}
 	f.Geometry = q.Get("geometry")
-	if f.Geometry != "" {
+	if f.Geometry != "" && !resolved {
 		if e := ValidateStudyGeometry(f.Geometry, false); e != nil {
 			return f, e
 		}
@@ -102,7 +116,11 @@ func ParseFilters(q url.Values, now time.Time) (Filters, error) {
 	if f.ObservedTo, err = parseTime("observed_to"); err != nil {
 		return bad()
 	}
-	if f.ObservedFrom != nil && f.ObservedTo != nil && (f.ObservedTo.Before(*f.ObservedFrom) || f.ObservedTo.Sub(*f.ObservedFrom) > 366*24*time.Hour) {
+	maxInterval := 366 * 24 * time.Hour
+	if resolved {
+		maxInterval = queryscope.MaxInterval
+	}
+	if f.ObservedFrom != nil && f.ObservedTo != nil && (f.ObservedTo.Before(*f.ObservedFrom) || f.ObservedTo.Sub(*f.ObservedFrom) > maxInterval) {
 		return bad()
 	}
 	if len(f.SourceID) > 512 || len(f.Phenomenon) > 100 || (f.Phenomenon != "" && !regexp.MustCompile(`^[a-z][a-z0-9_.-]*$`).MatchString(f.Phenomenon)) {
@@ -169,10 +187,10 @@ const historyQuery = `WITH eligible AS (
 ),selected AS(
  SELECT * FROM ranked WHERE $4::text='all' OR ordinal=1
 ),filtered AS(
- SELECT COALESCE(o.position::geometry,ST_PointOnSurface(o.area::geometry)) AS display_position,s.evidence_id,s.known_at,s.revision_at,s.document||jsonb_build_object('knownAt',s.known_at,'effectiveAt',s.effective_at,'effectiveBasis',s.effective_basis,'qualityClass',s.quality_class) AS document
- FROM selected s LEFT JOIN observations o ON o.id=s.observation_id AND o.scope_id=s.scope_id
+ SELECT COALESCE(o.position::geometry,ST_PointOnSurface(o.area::geometry)) AS display_position,s.evidence_id,s.known_at,s.revision_at,s.document||jsonb_build_object('displayPosition',ST_AsGeoJSON(COALESCE(o.position::geometry,ST_PointOnSurface(o.area::geometry)))::jsonb,'knownAt',s.known_at,'effectiveAt',s.effective_at,'effectiveBasis',s.effective_basis,'qualityClass',s.quality_class,'currentValidity',jsonb_build_object('evidenceId',s.evidence_id,'currentEvidenceId',head.evidence_id,'state',CASE WHEN COALESCE((head.document#>>'{reported,withdrawn}')::boolean,false)THEN 'withdrawn_by_provider' WHEN head.evidence_id IS NULL THEN 'unavailable' WHEN head.evidence_id=s.evidence_id THEN 'current_provider_report' ELSE 'superseded_provider_report' END,'evaluatedAt',clock_timestamp(),'meaning','Current retained provider status, separate from historical interpretation; not independent verification.')) AS document
+ FROM selected s LEFT JOIN observations o ON o.id=s.observation_id AND o.scope_id=s.scope_id LEFT JOIN public_event_current current_head ON current_head.source_id=s.source_id AND current_head.scope_id=s.scope_id AND current_head.provider_record_id=s.provider_record_id LEFT JOIN public_event_revisions head ON head.evidence_id=current_head.evidence_id AND head.scope_id=s.scope_id
  WHERE ($5::text='' OR s.document#>>'{reported,type}'=$5) AND ($6::text='' OR s.quality_class=$6)
- AND ($7::timestamptz IS NULL OR o.observed_at>=$7) AND ($8::timestamptz IS NULL OR o.observed_at<=$8)
+ AND ($7::timestamptz IS NULL OR o.observed_at>=$7) AND ($8::timestamptz IS NULL OR CASE WHEN $21::boolean THEN o.observed_at<$8 ELSE o.observed_at<=$8 END)
  AND (NOT $9::boolean OR ST_Intersects(o.position::geometry,ST_MakeEnvelope($10,$11,$12,$13,4326)) OR ST_Intersects(o.area::geometry,ST_MakeEnvelope($10,$11,$12,$13,4326)))
  AND (NOT $20::bool OR NOT COALESCE((s.document#>>'{reported,withdrawn}')::bool,false))
  AND ($19::text='' OR ST_Intersects(o.position::geometry,ST_SetSRID(ST_GeomFromGeoJSON(NULLIF($19,'')),4326)) OR ST_Intersects(o.area::geometry,ST_SetSRID(ST_GeomFromGeoJSON(NULLIF($19,'')),4326)))
@@ -199,7 +217,7 @@ func Query(ctx context.Context, pool *pgxpool.Pool, f Filters, selectedID string
 	}
 	if f.Geometry != "" {
 		var valid bool
-		if e := ValidateStudyGeometry(f.Geometry, false); e != nil {
+		if e := validateQueryGeometry(f); e != nil {
 			return result, e
 		}
 		if e := platformdb.Scoped(pool).QueryRow(ctx, `SELECT ST_IsValid(ST_SetSRID(ST_GeomFromGeoJSON($1),4326))`, f.Geometry).Scan(&valid); e != nil {
@@ -214,11 +232,26 @@ func Query(ctx context.Context, pool *pgxpool.Pool, f Filters, selectedID string
 		bounds = *f.Bounds
 	}
 	var raw []byte
-	err = platformdb.Scoped(pool).QueryRow(ctx, historyQuery, f.SourceID, f.View, f.AsOf, f.Revisions, f.Phenomenon, f.Quality, f.ObservedFrom, f.ObservedTo, f.Bounds != nil, bounds.West, bounds.South, bounds.East, bounds.North, f.Limit, f.Offset, selectedID, history, f.RegionID, f.Geometry, f.HideWithdrawn).Scan(&result.Total, &raw)
+	err = platformdb.Scoped(pool).QueryRow(ctx, historyQuery, f.SourceID, f.View, f.AsOf, f.Revisions, f.Phenomenon, f.Quality, f.ObservedFrom, f.ObservedTo, f.Bounds != nil, bounds.West, bounds.South, bounds.East, bounds.North, f.Limit, f.Offset, selectedID, history, f.RegionID, f.Geometry, f.HideWithdrawn, f.EndExclusive).Scan(&result.Total, &raw)
 	if err != nil {
 		return result, err
 	}
 	err = json.Unmarshal(raw, &result.Items)
 	result.Truncated = result.Total > f.Offset+len(result.Items)
 	return result, err
+}
+
+func validateQueryGeometry(f Filters) error {
+	if f.ResolvedGeometry {
+		return nil
+	}
+	return ValidateStudyGeometry(f.Geometry, false)
+}
+
+// ScopeFilters bridges a resolved scope without reinterpreting legacy URLs.
+func ScopeFilters(ctx context.Context, q url.Values) (Filters, error) {
+	if t, ok := queryscope.From(ctx); ok {
+		return ParseScopeFilters(q, t.EvaluatedAt)
+	}
+	return ParseFilters(q, time.Now().UTC())
 }

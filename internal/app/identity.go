@@ -55,6 +55,17 @@ func identityResolver(cfg config.Config, store *access.Store, lookup httpx.Opera
 			return nil, httpx.Identity{}, err
 		}
 		selected := session.Resource
+		if cfg.MapOnly() && resourceSelection(r, "X-EMAD-Partition", "partition") == "" {
+			// An old saved exercise default cannot choose the map product's entry.
+			for _, grant := range session.Principal.Grants {
+				if grant.Resource.Partition == access.PublicEvidence && grant.Resource.RunID == "" {
+					if _, bindErr := access.Bind(ctx, session.Principal, grant.Resource, nil); bindErr == nil {
+						selected = grant.Resource
+						break
+					}
+				}
+			}
+		}
 		if v := resourceSelection(r, "X-EMAD-Workspace-ID", "workspaceId"); v != "" {
 			selected.WorkspaceID = v
 		}
@@ -74,7 +85,10 @@ func identityResolver(cfg config.Config, store *access.Store, lookup httpx.Opera
 		if len(segments) >= 5 && segments[2] == "scenarios" && segments[3] == "runs" {
 			selected.RunID = segments[4]
 		}
-		bound, err := store.BindSession(ctx, session, selected, resourceSelection(r, "X-EMAD-Workspace-ID", "workspaceId") == "" && resourceSelection(r, "X-EMAD-Environment-ID", "environmentId") == "" && resourceSelection(r, "X-EMAD-Partition", "partition") == "" && resourceSelection(r, "X-EMAD-Run-ID", "runId") == "")
+		if cfg.MapOnly() && selected.Partition != access.PublicEvidence {
+			return nil, httpx.Identity{}, apperr.Forbidden("this deployment serves Public Context; historical facilities require the historical-full profile")
+		}
+		bound, err := store.BindSession(ctx, session, selected, !cfg.MapOnly() && resourceSelection(r, "X-EMAD-Workspace-ID", "workspaceId") == "" && resourceSelection(r, "X-EMAD-Environment-ID", "environmentId") == "" && resourceSelection(r, "X-EMAD-Partition", "partition") == "" && resourceSelection(r, "X-EMAD-Run-ID", "runId") == "")
 		if err != nil {
 			return nil, httpx.Identity{}, err
 		}

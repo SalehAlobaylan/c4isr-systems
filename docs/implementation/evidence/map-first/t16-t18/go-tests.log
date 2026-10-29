@@ -1,0 +1,76 @@
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/c4isr-server	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-admin	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-assets	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-connectors	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-context	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-imagery	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-local	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/apps/emad-recordings	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-runtime	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/acquisition	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/alerts	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/analystscope	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/app	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/arearule	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/areas	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/artifacts	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/assessments	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/assets	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/audit	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/catalog	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/classifications	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/commands	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/contentpurpose	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/contextpackage	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/coverage	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/dbgen	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/eventrules	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/events	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/exerciseingest	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/externaltracks	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/geospatial	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/imagery	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/imageryanalysis	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/incidents	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/integration	1.664s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/investigations	0.497s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/missions	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/modelassets	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/nativeexercise	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/observations	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/operators	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/picture	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/access	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/capacity	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/caselink	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/config	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/db	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/intents	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/jsoncanon	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/logging	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/presentation	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/readiness	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/reads	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/publiccontext	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/publicevents	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/publicingest	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/realtime	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/recordings	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/reference	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/scenarios	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/simruntime	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/simscene	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/simulation	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/sources	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/telemetry	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/testsupport	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/tracks	(cached)

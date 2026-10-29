@@ -1,0 +1,10 @@
+{
+  "schema": "emad.region-install-profile.v1",
+  "key": "middle-east-working",
+  "name": "Middle East working reference",
+  "definition": "Configurable working overview using Natural Earth's boundary interpretation; not a jurisdictional definition. Worldwide country discovery remains available. Maritime detail is not implied.",
+  "countries": ["ARE", "BHR", "CYP", "EGY", "IRN", "IRQ", "ISR", "JOR", "KWT", "LBN", "OMN", "PSX", "QAT", "SAU", "SYR", "TUR", "YEM"],
+  "studyAreas": [
+    {"key": "study:jeddah-coast", "name": "Jeddah coastal study area", "parentCountry": "SAU", "meaning": "Explicit bounded legacy prepared environment; not a municipal or maritime boundary", "geometry": {"type": "Polygon", "coordinates": [[[39.144, 21.464], [39.216, 21.464], [39.216, 21.536], [39.144, 21.536], [39.144, 21.464]]]}}
+  ]
+}

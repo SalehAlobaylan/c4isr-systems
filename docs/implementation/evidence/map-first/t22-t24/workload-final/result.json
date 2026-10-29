@@ -1,0 +1,153 @@
+{
+  "schema": "emad.map-first-workload-result.v1",
+  "sampleStatus": "PASS",
+  "qualification": "NOT_QUALIFIED",
+  "profile": {
+    "analysts": 5,
+    "arch": "amd64",
+    "areas": 10,
+    "cpus": 24,
+    "detailedReferenceFeatures": 0,
+    "durationSeconds": 30,
+    "goVersion": "go1.25.0",
+    "gomaxprocs": 2,
+    "historyRows": 1000,
+    "kind": "profile",
+    "os": "windows",
+    "profileIntervalSeconds": 1,
+    "providerDailyLimit": 10000,
+    "reportRevisions": 0,
+    "scheduledProfiles": 10,
+    "schema": "emad.workload-sample.v1",
+    "scope": "Reduced isolated operational sample; full scale and browser latency are separate gates",
+    "startedAt": "2026-10-27T13:36:22.6596371Z",
+    "synthetic": true,
+    "weatherMovingRecords": 0
+  },
+  "end": {
+    "completed": true,
+    "elapsedSeconds": 30.9964494,
+    "failures": 0,
+    "fullWorkload": "NOT_RUN",
+    "kind": "end",
+    "observedHumans": "NOT_RUN",
+    "workerRestart": "NOT_RUN"
+  },
+  "telemetrySamples": 30,
+  "telemetryErrors": 0,
+  "operations": [
+    {
+      "operation": "catalog_search",
+      "condition": "cold",
+      "requests": 5,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 139.941,
+      "p95Ms": 161.609,
+      "p99Ms": 161.609,
+      "maxResponseBytes": 36712,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "catalog_search",
+      "condition": "warm",
+      "requests": 135,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 88.082,
+      "p95Ms": 139.006,
+      "p99Ms": 141.601,
+      "maxResponseBytes": 36712,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scheduled_retrieval",
+      "condition": "cold",
+      "requests": 10,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 57.993,
+      "p95Ms": 101.168,
+      "p99Ms": 101.168,
+      "maxResponseBytes": 825,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scheduled_retrieval",
+      "condition": "warm",
+      "requests": 2,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 60.338,
+      "p95Ms": 92.62,
+      "p99Ms": 92.62,
+      "maxResponseBytes": 825,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scope_resolve",
+      "condition": "cold",
+      "requests": 5,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 18.699,
+      "p95Ms": 44.007,
+      "p99Ms": 44.007,
+      "maxResponseBytes": 2849,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scope_resolve",
+      "condition": "warm",
+      "requests": 135,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 5.68,
+      "p95Ms": 6.985,
+      "p99Ms": 7.714,
+      "maxResponseBytes": 2849,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    }
+  ],
+  "sampleBudgetChecks": [
+    {
+      "operation": "catalog_search",
+      "condition": "cold",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 161.609,
+      "status": "PASS"
+    },
+    {
+      "operation": "catalog_search",
+      "condition": "warm",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 139.006,
+      "status": "PASS"
+    }
+  ],
+  "missingOperations": [],
+  "incomplete": false,
+  "outcomeCountsConsistent": true,
+  "limitations": [
+    "Reduced dataset; no map-family/tile timing, browser first useful map or control response measurement.",
+    "Heap telemetry is not process/container RSS; no measured retained-object/freshness-growth qualification.",
+    "No real process restart, paired restore, actual rollback binary or independent target users in this sample.",
+    "A longer sample measures actual elapsed time but does not close missing workload/recovery gates."
+  ],
+  "samplesSha256": "c65c4bbe347444dce61bc9f160005714e9fae26c6e3626c0905a55cadba04738",
+  "commandExitCode": 0,
+  "runnerElapsedSeconds": 53.68699999999808,
+  "sourceUnchanged": true
+}

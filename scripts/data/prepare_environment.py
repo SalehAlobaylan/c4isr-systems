@@ -63,9 +63,18 @@ def build(texture=None):
               'terrainVertices':len(vertices),'buildings':len(osm['buildings']),'roadSegments':len(osm['roads']),
               'limitations':osm['limitations']+['Copernicus DSM includes surface objects, not surveyed bare earth.','Building bases and road widths are approximated for display.','No collision, navigation, hydrodynamic or terrain-clearance guarantee.']}
     store_json(DATA/'prepared-environment.json',manifest)
-    for kind in ['fixed-wing','uav','helicopter','vehicle','vessel','sensor']:
-        (DATA/(kind+'.glb')).write_bytes(model(kind))
     return manifest
 
 
-if __name__=='__main__': build()
+def build_fixture_models():
+    """Historical fixture models only; never part of portable geography."""
+    for kind in ['fixed-wing','uav','helicopter','vehicle','vessel','sensor']:
+        (DATA/(kind+'.glb')).write_bytes(model(kind))
+
+
+if __name__=='__main__':
+    import argparse
+    parser=argparse.ArgumentParser(description='Historical Jeddah regression fixture only. Use prepare_portable_geography.py for parameterized geographic inputs.')
+    parser.add_argument('--jeddah-fixture',action='store_true',required=True)
+    parser.parse_args()
+    build()

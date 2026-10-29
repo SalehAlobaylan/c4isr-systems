@@ -1,0 +1,43 @@
+{
+  "schema": "emad.integration-results.v1",
+  "status": "PASS",
+  "uniqueCases": 9,
+  "cases": [
+    {
+      "name": "TestMapFirstCaseSaveIntentsIndependentReviewAndRework",
+      "elapsedSeconds": 4.58
+    },
+    {
+      "name": "TestMapFirstCompositeFrozenRenderAndIndependentAttestation",
+      "elapsedSeconds": 4.07
+    },
+    {
+      "name": "TestMapFirstCompositeGrantRevokedDuringStorage",
+      "elapsedSeconds": 3.88
+    },
+    {
+      "name": "TestMapFirstCompositeExpiryDeletionRetryAndTombstone",
+      "elapsedSeconds": 5.95
+    },
+    {
+      "name": "TestMapFirstCompositePrivateS3RoundTrip",
+      "elapsedSeconds": 5.72
+    },
+    {
+      "name": "TestMapFirstDurableBriefRenderReviewAndOfflineBundle",
+      "elapsedSeconds": 5.41
+    },
+    {
+      "name": "TestMapFirstDeliveryCancellationDuringIOAndExpiredLeaseRecovery",
+      "elapsedSeconds": 4.21
+    },
+    {
+      "name": "TestMapFirstDeliveryUnknownUploadIdentityAndExpiryReconciliation",
+      "elapsedSeconds": 4.91
+    },
+    {
+      "name": "TestMapFirstPairedRecoveryRetainsCasesApprovalJobsAndPrivateBytes",
+      "elapsedSeconds": 14.21
+    }
+  ]
+}

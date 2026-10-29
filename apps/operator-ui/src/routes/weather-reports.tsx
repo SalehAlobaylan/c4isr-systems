@@ -10,18 +10,18 @@ const field = `${control} block w-full min-w-0`
 const number = (n: number | null | undefined, unit: string) => n == null ? 'Unknown' : `${Number(n.toFixed(2))} ${unit}`
 export function WeatherReportsPage() {
   const api = useAPI(), { prefix, session, signal } = useWorkspace(), cache = useQueryClient()
-  const {search,navigate,host} = useWorkbenchRoute('/weather-reports')
+  const {search,navigate,host,scope,scopeError,active} = useWorkbenchRoute('/weather-reports')
   const [bbox, setBBox] = useState(search.bbox ?? ''), [error, setError] = useState(''), [busy, setBusy] = useState(false)
   const [conclusion, setConclusion] = useState(''), [editing, setEditing] = useState(false)
   const [method, setMethod] = useState<'OPERATOR' | 'ALGORITHM' | 'AI'>('OPERATOR'), [score, setScore] = useState('')
   const [rationale, setRationale] = useState(''), [confidence, setConfidence] = useState(''), [confidenceReason, setConfidenceReason] = useState('')
   const allowed = (p: string) => session.permissions.includes(p)
-  const enabled = session.resource.partition === 'PUBLIC_EVIDENCE'
-  const records = useQuery({ queryKey: [...prefix, 'context-records', search.kind, search.bbox,host?.regionId,host?.geometry], queryFn: () => api.listContextRecords(search.kind, search.bbox,host?.regionId,host?.geometry), enabled, refetchInterval: 60_000 })
-  const selected = useQuery({ queryKey: [...prefix, 'context-record', search.id], queryFn: () => api.getContextRecord(search.id!), enabled: enabled && !!search.id, refetchInterval: 60_000 })
-  const revisions = useQuery({ queryKey: [...prefix, 'context-history', search.id, records.dataUpdatedAt], queryFn: () => api.listContextHistory(search.id!), enabled: enabled && !!search.id })
-  const assessments = useQuery({ queryKey: [...prefix, 'report-assessments'], queryFn: () => api.listReportAssessments(), enabled, refetchInterval: 60_000 })
-  const history = useQuery({ queryKey: [...prefix, 'assessment-history', search.assessment, assessments.dataUpdatedAt], queryFn: () => api.listAssessmentRevisions(search.assessment!), enabled: enabled && !!search.assessment })
+  const enabled = session.resource.partition === 'PUBLIC_EVIDENCE'&&active&&!!scope&&!scopeError
+  const records = useQuery({ queryKey: [...prefix, 'context-records', search.kind,scope?.scopeHash], queryFn: ({signal}) => api.listContextRecords(search.kind,undefined,undefined,undefined,scope,signal), enabled, refetchInterval: 60_000 })
+  const selected = useQuery({ queryKey: [...prefix, 'context-record', search.id], queryFn: ({signal}) => api.getContextRecord(search.id!,signal), enabled: enabled && !!search.id, refetchInterval: 60_000 })
+  const revisions = useQuery({ queryKey: [...prefix, 'context-history', search.id, records.dataUpdatedAt], queryFn: ({signal}) => api.listContextHistory(search.id!,signal), enabled: enabled && !!search.id })
+  const assessments = useQuery({ queryKey: [...prefix, 'report-assessments',scope?.scopeHash], queryFn: ({signal}) => api.listReportAssessments(scope,signal), enabled, refetchInterval: 60_000 })
+  const history = useQuery({ queryKey: [...prefix, 'assessment-history', search.assessment, assessments.dataUpdatedAt], queryFn: ({signal}) => api.listAssessmentRevisions(search.assessment!,signal), enabled: enabled && !!search.assessment })
   useEffect(() => { setBBox(search.bbox ?? '') }, [search.bbox])
   useEffect(() => { setEditing(false); setRationale(''); setConfidence(''); setConfidenceReason('') }, [search.assessment])
   const current = history.data?.items[0]?.reportEvidence ? history.data.items[0] : undefined
@@ -49,13 +49,14 @@ export function WeatherReportsPage() {
     else await api.reviewImageryAssessment(current.assessmentId, body)
   })
   const update = (id: string) => { setEditing(false); void navigate({ search: (old) => ({ ...old, id }) }) }
+  if(!scope||scopeError)return <p role="status">{scopeError??'Resolving map scope…'} <Link to="/map" returnToMap>Choose a valid map scope</Link></p>
   return <div className="ux-page records-workspace space-y-4" aria-label="Weather and source reports">
     <header className="ux-page-heading"><div><p className="ux-kicker">Public Context · Source evidence</p><h1>Weather & official reports</h1><p>Inspect station conditions and official bulletins, with the source and time behind each record.</p></div><Link to="/map" returnToMap className="ux-button">Return to map</Link></header>
-    <form className="workspace-filterbar" onSubmit={(e) => { e.preventDefault(); void navigate({ search: (old) => ({ ...old, bbox }) }) }}>
-      <label className="min-w-0 grow">Context AOI (west,south,east,north)<input className={field} value={bbox} onChange={(e) => setBBox(e.target.value)} /></label>
-      <label>Evidence kind<select className={field} value={search.kind ?? ''} onChange={(e) => void navigate({ search: (old) => ({ ...old, kind: e.target.value === 'WEATHER' ? 'WEATHER' : e.target.value === 'REPORT' ? 'REPORT' : undefined }) })}><option value="">Weather and reports</option><option value="WEATHER">Station weather</option><option value="REPORT">Source reports</option></select></label><button className={control}>Filter context</button>
+    <form className="workspace-filterbar" onSubmit={(e) => { e.preventDefault(); if(host)host.close();else void navigate({to:'/map'}) }}>
+      <label className="min-w-0 grow">Context AOI (west,south,east,north)<input className={field} readOnly value={bbox} onChange={(e) => setBBox(e.target.value)} /></label>
+      <label>Evidence kind<select className={field} value={search.kind ?? ''} onChange={(e) => void navigate({ search: (old) => ({ ...old, kind: e.target.value === 'WEATHER' ? 'WEATHER' : e.target.value === 'REPORT' ? 'REPORT' : undefined }) })}><option value="">Weather and reports</option><option value="WEATHER">Station weather</option><option value="REPORT">Source reports</option></select></label><button className={control}>Choose scope on map</button>
     </form>
-    <div className="evidence-list-heading"><h2>{records.data?`${records.data.total} retained records`:'Retained records'}</h2><span>Station points & cited event locations · no interpolation</span></div>
+    {scope.capabilities['weather']?.state==='unsupported'&&<p role="status" className="ux-notice">{scope.capabilities['weather'].reason}</p>}<div className="evidence-list-heading"><h2>{records.data?`${records.data.total} retained records`:'Retained records'}</h2><span>Station points & cited event locations · no interpolation</span></div>
     {(error || records.isError || selected.isError || revisions.isError || assessments.isError || history.isError) && <p role="alert">{error || 'Some records are unavailable. Check the AOI, source access and connection.'}</p>}
     {records.isLoading && <p role="status">Loading retained context…</p>}
     {records.data?.total === 0 && <p>No retained context in this view. Sources may be unadmitted, unqueried or outside the selection.</p>}

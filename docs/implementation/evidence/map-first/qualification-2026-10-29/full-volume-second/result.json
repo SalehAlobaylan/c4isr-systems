@@ -1,0 +1,34 @@
+{
+  "schema": "emad.map-first-workload-result.v1",
+  "sampleStatus": "FAIL",
+  "qualification": "NOT_QUALIFIED",
+  "profile": null,
+  "end": null,
+  "telemetrySamples": 0,
+  "telemetryErrors": 0,
+  "operations": [],
+  "sampleBudgetChecks": [],
+  "datasetChecks": [],
+  "budgetProfileContentSha256": "c41f9ba2cee362183be617bb5f5239d5424f558af95f62658fffaae4490a959e",
+  "durationComplete": false,
+  "missingOperations": [
+    "catalog_search",
+    "scope_resolve",
+    "scheduled_retrieval"
+  ],
+  "incomplete": true,
+  "outcomeCountsConsistent": false,
+  "limitations": [
+    "Reduced dataset; no map-family/tile timing, browser first useful map or control response measurement.",
+    "Heap telemetry is not process/container RSS; no measured retained-object/freshness-growth qualification.",
+    "No real process restart, paired restore, actual rollback binary or independent target users in this sample.",
+    "A longer sample measures actual elapsed time but does not close missing workload/recovery gates."
+  ],
+  "samplesSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "commandExitCode": 1,
+  "runnerFailure": null,
+  "runnerElapsedSeconds": 31.125,
+  "frozenDurationMatched": false,
+  "frozenDatasetMatched": false,
+  "sourceUnchanged": true
+}

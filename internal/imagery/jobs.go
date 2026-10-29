@@ -4,17 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/analystscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/artifacts"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/imageryanalysis"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/caselink"
 	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/intents"
 	"github.com/jackc/pgx/v5"
 	"time"
 )
 
 type SubmitInput struct {
+	CaseRevision   *caselink.Revision         `json:"caseRevision,omitempty"`
+	CaptureID      string                     `json:"captureId,omitempty"`
+	Scope          *analystscope.Input        `json:"scope,omitempty"`
 	RequestKey     string                     `json:"requestKey"`
 	Kind           string                     `json:"kind"`
 	SceneID        string                     `json:"sceneId,omitempty"`
@@ -23,6 +29,9 @@ type SubmitInput struct {
 	Parameters     imageryanalysis.Parameters `json:"parameters"`
 }
 type JobInput struct {
+	CaseRevision   *caselink.Revision         `json:"caseRevision,omitempty"`
+	CaptureID      string                     `json:"captureId,omitempty"`
+	Scope          *analystscope.Snapshot     `json:"scope,omitempty"`
 	Schema         string                     `json:"schema"`
 	Kind           string                     `json:"kind"`
 	Algorithm      string                     `json:"algorithm"`
@@ -91,7 +100,11 @@ func (s *Service) Jobs(ctx context.Context) ([]Job, error) {
 	if e := artifacts.Public(ctx, "sources.read"); e != nil {
 		return nil, e
 	}
-	rows, e := platformdb.Scoped(s.Pool).Query(ctx, `SELECT `+jobColumns+` FROM imagery_jobs ORDER BY created_at DESC,id LIMIT 101`)
+	geometry, from, to, unsupported := ScopeArgs(ctx)
+	if unsupported {
+		return []Job{}, nil
+	}
+	rows, e := platformdb.Scoped(s.Pool).Query(ctx, `SELECT `+jobColumns+` FROM imagery_jobs j WHERE emad_content_visible('job',id) AND `+JobScopePredicate("j", 1)+` ORDER BY created_at DESC,id LIMIT 101`, geometry, from, to)
 	if e != nil {
 		return nil, e
 	}
@@ -107,6 +120,20 @@ func (s *Service) Jobs(ctx context.Context) ([]Job, error) {
 	return out, rows.Err()
 }
 func (s *Service) Submit(ctx context.Context, in SubmitInput) (Job, error) {
+	if e := artifacts.Public(ctx, "imagery.jobs.submit"); e != nil {
+		return Job{}, e
+	}
+	id, e := intents.Imagery(ctx, s.Pool, "analysis", in.RequestKey, in, func(bound context.Context, key string) (string, error) {
+		in.RequestKey = key
+		v, e := s.submit(bound, in)
+		return v.ID, e
+	})
+	if e != nil {
+		return Job{}, e
+	}
+	return s.Job(ctx, id)
+}
+func (s *Service) submit(ctx context.Context, in SubmitInput) (Job, error) {
 	if e := artifacts.Public(ctx, "imagery.jobs.submit"); e != nil {
 		return Job{}, e
 	}
@@ -155,11 +182,20 @@ func (s *Service) Submit(ctx context.Context, in SubmitInput) (Job, error) {
 	} else {
 		return Job{}, apperr.Validation("unsupported imagery job kind")
 	}
-	for _, scene := range input.Scenes {
-		admission, e := s.Artifacts.Admission(ctx, scene.SourceID)
+	selectedProfile := ""
+	for index, scene := range input.Scenes {
+		admission, e := s.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)
 		if e != nil {
 			return Job{}, e
 		}
+		artifactPolicy, e := s.Artifacts.Policy(ctx, input.Artifacts[index].SourceID, input.Artifacts[index].AdmissionID)
+		if e != nil {
+			return Job{}, e
+		}
+		if !artifactPolicy.Rights.AllowAnalysis || !input.Artifacts[index].Rights.AllowAnalysis || artifactPolicy.ProfileKey != admission.ProfileKey || selectedProfile != "" && selectedProfile != admission.ProfileKey {
+			return Job{}, apperr.Forbidden("scene/artifact processing must retain one approved retrieval profile and all original analysis rights")
+		}
+		selectedProfile = admission.ProfileKey
 		if !scene.Rights.AllowAnalysis || !admission.Rights.AllowAnalysis || !scene.Rights.RetainRaw || (scene.Rights.ExpiresAt != nil && !scene.Rights.ExpiresAt.After(time.Now())) {
 			return Job{}, apperr.Forbidden("scene analysis is not permitted by rights")
 		}
@@ -172,12 +208,100 @@ func (s *Service) Submit(ctx context.Context, in SubmitInput) (Job, error) {
 	}
 	hash := artifacts.Hash(raw)
 	id := "ijob_" + artifacts.Hash([]byte(r.ID()+"|"+source+"|"+in.RequestKey))
-	e := platformdb.WithTx(ctx, s.Pool, func(tx pgx.Tx) error {
+	e := platformdb.JoinTx(ctx, s.Pool, func(tx pgx.Tx) error {
+		if in.CaptureID != "" {
+			if in.Kind != "PREPARE" {
+				return apperr.Validation("capture parent applies only to preparation")
+			}
+			parent, e := s.Capture(platformdb.UseTx(ctx, tx), in.CaptureID)
+			if e != nil {
+				return e
+			}
+			if parent.Input.Scene.ID != in.SceneID || parent.SourceID != source {
+				return apperr.Validation("preparation capture parent differs from scene/source")
+			}
+			if in.CaseRevision != nil && (parent.Input.CaseRevision == nil || *in.CaseRevision != *parent.Input.CaseRevision) {
+				return apperr.Validation("capture parent and explicit case revision differ")
+			}
+			input.CaptureID = parent.ID
+			input.CaseRevision = parent.Input.CaseRevision
+		} else if in.Kind == "NDVI_CHANGE" {
+			// Preserve case confidentiality through the processing chain. An
+			// explicit newer revision may belong only to the same parent case.
+			var inherited *caselink.Revision
+			for i, id := range input.PreparationIDs {
+				parent, e := s.Job(platformdb.UseTx(ctx, tx), id)
+				if e != nil {
+					return e
+				}
+				link := parent.Input.CaseRevision
+				if in.CaseRevision != nil {
+					if link != nil && link.CaseID != in.CaseRevision.CaseID {
+						return apperr.Conflict("preparations link another investigation; choose preparations from the intended case")
+					}
+					continue
+				}
+				if i == 0 {
+					inherited = link
+					continue
+				}
+				if (inherited == nil) != (link == nil) || inherited != nil && *inherited != *link {
+					return apperr.Conflict("choose preparations linked to the same saved case revision")
+				}
+			}
+			if in.CaseRevision == nil {
+				input.CaseRevision = inherited
+			} else {
+				var e error
+				input.CaseRevision, e = caselink.Resolve(ctx, tx, in.CaseRevision)
+				if e != nil {
+					return e
+				}
+			}
+		} else {
+			var e error
+			input.CaseRevision, e = caselink.Resolve(ctx, tx, in.CaseRevision)
+			if e != nil {
+				return e
+			}
+		}
+
+		raw, _ = json.Marshal(input)
+		hash = artifacts.Hash(raw)
+		if in.Scope != nil {
+			v, e := (analystscope.Service{Pool: s.Pool}).Freeze(ctx, tx, *in.Scope)
+			if e != nil {
+				return e
+			}
+			for _, scene := range input.Scenes {
+				if v.Capabilities["imagery"].State != "supported" || !analystscope.ContainsTime(v, scene.AcquiredAt) {
+					return apperr.Validation("analysis acquisition is outside the selected supported period")
+				}
+			}
+			for _, id := range input.PreparationIDs {
+				j, e := s.Job(platformdb.UseTx(ctx, tx), id)
+				if e != nil {
+					return e
+				}
+				if j.Result == nil || j.Result.Tile == nil {
+					return apperr.Validation("preparation has no retained grid")
+				}
+				if e = analystscope.ValidateBounds(platformdb.UseTx(ctx, tx), s.Pool, v, j.Result.Tile.Grid.Bounds()); e != nil {
+					return e
+				}
+			}
+			input.Scope = &v
+			raw, _ = json.Marshal(input)
+			if len(raw) > 3<<20 {
+				return apperr.Validation("frozen scoped imagery manifest exceeds 3 MiB")
+			}
+			hash = artifacts.Hash(raw)
+		}
 		if _, e := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, r.ID()+":"+source+":imagery-queue"); e != nil {
 			return e
 		}
-		var count int
-		if e := tx.QueryRow(ctx, `SELECT count(*) FROM imagery_jobs WHERE source_id=$1 AND status IN ('QUEUED','RUNNING','CANCEL_REQUESTED')`, source).Scan(&count); e != nil {
+		var available bool
+		if e := tx.QueryRow(ctx, `SELECT emad_imagery_queue_available('job',$1)`, source).Scan(&available); e != nil {
 			return e
 		}
 		var old string
@@ -191,7 +315,7 @@ func (s *Service) Submit(ctx context.Context, in SubmitInput) (Job, error) {
 		if !errors.Is(e, pgx.ErrNoRows) {
 			return e
 		}
-		if count >= 32 {
+		if !available {
 			return apperr.Conflict("source imagery queue budget exhausted")
 		}
 		_, e = tx.Exec(ctx, `INSERT INTO imagery_jobs(id,source_id,kind,status,request_key,request_hash,input,created_by)VALUES($1,$2,$3,'QUEUED',$4,$5,$6,$7)`, id, source, in.Kind, in.RequestKey, hash, raw, p.ID)

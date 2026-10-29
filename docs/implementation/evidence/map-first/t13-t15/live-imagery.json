@@ -1,0 +1,458 @@
+{
+  "retrievedAt": "2026-10-26T19:40:45.099503Z",
+  "results": [
+    {
+      "area": "uae-al-ain",
+      "bounds": [
+        55.73,
+        24.2,
+        55.75,
+        24.22
+      ],
+      "state": "LIVE_PIXELS_RETAINED",
+      "synthetic": false,
+      "captures": [
+        {
+          "providerId": "S2C_T40QCM_20250601T065914_L2A",
+          "acquiredAt": "2025-06-01T07:03:16.301000Z",
+          "subset": "data/imagery/457e8b1f8a139ee7405e81c7ed04f6f7049765b75be9c66481da12a28d8ae41c/subset.json",
+          "rgb": "data/imagery/457e8b1f8a139ee7405e81c7ed04f6f7049765b75be9c66481da12a28d8ae41c/rgb.png",
+          "validPixels": 16384,
+          "pixels": 16384,
+          "files": {
+            "B02_10m.tif": "04811228096f69969a22a6ff4562f37600284737c1d7034e360b2626ef3bfc39",
+            "B03_10m.tif": "e189a65627e17bc2d3b9ee6bceacc0907d346c214e2b73aa7e7278783f0260a8",
+            "B04_10m.tif": "7225b29b40c90eb41cfe53338238ac067c0221413cd3ee56332e4eda7185d30e",
+            "B08_10m.tif": "9ad0867d12d49f2662c40e0e31577bca46048f78410f5a1ae055adc538781f8d",
+            "quality.png": "e1cabc0d8e1e6da0ae3da0f7505ad25fa945baae636baeb0bd3465bf7c5a60dc",
+            "receipts.json": "6902432a74d21836787c35371799f8502e37c3c1609f16c8b90cce0ca5a253ae",
+            "rgb.png": "836318bd6f1ec1abefba80834232e57a81f3b524564ba31ab052689a96d12d97",
+            "scene.json": "baa4f4764497867e9039a7beb4ad62456643b662b5f9b521bf0967f463d5a0b7",
+            "SCL_20m.tif": "f8e46fe1d716957ef7a296098fab0f545af6eb7379b5ab7caa8eeb4de04bdbb5",
+            "subset.json": "e8ea934a56ac09df0131faf53b8313798074de0c70da71956aa8d1452dcf4fbe"
+          },
+          "receipts": {
+            "B04_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/40/Q/CM/2025/6/S2C_T40QCM_20250601T065914_L2A/B04.tif",
+              "parentETag": "\"8f5a0d0b27837ba5dc427813711b6cba-24\"",
+              "captureSha256": "7225b29b40c90eb41cfe53338238ac067c0221413cd3ee56332e4eda7185d30e",
+              "bytes": 73621,
+              "retrievedAt": "2026-10-26T19:39:45.654831Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "B08_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/40/Q/CM/2025/6/S2C_T40QCM_20250601T065914_L2A/B08.tif",
+              "parentETag": "\"06ed822dfe3e822a0a779f07dc33467f-24\"",
+              "captureSha256": "9ad0867d12d49f2662c40e0e31577bca46048f78410f5a1ae055adc538781f8d",
+              "bytes": 70144,
+              "retrievedAt": "2026-10-26T19:39:48.603355Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "SCL_20m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/40/Q/CM/2025/6/S2C_T40QCM_20250601T065914_L2A/SCL.tif",
+              "parentETag": "\"5eb0246ae528dac14555f9aec310ce79\"",
+              "captureSha256": "f8e46fe1d716957ef7a296098fab0f545af6eb7379b5ab7caa8eeb4de04bdbb5",
+              "bytes": 639,
+              "retrievedAt": "2026-10-26T19:39:50.999414Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint8",
+                "spatial_resolution": 20
+              }
+            },
+            "B03_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/40/Q/CM/2025/6/S2C_T40QCM_20250601T065914_L2A/B03.tif",
+              "parentETag": "\"57b207278384194a95b488687786897b-24\"",
+              "captureSha256": "e189a65627e17bc2d3b9ee6bceacc0907d346c214e2b73aa7e7278783f0260a8",
+              "bytes": 72632,
+              "retrievedAt": "2026-10-26T19:39:56.214601Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "B02_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/40/Q/CM/2025/6/S2C_T40QCM_20250601T065914_L2A/B02.tif",
+              "parentETag": "\"fece58ba70b596f2667d0060c09d98ba-24\"",
+              "captureSha256": "04811228096f69969a22a6ff4562f37600284737c1d7034e360b2626ef3bfc39",
+              "bytes": 72909,
+              "retrievedAt": "2026-10-26T19:39:58.865946Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            }
+          }
+        },
+        {
+          "providerId": "S2C_T40QCM_20250611T065617_L2A",
+          "acquiredAt": "2025-06-11T07:03:15.831000Z",
+          "subset": "data/imagery/12a1c665b1bbe07b4198805be3cd4f5f49b92d4b337d08d0223a812798ff466f/subset.json",
+          "rgb": "data/imagery/12a1c665b1bbe07b4198805be3cd4f5f49b92d4b337d08d0223a812798ff466f/rgb.png",
+          "validPixels": 16384,
+          "pixels": 16384,
+          "files": {
+            "B02_10m.tif": "54e0ddee60c40dc9a89811f3131413045e74788b22cc63af85e428634500557f",
+            "B03_10m.tif": "b25a00faddd130852d40ea7df7d0ea268782fe1df2937492ad7b2d76ff559615",
+            "B04_10m.tif": "f75e94e64d7263bee06f9fbf72989427a749d7558f08a40f55dab4dbd5561515",
+            "B08_10m.tif": "c812479fa241a3a2f3d0cd3cfdfcce0123842088e4b22d5d79286be7bcecd8f1",
+            "quality.png": "e1cabc0d8e1e6da0ae3da0f7505ad25fa945baae636baeb0bd3465bf7c5a60dc",
+            "receipts.json": "992491ab625d44da3045fd4b97a45cb6b1c689093cdcf34ee1c903e12ed0ecf7",
+            "rgb.png": "6987a30eac12ddc9d07a171a24781f3c10d726425a8d7c639a8b1dc232026f33",
+            "scene.json": "e8b128d2a3776574556096923391804af6baf7d9cdaaef856de16751b7123a36",
+            "SCL_20m.tif": "5a6b30c5b812cdbeece39f5b1ce56ba78f517eb998fc4c35cc5637e6a54391c3",
+            "subset.json": "5bb742b004140533d40a33a334ae0565bf9b2a94974995531d35625c34d21a40"
+          },
+          "receipts": {
+            "B04_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/40/Q/CM/2025/6/S2C_T40QCM_20250611T065617_L2A/B04.tif",
+              "parentETag": "\"59aaf6244f106cba454d4a2e679ffd3c-24\"",
+              "captureSha256": "f75e94e64d7263bee06f9fbf72989427a749d7558f08a40f55dab4dbd5561515",
+              "bytes": 74671,
+              "retrievedAt": "2026-10-26T19:40:01.806254Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "B08_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/40/Q/CM/2025/6/S2C_T40QCM_20250611T065617_L2A/B08.tif",
+              "parentETag": "\"5cc1ce22a9c721a1e1357f5a9c4829ed-23\"",
+              "captureSha256": "c812479fa241a3a2f3d0cd3cfdfcce0123842088e4b22d5d79286be7bcecd8f1",
+              "bytes": 70664,
+              "retrievedAt": "2026-10-26T19:40:04.495767Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "SCL_20m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/40/Q/CM/2025/6/S2C_T40QCM_20250611T065617_L2A/SCL.tif",
+              "parentETag": "\"ac4dbab30c73c5f471481a53febebe9c\"",
+              "captureSha256": "5a6b30c5b812cdbeece39f5b1ce56ba78f517eb998fc4c35cc5637e6a54391c3",
+              "bytes": 705,
+              "retrievedAt": "2026-10-26T19:40:06.855605Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint8",
+                "spatial_resolution": 20
+              }
+            },
+            "B03_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/40/Q/CM/2025/6/S2C_T40QCM_20250611T065617_L2A/B03.tif",
+              "parentETag": "\"5845fed7ae22d1354ae1fec8a5ab4b9d-25\"",
+              "captureSha256": "b25a00faddd130852d40ea7df7d0ea268782fe1df2937492ad7b2d76ff559615",
+              "bytes": 73938,
+              "retrievedAt": "2026-10-26T19:40:10.802935Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "B02_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/40/Q/CM/2025/6/S2C_T40QCM_20250611T065617_L2A/B02.tif",
+              "parentETag": "\"3d30c0acbebd3f7a1439111e4dd1fb6f-24\"",
+              "captureSha256": "54e0ddee60c40dc9a89811f3131413045e74788b22cc63af85e428634500557f",
+              "bytes": 74572,
+              "retrievedAt": "2026-10-26T19:40:13.602719Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            }
+          }
+        }
+      ],
+      "comparison": {
+        "state": "PASSED",
+        "result": {
+          "after": "live_qualification_e2aeb46c8e079299ed39e1649db816d16cb2caa58584f4d9c7112d732c5ea17f",
+          "algorithm": "emad.ndvi-change.v1",
+          "before": "live_qualification_4160580209a890043bda2e618bf02f4884ef641224ea1ec1783ca5bf7f8576df",
+          "clearFraction": 1,
+          "declineCells": 8,
+          "limitations": [
+            "NDVI difference is an environmental indicator, not verified vegetation loss or a causal assessment.",
+            "Cloud/shadow/snow/saturated/unclassified and invalid pixels are excluded using supplied SCL; mask errors remain possible.",
+            "Same grid, platform, tile, orbit and processing baseline required; seasonal/illumination/atmospheric differences remain.",
+            "Angular output pixels do not imply constant ground resolution or a measured affected area.",
+            "Retained prepared subsets and their input hashes reproduce this calculation; source-file hash claims are supplied by the preparer."
+          ],
+          "maskedCells": 0,
+          "meanDelta": 0.0011535949169203085,
+          "synthetic": false,
+          "totalCells": 16384,
+          "validCells": 16384
+        }
+      }
+    },
+    {
+      "area": "france-avignon",
+      "bounds": [
+        4.82,
+        43.95,
+        4.84,
+        43.97
+      ],
+      "state": "LIVE_PIXELS_RETAINED",
+      "synthetic": false,
+      "captures": [
+        {
+          "providerId": "S2A_T31TFJ_20250609T103729_L2A",
+          "acquiredAt": "2025-06-09T10:39:09.929000Z",
+          "subset": "data/imagery/797f456c73fa77c6d3b4fb1317c22821ae473db2ee7c737974d12c481a4c8c0a/subset.json",
+          "rgb": "data/imagery/797f456c73fa77c6d3b4fb1317c22821ae473db2ee7c737974d12c481a4c8c0a/rgb.png",
+          "validPixels": 15726,
+          "pixels": 16384,
+          "files": {
+            "B02_10m.tif": "6fa7e74ca2daa87e0cd9c34a5a444d597627e86a86bf0ada41217565ca248630",
+            "B03_10m.tif": "9d077084a6919f52eacd94bdee96b1d4e34e128c4d2f1ae4fc37237ec1bdba6e",
+            "B04_10m.tif": "f6766a6970b2cc5b87f2ffa151ad8e2201f40f5c7c1c240dbf9cbf8216748095",
+            "B08_10m.tif": "a14aa842652cbd5d5075799fcc60cad224cf98f76d998951f5232f5598f033dc",
+            "quality.png": "d0305fdff94d2ee1599ec194f2767e2fe4860a4d0c17c01e561c60af3b731469",
+            "receipts.json": "22ca6147cc36061128f8e73444e9f1d017906aa8f06ef441f8956ca5ac5f0cb1",
+            "rgb.png": "441124ea59da76ba1a82bd7051eabc1165afa10fcdce30387e3be9941ebb9658",
+            "scene.json": "8c9b0c970d14b570e8af659286ce04b0f837fc557c9b37edb1a65445035e72b5",
+            "SCL_20m.tif": "efa51f0fa74bd272115e7c413cc5ba72ee958215ca03b4d364716565dcbf9953",
+            "subset.json": "1d7d38df087ca9b5c26c914d89aac6779bfc4d14ae62600e19feb795f2936d93"
+          },
+          "receipts": {
+            "B04_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/31/T/FJ/2025/6/S2A_T31TFJ_20250609T103729_L2A/B04.tif",
+              "parentETag": "\"9438ead7dac43e21aa941d72b2de533c-27\"",
+              "captureSha256": "f6766a6970b2cc5b87f2ffa151ad8e2201f40f5c7c1c240dbf9cbf8216748095",
+              "bytes": 56104,
+              "retrievedAt": "2026-10-26T19:40:19.328501Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "B08_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/31/T/FJ/2025/6/S2A_T31TFJ_20250609T103729_L2A/B08.tif",
+              "parentETag": "\"5ff64004e52b29179ab15507895e5dd1-28\"",
+              "captureSha256": "a14aa842652cbd5d5075799fcc60cad224cf98f76d998951f5232f5598f033dc",
+              "bytes": 60418,
+              "retrievedAt": "2026-10-26T19:40:22.096317Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "SCL_20m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/31/T/FJ/2025/6/S2A_T31TFJ_20250609T103729_L2A/SCL.tif",
+              "parentETag": "\"786b953cb960be5fb23b022b01cd77f4\"",
+              "captureSha256": "efa51f0fa74bd272115e7c413cc5ba72ee958215ca03b4d364716565dcbf9953",
+              "bytes": 1209,
+              "retrievedAt": "2026-10-26T19:40:24.475354Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint8",
+                "spatial_resolution": 20
+              }
+            },
+            "B03_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/31/T/FJ/2025/6/S2A_T31TFJ_20250609T103729_L2A/B03.tif",
+              "parentETag": "\"d072429596ac1ea0ff27a283f6262c1e-26\"",
+              "captureSha256": "9d077084a6919f52eacd94bdee96b1d4e34e128c4d2f1ae4fc37237ec1bdba6e",
+              "bytes": 53104,
+              "retrievedAt": "2026-10-26T19:40:27.160035Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "B02_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/31/T/FJ/2025/6/S2A_T31TFJ_20250609T103729_L2A/B02.tif",
+              "parentETag": "\"2f57352c22d98ec4a27acf2633e31ace-27\"",
+              "captureSha256": "6fa7e74ca2daa87e0cd9c34a5a444d597627e86a86bf0ada41217565ca248630",
+              "bytes": 54245,
+              "retrievedAt": "2026-10-26T19:40:29.653900Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            }
+          }
+        },
+        {
+          "providerId": "S2A_T31TFJ_20250619T103205_L2A",
+          "acquiredAt": "2025-06-19T10:39:07.188000Z",
+          "subset": "data/imagery/93796b95b44d01d3c7f0d8e0308f2efeb5844d8d31bdc5bb3a7dfac41ba1fb5b/subset.json",
+          "rgb": "data/imagery/93796b95b44d01d3c7f0d8e0308f2efeb5844d8d31bdc5bb3a7dfac41ba1fb5b/rgb.png",
+          "validPixels": 16342,
+          "pixels": 16384,
+          "files": {
+            "B02_10m.tif": "bb1d55888dd433f8801fcee3907381c0abdeee7c86164466a753cc16eaa99dd6",
+            "B03_10m.tif": "3feab2b327ed4579fd5021ed41b8f4cacd4a60d11247ac8058567e780aee7b01",
+            "B04_10m.tif": "d7c9be099a188e80b999933f8f3068ee6204c819c2fa3faa89373c1a0969bb85",
+            "B08_10m.tif": "83504718789bdbfa6655029c8516fb2ef23ec94817063684ead07db474ad1cc7",
+            "quality.png": "d4ddc05ae24fa8bed8be6c0cafd215c6465b1ae2e3e23df32ad339bedef5c546",
+            "receipts.json": "2570b674d459c5375f35d15d3f45beb698ecf65ef5da1a3d8ae07e1be1fc6a5e",
+            "rgb.png": "30ff7c58497fa0cbc69be8e52a940f5c87d2e9c8536474a3ef2849f3e4776648",
+            "scene.json": "310d816bb6dd7d066870571eb8edd492147064e255f6d6b54efa9174622b2ae5",
+            "SCL_20m.tif": "cf90498f180bdf4252a4646906d6400916b6969d4cea67cd2743cdc29f5b89ef",
+            "subset.json": "b10a66539c29a76d13d1fc6148be0547b2a98f8d61a53f6c714b361a397aff28"
+          },
+          "receipts": {
+            "B04_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/31/T/FJ/2025/6/S2A_T31TFJ_20250619T103205_L2A/B04.tif",
+              "parentETag": "\"1e6e6aaff380a18718419c2080e2c1c6-27\"",
+              "captureSha256": "d7c9be099a188e80b999933f8f3068ee6204c819c2fa3faa89373c1a0969bb85",
+              "bytes": 59145,
+              "retrievedAt": "2026-10-26T19:40:32.405606Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "B08_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/31/T/FJ/2025/6/S2A_T31TFJ_20250619T103205_L2A/B08.tif",
+              "parentETag": "\"eee15367627e363cb3709f374e0e2fa5-28\"",
+              "captureSha256": "83504718789bdbfa6655029c8516fb2ef23ec94817063684ead07db474ad1cc7",
+              "bytes": 61294,
+              "retrievedAt": "2026-10-26T19:40:34.931744Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "SCL_20m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/31/T/FJ/2025/6/S2A_T31TFJ_20250619T103205_L2A/SCL.tif",
+              "parentETag": "\"6a6a99bba5eef7e2474b04317c843864\"",
+              "captureSha256": "cf90498f180bdf4252a4646906d6400916b6969d4cea67cd2743cdc29f5b89ef",
+              "bytes": 1572,
+              "retrievedAt": "2026-10-26T19:40:37.276788Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint8",
+                "spatial_resolution": 20
+              }
+            },
+            "B03_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/31/T/FJ/2025/6/S2A_T31TFJ_20250619T103205_L2A/B03.tif",
+              "parentETag": "\"56598690299cad364b517118131986da-26\"",
+              "captureSha256": "3feab2b327ed4579fd5021ed41b8f4cacd4a60d11247ac8058567e780aee7b01",
+              "bytes": 57201,
+              "retrievedAt": "2026-10-26T19:40:42.250810Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            },
+            "B02_10m": {
+              "href": "https://e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com/sentinel-2-c1-l2a/31/T/FJ/2025/6/S2A_T31TFJ_20250619T103205_L2A/B02.tif",
+              "parentETag": "\"79a03e519749fdf99154a46c59148926-26\"",
+              "captureSha256": "bb1d55888dd433f8801fcee3907381c0abdeee7c86164466a753cc16eaa99dd6",
+              "bytes": 57594,
+              "retrievedAt": "2026-10-26T19:40:44.938184Z",
+              "meaning": "Hash covers retained source-resolution pixel window, not the complete upstream product",
+              "radiometry": {
+                "nodata": 0,
+                "data_type": "uint16",
+                "spatial_resolution": 10,
+                "scale": 0.0001,
+                "offset": -0.1
+              }
+            }
+          }
+        }
+      ],
+      "comparison": {
+        "state": "PASSED",
+        "result": {
+          "after": "live_qualification_efb65b405c21a511c9b0285949350542ed7c7e2a8b148fe8ec87522a907b07a6",
+          "algorithm": "emad.ndvi-change.v1",
+          "before": "live_qualification_b5ad29e4a442feab25351a8ef654adc37481d796f43884ee498889d26cc0f207",
+          "clearFraction": 0.957275390625,
+          "declineCells": 969,
+          "limitations": [
+            "NDVI difference is an environmental indicator, not verified vegetation loss or a causal assessment.",
+            "Cloud/shadow/snow/saturated/unclassified and invalid pixels are excluded using supplied SCL; mask errors remain possible.",
+            "Same grid, platform, tile, orbit and processing baseline required; seasonal/illumination/atmospheric differences remain.",
+            "Angular output pixels do not imply constant ground resolution or a measured affected area.",
+            "Retained prepared subsets and their input hashes reproduce this calculation; source-file hash claims are supplied by the preparer."
+          ],
+          "maskedCells": 700,
+          "meanDelta": -0.013307818331678338,
+          "synthetic": false,
+          "totalCells": 16384,
+          "validCells": 15684
+        }
+      }
+    }
+  ],
+  "meaning": "Fresh anonymous provider retrieval of historical acquisitions. Isolated pixel qualification; no application admission, durable API workflow or independent publication is claimed.",
+  "localArtifactRoot": "private/qualification-t13-t15",
+  "qualification": "Isolated fresh public pixel retrieval and offline comparison only; full application/API and independent-user acceptance remain separate."
+}

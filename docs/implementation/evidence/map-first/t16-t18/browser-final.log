@@ -1,0 +1,25 @@
+[WebServer] (node:29824) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:49768) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:53268) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] (node:56632) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 10 tests using 1 worker
+
+(node:5500) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 [no-token] › tests\e2e\investigations-profiles.spec.ts:43:1 › case autosave persists authored notes and finding fields without an explicit save (6.2s)
+  ok  2 [no-token] › tests\e2e\investigations-profiles.spec.ts:56:1 › an in-flight case save prevents edits from being overwritten by its response (2.7s)
+  ok  3 [no-token] › tests\e2e\investigations-profiles.spec.ts:70:1 › lost case save response recovers the original intent after reopening (3.9s)
+  ok  4 [no-token] › tests\e2e\investigations-profiles.spec.ts:88:1 › assigned reviewer opens exact saved content and requests changes (4.8s)
+  ok  5 [no-token] › tests\e2e\investigations-profiles.spec.ts:109:1 › saved investigation and membership resume in a different browser context (5.9s)
+  ok  6 [no-token] › tests\e2e\investigations-profiles.spec.ts:117:1 › a conflicting case save preserves the unsaved draft until deliberate reload (2.4s)
+  ok  7 [no-token] › tests\e2e\investigations-profiles.spec.ts:126:1 › membership loss clears an already displayed protected case on access refresh (1.4s)
+  ok  8 [no-token] › tests\e2e\investigations-profiles.spec.ts:132:1 › a reference import retry preserves its durable request identity and area (2.0s)
+  ok  9 [no-token] › tests\e2e\investigations-profiles.spec.ts:143:1 › geographic search follows explicit continuation without dropping prior results (1.7s)
+  ok 10 [no-token] › tests\e2e\investigations-profiles.spec.ts:151:1 › profile approval and execution grants stay separate and name the exact revision (2.0s)
+
+  10 passed (36.5s)

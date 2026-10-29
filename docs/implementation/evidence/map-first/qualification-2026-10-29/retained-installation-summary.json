@@ -1,0 +1,64 @@
+{
+  "identityFile": "local-analyst",
+  "requests": [
+    {
+      "path": "/auth/me",
+      "status": 200,
+      "elapsedSeconds": 0.031,
+      "productProfile": "map",
+      "newWorkflowPermissions": {
+        "investigations.read": false,
+        "investigations.create": false,
+        "outputs.create": false,
+        "outputs.read": false,
+        "acquisitions.request": false
+      }
+    },
+    {
+      "path": "/platform/readiness",
+      "status": 200,
+      "elapsedSeconds": 0.125,
+      "returned": 8
+    },
+    {
+      "path": "/reference-datasets",
+      "status": 200,
+      "elapsedSeconds": 0.031,
+      "total": 24,
+      "returned": 24
+    },
+    {
+      "path": "/geography/regions?kind=country",
+      "status": 200,
+      "elapsedSeconds": 0.063,
+      "matched": 177,
+      "returned": 177
+    },
+    {
+      "path": "/public-events?limit=5",
+      "status": 200,
+      "elapsedSeconds": 0.031,
+      "total": 16,
+      "returned": 5
+    },
+    {
+      "path": "/imagery/scenes",
+      "status": 200,
+      "elapsedSeconds": 0.016,
+      "total": 20,
+      "returned": 20
+    },
+    {
+      "path": "/imagery/captures",
+      "status": 200,
+      "elapsedSeconds": 0.015,
+      "total": 4,
+      "returned": 4
+    },
+    {
+      "path": "/investigations",
+      "status": 403,
+      "elapsedSeconds": 0.031
+    }
+  ]
+}

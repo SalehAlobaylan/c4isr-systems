@@ -3,8 +3,9 @@ WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN mkdir /out && for app in c4isr-server emad-admin emad-imagery emad-assets emad-recordings emad-runtime emad-connectors; do CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/$app ./apps/$app; done
-RUN /out/emad-runtime -describe > /out/runtime.json && sha256sum /out/emad-runtime | cut -d' ' -f1 > /out/runtime-builds.txt
+ARG EMAD_PRODUCT_PROFILE=map
+RUN mkdir /out && apps="c4isr-server emad-admin emad-imagery emad-delivery emad-connectors" && if [ "$EMAD_PRODUCT_PROFILE" = historical-full ]; then apps="$apps emad-assets emad-recordings emad-runtime"; elif [ "$EMAD_PRODUCT_PROFILE" != map ]; then exit 1; fi && for app in $apps; do CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/$app ./apps/$app; done
+RUN if [ "$EMAD_PRODUCT_PROFILE" = historical-full ]; then /out/emad-runtime -describe > /out/runtime.json && sha256sum /out/emad-runtime | cut -d' ' -f1 > /out/runtime-builds.txt; else touch /out/runtime-builds.txt; fi
 
 FROM node:24-bookworm-slim AS validator
 WORKDIR /validator
@@ -14,6 +15,7 @@ RUN npm install -g pnpm@10.14.0 --ignore-scripts && pnpm install --frozen-lockfi
 COPY apps/emad-asset-validator/validate.mjs ./apps/emad-asset-validator/validate.mjs
 
 FROM python:3.12-slim-bookworm
+ARG EMAD_PRODUCT_PROFILE=map
 RUN apt-get update && apt-get install --no-install-recommends -y ca-certificates libstdc++6 libexpat1 libgomp1 && rm -rf /var/lib/apt/lists/*
 COPY --from=validator /usr/local/bin/node /usr/local/bin/node
 WORKDIR /app
@@ -22,9 +24,10 @@ RUN pip install --no-cache-dir -r /app/scripts/data/requirements-recovery.txt
 COPY --from=build /out /app/bin
 COPY --from=validator /validator /app
 COPY scripts/data /app/scripts/data
+COPY docs/implementation/MAP_FIRST_CONTENT_PURPOSE_INVENTORY_2026_10_25.json /app/docs/implementation/MAP_FIRST_CONTENT_PURPOSE_INVENTORY_2026_10_25.json
 COPY scripts/ops/worker.py /app/scripts/ops/worker.py
 COPY scenarios /app/scenarios
 RUN mkdir /data && chown nobody:nogroup /data
-ENV EMAD_PRIVATE_DIR=/data EMAD_CREDENTIAL_DIR=/run/secrets EMAD_API_URL=http://api:8080 C4ISR_RUNTIME_BUILDS_FILE=/app/bin/runtime-builds.txt PYTHONUNBUFFERED=1
+ENV C4ISR_PRODUCT_PROFILE=$EMAD_PRODUCT_PROFILE EMAD_PRIVATE_DIR=/data EMAD_CREDENTIAL_DIR=/run/secrets EMAD_API_URL=http://api:8080 C4ISR_RUNTIME_BUILDS_FILE=/app/bin/runtime-builds.txt PYTHONUNBUFFERED=1
 USER nobody:nogroup
 ENTRYPOINT ["python","/app/scripts/ops/worker.py"]

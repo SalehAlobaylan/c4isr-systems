@@ -1,0 +1,31 @@
+{
+  "status": "PASS",
+  "observedHumans": "NOT_RUN",
+  "scope": "Automated local entry/role presentation only",
+  "results": [
+    {
+      "role": "analyst",
+      "authenticated": true,
+      "manualCredentialRequired": false,
+      "productProfile": "map"
+    },
+    {
+      "role": "reviewer",
+      "authenticated": true,
+      "manualCredentialRequired": false,
+      "productProfile": "map"
+    },
+    {
+      "role": "sourceAdministrator",
+      "authenticated": true,
+      "manualCredentialRequired": false,
+      "productProfile": "map"
+    },
+    {
+      "role": "restrictedReader",
+      "authenticated": true,
+      "manualCredentialRequired": false,
+      "productProfile": "map"
+    }
+  ]
+}

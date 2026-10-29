@@ -1,0 +1,8 @@
+{
+  "schema": "emad.portable-reader-check.v1",
+  "status": "PASS",
+  "vertices": 81,
+  "triangles": 128,
+  "maxIndependentFrameErrorM": 1.3288735366270207e-09,
+  "qualification": "Independent PROJ/GEOS coordinate check; supplied controls do not establish an observed survey or full production qualification."
+}

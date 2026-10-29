@@ -19,6 +19,7 @@ import time
 from datetime import datetime,timezone
 import boto3
 import requests
+from recovery_inventory import inventory, verify_required, restore_policy, unavailable_inputs, load_restore_inventory
 
 ROOT=Path(__file__).resolve().parents[2]
 PRIVATE=ROOT/'private/local'
@@ -40,17 +41,22 @@ def free(port):
   except OSError:return False
 def check(directory):
  directory=Path(directory).resolve();manifest=json.loads((directory/'manifest.json').read_text(encoding='utf-8'))
- if manifest.get('schema')!='emad.paired-backup.v1':raise RuntimeError('Unsupported paired backup')
- for item in [manifest['database'],manifest['privateFiles'],*manifest['objects']]:
+ if manifest.get('schema') not in ('emad.paired-backup.v1','emad.paired-backup.v2'):raise RuntimeError('Unsupported paired backup')
+ if manifest['schema']=='emad.paired-backup.v2' and 'inventory' not in manifest:raise RuntimeError('Expanded backup is missing its recovery inventory')
+ for item in [manifest['database'],manifest['privateFiles'],*manifest['objects'], *([manifest['inventory']] if 'inventory' in manifest else [])]:
   file=(directory/item['file']).resolve()
   if not file.is_relative_to(directory) or not file.is_file() or file.stat().st_size!=item['bytes'] or digest(file)!=item['sha256']:raise RuntimeError('Backup integrity failed before restore')
  return manifest
-def backup():
+def backup(quiesced=False):
  cfg=json.loads((PRIVATE/'config.json').read_text(encoding='utf-8'))
+ if not quiesced:raise RuntimeError('Stop all API, delivery, connector, capture, imagery and retention writers, then supply --quiesced. No process was stopped.')
+ if (PRIVATE/'supervisor.json').exists():raise RuntimeError('The supported supervisor is still registered; stop it before backup')
  if not free(cfg['apiPort']) or not free(cfg['webPort']):raise RuntimeError('Stop task dev before the coordinated backup. No running process was stopped.')
  stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
  directory=PRIVATE/'backups'/stamp;directory.mkdir(parents=True,exist_ok=False);os.chmod(directory,0o700)
  s3=client(cfg);objects=[]
+ before=inventory('c4isr-postgres')
+ omitted,_=restore_policy(before,datetime.now(timezone.utc))
  # The supported API and workers must be stopped. The dump is independently
  # consistent; immutable objects are then copied without any deletion job.
  with (directory/'database.dump').open('wb') as file:
@@ -58,6 +64,7 @@ def backup():
  (directory/'objects').mkdir()
  for page in s3.get_paginator('list_objects_v2').paginate(Bucket=cfg['bucket']):
   for item in page.get('Contents',[]):
+   if item['Key'] in omitted:continue
    key=item['Key'];filename='objects/'+hashlib.sha256(key.encode()).hexdigest()
    target=directory/filename;response=s3.get_object(Bucket=cfg['bucket'],Key=key)
    with target.open('xb') as file:
@@ -65,14 +72,20 @@ def backup():
    if target.stat().st_size!=item['Size']:raise RuntimeError('Object changed or was truncated during coordinated backup')
    objects.append({'key':key,'file':filename,'bytes':target.stat().st_size,'sha256':digest(target),'mediaType':response.get('ContentType','application/octet-stream')})
    os.chmod(target,0o600)
+ after=inventory('c4isr-postgres')
+ if before['tables']!=after['tables'] or before['securityDefinitions']!=after['securityDefinitions']:raise RuntimeError('Database writers changed the coordinated snapshot; backup is incomplete and must not be restored')
+ verify_required(before,objects,datetime.now(timezone.utc))
+ save(directory/'recovery-inventory.json',before)
  private=directory/'private.tar.gz'
  with tarfile.open(private,'w:gz') as tar:
   for name in ['config.json','garage.toml','garage.env','credentials','data','providers.json','opensky-client.json','firms.key']:
    source=PRIVATE/name
    if source.exists():tar.add(source,arcname=name)
  os.chmod(private,0o600)
+ final=inventory('c4isr-postgres')
+ if final['tables']!=before['tables'] or final['securityDefinitions']!=before['securityDefinitions']:raise RuntimeError('A writer changed the installation during private-file copy; no completed backup was published')
  entry=lambda name:{'file':name,'bytes':(directory/name).stat().st_size,'sha256':digest(directory/name)}
- manifest={'schema':'emad.paired-backup.v1','createdAt':datetime.now(timezone.utc).isoformat(),'consistency':'Supported API/workers quiesced; consistent pg_dump plus complete immutable object copy; no retention/deletion process active.','database':entry('database.dump'),'privateFiles':entry('private.tar.gz'),'objects':objects,'sourceBucket':cfg['bucket'],'objectCount':len(objects),'objectBytes':sum(x['bytes'] for x in objects)}
+ manifest={'schema':'emad.paired-backup.v2','createdAt':datetime.now(timezone.utc).isoformat(),'productProfile':cfg.get('profile','historical-full'),'consistency':'Operator confirms all writers quiesced; supervisor/ports stopped; consistent pg_dump; all public table hashes unchanged across database/object copy. Maintenance must remain quiesced until completion.','inventory':entry('recovery-inventory.json'),'database':entry('database.dump'),'privateFiles':entry('private.tar.gz'),'objects':objects,'sourceBucket':cfg['bucket'],'objectCount':len(objects),'objectBytes':sum(x['bytes'] for x in objects)}
  save(directory/'manifest.json',manifest);check(directory)
  save(PRIVATE/'last-backup.json',{'path':str(directory),'objectCount':len(objects)})
  print(f'Paired backup verified: {directory} · {len(objects)} objects · {manifest["objectBytes"]} object bytes',flush=True)
@@ -114,15 +127,25 @@ def restore(directory):
   command(['docker','exec',pg,'createdb','-U','c4isr','--template=template0','emad_restore'],stdout=subprocess.DEVNULL)
   command(['docker','cp',directory/m['database']['file'],pg+':/tmp/recovery.dump'],stdout=subprocess.DEVNULL)
   command(['docker','exec',pg,'pg_restore','-U','c4isr','-d','emad_restore','--no-owner','--exit-on-error','/tmp/recovery.dump'],stdout=subprocess.DEVNULL)
+  snapshot,hasInventory=load_restore_inventory(pg,'emad_restore',directory,m)
+  omitted=verify_required(snapshot,m['objects'],datetime.now(timezone.utc))
+  unavailableArtifacts,unavailablePreparations=unavailable_inputs(snapshot,datetime.now(timezone.utc))
   endpoint='http://127.0.0.1:'+str(port(garage,3900));s3=client(cfg,endpoint)
   wait(lambda:s3.head_bucket(Bucket=cfg['bucket']) is not None)
+  references={}
+  for row in (snapshot or {}).get('objects',[]):references.setdefault(row['key'],[]).append(row)
   for item in m['objects']:
+   if snapshot and restore_policy({'objects':references.get(item['key'],[])},datetime.now(timezone.utc))[0]:omitted.add(item['key'])
+   if item['key'] in omitted:continue
    with (directory/item['file']).open('rb') as file:s3.put_object(Bucket=cfg['bucket'],Key=item['key'],Body=file,ContentType=item['mediaType'])
    raw=s3.get_object(Bucket=cfg['bucket'],Key=item['key'])['Body'];h=hashlib.sha256();size=0
    for block in iter(lambda:raw.read(1024*1024),b''):size+=len(block);h.update(block)
    if h.hexdigest()!=item['sha256'] or size!=item['bytes']:raise RuntimeError('Restored object integrity failure')
+   if snapshot and restore_policy({'objects':references.get(item['key'],[])},datetime.now(timezone.utc))[0]:
+    s3.delete_object(Bucket=cfg['bucket'],Key=item['key']);omitted.add(item['key'])
+  if snapshot:unavailableArtifacts,unavailablePreparations=unavailable_inputs(snapshot,datetime.now(timezone.utc))
   with socket.socket() as sock:sock.bind(('127.0.0.1',0));apiport=sock.getsockname()[1]
-  env=os.environ.copy();env.update({'C4ISR_ENV':'development','C4ISR_DATABASE_AUTH':'true','C4ISR_AUTH_REQUIRED':'true','C4ISR_AUTH_TOKENS':'operator-01=dev-operator-token','C4ISR_DATABASE_URL':f'postgres://c4isr:{password}@127.0.0.1:{port(pg,5432)}/emad_restore?sslmode=disable','C4ISR_HTTP_ADDR':'127.0.0.1:'+str(apiport),'C4ISR_ARTIFACT_S3_ENDPOINT':endpoint,'C4ISR_ARTIFACT_S3_REGION':cfg['region'],'C4ISR_ARTIFACT_S3_BUCKET':cfg['bucket'],'C4ISR_ARTIFACT_S3_ACCESS_KEY':cfg['accessKey'],'C4ISR_ARTIFACT_S3_SECRET_KEY':cfg['secretKey'],'C4ISR_LOG_LEVEL':'warn','C4ISR_PUBLIC_CONNECTORS_FILE':''})
+  env=os.environ.copy();env.update({'C4ISR_ENV':'development','C4ISR_PRODUCT_PROFILE':cfg.get('profile','historical-full'),'C4ISR_DATABASE_AUTH':'true','C4ISR_AUTH_REQUIRED':'true','C4ISR_AUTH_TOKENS':'operator-01=dev-operator-token','C4ISR_DATABASE_URL':f'postgres://c4isr:{password}@127.0.0.1:{port(pg,5432)}/emad_restore?sslmode=disable','C4ISR_HTTP_ADDR':'127.0.0.1:'+str(apiport),'C4ISR_ARTIFACT_S3_ENDPOINT':endpoint,'C4ISR_ARTIFACT_S3_REGION':cfg['region'],'C4ISR_ARTIFACT_S3_BUCKET':cfg['bucket'],'C4ISR_ARTIFACT_S3_ACCESS_KEY':cfg['accessKey'],'C4ISR_ARTIFACT_S3_SECRET_KEY':cfg['secretKey'],'C4ISR_LOG_LEVEL':'warn','C4ISR_PUBLIC_CONNECTORS_FILE':''})
   for key in ['C4ISR_DATABASE_URL_FILE','C4ISR_AUTH_TOKENS_FILE','C4ISR_ARTIFACT_S3_ACCESS_KEY_FILE','C4ISR_ARTIFACT_S3_SECRET_KEY_FILE']:env.pop(key,None)
   # Older immutable backups are restored first, then advanced through the
   # existing forward-only migrations in this isolated database.
@@ -130,7 +153,8 @@ def restore(directory):
   log=(area/'api.log').open('wb');api=subprocess.Popen([str(ROOT/'bin'/('c4isr-server.exe' if os.name=='nt' else 'c4isr-server'))],cwd=ROOT,env=env,stdout=log,stderr=log,creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
   origin='http://127.0.0.1:'+str(apiport)
   wait(lambda:requests.get(origin+'/health',timeout=2).status_code==200)
-  def call(path,partition='PUBLIC_EVIDENCE',name='local-analyst',run=None,blob=False,method='GET',body=None):
+  def call(path,partition='PUBLIC_EVIDENCE',name=None,run=None,blob=False,method='GET',body=None):
+   name=name or ('local-source-admin' if cfg.get('profile')=='map' else 'local-analyst')
    headers={'Authorization':'Bearer '+(extracted/'credentials'/(name+'.token')).read_text(encoding='utf-8').strip(),'X-EMAD-Workspace-ID':'default','X-EMAD-Environment-ID':'local','X-EMAD-Partition':partition}
    if run:headers['X-EMAD-Run-ID']=run
    response=requests.request(method,origin+'/api/v1'+path,headers=headers,json=body,timeout=60,allow_redirects=False)
@@ -151,31 +175,41 @@ def restore(directory):
   for capture in captures:
    if capture['status']=='SUCCEEDED':
     for key in ['rgbArtifactId','qualityArtifactId','subsetArtifactId','receiptArtifactId']:
+     if capture['result'][key] in unavailableArtifacts:continue
      artifact=call('/artifacts/'+capture['result'][key]);raw=call('/artifacts/'+artifact['id']+'/content',blob=True)
      if hashlib.sha256(raw).hexdigest()!=artifact['sha256']:raise RuntimeError('Restored imagery mismatch')
-  original=call('/imagery/jobs/'+receipt['imagery']['comparisonId'])
-  reproduced=call('/imagery/jobs',method='POST',body={'requestKey':'restore-reproduction-'+token,'kind':'NDVI_CHANGE','preparationIds':[p['preparationId'] for p in receipt['imagery']['pair']],'parameters':{'declineThreshold':.2,'minValidFraction':.5}})
-  for _ in range(5):
-   command([ROOT/'bin'/('emad-imagery.exe' if os.name=='nt' else 'emad-imagery'),'-token-file',extracted/'credentials/worker-imagery.token','-once'],env=env,stdout=subprocess.DEVNULL)
-   reproduced=call('/imagery/jobs/'+reproduced['id'])
-   if reproduced['status']=='SUCCEEDED':break
-  if reproduced['status']!='SUCCEEDED' or reproduced['result']['sha256']!=original['result']['sha256']:raise RuntimeError('Restored real imagery analysis did not reproduce its retained result')
-  scene=call('/simulation-studio/scenes/'+receipt['simulation']['sceneId'],'EXERCISE_INPUT')
-  models=call('/simulation-assets/models','EXERCISE_INPUT')['items']
-  for model in models:
-   raw=call('/simulation-assets/uploads/'+model['upload']['id']+'/content','EXERCISE_INPUT',blob=True)
-   if hashlib.sha256(raw).hexdigest()!=model['upload']['sha256']:raise RuntimeError('Restored model/environment mismatch')
-  recordingProof=[]
-  for item in (extracted/'data').glob('*accepted-run.json'):
-   run=json.loads(item.read_text(encoding='utf-8'))['id'];idx=call('/simulation-recordings/'+run,'EXERCISE_OBSERVATION','local-operator',run)
-   if idx['status']!='READY':raise RuntimeError('Restored recording is not ready')
-   frame=call('/simulation-recordings/'+run+'/frame?elapsedMs='+str(min(5000,idx['manifest']['elapsedMs'])),'EXERCISE_OBSERVATION','local-operator',run)
-   recordingProof.append({'runId':run,'events':idx['manifest']['events'],'frameSequence':frame['sequence']})
-  report={'schema':'emad.restore-acceptance.v1','acceptedAt':datetime.now(timezone.utc).isoformat(),'backupManifestSha256':digest(directory/'manifest.json'),'objectsVerified':len(m['objects']),'objectBytesVerified':m['objectBytes'],'referenceVersions':refs['total'],'imageryCaptures':len(captures),'modelsAndEnvironmentVerified':len(models),'recordings':recordingProof,'isolation':'New randomly named PostgreSQL and Garage containers/volumes; loopback ephemeral ports. Original installation was not modified.'}
+  reproduced=None
+  reproductionUnavailable=bool(receipt.get('imagery') and any(p['preparationId'] in unavailablePreparations for p in receipt['imagery']['pair']))
+  if receipt.get('imagery') and not reproductionUnavailable:
+   original=call('/imagery/jobs/'+receipt['imagery']['comparisonId'])
+   reproduced=call('/imagery/jobs',method='POST',body={'requestKey':'restore-reproduction-'+token,'kind':'NDVI_CHANGE','preparationIds':[p['preparationId'] for p in receipt['imagery']['pair']],'parameters':{'declineThreshold':.2,'minValidFraction':.5}})
+   for _ in range(5):
+    command([ROOT/'bin'/('emad-imagery.exe' if os.name=='nt' else 'emad-imagery'),'-token-file',extracted/'credentials/worker-imagery.token','-once'],env=env,stdout=subprocess.DEVNULL)
+    reproduced=call('/imagery/jobs/'+reproduced['id'])
+    if reproduced['status']=='SUCCEEDED':break
+   if reproduced['status']!='SUCCEEDED' or reproduced['result']['sha256']!=original['result']['sha256']:raise RuntimeError('Restored real imagery analysis did not reproduce its retained result')
+  models=[];recordingProof=[]
+  if cfg.get('profile','historical-full')=='historical-full' and receipt.get('simulation'):
+   scene=call('/simulation-studio/scenes/'+receipt['simulation']['sceneId'],'EXERCISE_INPUT')
+   models=call('/simulation-assets/models','EXERCISE_INPUT')['items']
+   for model in models:
+    raw=call('/simulation-assets/uploads/'+model['upload']['id']+'/content','EXERCISE_INPUT',blob=True)
+    if hashlib.sha256(raw).hexdigest()!=model['upload']['sha256']:raise RuntimeError('Restored model/environment mismatch')
+   for item in (extracted/'data').glob('*accepted-run.json'):
+    run=json.loads(item.read_text(encoding='utf-8'))['id'];idx=call('/simulation-recordings/'+run,'EXERCISE_OBSERVATION','local-operator',run)
+    if idx['status']!='READY':raise RuntimeError('Restored recording is not ready')
+    frame=call('/simulation-recordings/'+run+'/frame?elapsedMs='+str(min(5000,idx['manifest']['elapsedMs'])),'EXERCISE_OBSERVATION','local-operator',run)
+    recordingProof.append({'runId':run,'events':idx['manifest']['events'],'frameSequence':frame['sequence']})
+  counts=restored_object_counts(m['objects'],omitted)
+  report={'schema':'emad.restore-acceptance.v1','acceptedAt':datetime.now(timezone.utc).isoformat(),'backupManifestSha256':digest(directory/'manifest.json'),**counts,'referenceVersions':refs['total'],'imageryCaptures':len(captures),'modelsAndEnvironmentVerified':len(models),'recordings':recordingProof,'isolation':'New randomly named PostgreSQL and Garage containers/volumes; loopback ephemeral ports. Original installation was not modified.'}
   if navigation_proof:report['geographicNavigation']=navigation_proof
-  report['reproducedAnalysisSha256']=reproduced['result']['sha256']
+  if reproduced:report['reproducedAnalysisSha256']=reproduced['result']['sha256']
+  report['productProfile']=cfg.get('profile','historical-full')
+  report['policyUnavailableArtifactCount']=len(unavailableArtifacts)
+  report['analysisReproductionStatus']='NOT_RUN_POLICY_EXPIRED' if reproductionUnavailable else 'PASS' if reproduced else 'NOT_APPLICABLE_NO_INSTALLATION_RECEIPT'
+  report['recoveryInventory']={'status':'PASS' if hasInventory else 'NOT_AVAILABLE_LEGACY_BACKUP','tablesVerified':len(snapshot['tables']) if hasInventory else 0,'policyExcludedKeys':len(omitted),'policyOmittedObjects':sum(o['key'] in omitted for o in m['objects']),'restoredObjects':counts['objectsVerified'],'scope':'Persisted inventories are compared before forward migration; legacy backups derive current retention policy from restored metadata but do not qualify expanded recovery.'}
   save(area/'acceptance.json',report)
-  print(f'Isolated restore accepted: {len(m["objects"])} objects, {refs["total"]} reference versions, {len(recordingProof)} recording(s). Evidence: {area/"acceptance.json"}',flush=True)
+  print(f'Isolated restore accepted: {counts["objectsVerified"]} objects, {refs["total"]} reference versions, {len(recordingProof)} recording(s). Evidence: {area/"acceptance.json"}',flush=True)
   return report
  finally:
   if api is not None:
@@ -186,10 +220,13 @@ def restore(directory):
   # These names are generated in this invocation, never taken from a manifest.
   for name in volumes:subprocess.run(['docker','volume','rm',name],capture_output=True)
 
+def restored_object_counts(objects,omitted):
+ return {'objectsVerified':sum(o['key'] not in omitted for o in objects),'objectBytesVerified':sum(o['bytes'] for o in objects if o['key'] not in omitted)}
+
 def main():
- parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['backup','verify','restore-test']);parser.add_argument('--path',type=Path)
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['backup','verify','restore-test']);parser.add_argument('--path',type=Path);parser.add_argument('--quiesced',action='store_true')
  args=parser.parse_args()
- if args.action=='backup':backup();return
+ if args.action=='backup':backup(args.quiesced);return
  directory=args.path or Path(json.loads((PRIVATE/'last-backup.json').read_text(encoding='utf-8'))['path'])
  if args.action=='verify':m=check(directory);print('Paired backup integrity verified: '+str(m['objectCount'])+' objects')
  else:restore(directory)

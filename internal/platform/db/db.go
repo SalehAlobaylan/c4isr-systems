@@ -69,3 +69,11 @@ func WithTx(ctx context.Context, pool *pgxpool.Pool, fn func(tx pgx.Tx) error) e
 	}
 	return nil
 }
+
+// JoinTx joins only an explicitly bound transaction; otherwise it owns one.
+func JoinTx(ctx context.Context, pool *pgxpool.Pool, fn func(pgx.Tx) error) error {
+	if tx := transaction(ctx); tx != nil {
+		return fn(tx)
+	}
+	return WithTx(ctx, pool, fn)
+}

@@ -8,8 +8,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/analystscope"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/areas"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/contextpackage"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 )
 
@@ -26,6 +29,7 @@ func assertM3ApprovedExport(t *testing.T, f *publicFixture, published, draft, sc
 		return b
 	}
 	in := contextpackage.BuildInput{AssessmentRevisionIDs: []string{published}, AOI: publicingest.Bounds{West: 39.1601, South: 21.4893, East: 39.1607, North: 21.4899}, TimeWindow: contextpackage.Window{From: time.Date(2025, 2, 1, 0, 0, 0, 0, time.UTC), To: time.Date(2025, 2, 28, 23, 59, 59, 0, time.UTC)}, AcceptedQuality: "Synthetic angular spectral subsets; no assertion of real vegetation loss", Approval: "Approve the pinned synthetic environmental context"}
+	in.Scope = &analystscope.Input{Area: areas.Selection{Kind: "drawn", Name: "Pinned export fixture", Geometry: json.RawMessage(`{"type":"Polygon","coordinates":[[[39.16,21.489],[39.161,21.489],[39.161,21.49],[39.16,21.49],[39.16,21.489]]]}`)}, Temporal: queryscope.Temporal{Mode: "historical", Interval: &queryscope.Interval{From: in.TimeWindow.From, To: in.TimeWindow.To}, RevisionView: "latest", Timezone: "UTC"}}
 	call(f.manager, "POST", "/api/v1/context-packages", in, 400)
 	bad := in
 	bad.AssessmentRevisionIDs = []string{draft}
@@ -103,6 +107,12 @@ func assertM3ApprovedExport(t *testing.T, f *publicFixture, published, draft, sc
 	}
 	if err := b.Validate(time.Now(), true); err != nil {
 		t.Fatal("offline validator rejected frozen context", err)
+	}
+	if b.Manifest.Scope == nil || b.Manifest.Scope.ScopeHash == "" {
+		t.Fatal("export omitted its exact area/period")
+	}
+	if _, err := (analystscope.Service{Pool: f.h.pool}).Get(scopeContext(t, f.h, f.resource), b.Manifest.Scope.ID); err != nil {
+		t.Fatal("approved package did not atomically retain its scope", err)
 	}
 	for _, a := range b.Manifest.Assets {
 		if a.Kind == "assessment" {

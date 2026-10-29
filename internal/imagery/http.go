@@ -3,6 +3,7 @@ package imagery
 import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"github.com/go-chi/chi/v5"
 	"net/http"
@@ -14,6 +15,7 @@ type Handler struct{ Service *Service }
 
 func (h Handler) Mount(r chi.Router) {
 	h.mountCaptures(r)
+	h.mountPreflight(r)
 	r.Get("/imagery/scenes", func(w http.ResponseWriter, r *http.Request) {
 		var b *publicingest.Bounds
 		if raw := r.URL.Query().Get("bbox"); raw != "" {
@@ -42,7 +44,7 @@ func (h Handler) Mount(r chi.Router) {
 		if truncated {
 			items = items[:100]
 		}
-		httpx.JSON(w, 200, map[string]any{"items": items, "total": len(items), "truncated": truncated, "meaning": "Immutable catalogue metadata; analysis readiness requires a successful retained-subset preparation."})
+		httpx.JSON(w, 200, queryscope.ListMetadata(r.Context(), "scenes", legacyCatalogPage(items, len(items), truncated, "scenes")))
 	})
 	r.Get("/imagery/scenes/{id}", func(w http.ResponseWriter, r *http.Request) {
 		scene, e := h.Service.Scene(r.Context(), chi.URLParam(r, "id"))
@@ -62,7 +64,7 @@ func (h Handler) Mount(r chi.Router) {
 		if truncated {
 			items = items[:100]
 		}
-		httpx.JSON(w, 200, map[string]any{"items": items, "total": len(items), "truncated": truncated})
+		httpx.JSON(w, 200, queryscope.ListMetadata(r.Context(), "imagery", legacyCatalogPage(items, len(items), truncated, "jobs")))
 	})
 	r.Post("/imagery/jobs", func(w http.ResponseWriter, r *http.Request) {
 		var in SubmitInput
@@ -133,4 +135,14 @@ func (h Handler) Mount(r chi.Router) {
 		}
 		httpx.JSON(w, 200, j)
 	})
+}
+
+// Compatibility lists disclose their ceiling. Saved catalogs are the exact,
+// stable discovery path; a returned page length is never an omitted total.
+func legacyCatalogPage(items any, returned int, more bool, kind string) map[string]any {
+	var total any = returned
+	if more {
+		total = nil
+	}
+	return map[string]any{"items": items, "total": total, "returned": returned, "truncated": more, "hasMore": more, "representation": "legacy_bounded_first_page", "countMeaning": "Total is unknown when truncated. Open a saved catalog read for an exact count and stable continuation.", "nextCatalogRead": map[string]string{"method": "POST", "path": "/api/v1/catalog/reads", "kind": kind}}
 }

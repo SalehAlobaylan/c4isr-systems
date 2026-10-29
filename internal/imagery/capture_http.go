@@ -3,6 +3,7 @@ package imagery
 import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 )
@@ -18,7 +19,11 @@ func (h Handler) mountCaptures(r chi.Router) {
 	}
 	r.Get("/imagery/captures", func(w http.ResponseWriter, r *http.Request) {
 		v, e := h.Service.Captures(r.Context(), r.URL.Query().Get("region_id"), r.URL.Query().Get("geometry"))
-		answer(w, map[string]any{"items": v}, e, 200)
+		more := len(v) > 100
+		if more {
+			v = v[:100]
+		}
+		answer(w, queryscope.ListMetadata(r.Context(), "captures", legacyCatalogPage(v, len(v), more, "captures")), e, 200)
 	})
 	r.Post("/imagery/captures", func(w http.ResponseWriter, r *http.Request) {
 		var in CaptureInput

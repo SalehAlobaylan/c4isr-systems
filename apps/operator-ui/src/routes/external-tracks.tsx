@@ -15,22 +15,23 @@ const coverageLabel = (state: string) => ({
 
 export function ExternalTracksPage() {
   const api = useAPI(), { prefix, session, signal } = useWorkspace()
-  const {search,navigate,host} = useWorkbenchRoute('/external-tracks')
+  const {search,navigate,host,scope,scopeError,active} = useWorkbenchRoute('/external-tracks')
   const [bbox, setBBox] = useState(search.bbox ?? ''), [error, setError] = useState('')
   useEffect(() => { setBBox(search.bbox ?? '') }, [search.bbox])
-  const enabled = session.resource.partition === 'PUBLIC_EVIDENCE'
-  const tracks = useQuery({ queryKey: [...prefix, 'external-tracks', search.bbox,host?.regionId,host?.geometry], queryFn: () => api.listExternalTracks(search.bbox,host?.regionId,host?.geometry), enabled, refetchInterval: 15_000 })
+  const enabled = session.resource.partition === 'PUBLIC_EVIDENCE'&&active&&!!scope&&!scopeError
+  const tracks = useQuery({ queryKey: [...prefix, 'external-tracks',scope?.scopeHash], queryFn: ({signal}) => api.listExternalTracks(undefined,undefined,undefined,scope,signal), enabled, refetchInterval: 15_000 })
   const sources = useQuery({queryKey:[...prefix,'external-track-sources'],queryFn:()=>api.listSources(),enabled:enabled&&session.permissions.includes('sources.read'),refetchInterval:60_000})
-  const selected = useQuery({ queryKey: [...prefix, 'external-track', search.id], queryFn: () => api.getExternalTrack(search.id!), enabled: enabled && !!search.id, refetchInterval: 15_000 })
+  const selected = useQuery({ queryKey: [...prefix, 'external-track', search.id], queryFn: ({signal}) => api.getExternalTrack(search.id!,signal), enabled: enabled && !!search.id, refetchInterval: 15_000 })
   const history = useQuery({ queryKey: [...prefix, 'external-associations', search.id, selected.data?.latestEvidenceId], queryFn: () => api.getExternalAssociations(search.id!), enabled: enabled && !!search.id && session.permissions.includes('observations.read') })
   const value = selected.data
   const original = async (source: string, evidence: string) => {
     setError(''); try { const text = await api.getSourceOriginal(source, evidence); if (signal.aborted) return; const url = URL.createObjectURL(new Blob([text], { type: 'application/json' })), a = document.createElement('a'); a.href = url; a.download = `${evidence}.json`; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000) } catch (e) { if (!signal.aborted) setError(e instanceof Error ? e.message : 'Original unavailable') }
   }
+  if(!scope||scopeError)return <p role="status">{scopeError??'Resolving map scope…'} <Link to="/map" returnToMap>Choose a valid map scope</Link></p>
   return <div className="ux-page records-workspace space-y-4" aria-label="Public external tracks">
     <header className="ux-page-heading"><div><p className="ux-kicker">Public Context · Source evidence</p><h1>Aircraft & vessels</h1><p>Reported positions with source identity, age and uncertainty. Public tracks have no asset or command controls.</p></div><Link to="/map" returnToMap className="ux-button">Return to map</Link></header>
-    <form className="workspace-filterbar" onSubmit={(e) => { e.preventDefault(); void navigate({ search: (old) => ({ ...old, bbox }) }) }}><label className="min-w-0 grow">Moving-track AOI (west,south,east,north)<input className={`${control} block w-full`} value={bbox} onChange={(e) => setBBox(e.target.value)} placeholder="All authorized coverage, or enter a bounded region" /></label><button className={control}>Filter moving tracks</button></form>
-    <div className="evidence-list-heading"><h2>{tracks.data?`${tracks.data.total} reported tracks`:'Reported tracks'}</h2><span>Source-bound hypotheses · no independent identity verification</span></div>
+    <form className="workspace-filterbar" onSubmit={(e) => { e.preventDefault(); if(host)host.close();else void navigate({to:'/map'}) }}><label className="min-w-0 grow">Moving-track AOI (west,south,east,north)<input className={`${control} block w-full`} readOnly value={bbox} onChange={(e) => setBBox(e.target.value)} placeholder="All authorized coverage, or enter a bounded region" /></label><button className={control}>Choose scope on map</button></form>
+    {scope.capabilities['aircraft']?.state==='unsupported'&&<p role="status" className="ux-notice">{scope.capabilities['aircraft'].reason}</p>}<div className="evidence-list-heading"><h2>{tracks.data?`${tracks.data.total} reported tracks`:'Reported tracks'}</h2><span>Source-bound hypotheses · no independent identity verification</span></div>
     {(tracks.isError || selected.isError || history.isError || error) && <p role="alert">{error || 'Some selected public-track records are unavailable. Check the AOI, source authorization or connection.'}</p>}
     {tracks.isLoading && <p role="status">Loading reported public positions…</p>}
     {tracks.data?.total === 0 && !search.id && <section className="workspace-empty" aria-label="External track availability"><span className="empty-symbol" aria-hidden="true">◎</span><h2>No positions returned in this view</h2><p>No external moving hypotheses in this bounded view. This does not establish an absence of aircraft or vessels. Check provider access and retrieval freshness, or adjust the region.</p><div className="empty-source-status">{sources.data?.items.filter(s=>/opensky|ais|ads-b|aviation/i.test(`${s.name} ${s.type}`)).map(s=><div key={s.id}><strong>{s.name}</strong><span className="ux-status">{s.ingestion?.state??s.status}</span></div>)}</div>{sources.isError&&<p role="alert">Source status could not be loaded. <button className="underline" onClick={()=>void sources.refetch()}>Retry source status</button></p>}<div className="flex gap-2 justify-center flex-wrap"><Link className="ux-button" to="/systems">Check sources in Systems</Link><Link className="ux-button" to="/map">Explore Public Context</Link></div></section>}

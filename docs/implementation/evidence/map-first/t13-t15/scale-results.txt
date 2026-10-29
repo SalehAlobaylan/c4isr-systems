@@ -1,0 +1,8 @@
+    catalog_paging_test.go:178: geography-spatial-50000 EXPLAIN captured (5109 bytes); restricted application role
+--- PASS: TestMapFirstGeographicSnapshotBeyond300AndExactRetainedGeometry (8.54s)
+    catalog_paging_test.go:271: report-spatial-100000 EXPLAIN captured (5123 bytes); restricted application role
+    catalog_paging_test.go:277: aggregate read load=100000 elapsed=5.4808915s
+    catalog_paging_test.go:283: first drill-down page load=100000 elapsed=4.0564015s
+--- PASS: TestMapFirstAggregateDrillDownKeepsOriginalRevisionsAndCounts (64.09s)
+PASS
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/integration	73.949s

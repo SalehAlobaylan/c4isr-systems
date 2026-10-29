@@ -30,7 +30,11 @@ type profile struct {
 func sorted(v []string) []string { out := append([]string{}, v...); sort.Strings(out); return out }
 func run() error {
 	root := flag.String("credentials-dir", "private/local/credentials", "ignored private directory; credentials never printed")
+	productProfile := flag.String("profile", "map", "map or historical-full")
 	flag.Parse()
+	if *productProfile != "map" && *productProfile != "historical-full" {
+		return fmt.Errorf("profile must be map or historical-full")
+	}
 	url, e := config.LoadDatabaseURL()
 	if e != nil {
 		return e
@@ -75,7 +79,7 @@ func run() error {
 	grant := func(r access.Resource, ps ...string) access.Grant {
 		return access.Grant{Resource: r, Permissions: append([]string{"operational.read"}, ps...), SourceIDs: []string{}}
 	}
-	publicPermissions := []string{"sources.read", "sources.manage", "observations.read", "tracks.read", "classifications.read", "geofences.read", "alerts.read", "incidents.read", "assessments.read", "assessments.create", "audit.read", "imagery.jobs.submit", "context.export"}
+	publicPermissions := []string{"outputs.read", "outputs.create", "outputs.distribute", "acquisitions.read", "acquisitions.request", "geography.request", "investigations.read", "investigations.create", "investigations.edit", "investigations.manage", "sources.read", "sources.manage", "observations.read", "tracks.read", "classifications.read", "geofences.read", "alerts.read", "incidents.read", "assessments.read", "assessments.create", "audit.read", "imagery.jobs.submit", "context.export"}
 	// Use known permissions only; profile drift is rejected below, never silently
 	// applied to an existing identity maintained outside this installer.
 	filter := func(ps []string) []string {
@@ -96,6 +100,14 @@ func run() error {
 		{"local-operator", "local-exercise-human", "Development exercise operator", []access.Grant{{Resource: observation, Permissions: op, SourceIDs: []string{}}, {Resource: allRuns, Permissions: op, SourceIDs: []string{}}}},
 		{"local-evaluator", "local-evaluator-human", "Development evaluator", []access.Grant{{Resource: observation, Permissions: op, SourceIDs: []string{}}, {Resource: allRuns, Permissions: op, SourceIDs: []string{}}, grant(truth, "sim.truth.read", "sim.recordings.read", "sim.evaluation.read", "sim.evaluation.release"), grant(input, "sim.scenarios.author", "sim.runtime.control")}},
 	}
+	analystPermissions := []string{}
+	for _, permission := range publicPermissions {
+		if permission != "sources.manage" {
+			analystPermissions = append(analystPermissions, permission)
+		}
+	}
+	profiles = append(profiles, profile{"local-map-reviewer", "local-map-review-human", "Map review account (requires independent human validation)", []access.Grant{grant(pub, "sources.read", "observations.read", "investigations.read", "investigations.review", "outputs.read", "outputs.distribute")}})
+	profiles = append(profiles, profile{"local-map-analyst", "operator-01", "Map analyst", []access.Grant{grant(pub, analystPermissions...)}}, profile{"local-source-admin", "operator-01", "Local source administrator", []access.Grant{grant(pub, publicPermissions...)}})
 	for _, connector := range []string{"usgs", "usgs-history", "firms", "opensky", "ais", "metar", "gdacs", "cdse", "earthsearch"} {
 		g := grant(pub, "sources.read", "connectors.execute")
 		g.SourceIDs = []string{sourceID(connector)}
@@ -111,6 +123,9 @@ func run() error {
 		return e
 	}
 	for _, item := range profiles {
+		if *productProfile == "map" && (item.ID == "local-analyst" || item.ID == "local-author-alias" || item.ID == "local-reviewer" || item.ID == "local-operator" || item.ID == "local-evaluator" || item.ID == "worker-assets" || item.ID == "worker-runtime" || item.ID == "worker-recordings") {
+			continue
+		}
 		if item.Human != "" {
 			if _, e = pool.Exec(ctx, `INSERT INTO operators(id,name,role)VALUES($1,$2,'supervisor')ON CONFLICT DO NOTHING`, item.Human, item.Name); e != nil {
 				return e
@@ -197,7 +212,7 @@ func run() error {
 	if e = reconcileGDACS(ctx, pool, pub, sourceID("gdacs")); e != nil {
 		return e
 	}
-	summary := map[string]any{"profile": "emad.local.v1", "accounts": "development identities; no claim of review by two actual people", "workspaceId": "default", "environmentId": "local", "installedAt": time.Now().UTC()}
+	summary := map[string]any{"profile": "emad.local.v2", "productProfile": *productProfile, "accounts": "development identities; no claim of review by two actual people", "workspaceId": "default", "environmentId": "local", "installedAt": time.Now().UTC()}
 	raw, _ := json.MarshalIndent(summary, "", "  ")
 	return os.WriteFile(filepath.Join(*root, "profile.json"), raw, 0600)
 }

@@ -20,7 +20,8 @@ class APIError(RuntimeError):
 
 
 class API:
-    def __init__(self, profile='local-analyst', partition='PUBLIC_EVIDENCE', run_id=None):
+    def __init__(self, profile=None, partition='PUBLIC_EVIDENCE', run_id=None):
+        profile = profile or os.environ.get('EMAD_INSTALLER_PROFILE','local-analyst')
         self.origin=os.environ.get('EMAD_API_URL')
         if not self.origin:
             cfg = json.loads((PRIVATE/'config.json').read_text(encoding='utf-8'))
@@ -129,14 +130,15 @@ def register_public(api, receipts,stop_after_references=False):
         print(key+': '+result['status']+'; '+str(result['newEvidence'])+' retained records'+(' ('+result.get('failureCode','')+')' if result.get('failureCode') else ''),flush=True)
 
 
-def artifact(api,path,source_id,kind,media='application/json'):
+def artifact(api,path,source_id,kind,media='application/json',admission_id=None):
     raw=path.read_bytes();digest=sha(raw)
-    identifier='art_'+sha(('default/local/PUBLIC_EVIDENCE/|'+source_id+'|installed-'+digest).encode())
+    intent='installed-'+digest+('-'+sha(admission_id.encode())[:16] if admission_id else '')
+    identifier='art_'+sha(('default/local/PUBLIC_EVIDENCE/|'+source_id+'|'+intent).encode())
     existing=api.call('GET','/artifacts/'+identifier,allow_missing=True)
     if existing is not None:
         if existing['sha256']!=digest:raise RuntimeError('Retained artifact identity conflict')
         return existing if existing['state']=='READY' else api.call('PUT','/artifacts/'+identifier+'/content',raw=raw)
-    value=api.call('POST','/artifacts',{'requestKey':'installed-'+digest,'sourceId':source_id,'sha256':digest,'bytes':len(raw),'mediaType':media,'kind':kind,
+    value=api.call('POST','/artifacts',{'requestKey':intent,'sourceId':source_id,**({'requestedAdmissionId':admission_id} if admission_id else {}),'sha256':digest,'bytes':len(raw),'mediaType':media,'kind':kind,
                    'retainUntil':(datetime.now(timezone.utc)+timedelta(days=365)).isoformat().replace('+00:00','Z'),'provenance':'Retained real public-source capture; see immutable installation capture receipts. '+path.name})
     if value['state']!='READY':value=api.call('PUT','/artifacts/'+value['id']+'/content',raw=raw)
     return value

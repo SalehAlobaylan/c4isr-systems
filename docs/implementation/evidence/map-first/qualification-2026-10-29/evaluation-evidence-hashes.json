@@ -1,0 +1,41 @@
+{
+  "schema": "emad.map-first-evaluation-evidence-hashes.v1",
+  "releaseStatus": "NOT_QUALIFIED",
+  "files": [
+    {
+      "path": "docs/implementation/evidence/map-first/qualification-2026-10-29/evaluation.json",
+      "sha256": "b60e432e098ed451ea2cab0fc637747569748cfbc4fcb77c96d94604fc0a4f53",
+      "bytes": 8740
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/qualification-2026-10-29/source-state.json",
+      "sha256": "751645efcb64e93e3c17506a185ac024d435682659cc42d5929394e3ca9fa2ff",
+      "bytes": 38598
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/qualification-2026-10-29/integration-final.jsonl",
+      "sha256": "4828e7670d0e0deea962cf61554f504e51c27979a6ca4644bf11b7ff353be175",
+      "bytes": 221576
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/qualification-2026-10-29/retained-installation-summary.json",
+      "sha256": "ad97b3080ada25e70fa51b036b4cbd13034a204a65af2255c65f4f3d1d332044",
+      "bytes": 1403
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/qualification-2026-10-29/live-brief-and-capacity-error.png",
+      "sha256": "1b0e66e20bba9a9955d7395359f08342d8b44fba4870f1d4a7e8e685fd72b88a",
+      "bytes": 419192
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/qualification-2026-10-29/full-volume-fourth/result.json",
+      "sha256": "6bb1f9b4b69034f3c7194566892ec915aff287e64bdc77530f1516a52af2de8e",
+      "bytes": 9001
+    },
+    {
+      "path": "docs/implementation/MAP_FIRST_PRODUCT_EVALUATION_2026_10_29.md",
+      "sha256": "d1cbb84f2ff9e88a6b4490b3ce46f9c68f518bf7f892ef121382806b9905e4de",
+      "bytes": 6667
+    }
+  ]
+}

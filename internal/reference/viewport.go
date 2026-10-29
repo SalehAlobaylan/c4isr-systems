@@ -9,10 +9,12 @@ import (
 )
 
 type Viewport struct {
-	Type      string    `json:"type"`
-	Features  []Feature `json:"features"`
-	Matched   int       `json:"matched"`
-	Truncated bool      `json:"truncated"`
+	Offset     int       `json:"offset"`
+	NextOffset *int      `json:"nextOffset,omitempty"`
+	Type       string    `json:"type"`
+	Features   []Feature `json:"features"`
+	Matched    int       `json:"matched"`
+	Truncated  bool      `json:"truncated"`
 }
 
 func (s *Service) Viewport(ctx context.Context, b publicingest.Bounds, ids []string, offset int) (Viewport, error) {
@@ -28,7 +30,7 @@ func (s *Service) Viewport(ctx context.Context, b publicingest.Bounds, ids []str
 			return out, e
 		}
 	}
-	rows, e := db.Scoped(s.pool).Query(ctx, `SELECT f.feature_id,ST_AsGeoJSON(f.geometry),f.properties,f.dataset_id,count(*)OVER() FROM reference_features f WHERE f.dataset_id=ANY($1::text[]) AND ST_Intersects(f.geometry,ST_MakeEnvelope($2,$3,$4,$5,4326)) ORDER BY f.dataset_id,f.feature_id LIMIT 2000 OFFSET $6`, ids, b.West, b.South, b.East, b.North, offset)
+	rows, e := db.Scoped(s.pool).Query(ctx, `SELECT f.feature_id,ST_AsGeoJSON(f.geometry),f.properties,f.dataset_id,count(*)OVER() FROM reference_features f WHERE emad_content_visible('reference',f.dataset_id) AND f.dataset_id=ANY($1::text[]) AND ST_Intersects(f.geometry,ST_MakeEnvelope($2,$3,$4,$5,4326)) ORDER BY f.dataset_id,f.feature_id LIMIT 2000 OFFSET $6`, ids, b.West, b.South, b.East, b.North, offset)
 	if e != nil {
 		return out, e
 	}

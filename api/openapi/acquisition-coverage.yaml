@@ -1,0 +1,460 @@
+openapi: 3.1.0
+info:
+  title: Acquisition and selected-scope coverage
+  version: 1.0.0
+paths:
+  /acquisitions:
+    post:
+      operationId: createAcquisition
+      responses:
+        '201':
+          description: Authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcquisitionRequest'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcquisitionInput'
+    get:
+      operationId: listAcquisitions
+      responses:
+        '200':
+          description: Authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcquisitionList'
+      parameters:
+      - name: source_id
+        in: query
+        schema: &id001
+          type: string
+  /acquisitions/{id}:
+    parameters:
+    - &id002
+      name: id
+      in: path
+      required: true
+      schema: *id001
+    get:
+      operationId: getAcquisition
+      responses:
+        '200':
+          description: Authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcquisitionRequest'
+  /acquisitions/{id}/cancel:
+    parameters:
+    - *id002
+    post:
+      operationId: cancelAcquisition
+      responses:
+        '200':
+          description: Authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcquisitionRequest'
+  /coverage/query:
+    post:
+      operationId: queryCoverage
+      responses:
+        '200':
+          description: Authorized result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoverageResult'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CoverageInput'
+  /coverage/adapters:
+    get:
+      operationId: coverageAdapters
+      responses:
+        '200':
+          description: Installed capability inventory
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdapterCapability'
+                  meaning: *id001
+                required:
+                - items
+                - meaning
+  /sources/{id}/scheduler/run:
+    parameters:
+    - *id002
+    post:
+      operationId: runScheduledAcquisition
+      responses:
+        '201':
+          description: One bounded scheduled run
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+  /sources/{id}/acquisition-metrics:
+    parameters:
+    - *id002
+    get:
+      operationId: acquisitionMetrics
+      responses:
+        '200':
+          description: Durable authorized source metrics
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+components:
+  schemas:
+    AdapterCapability:
+      type: object
+      properties:
+        adapter: *id001
+        family: *id001
+        discovery: &id003
+          type: boolean
+        historical: *id003
+        retention: *id001
+        analysis: *id003
+        capture: *id003
+        credentials: *id001
+        limitMeaning: *id001
+      required:
+      - adapter
+      - family
+      - discovery
+      - historical
+      - retention
+      - analysis
+      - capture
+      - credentials
+      - limitMeaning
+    CoverageAction:
+      type: object
+      properties:
+        kind: *id001
+        sourceId: *id001
+        profileKey: *id001
+        profileRevisionId: *id001
+        requestId: *id001
+        owner: *id001
+        reason: *id001
+      required:
+      - kind
+      - owner
+      - reason
+    CoverageProfile:
+      type: object
+      properties:
+        key: *id001
+        revisionId: *id001
+        gate: *id001
+        spatialRelation: *id001
+        executionGranted: *id003
+        rights:
+          type: object
+          additionalProperties: true
+      required:
+      - key
+      - revisionId
+      - gate
+      - spatialRelation
+      - executionGranted
+      - rights
+    CoverageWindow:
+      type: object
+      properties:
+        from: &id004
+          type: string
+          format: date-time
+        to: *id004
+      required:
+      - from
+      - to
+    RetrievalReceipt:
+      type: object
+      properties:
+        runId: *id001
+        sourceId: *id001
+        profileRevisionId: *id001
+        admissionId: *id001
+        requestId: *id001
+        adapter:
+          $ref: '#/components/schemas/AdapterCapability'
+        aoi:
+          type: object
+          additionalProperties: true
+        from: *id004
+        to: *id004
+        completedAt: *id004
+        status: *id001
+        failureCode: *id001
+        pages: &id005
+          type: integer
+        rejectedRecords: *id005
+        providerTruncated: *id003
+        retainedRecords: *id005
+        unpublishedRecords: *id005
+        queryComplete: *id003
+        observationCompleteness: *id001
+        recordedUnpublishedRecords:
+          type: integer
+        publicationReconciled:
+          type: boolean
+      required:
+      - runId
+      - sourceId
+      - profileRevisionId
+      - admissionId
+      - adapter
+      - aoi
+      - from
+      - to
+      - completedAt
+      - status
+      - pages
+      - rejectedRecords
+      - providerTruncated
+      - retainedRecords
+      - unpublishedRecords
+      - queryComplete
+      - observationCompleteness
+    CoverageSource:
+      type: object
+      properties:
+        id: *id001
+        name: *id001
+        family: *id001
+        support: *id001
+        supportReason: *id001
+        capability:
+          $ref: '#/components/schemas/AdapterCapability'
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoverageProfile'
+        spatialRelation: *id001
+        retrieval: *id001
+        dataResult: *id001
+        usableRetainedRecords:
+          type:
+          - integer
+          - 'null'
+        completedWindows:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoverageWindow'
+        missingWindows:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoverageWindow'
+        latestRetrieval: *id004
+        latestEvidenceAt: *id004
+        freshness: *id001
+        observationCompleteness: *id001
+        receipts:
+          type: array
+          items:
+            $ref: '#/components/schemas/RetrievalReceipt'
+        receiptsTruncated: *id003
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoverageAction'
+      required:
+      - id
+      - name
+      - family
+      - support
+      - supportReason
+      - capability
+      - profiles
+      - spatialRelation
+      - retrieval
+      - dataResult
+      - usableRetainedRecords
+      - completedWindows
+      - missingWindows
+      - freshness
+      - observationCompleteness
+      - receipts
+      - receiptsTruncated
+      - actions
+    CoverageInput:
+      type: object
+      properties:
+        scope:
+          $ref: ./openapi.yaml#/components/schemas/ScopeInput
+        sourceId: *id001
+      required:
+      - scope
+    CoverageResult:
+      type: object
+      properties:
+        schema: *id001
+        scope:
+          $ref: ./openapi.yaml#/components/schemas/ScopeSnapshot
+        evaluatedAt: *id004
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoverageSource'
+        referenceDepth:
+          type: object
+          additionalProperties: true
+        storage: *id001
+        meaning: *id001
+        recoveryOwner: *id001
+      required:
+      - schema
+      - scope
+      - evaluatedAt
+      - sources
+      - storage
+      - meaning
+      - recoveryOwner
+    AcquisitionInput:
+      type: object
+      properties:
+        requestKey: *id001
+        sourceId: *id001
+        profileKey: *id001
+        profileRevisionId: *id001
+        investigationId: *id001
+        purpose:
+          type: string
+          enum:
+          - discovery
+          - analysis
+        scope:
+          $ref: ./openapi.yaml#/components/schemas/ScopeInput
+      required:
+      - requestKey
+      - sourceId
+      - profileKey
+      - profileRevisionId
+      - purpose
+      - scope
+      additionalProperties: false
+    AcquisitionPart:
+      type: object
+      properties:
+        id: *id001
+        requestId: *id001
+        sourceId: *id001
+        profileKey: *id001
+        profileRevisionId: *id001
+        status: *id001
+        reason: *id001
+        recoveryOwner: *id001
+        aoi:
+          type: object
+          properties:
+            west:
+              type: number
+            south:
+              type: number
+            east:
+              type: number
+            north:
+              type: number
+          required:
+          - west
+          - south
+          - east
+          - north
+        from: *id004
+        to: *id004
+        attempts: *id005
+        nextAttemptAt: *id004
+        runId:
+          type:
+          - string
+          - 'null'
+      required:
+      - id
+      - requestId
+      - sourceId
+      - profileKey
+      - profileRevisionId
+      - aoi
+      - from
+      - to
+      - status
+      - attempts
+      - recoveryOwner
+    AcquisitionRequest:
+      type: object
+      properties:
+        id: *id001
+        input:
+          $ref: '#/components/schemas/AcquisitionInput'
+        scope:
+          $ref: ./openapi.yaml#/components/schemas/ScopeSnapshot
+        kind: *id001
+        status: *id001
+        reason: *id001
+        recoveryOwner: *id001
+        requesterId: *id001
+        createdAt: *id004
+        parts:
+          type: array
+          items:
+            $ref: '#/components/schemas/AcquisitionPart'
+      required:
+      - id
+      - input
+      - scope
+      - kind
+      - status
+      - reason
+      - recoveryOwner
+      - requesterId
+      - createdAt
+      - parts
+    AcquisitionList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AcquisitionRequest'
+        returned: *id005
+        limit: *id005
+        historyMeaning: *id001
+      required:
+      - items
+      - returned
+      - limit
+      - historyMeaning
+    EvidenceValidity:
+      type: object
+      properties:
+        evidenceId: *id001
+        currentEvidenceId: *id001
+        state: *id001
+        evaluatedAt: *id004
+        meaning: *id001
+      required:
+      - evidenceId
+      - state
+      - evaluatedAt
+      - meaning

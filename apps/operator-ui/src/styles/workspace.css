@@ -1,6 +1,12 @@
 /* EMAD workspace redesign. Layout and role tokens; semantic map colours stay in tokens.css. */
 @layer components {
+  .workspace-entry { display:grid; place-items:center; min-height:100dvh; padding:24px; }
+  .workspace-entry-card { width:min(100%,540px); padding:28px; border:1px solid var(--emad-border-subtle); border-radius:8px; background:var(--emad-surface-panel); }
+  .workspace-entry-card h1 { font-size:18px; font-weight:600; letter-spacing:2px; margin-bottom:20px; }
+  .workspace-entry-card h2 { font-size:22px; font-weight:600; margin-bottom:12px; }
+  .workspace-entry-card p { color:var(--emad-text-secondary); line-height:1.6; margin:12px 0; }
   .workspace-shell { flex-shrink:0; z-index:40; position:relative; }
+  .workspace-connection-warning { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding:8px 16px; background:var(--emad-surface-inset); color:var(--emad-text-secondary); border-bottom:1px solid var(--emad-status-caution); font-size:13px; }
   .workspace-header { height:56px; display:flex; align-items:center; gap:32px; padding:0 24px; background:var(--emad-surface-nav); color:var(--emad-text-on-dark); }
   .workspace-brand { display:flex; align-items:center; gap:10px; font-size:18px; font-weight:600; letter-spacing:2px; text-decoration:none; }
   .workspace-brand>span { display:grid; place-content:center; width:28px; height:28px; border:1px solid var(--emad-signal-teal); border-radius:6px; color:var(--emad-text-on-dark); font-size:18px; }

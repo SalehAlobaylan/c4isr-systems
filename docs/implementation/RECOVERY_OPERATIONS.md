@@ -64,12 +64,12 @@ After editing private bindings, stop, run setup and start again. Missing/invalid
 
 ```powershell
 task local:stop
-task local:backup
+task local:backup QUIESCED=true
 task local:restore:test
 task dev
 ```
 
-Backup creates a consistent database dump, every private object, source/installation receipts and private configuration. Hashes are verified before its completion manifest is written. Backups remain under ignored `private/local/backups`; they contain credentials and must remain private. Copy the complete directory to protected storage for off-machine recovery. `private/local/last-backup.json` identifies the latest accepted backup.
+Stop every writer, including standalone delivery/connector/capture/imagery/retention workers, before explicitly confirming `QUIESCED=true`. Backup creates a consistent database dump, permitted private objects, source/installation receipts and private configuration. The current v2 format verifies unchanged public table/security-definition inventories and required object hashes before publishing its completion manifest. Known expired/tombstoned object keys are excluded and retention is checked again during restore. See [current map qualification/recovery limits](MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md). Backups remain under ignored `private/local/backups`; they contain credentials and must remain private. Copy the complete directory to protected storage for off-machine recovery. `private/local/last-backup.json` identifies the latest accepted backup.
 
 Restore testing uses new randomly named PostgreSQL and Garage containers/volumes and ephemeral loopback ports. It validates every byte, opens restored data through a separate API, reproduces NDVI from the restored inputs and reads retained models, geography and recordings. It removes only those temporary containers/volumes, leaving the active installation unchanged. It does not replace a production disaster-recovery procedure or restore over the original database.
 

@@ -1,0 +1,265 @@
+{
+  "schema": "emad.integration-results.v1",
+  "result": "PASS_AFTER_TARGETED_RERUNS",
+  "uniqueCases": 39,
+  "runs": [
+    {
+      "log": "map-first-t16-integration.jsonl",
+      "cases": 38,
+      "passed": 37,
+      "failed": 1,
+      "packageResult": "FAIL"
+    },
+    {
+      "log": "map-first-t16-integration-final.jsonl",
+      "cases": 9,
+      "passed": 9,
+      "failed": 0,
+      "packageResult": "PASS"
+    },
+    {
+      "log": "map-first-t16-capacity-final.jsonl",
+      "cases": 5,
+      "passed": 5,
+      "failed": 0,
+      "packageResult": "PASS"
+    }
+  ],
+  "correction": "The broad batch exposed a new alias fixture missing sources.read; corrected fixture passes in final workflow run. The final capacity accounting change is covered by the last composite/shared-quota run. Final results below use the latest result for each case.",
+  "cases": [
+    {
+      "test": "TestMapFirstDurableAcquisitionLostResponseCoverageAndCancellation",
+      "result": "PASS",
+      "seconds": 4.92,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstSharedAccountQuotaUncertainChargeAndStorageGuards",
+      "result": "PASS",
+      "seconds": 4.76,
+      "run": "map-first-t16-capacity-final.jsonl"
+    },
+    {
+      "test": "TestMapFirstCoverageUnionCappedReceiptsAndAccessIsolation",
+      "result": "PASS",
+      "seconds": 4.24,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstCoveragePublicationRecoveryFreshnessAndUnavailableQuery",
+      "result": "PASS",
+      "seconds": 5.27,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstVersionedAreasReleasesAndComponents",
+      "result": "PASS",
+      "seconds": 4.21,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstTemporalReadSnapshotsPublicationRacesAndAccess",
+      "result": "PASS",
+      "seconds": 4.31,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstCaptureScopeContainmentTimeAndAtomicity",
+      "result": "PASS",
+      "seconds": 3.97,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstCaseSaveIntentsIndependentReviewAndRework",
+      "result": "PASS",
+      "seconds": 4.54,
+      "run": "map-first-t16-integration-final.jsonl"
+    },
+    {
+      "test": "TestMapFirstCompositeFrozenRenderAndIndependentAttestation",
+      "result": "PASS",
+      "seconds": 3.96,
+      "run": "map-first-t16-capacity-final.jsonl"
+    },
+    {
+      "test": "TestMapFirstCompositeGrantRevokedDuringStorage",
+      "result": "PASS",
+      "seconds": 3.83,
+      "run": "map-first-t16-capacity-final.jsonl"
+    },
+    {
+      "test": "TestMapFirstFindingScopeHistoryAndCurrentOutputRights",
+      "result": "PASS",
+      "seconds": 4.12,
+      "run": "map-first-t16-integration-final.jsonl"
+    },
+    {
+      "test": "TestMapFirstCompositeExpiryDeletionRetryAndTombstone",
+      "result": "PASS",
+      "seconds": 5.96,
+      "run": "map-first-t16-capacity-final.jsonl"
+    },
+    {
+      "test": "TestMapFirstCatalogSnapshotsHistoryCapacityAndCursorIsolation",
+      "result": "PASS",
+      "seconds": 7.53,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstGeographicSnapshotBeyond300AndExactRetainedGeometry",
+      "result": "PASS",
+      "seconds": 4.33,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstAggregateDrillDownKeepsOriginalRevisionsAndCounts",
+      "result": "PASS",
+      "seconds": 14.25,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstReadBudgetUsesStoredJSONBytes",
+      "result": "PASS",
+      "seconds": 4.48,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestGeographicMapExactScopesHistoryAggregatesAndIsolation",
+      "result": "PASS",
+      "seconds": 60.17,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestP2CatalogueS3WorkerReproducibilityAndIndependentReview",
+      "result": "PASS",
+      "seconds": 9.82,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstImageryProposalsRollingIntentsAndCaseLinks",
+      "result": "PASS",
+      "seconds": 4.84,
+      "run": "map-first-t16-integration-final.jsonl"
+    },
+    {
+      "test": "TestMapFirstDurableInvestigationsMembershipHistoryAndConflicts",
+      "result": "PASS",
+      "seconds": 4.35,
+      "run": "map-first-t16-integration-final.jsonl"
+    },
+    {
+      "test": "TestMapFirstProvisionedMapProfileAndUpgradedDefault",
+      "result": "PASS",
+      "seconds": 6.79,
+      "run": "map-first-t16-integration-final.jsonl"
+    },
+    {
+      "test": "TestMapFirstContentPurposeCatalogHistoryCountsAndRLS",
+      "result": "PASS",
+      "seconds": 4.01,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstSiblingFailureUnknownCountsAndFrozenValidity",
+      "result": "PASS",
+      "seconds": 3.89,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestP3NativeMovingEvidenceSegmentsAndSourceIsolation",
+      "result": "PASS",
+      "seconds": 11.51,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestP3AISNativePartialCaptureAndRecovery",
+      "result": "PASS",
+      "seconds": 4.99,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstPopulatedProfileMigrationPreservesHistoryAndFencesLeases",
+      "result": "PASS",
+      "seconds": 4.5,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestPublicEventSemanticsCorrectionsAndSpatialRules",
+      "result": "PASS",
+      "seconds": 4.36,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestM1NativeFIRMSUSGSReferenceAndBitemporalEvidence",
+      "result": "PASS",
+      "seconds": 4.4,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestPublicAdmissionRetrievalRevisionsAndCoverage",
+      "result": "PASS",
+      "seconds": 4.12,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestPublicPublicationRecoveryAndCheckpointResume",
+      "result": "PASS",
+      "seconds": 3.93,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestPublicConnectorLeasesRevocationAndIsolation",
+      "result": "PASS",
+      "seconds": 3.99,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestPublicInitialOutageAndDurableQuota",
+      "result": "PASS",
+      "seconds": 3.84,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestPublicRightsHistoryAndReferenceOnlyRetention",
+      "result": "PASS",
+      "seconds": 4.41,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestReferenceCatalogRealRegionTerrainAndIsolation",
+      "result": "PASS",
+      "seconds": 4.34,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstSourceBackedSevenRegionalImportsAndAtomicActivation",
+      "result": "PASS",
+      "seconds": 16.5,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstRetrievalProfilesOriginalRightsExecutionAndSuspension",
+      "result": "PASS",
+      "seconds": 5.89,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestP33StationWeatherRevisionsRightsAndNoTracks",
+      "result": "PASS",
+      "seconds": 4.02,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestP33ReportEvidenceIndependentReviewAndLineage",
+      "result": "PASS",
+      "seconds": 4.25,
+      "run": "map-first-t16-integration.jsonl"
+    },
+    {
+      "test": "TestMapFirstCompositePrivateS3RoundTrip",
+      "result": "PASS",
+      "seconds": 5.79,
+      "run": "map-first-t16-capacity-final.jsonl"
+    }
+  ]
+}

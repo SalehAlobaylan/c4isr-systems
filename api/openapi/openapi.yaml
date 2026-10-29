@@ -48,6 +48,104 @@ tags:
   - { name: picture, description: 'Reconstruction of the operational picture at a point in time.' }
   - { name: imagery, description: 'Scoped imagery, artifacts, independent analysis and evidence review.' }
 paths:
+  /api/v1/investigations/{id}/delivery-jobs:
+    $ref: './deliveries.yaml#/paths/~1api~1v1~1investigations~1{id}~1delivery-jobs'
+  /api/v1/delivery-jobs/{id}:
+    $ref: './deliveries.yaml#/paths/~1api~1v1~1delivery-jobs~1{id}'
+  /api/v1/delivery-jobs/{id}/cancel:
+    $ref: './deliveries.yaml#/paths/~1api~1v1~1delivery-jobs~1{id}~1cancel'
+  /api/v1/delivery-jobs/{id}/retry:
+    $ref: './deliveries.yaml#/paths/~1api~1v1~1delivery-jobs~1{id}~1retry'
+  /api/v1/outputs/{id}/bundle:
+    $ref: './deliveries.yaml#/paths/~1api~1v1~1outputs~1{id}~1bundle'
+  /api/v1/outputs/{id}/attestation:
+    $ref: './deliveries.yaml#/paths/~1api~1v1~1outputs~1{id}~1attestation'
+  /api/v1/investigations/{id}/review:
+    $ref: './case-workflows.yaml#/paths/~1api~1v1~1investigations~1{id}~1review'
+  /api/v1/investigations/{id}/outputs:
+    $ref: './case-workflows.yaml#/paths/~1api~1v1~1investigations~1{id}~1outputs'
+  /api/v1/investigations/{id}/history:
+    $ref: './case-workflows.yaml#/paths/~1api~1v1~1investigations~1{id}~1history'
+  /api/v1/investigations/{id}/reviews:
+    $ref: './case-workflows.yaml#/paths/~1api~1v1~1investigations~1{id}~1reviews'
+  /api/v1/investigations/review-inbox:
+    $ref: './case-workflows.yaml#/paths/~1api~1v1~1investigations~1review-inbox'
+  /api/v1/outputs/{id}:
+    $ref: './case-workflows.yaml#/paths/~1api~1v1~1outputs~1{id}'
+  /api/v1/outputs/{id}/content:
+    $ref: './case-workflows.yaml#/paths/~1api~1v1~1outputs~1{id}~1content'
+  /api/v1/outputs/{id}/expire:
+    $ref: './case-workflows.yaml#/paths/~1api~1v1~1outputs~1{id}~1expire'
+  /api/v1/catalog/reads:
+    $ref: './catalog-workflows.yaml#/paths/~1api~1v1~1catalog~1reads'
+  /api/v1/imagery/capture-proposal:
+    $ref: './catalog-workflows.yaml#/paths/~1api~1v1~1imagery~1capture-proposal'
+  /api/v1/imagery/comparison-check:
+    $ref: './catalog-workflows.yaml#/paths/~1api~1v1~1imagery~1comparison-check'
+  /api/v1/analyst-scope/reads/{id}/records:
+    $ref: './catalog-workflows.yaml#/paths/~1api~1v1~1analyst-scope~1reads~1{id}~1records'
+  /api/v1/acquisitions:
+    $ref: './acquisition-coverage.yaml#/paths/~1acquisitions'
+  /api/v1/acquisitions/{id}:
+    $ref: './acquisition-coverage.yaml#/paths/~1acquisitions~1{id}'
+  /api/v1/acquisitions/{id}/cancel:
+    $ref: './acquisition-coverage.yaml#/paths/~1acquisitions~1{id}~1cancel'
+  /api/v1/coverage/query:
+    $ref: './acquisition-coverage.yaml#/paths/~1coverage~1query'
+  /api/v1/coverage/adapters:
+    $ref: './acquisition-coverage.yaml#/paths/~1coverage~1adapters'
+  /api/v1/sources/{id}/scheduler/run:
+    $ref: './acquisition-coverage.yaml#/paths/~1sources~1{id}~1scheduler~1run'
+  /api/v1/sources/{id}/acquisition-metrics:
+    $ref: './acquisition-coverage.yaml#/paths/~1sources~1{id}~1acquisition-metrics'
+  /api/v1/geography/availability:
+    $ref: './reference-profiles.yaml#/paths/~1geography~1availability'
+  /api/v1/geography/reference-requests:
+    $ref: './reference-profiles.yaml#/paths/~1geography~1reference-requests'
+  /api/v1/geography/reference-requests/{id}/resolve:
+    $ref: './reference-profiles.yaml#/paths/~1geography~1reference-requests~1{id}~1resolve'
+  /api/v1/sources/{id}/profiles:
+    $ref: './reference-profiles.yaml#/paths/~1sources~1{id}~1profiles'
+  /api/v1/sources/{id}/profiles/{key}:
+    $ref: './reference-profiles.yaml#/paths/~1sources~1{id}~1profiles~1{key}'
+  /api/v1/sources/{id}/profiles/{key}/execution:
+    $ref: './reference-profiles.yaml#/paths/~1sources~1{id}~1profiles~1{key}~1execution'
+  /api/v1/sources/{id}/profiles/{key}/connector-runs:
+    $ref: './reference-profiles.yaml#/paths/~1sources~1{id}~1profiles~1{key}~1connector-runs'
+  /api/v1/investigations:
+    $ref: './investigations.yaml#/paths/~1investigations'
+  /api/v1/investigations/{id}:
+    $ref: './investigations.yaml#/paths/~1investigations~1{id}'
+  /api/v1/investigations/{id}/revisions:
+    $ref: './investigations.yaml#/paths/~1investigations~1{id}~1revisions'
+  /api/v1/investigations/{id}/members:
+    $ref: './investigations.yaml#/paths/~1investigations~1{id}~1members'
+  /api/v1/areas/resolve:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1areas~1resolve'
+  /api/v1/areas/revisions:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1areas~1revisions'
+  /api/v1/areas/revisions/{id}:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1areas~1revisions~1{id}'
+  /api/v1/analyst-scope/resolve:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1analyst-scope~1resolve'
+  /api/v1/analyst-scope/freeze:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1analyst-scope~1freeze'
+  /api/v1/analyst-scope/snapshots/{id}:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1analyst-scope~1snapshots~1{id}'
+  /api/v1/analyst-scope/read:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1analyst-scope~1read'
+  /api/v1/analyst-scope/reads/{id}:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1analyst-scope~1reads~1{id}'
+  /api/v1/geography/releases:
+    get:
+      $ref: './reference-profiles.yaml#/paths/~1geography~1releases/get'
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1geography~1releases'
+  /api/v1/geography/releases/{id}:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1geography~1releases~1{id}'
+  /api/v1/geography/profiles:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1geography~1profiles'
+  /api/v1/geography/profiles/{id}:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1geography~1profiles~1{id}'
   /api/v1/map/surrounding-area:
     post:
       operationId: createSurroundingArea
@@ -102,6 +200,9 @@ paths:
     get:
       operationId: listGeographicRegions
       parameters:
+        - {name: source_id, in: query, schema: {type: string}}
+        - {name: release_id, in: query, schema: {type: string}}
+        - {name: edition_id, in: query, schema: {type: string}}
         - {in: query, name: q, schema: {type: string, maxLength: 160}}
         - {in: query, name: parent, schema: {type: string, maxLength: 160}}
         - {in: query, name: kind, schema: {type: string, enum: [country, region, governorate, place, study]}}
@@ -121,6 +222,7 @@ paths:
               type: object
               required: [sourceId, label, version, rights, receipt, sha256, artifact]
               properties:
+                staged: {type: boolean, description: Hidden from discovery until a complete release activates; exact admitted bytes remain retained}
                 sourceId: {type: string}
                 label: {type: string, maxLength: 200}
                 version: {type: string, maxLength: 160}
@@ -978,6 +1080,48 @@ paths:
           content:
             text/plain: { schema: { type: string } }
         '400': { $ref: '#/components/responses/BadRequest' }
+  /api/v1/content-purpose:
+    parameters: [{$ref: '#/components/parameters/WorkspaceHeader'}, {$ref: '#/components/parameters/EnvironmentHeader'}, {$ref: '#/components/parameters/PartitionHeader'}, {$ref: '#/components/parameters/RunHeader'}]
+    get:
+      tags: [sources]
+      operationId: listContentPurpose
+      summary: Review authorized catalog purpose without changing evidence
+      parameters:
+        - {name: view, in: query, schema: {type: string, enum: [all, unclassified], default: unclassified}}
+        - {name: kind, in: query, schema: {type: string, enum: [reference, scene, capture, job, assessment, package, artifact]}}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0, maximum: 100000}}
+      responses:
+        '200':
+          description: Source-administrator inventory, at most 100 rows per page
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total, offset, hasMore]
+                properties:
+                  items: {type: array, items: {$ref: '#/components/schemas/ContentPurposeEntry'}}
+                  total: {type: integer}
+                  offset: {type: integer}
+                  hasMore: {type: boolean}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [sources]
+      operationId: classifyContentPurpose
+      summary: Append a purpose classification with verified provenance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ContentPurposeInput'}
+      responses:
+        '201':
+          description: Classification recorded, or identical receipt already recorded
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ContentPurposeEntry'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /api/v1/auth/me:
     parameters: [{$ref: '#/components/parameters/WorkspaceHeader'}, {$ref: '#/components/parameters/EnvironmentHeader'}, {$ref: '#/components/parameters/PartitionHeader'}, {$ref: '#/components/parameters/RunHeader'}]
     get:
@@ -1009,6 +1153,10 @@ paths:
                         kind: { type: string, enum: [public, exercise, legacy] }
                         status: { type: string }
                         startedAt: { type: string, format: date-time }
+                  productProfile:
+                    type: string
+                    enum: [map, historical-full]
+                    description: Active deployment profile; map entry never restores an exercise resource.
                   accessRevision:
                     description: Opaque access fingerprint; changes when grants or source restrictions change.
                     type: string
@@ -1026,6 +1174,8 @@ paths:
       operationId: listPublicEvents
       summary: List current provider event reports, including explicit withdrawals
       parameters:
+        - {$ref: '#/components/parameters/AnalystScopeQuery'}
+        - {$ref: '#/components/parameters/AnalystScopeHashQuery'}
         - {in: query, name: geometry, schema: {type: string, maxLength: 8192}, description: Bounded WGS84 analyst study polygon}
         - {in: query, name: region_id, schema: {type: string, maxLength: 256}, description: Versioned admitted polygon scope}
         - {name: source_id, in: query, schema: {type: string, maxLength: 512}}
@@ -1106,7 +1256,7 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
   /api/v1/reference-datasets:
-    parameters: [{$ref: '#/components/parameters/WorkspaceHeader'}, {$ref: '#/components/parameters/EnvironmentHeader'}, {$ref: '#/components/parameters/PartitionHeader'}, {$ref: '#/components/parameters/RunHeader'}]
+    parameters: [{$ref: '#/components/parameters/WorkspaceHeader'}, {$ref: '#/components/parameters/EnvironmentHeader'}, {$ref: '#/components/parameters/PartitionHeader'}, {$ref: '#/components/parameters/RunHeader'}, {name: content_view, in: query, description: 'ordinary includes unclassified; other views require sources.manage', schema: {type: string, enum: [ordinary, working, unclassified, all]}}]
     get:
       tags: [sources]
       operationId: listReferenceDatasets
@@ -1926,7 +2076,7 @@ paths:
       parameters: [{ $ref: '#/components/parameters/Id' }]
       responses: { '200': { $ref: '#/components/responses/Operator' }, '401': { $ref: '#/components/responses/Unauthorized' }, '403': { $ref: '#/components/responses/Forbidden' }, '404': { $ref: '#/components/responses/NotFound' } }
   /api/v1/context-packages:
-    parameters: [{$ref: '#/components/parameters/WorkspaceHeader'}, {$ref: '#/components/parameters/EnvironmentHeader'}, {$ref: '#/components/parameters/PartitionHeader'}, {$ref: '#/components/parameters/RunHeader'}]
+    parameters: [{$ref: '#/components/parameters/WorkspaceHeader'}, {$ref: '#/components/parameters/EnvironmentHeader'}, {$ref: '#/components/parameters/PartitionHeader'}, {$ref: '#/components/parameters/RunHeader'}, {name: content_view, in: query, description: 'ordinary includes unclassified; other views require sources.manage', schema: {type: string, enum: [ordinary, working, unclassified, all]}}]
     get:
       tags: [reference]
       operationId: listContextPackages
@@ -2354,7 +2504,7 @@ paths:
                     items:
                       $ref: '#/components/schemas/ImageryScene'
                   total:
-                    type: integer
+                    type: [integer, "null"]
                   truncated:
                     type: boolean
         '400':
@@ -2368,6 +2518,8 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
       parameters:
+      - {$ref: '#/components/parameters/AnalystScopeQuery'}
+      - {$ref: '#/components/parameters/AnalystScopeHashQuery'}
       - {in: query, name: geometry, schema: {type: string, maxLength: 8192}, description: Bounded WGS84 analyst study polygon}
       - {in: query, name: region_id, schema: {type: string, maxLength: 256}, description: Versioned admitted polygon scope}
       - name: bbox
@@ -2411,6 +2563,9 @@ paths:
     - $ref: '#/components/parameters/PartitionHeader'
     - $ref: '#/components/parameters/RunHeader'
     get:
+      parameters:
+        - {$ref: '#/components/parameters/AnalystScopeQuery'}
+        - {$ref: '#/components/parameters/AnalystScopeHashQuery'}
       tags:
       - imagery
       operationId: listImageryJobs
@@ -2432,7 +2587,7 @@ paths:
                     items:
                       $ref: '#/components/schemas/ImageryJob'
                   total:
-                    type: integer
+                    type: [integer, "null"]
                   truncated:
                     type: boolean
         '400':
@@ -2607,6 +2762,9 @@ paths:
     - $ref: '#/components/parameters/PartitionHeader'
     - $ref: '#/components/parameters/RunHeader'
     get:
+      parameters:
+        - {$ref: '#/components/parameters/AnalystScopeQuery'}
+        - {$ref: '#/components/parameters/AnalystScopeHashQuery'}
       tags:
       - assessments
       operationId: listIntelligenceAssessments
@@ -2935,6 +3093,8 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
       parameters:
+      - {$ref: '#/components/parameters/AnalystScopeQuery'}
+      - {$ref: '#/components/parameters/AnalystScopeHashQuery'}
       - {in: query, name: geometry, schema: {type: string, maxLength: 8192}, description: Bounded WGS84 analyst study polygon}
       - {in: query, name: region_id, schema: {type: string, maxLength: 256}, description: Versioned admitted polygon scope}
       - in: query
@@ -3024,6 +3184,9 @@ paths:
     - $ref: '#/components/parameters/PartitionHeader'
     - $ref: '#/components/parameters/RunHeader'
     get:
+      parameters:
+        - {$ref: '#/components/parameters/AnalystScopeQuery'}
+        - {$ref: '#/components/parameters/AnalystScopeHashQuery'}
       tags:
       - assessments
       operationId: listReportAssessments
@@ -3134,6 +3297,8 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
       parameters:
+      - {$ref: '#/components/parameters/AnalystScopeQuery'}
+      - {$ref: '#/components/parameters/AnalystScopeHashQuery'}
       - {in: query, name: geometry, schema: {type: string, maxLength: 8192}, description: Bounded WGS84 analyst study polygon}
       - {in: query, name: region_id, schema: {type: string, maxLength: 256}, description: Versioned admitted polygon scope}
       - in: query
@@ -3891,6 +4056,8 @@ paths:
       tags:
       - Recovery
       parameters:
+      - {$ref: '#/components/parameters/AnalystScopeQuery'}
+      - {$ref: '#/components/parameters/AnalystScopeHashQuery'}
       - {in: query, name: geometry, schema: {type: string, maxLength: 8192}, description: Bounded WGS84 analyst study polygon}
       - {in: query, name: region_id, schema: {type: string, maxLength: 256}, description: Versioned admitted polygon scope}
       responses:
@@ -4272,6 +4439,16 @@ components:
       scheme: bearer
       bearerFormat: opaque
   parameters:
+    AnalystScopeQuery:
+      name: scope
+      in: query
+      description: JSON ScopeInput with fixed evaluated interval; legacy area/time conflicts are rejected.
+      schema: {type: string, maxLength: 3145728}
+    AnalystScopeHashQuery:
+      name: scope_hash
+      in: query
+      description: Expected scope hash; replies echo X-Analyst-Scope-Hash and X-Query-Evaluated-At.
+      schema: {type: string}
     WorkspaceHeader:
       name: X-EMAD-Workspace-ID
       in: header
@@ -4407,10 +4584,75 @@ components:
             required: [subjectType, subjectId, type, conclusion]
             properties: { subjectType: { type: string }, subjectId: { type: string }, type: { type: string }, conclusion: { type: string }, confidence: { type: number, minimum: 0, maximum: 1 }, method: { type: string }, createdBy: { type: string }, evidence: { type: array, items: { type: object, required: [type, id], properties: { type: { type: string }, id: { type: string } } } } }
   schemas:
+    DeliveryJob: {$ref: './deliveries.yaml#/components/schemas/DeliveryJob'}
+    DeliveryInput: {$ref: './deliveries.yaml#/components/schemas/DeliveryInput'}
+    EnvironmentPreparationInput: {$ref: './deliveries.yaml#/components/schemas/EnvironmentPreparationInput'}
+    FindingInput: {$ref: './case-workflows.yaml#/components/schemas/FindingInput'}
+    FindingRevision: {$ref: './case-workflows.yaml#/components/schemas/FindingRevision'}
+    CaseNotice: {$ref: './case-workflows.yaml#/components/schemas/CaseNotice'}
+    CaseReviewInput: {$ref: './case-workflows.yaml#/components/schemas/CaseReviewInput'}
+    CaseReviewEvent: {$ref: './case-workflows.yaml#/components/schemas/CaseReviewEvent'}
+    CompositeOutputInput: {$ref: './case-workflows.yaml#/components/schemas/CompositeOutputInput'}
+    CompositeOutput: {$ref: './case-workflows.yaml#/components/schemas/CompositeOutput'}
+    OutputPermissions: {$ref: './case-workflows.yaml#/components/schemas/OutputPermissions'}
+    InvestigationRevision: {$ref: './investigations.yaml#/components/schemas/InvestigationRevision'}
+    CaseRevision: {$ref: './catalog-workflows.yaml#/components/schemas/CaseRevision'}
+    CatalogInput: {$ref: './catalog-workflows.yaml#/components/schemas/CatalogInput'}
+    CatalogPage: {$ref: './catalog-workflows.yaml#/components/schemas/CatalogPage'}
+    RecordPage: {$ref: './catalog-workflows.yaml#/components/schemas/RecordPage'}
+    CaptureProposalInput: {$ref: './catalog-workflows.yaml#/components/schemas/CaptureProposalInput'}
+    CaptureProposal: {$ref: './catalog-workflows.yaml#/components/schemas/CaptureProposal'}
+    PairInput: {$ref: './catalog-workflows.yaml#/components/schemas/PairInput'}
+    PairCheck: {$ref: './catalog-workflows.yaml#/components/schemas/PairCheck'}
+    GeographicAvailability: {$ref: './reference-profiles.yaml#/components/schemas/GeographicAvailability'}
+    ReferenceDepthRequestInput: {$ref: './reference-profiles.yaml#/components/schemas/ReferenceDepthRequestInput'}
+    ReferenceDepthRequest: {$ref: './reference-profiles.yaml#/components/schemas/ReferenceDepthRequest'}
+    RetrievalProfile: {$ref: './reference-profiles.yaml#/components/schemas/RetrievalProfile'}
+    RetrievalProfileInput: {$ref: './reference-profiles.yaml#/components/schemas/RetrievalProfileInput'}
+    RetrievalExecutionGrant: {$ref: './reference-profiles.yaml#/components/schemas/RetrievalExecutionGrant'}
+    AdapterCapability: {$ref: './acquisition-coverage.yaml#/components/schemas/AdapterCapability'}
+    CoverageAction: {$ref: './acquisition-coverage.yaml#/components/schemas/CoverageAction'}
+    CoverageProfile: {$ref: './acquisition-coverage.yaml#/components/schemas/CoverageProfile'}
+    CoverageWindow: {$ref: './acquisition-coverage.yaml#/components/schemas/CoverageWindow'}
+    RetrievalReceipt: {$ref: './acquisition-coverage.yaml#/components/schemas/RetrievalReceipt'}
+    CoverageSource: {$ref: './acquisition-coverage.yaml#/components/schemas/CoverageSource'}
+    CoverageInput: {$ref: './acquisition-coverage.yaml#/components/schemas/CoverageInput'}
+    CoverageResult: {$ref: './acquisition-coverage.yaml#/components/schemas/CoverageResult'}
+    AcquisitionInput: {$ref: './acquisition-coverage.yaml#/components/schemas/AcquisitionInput'}
+    AcquisitionPart: {$ref: './acquisition-coverage.yaml#/components/schemas/AcquisitionPart'}
+    AcquisitionRequest: {$ref: './acquisition-coverage.yaml#/components/schemas/AcquisitionRequest'}
+    AcquisitionList: {$ref: './acquisition-coverage.yaml#/components/schemas/AcquisitionList'}
+    EvidenceValidity: {$ref: './acquisition-coverage.yaml#/components/schemas/EvidenceValidity'}
+    Investigation: {$ref: './investigations.yaml#/components/schemas/Investigation'}
+    InvestigationInput: {$ref: './investigations.yaml#/components/schemas/InvestigationInput'}
+    InvestigationMembership: {$ref: './investigations.yaml#/components/schemas/InvestigationMembership'}
+    InvestigationEvidence: {$ref: './investigations.yaml#/components/schemas/InvestigationEvidence'}
+    AreaSelection: {$ref: './analyst-scope.yaml#/components/schemas/AreaSelection'}
+    AreaComponent: {$ref: './analyst-scope.yaml#/components/schemas/AreaComponent'}
+    AreaDisplay: {$ref: './analyst-scope.yaml#/components/schemas/AreaDisplay'}
+    AreaGeography: {$ref: './analyst-scope.yaml#/components/schemas/AreaGeography'}
+    AreaRevision: {$ref: './analyst-scope.yaml#/components/schemas/AreaRevision'}
+    TemporalInterval: {$ref: './analyst-scope.yaml#/components/schemas/TemporalInterval'}
+    TemporalScope: {$ref: './analyst-scope.yaml#/components/schemas/TemporalScope'}
+    EvaluatedTemporalScope: {$ref: './analyst-scope.yaml#/components/schemas/EvaluatedTemporalScope'}
+    ScopeInput: {$ref: './analyst-scope.yaml#/components/schemas/ScopeInput'}
+    ScopeCapability: {$ref: './analyst-scope.yaml#/components/schemas/ScopeCapability'}
+    ScopeSnapshot: {$ref: './analyst-scope.yaml#/components/schemas/ScopeSnapshot'}
+    ScopeQueryFilters: {$ref: './analyst-scope.yaml#/components/schemas/ScopeQueryFilters'}
+    ScopeReadInput: {$ref: './analyst-scope.yaml#/components/schemas/ScopeReadInput'}
+    ScopedMapCollection: {$ref: './analyst-scope.yaml#/components/schemas/ScopedMapCollection'}
+    ScopeReadSnapshot: {$ref: './analyst-scope.yaml#/components/schemas/ScopeReadSnapshot'}
+    GeographicReleaseInput: {$ref: './analyst-scope.yaml#/components/schemas/GeographicReleaseInput'}
+    GeographicRelease: {$ref: './analyst-scope.yaml#/components/schemas/GeographicRelease'}
+    RegionProfileInput: {$ref: './analyst-scope.yaml#/components/schemas/RegionProfileInput'}
+    RegionProfile: {$ref: './analyst-scope.yaml#/components/schemas/RegionProfile'}
+
     MapFeatureCollection:
       type: object
       required: [type, features]
       properties:
+        offset: {type: integer}
+        nextOffset: {type: integer}
         type: {type: string, enum: [FeatureCollection]}
         features:
           type: array
@@ -5782,6 +6024,7 @@ components:
       - timeWindow
       - acceptedQuality
       properties:
+        scope: {$ref: '#/components/schemas/ScopeInput'}
         datasetIds:
           type: array
           minItems: 0
@@ -6025,6 +6268,11 @@ components:
       - retainUntil
       - provenance
       properties:
+        horizontalAccuracyM: {type: number, exclusiveMinimum: 0, description: 'Source-backed admitted horizontal accuracy in metres; missing blocks qualified geographic imagery export.'}
+
+        profileKey: {type: string}
+        requestedAdmissionId: {type: string}
+        dependencyAdmissionIds: {type: array, maxItems: 16, items: {type: string}}
         requestKey:
           type: string
         sourceId:
@@ -6246,6 +6494,9 @@ components:
       - requestKey
       - kind
       properties:
+        caseRevision: {$ref: '#/components/schemas/CaseRevision'}
+        captureId: {type: string}
+        scope: {$ref: '#/components/schemas/ScopeInput'}
         requestKey:
           type: string
         kind:
@@ -6274,6 +6525,9 @@ components:
       - preparationIds
       - parameters
       properties:
+        caseRevision: {$ref: '#/components/schemas/CaseRevision'}
+        captureId: {type: string}
+        scope: {$ref: '#/components/schemas/ScopeSnapshot'}
         schema:
           type: string
         kind:
@@ -7044,6 +7298,7 @@ components:
       - syntheticDerived
       - assets
       properties:
+        scope: {$ref: '#/components/schemas/ScopeSnapshot'}
         schema:
           type: string
           enum:
@@ -7207,6 +7462,7 @@ components:
       - receivedAt
       - reported
       properties:
+        currentValidity: {$ref: './acquisition-coverage.yaml#/components/schemas/EvidenceValidity'}
         knownAt:
           type: string
           format: date-time
@@ -7289,6 +7545,29 @@ components:
       - retrievedAt
       - sha256
       properties:
+        parents:
+          type: array
+          maxItems: 16
+          items:
+            type: object
+            required: [sha256, bytes, sourceId, reference, retrievedAt, crs]
+            properties:
+              sha256: {type: string}
+              bytes: {type: integer}
+              sourceId: {type: string}
+              reference: {type: string, format: uri}
+              retrievedAt: {type: string, format: date-time}
+              crs: {type: string}
+              verticalDatum: {type: string}
+
+        accuracy:
+          type: object
+          required: [horizontalM, verticalM, provenance]
+          properties:
+            horizontalM: {type: number, exclusiveMinimum: 0}
+            verticalM: {type: number, minimum: 0}
+            provenance: {type: string, minLength: 10}
+
         sourceId:
           type: string
         datasetKey:
@@ -7547,6 +7826,7 @@ components:
       - allowAnalysis
       - allowSimulationExport
       properties:
+        outputPermissions: {$ref: '#/components/schemas/OutputPermissions'}
         id:
           type: string
         legalBasis:
@@ -9448,6 +9728,29 @@ components:
     ScenarioSummaryList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/ScenarioSummary' } }, total: { type: integer } } }
     ScenarioRunList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/ScenarioRun' } }, total: { type: integer } } }
     ScenarioEventList: { type: object, required: [items, total], properties: { items: { type: array, items: { $ref: '#/components/schemas/ScenarioEvent' } }, total: { type: integer } } }
+    ContentPurposeInput:
+      type: object
+      additionalProperties: false
+      required: [kind, entityId, purpose, reason, receiptReference, expectedVersion]
+      properties:
+        kind: {type: string, enum: [reference, scene, capture, job, assessment, package, artifact]}
+        entityId: {type: string, minLength: 1, maxLength: 256}
+        purpose: {type: string, enum: [working, development, acceptance, unclassified]}
+        reason: {type: string, minLength: 10, maxLength: 2000}
+        receiptReference: {type: string, minLength: 1, maxLength: 1024}
+        expectedVersion: {type: integer, minimum: 0}
+    ContentPurposeEntry:
+      type: object
+      required: [kind, entityId, purpose, version, reason, receiptReference, actorId]
+      properties:
+        kind: {type: string}
+        entityId: {type: string}
+        purpose: {type: string, enum: [working, development, acceptance, unclassified]}
+        version: {type: integer}
+        reason: {type: string}
+        receiptReference: {type: string}
+        actorId: {type: string}
+        recordedAt: {type: string, format: date-time}
     FeatureReadiness:
       type: object
       required:
@@ -9479,6 +9782,10 @@ components:
                 type: integer
               nextAction:
                 type: string
+              countMeaning:
+                type: string
+              unclassifiedCount:
+                type: integer
         workers:
           type: array
           items:
@@ -9553,6 +9860,8 @@ components:
       - sceneId
       - aoi
       properties:
+        caseRevision: {$ref: '#/components/schemas/CaseRevision'}
+        scope: {$ref: '#/components/schemas/ScopeInput'}
         requestKey:
           type: string
         sceneId:
@@ -9606,6 +9915,8 @@ components:
           - aoi
           - method
           properties:
+            scope: {$ref: '#/components/schemas/ScopeSnapshot'}
+            caseRevision: {$ref: '#/components/schemas/CaseRevision'}
             scene:
               $ref: '#/components/schemas/ImageryScene'
             aoi:

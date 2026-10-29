@@ -5,6 +5,8 @@
 **Governing scope:** [EMAD_CURRENT_SCOPE.md](../../EMAD_CURRENT_SCOPE.md).  
 **Current objective:** A useful map-centered Public Context and Intelligence product for the **Middle East and the rest of the world**, with **geographic environment preparation only** for future simulation.
 
+**Follow-up planning:** The [code-backed gap analysis](MAP_FIRST_GAP_ANALYSIS_2026_10_25.md) and [implementation plan](MAP_FIRST_IMPLEMENTATION_PLAN_2026_10_25.md) develop these recommendations into proposed solutions, dependencies and acceptance checks. The [backlog ledger](MAP_FIRST_BACKLOG_2026_10_25.json) records planned work, not completed implementation.
+
 ## 1. Correcting the direction
 
 Simulation behavior was advanced ahead of the dedicated design conversation the user intends to have. That was a scope-management error. Runtime, actors, sensors, exercise operations, replay and evaluation must not continue as active milestones in this phase. Existing code and evidence should be preserved and clearly separated from the current map product. No deletion, worker shutdown or application change is performed by this report.

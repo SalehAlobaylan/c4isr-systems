@@ -23,6 +23,7 @@ import (
 // One location binds one admitted source and resource, preventing arbitrary URL
 // selection or reuse of a connector's quota by another source.
 type Location struct {
+	AccountBudget        *AccountBudget  `json:"accountBudget,omitempty"`
 	ID                   string          `json:"id"`
 	SourceID             string          `json:"sourceId"`
 	Resource             access.Resource `json:"resource"`
@@ -69,6 +70,7 @@ func NewRegistry(entries []Location) (Registry, error) {
 	}
 	registry := Registry{}
 	bindings := map[string]bool{}
+	groups := map[string]AccountBudget{}
 	for _, entry := range entries {
 		if err := entry.Resource.Validate(); err != nil || entry.Resource.Partition != access.PublicEvidence {
 			return nil, errors.New("connector locations require public resources")
@@ -146,6 +148,16 @@ func NewRegistry(entries []Location) (Registry, error) {
 		if entry.GateState == "" && entry.Adapter == FIRMSAdapter && !firmsKey.MatchString(entry.token) {
 			return nil, errors.New("invalid FIRMS map key format")
 		}
+		budget := entry.budget()
+		if err := budget.validate(); err != nil {
+			return nil, err
+		}
+		groupPolicy := budget
+		groupPolicy.RequestCost = 0
+		if prior, ok := groups[budget.Group]; ok && prior != groupPolicy {
+			return nil, errors.New("one provider-account group must have identical trusted budget settings")
+		}
+		groups[budget.Group] = groupPolicy
 		key := entry.Resource.ID() + "/" + entry.SourceID
 		if _, ok := registry[entry.ID]; ok || bindings[key] {
 			return nil, errors.New("duplicate connector location or source binding")

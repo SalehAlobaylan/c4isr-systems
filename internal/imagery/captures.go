@@ -4,11 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/analystscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/artifacts"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/capacity"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/caselink"
 	db "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/intents"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicevents"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"github.com/jackc/pgx/v5"
@@ -16,14 +21,18 @@ import (
 )
 
 type CaptureInput struct {
-	RequestKey string              `json:"requestKey"`
-	SceneID    string              `json:"sceneId"`
-	AOI        publicingest.Bounds `json:"aoi"`
+	CaseRevision *caselink.Revision  `json:"caseRevision,omitempty"`
+	Scope        *analystscope.Input `json:"scope,omitempty"`
+	RequestKey   string              `json:"requestKey"`
+	SceneID      string              `json:"sceneId"`
+	AOI          publicingest.Bounds `json:"aoi"`
 }
 type CaptureFrozen struct {
-	Scene  Scene               `json:"scene"`
-	AOI    publicingest.Bounds `json:"aoi"`
-	Method string              `json:"method"`
+	CaseRevision *caselink.Revision     `json:"caseRevision,omitempty"`
+	Scope        *analystscope.Snapshot `json:"scope,omitempty"`
+	Scene        Scene                  `json:"scene"`
+	AOI          publicingest.Bounds    `json:"aoi"`
+	Method       string                 `json:"method"`
 }
 type CaptureResult struct {
 	PreparationID     string   `json:"preparationId"`
@@ -84,6 +93,10 @@ func (s *Service) Captures(ctx context.Context, regions ...string) ([]Capture, e
 		return nil, apperr.Validation("invalid region")
 	}
 	geometry := ""
+	scopeGeometry, from, to, unsupported := queryscope.Catalog(ctx, "captures")
+	if unsupported {
+		return []Capture{}, nil
+	}
 	if len(regions) > 1 {
 		geometry = regions[1]
 	}
@@ -92,7 +105,10 @@ func (s *Service) Captures(ctx context.Context, regions ...string) ([]Capture, e
 			return nil, e
 		}
 	}
-	rows, e := db.Scoped(s.Pool).Query(ctx, captureSelect+`WHERE ($1::text='' OR EXISTS(SELECT 1 FROM geographic_regions g WHERE g.id=$1 AND ST_Intersects(g.geometry,ST_MakeEnvelope((input#>>'{aoi,west}')::float8,(input#>>'{aoi,south}')::float8,(input#>>'{aoi,east}')::float8,(input#>>'{aoi,north}')::float8,4326)))) AND ($2::text='' OR ST_Intersects(ST_SetSRID(ST_GeomFromGeoJSON(NULLIF($2,'')),4326),ST_MakeEnvelope((input#>>'{aoi,west}')::float8,(input#>>'{aoi,south}')::float8,(input#>>'{aoi,east}')::float8,(input#>>'{aoi,north}')::float8,4326))) ORDER BY created_at DESC,id LIMIT 100`, region, geometry)
+	if scopeGeometry != "" {
+		geometry = scopeGeometry
+	}
+	rows, e := db.Scoped(s.Pool).Query(ctx, captureSelect+`WHERE emad_content_visible('capture',id) AND ($1::text='' OR EXISTS(SELECT 1 FROM geographic_regions g WHERE g.id=$1 AND ST_Intersects(g.geometry,ST_MakeEnvelope((input#>>'{aoi,west}')::float8,(input#>>'{aoi,south}')::float8,(input#>>'{aoi,east}')::float8,(input#>>'{aoi,north}')::float8,4326)))) AND ($2::text='' OR ST_Intersects(ST_SetSRID(ST_GeomFromGeoJSON(NULLIF($2,'')),4326),ST_MakeEnvelope((input#>>'{aoi,west}')::float8,(input#>>'{aoi,south}')::float8,(input#>>'{aoi,east}')::float8,(input#>>'{aoi,north}')::float8,4326))) AND ($3::timestamptz IS NULL OR (input#>>'{scene,acquiredAt}')::timestamptz>=$3) AND ($4::timestamptz IS NULL OR (input#>>'{scene,acquiredAt}')::timestamptz<$4) ORDER BY created_at DESC,id LIMIT 101`, region, geometry, from, to)
 	if e != nil {
 		return nil, e
 	}
@@ -111,6 +127,24 @@ func (s *Service) SubmitCapture(ctx context.Context, in CaptureInput) (Capture, 
 	if e := artifacts.Public(ctx, "imagery.jobs.submit"); e != nil {
 		return Capture{}, e
 	}
+	p, _, _ := access.From(ctx)
+	if p.Kind != "human" || p.HumanID == "" {
+		return Capture{}, apperr.Forbidden("registered human capture requester required")
+	}
+	id, e := intents.Imagery(ctx, s.Pool, "capture", in.RequestKey, in, func(bound context.Context, key string) (string, error) {
+		in.RequestKey = key
+		v, e := s.submitCapture(bound, in)
+		return v.ID, e
+	})
+	if e != nil {
+		return Capture{}, e
+	}
+	return s.Capture(ctx, id)
+}
+func (s *Service) submitCapture(ctx context.Context, in CaptureInput) (Capture, error) {
+	if e := artifacts.Public(ctx, "imagery.jobs.submit"); e != nil {
+		return Capture{}, e
+	}
 	p, r, _ := access.From(ctx)
 	if p.Kind != "human" {
 		return Capture{}, apperr.Forbidden("human capture request required")
@@ -125,7 +159,7 @@ func (s *Service) SubmitCapture(ctx context.Context, in CaptureInput) (Capture, 
 	if scene.Collection != publicingest.EarthSearchDataset {
 		return Capture{}, apperr.Validation("automatic capture uses the admitted Sentinel-2 Collection 1 source")
 	}
-	a, e := s.Artifacts.Admission(ctx, scene.SourceID)
+	a, e := s.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)
 	if e != nil {
 		return Capture{}, e
 	}
@@ -140,10 +174,30 @@ func (s *Service) SubmitCapture(ctx context.Context, in CaptureInput) (Capture, 
 	if !covers {
 		return Capture{}, apperr.Validation("capture AOI is outside scene coverage")
 	}
-	frozen := CaptureFrozen{scene, in.AOI, "emad.c1-window.v1"}
+	frozen := CaptureFrozen{Scene: scene, AOI: in.AOI, Method: "emad.c1-window.v1"}
 	raw, _ := json.Marshal(frozen)
 	id := "cap_" + artifacts.Hash([]byte(r.ID()+"|"+in.RequestKey))
-	e = db.WithTx(ctx, s.Pool, func(tx pgx.Tx) error {
+	e = db.JoinTx(ctx, s.Pool, func(tx pgx.Tx) error {
+		var linkErr error
+		frozen.CaseRevision, linkErr = caselink.Resolve(ctx, tx, in.CaseRevision)
+		if linkErr != nil {
+			return linkErr
+		}
+		raw, _ = json.Marshal(frozen)
+		if in.Scope != nil {
+			v, e := (analystscope.Service{Pool: s.Pool}).Freeze(ctx, tx, *in.Scope)
+			if e != nil {
+				return e
+			}
+			if v.Capabilities["captures"].State != "supported" || !analystscope.ContainsTime(v, scene.AcquiredAt) {
+				return apperr.Validation("scene acquisition is outside the supported selected period")
+			}
+			if e = analystscope.ValidateBounds(db.UseTx(ctx, tx), s.Pool, v, in.AOI); e != nil {
+				return e
+			}
+			frozen.Scope = &v
+			raw, _ = json.Marshal(frozen)
+		}
 		if _, e := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, r.ID()+":capture-quota"); e != nil {
 			return e
 		}
@@ -163,11 +217,11 @@ func (s *Service) SubmitCapture(ctx context.Context, in CaptureInput) (Capture, 
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
-		var total, active int
-		if err = tx.QueryRow(ctx, `SELECT count(*),count(*) FILTER(WHERE status IN('QUEUED','RUNNING')) FROM imagery_capture_jobs`).Scan(&total, &active); err != nil {
+		var available bool
+		if err = tx.QueryRow(ctx, `SELECT emad_imagery_queue_available('capture',$1)`, scene.SourceID).Scan(&available); err != nil {
 			return err
 		}
-		if total >= 1000 || active >= 4 {
+		if !available {
 			return apperr.Conflict("capture queue budget exhausted")
 		}
 		_, err = tx.Exec(ctx, `INSERT INTO imagery_capture_jobs(id,source_id,input,created_by)VALUES($1,$2,$3,$4)`, id, scene.SourceID, raw, p.ID)
@@ -197,6 +251,9 @@ func (s *Service) ClaimCapture(ctx context.Context) (Capture, error) {
 			return e
 		}
 		v.Lease = ids.New("caplease")
+		if e = capacity.Reserve(ctx, s.Pool, "capture:"+v.ID+":"+v.Lease, v.SourceID, "raster-capture", 64<<20, time.Now().Add(45*time.Second)); e != nil {
+			return e
+		}
 		_, e = tx.Exec(ctx, `UPDATE imagery_capture_jobs SET status='RUNNING',attempt=attempt+1,worker_id=$2,lease_id=$3,lease_until=now()+interval '45 seconds',progress='Capturing retained source pixels',error_code='' WHERE id=$1`, v.ID, p.ID, v.Lease)
 		v.Status = "RUNNING"
 		v.Attempt++
@@ -227,6 +284,9 @@ func (s *Service) UpdateCapture(ctx context.Context, id, lease, progress string,
 		}
 		if j.Status != "SUCCEEDED" || j.Input.Kind != "PREPARE" || j.SourceID != job.SourceID || len(j.Input.Scenes) != 1 || j.Input.Scenes[0].ID != job.Input.Scene.ID || len(j.Input.Artifacts) != 1 || j.Input.Artifacts[0].ID != result.SubsetArtifactID {
 			return apperr.Validation("capture preparation does not match frozen scene")
+		}
+		if job.Input.Scope != nil && (j.Input.Scope == nil || j.Input.Scope.ScopeHash != job.Input.Scope.ScopeHash) {
+			return apperr.Validation("capture preparation must retain the exact area and period scope")
 		}
 		if len(result.WindowArtifactIDs) > 8 {
 			return apperr.Validation("capture window budget exceeded")
@@ -264,14 +324,39 @@ func (s *Service) UpdateCapture(ctx context.Context, id, lease, progress string,
 		state = "SUCCEEDED"
 	}
 	raw, _ := json.Marshal(result)
-	tag, e := db.Scoped(s.Pool).Exec(ctx, `UPDATE imagery_capture_jobs SET status=$5,progress=$4,error_code=$6,result=CASE WHEN $5='SUCCEEDED' THEN $7::jsonb ELSE result END,lease_until=now()+interval '45 seconds',finished_at=CASE WHEN $5 IN('SUCCEEDED','FAILED') THEN now() ELSE NULL END WHERE id=$1 AND worker_id=$2 AND lease_id=$3 AND status='RUNNING' AND lease_until>now()`, id, p.ID, lease, progress, state, code, raw)
+	e := db.WithTx(ctx, s.Pool, func(tx pgx.Tx) error {
+		if result != nil {
+			job, e := s.Capture(db.UseTx(ctx, tx), id)
+			if e != nil {
+				return e
+			}
+			policy, e := publicingest.LockPolicy(ctx, tx, job.SourceID, job.Input.Scene.AdmissionID)
+			if e != nil {
+				return e
+			}
+			if !policy.Rights.AllowAnalysis || !policy.Rights.RetainRaw {
+				return apperr.Forbidden("capture profile rights no longer available")
+			}
+			if e = publicingest.RequireProfileProcessing(db.UseTx(ctx, tx), s.Pool, policy); e != nil {
+				return e
+			}
+		}
+		tag, e := tx.Exec(ctx, `UPDATE imagery_capture_jobs SET status=$5,progress=$4,error_code=$6,result=CASE WHEN $5='SUCCEEDED' THEN $7::jsonb ELSE result END,lease_until=now()+interval '45 seconds',finished_at=CASE WHEN $5 IN('SUCCEEDED','FAILED') THEN now() ELSE NULL END WHERE id=$1 AND worker_id=$2 AND lease_id=$3 AND status='RUNNING' AND lease_until>now()`, id, p.ID, lease, progress, state, code, raw)
+		if e != nil {
+			return e
+		}
+		if tag.RowsAffected() != 1 {
+			return apperr.Conflict("capture lease expired, cancelled or replaced")
+		}
+		return nil
+	})
 	if e != nil {
 		return e
 	}
-	if tag.RowsAffected() != 1 {
-		return apperr.Conflict("capture lease expired, cancelled or replaced")
+	if failed || result != nil {
+		return capacity.Settle(ctx, s.Pool, "capture:"+id+":"+lease)
 	}
-	return nil
+	return capacity.Renew(ctx, s.Pool, "capture:"+id+":"+lease, time.Now().Add(45*time.Second))
 }
 func (s *Service) ControlCapture(ctx context.Context, id, action string) (Capture, error) {
 	if e := artifacts.Public(ctx, "imagery.jobs.submit"); e != nil {

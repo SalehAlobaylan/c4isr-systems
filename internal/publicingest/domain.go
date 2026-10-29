@@ -38,15 +38,24 @@ func (b Bounds) Validate() error {
 	return nil
 }
 
+type OutputPermissions struct {
+	InternalAnalysis      *bool `json:"internalAnalysis,omitempty"`
+	Citation              *bool `json:"citation,omitempty"`
+	IncludedImagery       *bool `json:"includedImagery,omitempty"`
+	RawDistribution       *bool `json:"rawDistribution,omitempty"`
+	GeographicEnvironment *bool `json:"geographicEnvironment,omitempty"`
+	MetadataRetention     *bool `json:"metadataRetention,omitempty"`
+}
 type Rights struct {
-	ID                    string     `json:"id"`
-	LegalBasis            string     `json:"legalBasis"`
-	TermsURL              string     `json:"termsUrl"`
-	Attribution           string     `json:"attribution"`
-	RetainRaw             bool       `json:"retainRaw"`
-	AllowAnalysis         bool       `json:"allowAnalysis"`
-	AllowSimulationExport bool       `json:"allowSimulationExport"`
-	ExpiresAt             *time.Time `json:"expiresAt,omitempty"`
+	OutputPermissions     *OutputPermissions `json:"outputPermissions,omitempty"`
+	ID                    string             `json:"id"`
+	LegalBasis            string             `json:"legalBasis"`
+	TermsURL              string             `json:"termsUrl"`
+	Attribution           string             `json:"attribution"`
+	RetainRaw             bool               `json:"retainRaw"`
+	AllowAnalysis         bool               `json:"allowAnalysis"`
+	AllowSimulationExport bool               `json:"allowSimulationExport"`
+	ExpiresAt             *time.Time         `json:"expiresAt,omitempty"`
 }
 
 type Policy struct {
@@ -78,6 +87,9 @@ type AdmissionInput struct {
 }
 
 type Admission struct {
+	ProfileKey         string `json:"profileKey,omitempty"`
+	ProfileRevisionID  string `json:"profileRevisionId,omitempty"`
+	CurrentAdmissionID string `json:"currentAdmissionId,omitempty"`
 	AdmissionInput
 	ID         string    `json:"id"`
 	SourceID   string    `json:"sourceId"`
@@ -175,21 +187,31 @@ type Evidence struct {
 }
 
 type Run struct {
-	Retrieval   *Retrieval `json:"retrieval,omitempty"`
-	CaptureFrom *time.Time `json:"captureFrom,omitempty"`
-	CaptureTo   *time.Time `json:"captureTo,omitempty"`
-	ID          string     `json:"id"`
-	SourceID    string     `json:"sourceId"`
-	AdmissionID string     `json:"admissionId"`
-	ConnectorID string     `json:"connectorId"`
-	PrincipalID string     `json:"principalId"`
-	StartedAt   time.Time  `json:"startedAt"`
-	FinishedAt  *time.Time `json:"finishedAt,omitempty"`
-	Status      string     `json:"status"`
-	FailureCode string     `json:"failureCode,omitempty"`
-	Requests    int        `json:"requests"`
-	NewEvidence int        `json:"newEvidence"`
-	Duplicates  int        `json:"duplicates"`
+	AcquisitionRequestID string     `json:"acquisitionRequestId,omitempty"`
+	AcquisitionPartID    string     `json:"acquisitionPartId,omitempty"`
+	QueryAOI             *Bounds    `json:"queryAoi,omitempty"`
+	QueryFrom            *time.Time `json:"queryFrom,omitempty"`
+	QueryTo              *time.Time `json:"queryTo,omitempty"`
+	Pages                int        `json:"pages"`
+	RejectedRecords      int        `json:"rejectedRecords"`
+	ProviderTruncated    bool       `json:"providerTruncated"`
+	ProfileKey           string     `json:"profileKey,omitempty"`
+	ProfileRevisionID    string     `json:"profileRevisionId,omitempty"`
+	Retrieval            *Retrieval `json:"retrieval,omitempty"`
+	CaptureFrom          *time.Time `json:"captureFrom,omitempty"`
+	CaptureTo            *time.Time `json:"captureTo,omitempty"`
+	ID                   string     `json:"id"`
+	SourceID             string     `json:"sourceId"`
+	AdmissionID          string     `json:"admissionId"`
+	ConnectorID          string     `json:"connectorId"`
+	PrincipalID          string     `json:"principalId"`
+	StartedAt            time.Time  `json:"startedAt"`
+	FinishedAt           *time.Time `json:"finishedAt,omitempty"`
+	Status               string     `json:"status"`
+	FailureCode          string     `json:"failureCode,omitempty"`
+	Requests             int        `json:"requests"`
+	NewEvidence          int        `json:"newEvidence"`
+	Duplicates           int        `json:"duplicates"`
 }
 
 func normalizeIdentity(v string, max int) (string, error) {

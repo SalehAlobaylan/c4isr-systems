@@ -47,11 +47,13 @@ function mapJSONSearch(value:unknown,limit:number):string|undefined {
 const mapRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/map',
-  validateSearch: (search: Record<string, unknown>): { selected?: string; publicView?: string; region?:string; tool?:string; workbench?:string; area?:string; mapState?:string } => ({
+  validateSearch: (search: Record<string, unknown>): { investigation?:string;scope?:string;selected?: string; publicView?: string; region?:string; tool?:string; workbench?:string; area?:string; mapState?:string } => ({
+    scope:mapJSONSearch(search.scope,65536),
     mapState:mapJSONSearch(search.mapState,4096),
     area:mapJSONSearch(search.area,8192),
-    region:typeof search.region==='string'&&search.region.length<=256?search.region:undefined,
-    tool:typeof search.tool==='string'&&['systems','geography','imagery','review','context','weather','tracks','sources','jobs','simulation'].includes(search.tool)?search.tool:undefined,
+    region:search.region===undefined?undefined:typeof search.region==='string'&&search.region.length<=256?search.region:'invalid',
+    tool:typeof search.tool==='string'&&['systems','investigations','coverage','geography','imagery','review','context','weather','tracks','sources','jobs','simulation'].includes(search.tool)?search.tool:undefined,
+    investigation:typeof search.investigation==='string'&&search.investigation.length<=160?search.investigation:undefined,
     workbench:mapJSONSearch(search.workbench,2048),
     publicView: search.publicView === undefined ? undefined : (JSON.stringify(search.publicView).length > 4096 ? 'invalid' : typeof search.publicView === 'string' ? search.publicView : JSON.stringify(search.publicView)),
     selected:
@@ -84,6 +86,7 @@ const trackInspectorRoute = createRoute({
 const systemsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/systems',
+  validateSearch:(s:Record<string,unknown>):{scope?:string}=>({scope:mapJSONSearch(s.scope,65536)}),
   component: SystemsPage,
 })
 
@@ -157,7 +160,7 @@ const scenariosRoute = createRoute({
 
 const intelligenceRoute = createRoute({
   getParentRoute: () => rootRoute, path: '/intelligence', component: IntelligencePage,
-  validateSearch: (search: Record<string, unknown>): { job?: string; assessment?: string; bbox?: string; before?: string; after?: string; view?: string } => Object.fromEntries(['job', 'assessment', 'bbox', 'before', 'after', 'view'].filter((key) => typeof search[key] === 'string' && (search[key] as string).length <= 256).map((key) => [key, search[key]])),
+  validateSearch: (search: Record<string, unknown>): { scope?:string;job?: string; assessment?: string; bbox?: string; before?: string; after?: string; view?: string } => ({...Object.fromEntries(['job', 'assessment', 'bbox', 'before', 'after', 'view'].filter((key) => typeof search[key] === 'string' && (search[key] as string).length <= 256).map((key) => [key, search[key]])),scope:mapJSONSearch(search.scope,65536)}),
 })
 
 const exerciseRoute = createRoute({getParentRoute:()=>rootRoute,path:'/exercise',component:ExercisePage,validateSearch:(s:Record<string,unknown>):{run?:string}=>({run:typeof s.run==='string'&&s.run.length<=160?s.run:undefined})})
@@ -167,7 +170,8 @@ const simulationAssetsRoute = createRoute({ getParentRoute: () => rootRoute, pat
  validateSearch: (s: Record<string, unknown>): { model?: string; upload?: string } => ({model: typeof s.model === 'string' && s.model.length <= 160 ? s.model : undefined, upload: typeof s.upload === 'string' && s.upload.length <= 160 ? s.upload : undefined}),
 })
 const weatherReportsRoute = createRoute({ getParentRoute: () => rootRoute, path: '/weather-reports', component: WeatherReportsPage,
-  validateSearch: (s: Record<string, unknown>): { id?: string; bbox?: string; kind?: 'WEATHER' | 'REPORT'; assessment?: string } => ({
+  validateSearch: (s: Record<string, unknown>): { scope?:string;id?: string; bbox?: string; kind?: 'WEATHER' | 'REPORT'; assessment?: string } => ({
+    scope:mapJSONSearch(s.scope,65536),
     id: typeof s.id === 'string' && s.id.length <= 160 ? s.id : undefined,
     bbox: s.bbox === undefined ? undefined : typeof s.bbox === 'string' && s.bbox.length <= 200 ? s.bbox : 'invalid',
     kind: s.kind === 'WEATHER' || s.kind === 'REPORT' ? s.kind : undefined,
@@ -175,7 +179,7 @@ const weatherReportsRoute = createRoute({ getParentRoute: () => rootRoute, path:
   }),
 })
 const externalTracksRoute = createRoute({ getParentRoute: () => rootRoute, path: '/external-tracks', component: ExternalTracksPage,
-  validateSearch: (search: Record<string, unknown>): { id?: string; bbox?: string } => ({ id: typeof search.id === 'string' && search.id.length <= 200 ? search.id : undefined, bbox: typeof search.bbox === 'string' && search.bbox.length <= 200 ? search.bbox : undefined }),
+  validateSearch: (search: Record<string, unknown>): { scope?:string;id?: string; bbox?: string } => ({scope:mapJSONSearch(search.scope,65536), id: typeof search.id === 'string' && search.id.length <= 200 ? search.id : undefined, bbox: typeof search.bbox === 'string' && search.bbox.length <= 200 ? search.bbox : undefined }),
 })
 const routeTree = rootRoute.addChildren([
   externalTracksRoute,

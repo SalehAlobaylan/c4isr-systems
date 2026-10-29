@@ -1,0 +1,138 @@
+{
+  "schema": "emad.profile-policy-callers.v1",
+  "sourceFingerprint": "960d82f6a7c0b17bff10c3470a4222dc4be94ff73f907eb827ced751b6053ba6",
+  "scope": "Current direct policy calls; continuation of the earlier immutable inventory. SQL RLS policies and artifact reads remain separate enforcement boundaries.",
+  "calls": [
+    {
+      "path": "internal/artifacts/service.go",
+      "line": 93,
+      "call": "return s.Policy(ctx, source, a.ID)"
+    },
+    {
+      "path": "internal/artifacts/service.go",
+      "line": 97,
+      "call": "func (s *Service) Policy(ctx context.Context, source, admissionID string) (publicingest.Admission, error) {"
+    },
+    {
+      "path": "internal/artifacts/service.go",
+      "line": 98,
+      "call": "a, e := publicingest.ResolvePolicy(ctx, s.Pool, source, admissionID)"
+    },
+    {
+      "path": "internal/artifacts/service.go",
+      "line": 125,
+      "call": "a, e = s.Policy(ctx, in.SourceID, original)"
+    },
+    {
+      "path": "internal/artifacts/service.go",
+      "line": 134,
+      "call": "other, e := s.Policy(ctx, in.SourceID, id)"
+    },
+    {
+      "path": "internal/artifacts/service.go",
+      "line": 270,
+      "call": "if _, e = s.Policy(ctx, a.SourceID, a.AdmissionID); e != nil {"
+    },
+    {
+      "path": "internal/artifacts/service.go",
+      "line": 277,
+      "call": "if _, e = s.Policy(ctx, a.SourceID, a.AdmissionID); e != nil {"
+    },
+    {
+      "path": "internal/artifacts/service.go",
+      "line": 284,
+      "call": "policy, e := publicingest.LockPolicy(ctx, tx, a.SourceID, a.AdmissionID)"
+    },
+    {
+      "path": "internal/assessments/review.go",
+      "line": 111,
+      "call": "a, e := r.Imagery.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)"
+    },
+    {
+      "path": "internal/contextpackage/export.go",
+      "line": 110,
+      "call": "current, err := s.images.Artifacts.Policy(ctx, a.SourceID, a.Lineage.AdmissionID)"
+    },
+    {
+      "path": "internal/contextpackage/export.go",
+      "line": 190,
+      "call": "current, err := s.images.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)"
+    },
+    {
+      "path": "internal/contextpackage/export.go",
+      "line": 328,
+      "call": "admission, err := publicingest.LockPolicy(ctx, tx, asset.SourceID, asset.Lineage.AdmissionID)"
+    },
+    {
+      "path": "internal/imagery/captures.go",
+      "line": 162,
+      "call": "a, e := s.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)"
+    },
+    {
+      "path": "internal/imagery/captures.go",
+      "line": 333,
+      "call": "policy, e := publicingest.LockPolicy(ctx, tx, job.SourceID, job.Input.Scene.AdmissionID)"
+    },
+    {
+      "path": "internal/imagery/jobs.go",
+      "line": 187,
+      "call": "admission, e := s.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)"
+    },
+    {
+      "path": "internal/imagery/jobs.go",
+      "line": 191,
+      "call": "artifactPolicy, e := s.Artifacts.Policy(ctx, input.Artifacts[index].SourceID, input.Artifacts[index].AdmissionID)"
+    },
+    {
+      "path": "internal/imagery/preflight.go",
+      "line": 58,
+      "call": "policy, e := s.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)"
+    },
+    {
+      "path": "internal/imagery/preflight.go",
+      "line": 152,
+      "call": "policy, e := s.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)"
+    },
+    {
+      "path": "internal/imagery/worker.go",
+      "line": 112,
+      "call": "policy, e := publicingest.LockPolicy(finalCtx, tx, scene.SourceID, scene.AdmissionID)"
+    },
+    {
+      "path": "internal/imagery/worker.go",
+      "line": 164,
+      "call": "admission, e := s.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)"
+    },
+    {
+      "path": "internal/imagery/worker.go",
+      "line": 256,
+      "call": "admission, e := s.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)"
+    },
+    {
+      "path": "internal/publicingest/profiles.go",
+      "line": 72,
+      "call": "if _, e := LockPolicy(ctx, tx, run.SourceID, run.AdmissionID); e != nil {"
+    },
+    {
+      "path": "internal/publicingest/profiles.go",
+      "line": 88,
+      "call": "func LockPolicy(ctx context.Context, tx pgx.Tx, source, original string) (Admission, error) {"
+    },
+    {
+      "path": "internal/publicingest/profiles.go",
+      "line": 94,
+      "call": "return ResolvePolicy(db.UseTx(ctx, tx), nil, source, original)"
+    },
+    {
+      "path": "internal/publicingest/profiles.go",
+      "line": 100,
+      "call": "func ResolvePolicy(ctx context.Context, pool *pgxpool.Pool, source, original string) (Admission, error) {"
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 511,
+      "call": "policy, policyErr := ResolvePolicy(ctx, r.pool, source, e.AdmissionID)"
+    }
+  ],
+  "newImageryBoundary": "Capture proposal and pair checks resolve each original scene admission/profile; submissions/workers retain original-and-current policy locks. Case links do not grant sources."
+}

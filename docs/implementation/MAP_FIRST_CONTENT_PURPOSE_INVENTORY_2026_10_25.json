@@ -1,0 +1,20 @@
+{
+  "schema": "emad.content-purpose-inventory.v1",
+  "source": "docs/design/product-evaluation/installation-snapshot.json",
+  "entries": [
+    {
+      "kind": "assessment",
+      "entityId": "asm_01m5m90qd2wc2vxq82jdqct6fk",
+      "purpose": "development",
+      "reason": "Exact published account-separation workflow test identified by the dated installation snapshot; it is not independent human validation.",
+      "receiptReference": "docs/design/product-evaluation/installation-snapshot.json#assessments"
+    },
+    {
+      "kind": "assessment",
+      "entityId": "asm_01m5kt9vafp7px1663kb2ehdyy",
+      "purpose": "development",
+      "reason": "Exact prepared real-imagery proposal identified by the dated evaluation snapshot; real inputs remain real and review state is preserved.",
+      "receiptReference": "docs/design/product-evaluation/installation-snapshot.json#assessments"
+    }
+  ]
+}

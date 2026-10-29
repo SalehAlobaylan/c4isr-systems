@@ -1,0 +1,51 @@
+task: Available tasks for this project:
+* build:                             Build the server binary
+* default:                           List available tasks
+* dev:                               Start the map API, web application and public workers
+* lint:                              Vet and formatting checks
+* setup:                             Install Go tooling and frontend dependencies
+* sqlc:                              Regenerate Go database code from SQL
+* test:                              Run all Go tests
+* assets:validate:test:              Verify the bounded portable model import profile
+* build:all:                         Build the API, provisioning tools, and independent Go workers/runtimes
+* contracts:buf:                     Lint protobuf contracts with Buf (install Buf separately)
+* contracts:buf-breaking:            Check protobuf compatibility against the main branch module
+* contracts:openapi:                 Regenerate browser TypeScript types from the OpenAPI contract
+* db:backup:                         Create an encrypted-at-rest-ready custom PostgreSQL dump and checksum
+* db:down:                           Stop local infrastructure
+* db:migrate:                        Apply SQL migrations after the migration preflight
+* db:reset:                          Recreate the database volume, migrate, and stop nothing else
+* db:restore:test:                   Restore a dump into a temporary database and verify PostGIS/schema integrity
+* db:rollback:                       Roll back the most recent migration (production/staging require explicit approval)
+* db:status:                         Show migration status
+* dev:api:                           Run the Go C4ISR server on the host
+* dev:db:                            Start PostgreSQL/PostGIS via Docker Compose
+* dev:historical:                    Start the preserved full historical installation explicitly
+* dev:web:                           Run the Vite operator UI on the host
+* local:backup:                      Create a paired backup after stopping every writer (requires QUIESCED=true)
+* local:doctor:                      Diagnose scoped EMAD feature readiness without exposing credentials
+* local:restore:test:                Restore the latest paired backup into isolated containers and verify referenced content
+* local:setup:                       Install persistent EMAD development infrastructure, identities and real content
+* local:setup:historical:            Install preserved historical workers and development identities explicitly
+* local:stop:                        Stop the supported development supervisor and workers, preserving database and storage
+* map:qualify:sample:                Run an isolated synthetic five-session ten-profile sample (does not qualify MAP-6)
+* ops:validate:                      Validate staging Compose, secret mounts, and observability configuration
+* scenario:list:                     List available scenarios
+* scenario:run:                      Start a scenario by name (NAME=restricted-area-intrusion)
+* scenario:runs:                     Show recent scenario runs
+* simulation:engine:evaluate:        Compare the same bounded scene in both rendering candidates
+* simulation:recordings:build:       Build the independent recording and evaluation worker
+* simulation:runtime:build:          Build the independent headless simulation runtime (use -describe to inspect its build)
+* simulation:scene:test:             Verify spatial, kinematic and no-GPU scene adapters
+* staging:backup:                    Dump the staging database from inside the Compose network
+* staging:down:                      Stop staging without deleting persistent volumes
+* staging:init:                      Generate ignored staging secret files and the local staging env file
+* staging:logs:                      Follow centralized staging logs through Docker
+* staging:smoke:                     Exercise the staged API, UI, database readiness, and observability endpoints
+* staging:status:                    Show staging service status
+* staging:up:                        Build and start the production-shaped local staging stack
+* test:browser:integration:          Build the UI and verify public/exercise workflows with PostGIS/S3 (Docker and Chromium required)
+* test:e2e:                          Run operator UI browser smoke tests (Chromium required)
+* test:integration:                  Run integration tests against real PostgreSQL/PostGIS and S3 (Docker required)
+* test:race:                         Run concurrency-sensitive tests with the race detector
+* test:unit:                         Run unit tests only

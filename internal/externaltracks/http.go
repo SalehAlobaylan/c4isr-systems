@@ -8,6 +8,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicevents"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"github.com/go-chi/chi/v5"
@@ -44,7 +45,7 @@ type Track struct {
 }
 type Service struct{ Pool *pgxpool.Pool }
 
-const trackSelect = `SELECT s.track_id,s.source_id,s.kind,s.identity_claim,s.first_seen_at,s.last_seen_at,s.latest_evidence_id,s.document,t.status,a.document,src.status,c.last_attempt_at,c.last_success_at,c.last_failure_code,c.coverage_to FROM external_track_segments s JOIN tracks t ON t.id=s.track_id AND t.scope_id=s.scope_id JOIN source_connector_state c ON c.source_id=s.source_id AND c.scope_id=s.scope_id JOIN source_admissions a ON a.id=c.admission_id JOIN sources src ON src.id=s.source_id`
+const trackSelect = `SELECT s.track_id,s.source_id,s.kind,s.identity_claim,s.first_seen_at,s.last_seen_at,s.latest_evidence_id,s.document,t.status,a.document,src.status,c.last_attempt_at,c.last_success_at,c.last_failure_code,c.coverage_to FROM external_track_segments s JOIN tracks t ON t.id=s.track_id AND t.scope_id=s.scope_id JOIN public_evidence latest_original ON latest_original.id=s.latest_evidence_id JOIN retrieval_profile_revisions original_profile ON original_profile.admission_id=latest_original.admission_id JOIN retrieval_profile_state c ON c.source_id=s.source_id AND c.scope_id=s.scope_id AND c.profile_key=original_profile.profile_key JOIN source_admissions a ON a.id=c.admission_id JOIN sources src ON src.id=s.source_id`
 
 func require(ctx context.Context) error {
 	if err := access.Require(ctx, "tracks.read"); err != nil {
@@ -130,6 +131,10 @@ func (s Service) List(ctx context.Context, b *publicingest.Bounds, source string
 		return nil, false, apperr.Validation("invalid region")
 	}
 	geometry := ""
+	scopeGeometry, from, to, unsupported := queryscope.Catalog(ctx, "aircraft")
+	if unsupported {
+		return []Track{}, false, nil
+	}
 	if len(regions) > 1 {
 		geometry = regions[1]
 	}
@@ -145,7 +150,10 @@ func (s Service) List(ctx context.Context, b *publicingest.Bounds, source string
 			return nil, false, err
 		}
 	}
-	rows, err := platformdb.Scoped(s.Pool).Query(ctx, trackSelect+` LEFT JOIN track_state st ON st.track_id=s.track_id WHERE ($1::boolean OR ST_Intersects(st.position::geometry,ST_MakeEnvelope($2,$3,$4,$5,4326))) AND ($6::text='' OR s.source_id=$6) AND ($7::text='' OR EXISTS(SELECT 1 FROM geographic_regions g WHERE g.id=$7 AND ST_Covers(g.geometry,st.position::geometry))) AND ($8::text='' OR ST_Intersects(st.position::geometry,ST_SetSRID(ST_GeomFromGeoJSON(NULLIF($8,'')),4326))) ORDER BY s.last_seen_at DESC,s.track_id LIMIT 201`, b == nil, bounds.West, bounds.South, bounds.East, bounds.North, source, region, geometry)
+	if scopeGeometry != "" {
+		geometry = scopeGeometry
+	}
+	rows, err := platformdb.Scoped(s.Pool).Query(ctx, trackSelect+` LEFT JOIN track_state st ON st.track_id=s.track_id WHERE ($1::boolean OR ST_Intersects(st.position::geometry,ST_MakeEnvelope($2,$3,$4,$5,4326))) AND ($6::text='' OR s.source_id=$6) AND ($7::text='' OR EXISTS(SELECT 1 FROM geographic_regions g WHERE g.id=$7 AND ST_Covers(g.geometry,st.position::geometry))) AND ($8::text='' OR ST_Intersects(st.position::geometry,ST_SetSRID(ST_GeomFromGeoJSON(NULLIF($8,'')),4326))) AND ($9::timestamptz IS NULL OR s.last_seen_at>=$9) AND ($10::timestamptz IS NULL OR s.last_seen_at<$10) ORDER BY s.last_seen_at DESC,s.track_id LIMIT 201`, b == nil, bounds.West, bounds.South, bounds.East, bounds.North, source, region, geometry, from, to)
 	if err != nil {
 		return nil, false, err
 	}
@@ -222,7 +230,7 @@ func (s Service) Mount(r chi.Router) {
 			httpx.Error(w, err)
 			return
 		}
-		httpx.JSON(w, 200, map[string]any{"items": items, "total": len(items), "truncated": cut})
+		httpx.JSON(w, 200, queryscope.ListMetadata(r.Context(), "aircraft", map[string]any{"items": items, "total": len(items), "truncated": cut}))
 	})
 	r.Get("/external-tracks/{id}", func(w http.ResponseWriter, r *http.Request) {
 		v, err := s.Get(r.Context(), chi.URLParam(r, "id"))

@@ -1,0 +1,210 @@
+{
+  "schema": "emad.map-first-t16-t18.verification.v1",
+  "recordedAt": "2026-10-27T07:43:08.106441+00:00",
+  "clientCompletionDate": "2026-10-27",
+  "baselineCommit": "a6d1d22f34692faea31db58e4a6318c539c3321a",
+  "sourceState": "Combined uncommitted working tree; no commit made",
+  "sourceFingerprint": "562b426648c9fbc1d749e77680be9548041a6e42e0bdaf1b4538c3ef2da25900",
+  "sourceManifest": "docs/implementation/evidence/map-first/t16-t18/source-state.json",
+  "taskState": {
+    "T16": "IMPLEMENTED",
+    "T17": "IMPLEMENTED",
+    "T18": "IMPLEMENTED"
+  },
+  "image": {
+    "tag": "emad-delivery:map-first-t16-t18",
+    "id": "sha256:3310ce90dcb27e50da09417e3fb838d23222447645a3b89ef9612084131478c4",
+    "profile": "map",
+    "scope": "Backend/public workers; production UI verified separately"
+  },
+  "checks": [
+    {
+      "id": "go",
+      "command": "GOMAXPROCS=2 go test -p 1 ./...",
+      "result": "PASS",
+      "reference": "go-tests.log"
+    },
+    {
+      "id": "vet",
+      "command": "GOMAXPROCS=2 go vet -p 1 ./...",
+      "result": "PASS",
+      "reference": "go-vet.log"
+    },
+    {
+      "id": "contracts-ui",
+      "command": "pnpm --dir apps/operator-ui run contracts:generate; pnpm --dir apps/operator-ui run build",
+      "result": "PASS",
+      "reference": "ui-build.log",
+      "note": "Existing chunk-size advisory remains."
+    },
+    {
+      "id": "integration",
+      "result": "PASS_AFTER_TARGETED_RERUNS",
+      "uniqueCases": 39,
+      "reference": "integration-results.json",
+      "scope": "38 broad cases, final 9-case workflow/Linux rerun and 5-case composite/shared-capacity rerun. Broad alias fixture lacked sources.read; corrected fixture passes. Final per-case results use the newest run. Isolated PostGIS and private in-memory fault store/actual S3; not shared deployment."
+    },
+    {
+      "id": "browser",
+      "result": "PASS",
+      "uniqueCases": 53,
+      "broadCases": 52,
+      "finalFocusedCases": 10,
+      "references": [
+        "browser-regression.log",
+        "browser-final.log"
+      ],
+      "scope": "9 overlapping focused cases plus one new in-flight-save race regression. Synthetic protocol/browser fixtures; no observed independent users."
+    },
+    {
+      "id": "linux-image",
+      "result": "PASS",
+      "reference": "linux-image-build.log",
+      "image": "sha256:3310ce90dcb27e50da09417e3fb838d23222447645a3b89ef9612084131478c4"
+    },
+    {
+      "id": "linux-final-smoke",
+      "result": "PASS",
+      "reference": "linux-smoke.jsonl",
+      "image": "sha256:3310ce90dcb27e50da09417e3fb838d23222447645a3b89ef9612084131478c4",
+      "scope": "Final Linux image startup, provisioned map profile and exact scope resolution against isolated migrated PostGIS."
+    },
+    {
+      "id": "hygiene",
+      "result": "PASS",
+      "scope": "git diff --check returned 0 (existing CRLF normalization notices); source hashes are frozen separately."
+    },
+    {
+      "id": "planning-harness",
+      "result": "PASS",
+      "reference": "planning-harness.json",
+      "faultsInjected": 12,
+      "faultsMissed": 0,
+      "scope": "Planning consistency only; does not qualify full application acceptance."
+    },
+    {
+      "id": "source-fingerprints",
+      "result": "PASS",
+      "sourceFiles": 177,
+      "mismatches": []
+    }
+  ],
+  "installation": {
+    "precedingMigrations": "User reported applied; assumed through 00051, not independently inspected",
+    "newMigration": "00052_case_workflows_and_outputs.sql",
+    "isolatedMigration": "PASS",
+    "sharedMigrationPerformed": false,
+    "deploymentPerformed": false
+  },
+  "qualification": {
+    "observedIndependentHumans": "NOT_RUN",
+    "fullAcceptanceScenarios": "NOT_RUN",
+    "releaseCandidate": "NOT_QUALIFIED",
+    "nextBatch": "T19-T21",
+    "readableBriefRenderer": "T19, not implemented in T18 foundation",
+    "unattendedOutputCleanup": "Not qualified; authorized explicit expiry/retry API is implemented"
+  },
+  "artifacts": [
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/bookmarked-scope.png",
+      "sha256": "e99cd25b1dc22283f95c7a5a60a9501f34b1a078bd10a1d874dca4ba0f193654",
+      "bytes": 648334
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/browser-final.log",
+      "sha256": "2909d557b67f31868b8abe86e1594483659517910f7463585bdfc3149f4b8e9d",
+      "bytes": 2562
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/browser-regression.log",
+      "sha256": "448dbf78b6b81043a15ee84d5f8af392a1a8c2704274ffa86cee7cd4abab3acc",
+      "bytes": 8856
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/coverage-request.png",
+      "sha256": "123918ccb188a349ee5bedfd830c381409a867151312f58c38b9b08943dd9070",
+      "bytes": 142586
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/go-tests.log",
+      "sha256": "bd3105584852d49cf93a18fd4e350eb0392f64df7dff91f038e5ac8a8591f4dd",
+      "bytes": 6054
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/go-vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/imagery-320x700-text200.png",
+      "sha256": "deea954989af749b439b32eafa4d745c85d3f221869874fc875a4ec1910bb683",
+      "bytes": 64679
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/imagery-390x844-text200.png",
+      "sha256": "8cd0ce0bb82e13a3c6eda8e6c568b752f27ba1ff48d0f8762527bca0df8787ad",
+      "bytes": 151591
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/imagery-740x360-text200.png",
+      "sha256": "81d5a6670a8e9897cf12f38ba8dc65036e8aa96fc761553abf2517eb1065f970",
+      "bytes": 130230
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/independent-review-fixture.png",
+      "sha256": "19fce593efa31f8e7ab01b385d45d5c2298338fc2c195daef0bc688beba7d13f",
+      "bytes": 700525
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/integration-results.json",
+      "sha256": "ffbcb9109a6b35200c47bbefa1806fb7454803f34ca53a36167c05577922f711",
+      "bytes": 8143
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/linux-image-build.log",
+      "sha256": "018ed695948d4988dd6dfff67e8a7d83da254731687bcac3dae713b87addf79a",
+      "bytes": 4271
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/linux-smoke.jsonl",
+      "sha256": "43423ee056ae6fcab810a28ce7537e640e915d10c26ef876382467c4e7dde884",
+      "bytes": 12719
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/map-first-t16-capacity-final.jsonl",
+      "sha256": "11e354bddf57090d4f7597203cced731fdacf7d0f4fa22ea0465f360ee70d8ab",
+      "bytes": 28052
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/map-first-t16-integration-final.jsonl",
+      "sha256": "0a5258cf48bc17d78e4fc9c756c26a6aa4190c072d2c652a37f354f8701ed1f9",
+      "bytes": 46406
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/map-first-t16-integration.jsonl",
+      "sha256": "124cce90116b68961d56708df1816cd18a07df54aed316c925302873957d31ad",
+      "bytes": 175944
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/planning-harness.json",
+      "sha256": "b60b8b2f8b58b035a5ea86210203a2feaee5ae8b26b5389535be901cfac84963",
+      "bytes": 305
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/saved-investigation.png",
+      "sha256": "2c04c4248df2f1069dfbc19412d6defab4e9a41741f80d05b2db05219920c656",
+      "bytes": 80095
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/source-state.json",
+      "sha256": "bc821a50a8aa8ff65376667c9e78cdcde07ff7b353cba4da34a79bc0d71d4ffd",
+      "bytes": 28227
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t16-t18/ui-build.log",
+      "sha256": "e58e7ef4df290b96988cd4f260d4ea22993281f270ef716f86537ee1d4baa01f",
+      "bytes": 5324
+    }
+  ],
+  "finalizationState": "VERIFIED_IMPLEMENTATION_NOT_RELEASE_QUALIFICATION"
+}

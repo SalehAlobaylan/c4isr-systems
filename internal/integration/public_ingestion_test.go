@@ -118,7 +118,12 @@ func (f *publicFixture) admit(t *testing.T) {
 }
 func (f *publicFixture) ready(t *testing.T) {
 	t.Helper()
-	_, err := f.h.pool.Exec(context.Background(), `UPDATE source_connector_state SET next_attempt_at=$2 WHERE source_id=$1`, f.source, time.Now().Add(-time.Hour))
+	// Advance the fixture's account pacing clock alongside its source clock;
+	// this never refunds spent provider credits.
+	if _, e := f.h.pool.Exec(context.Background(), `UPDATE provider_budget_state SET next_at='epoch';UPDATE provider_cost_reservations SET lease_until='epoch' WHERE state='UNCERTAIN'`); e != nil {
+		t.Fatal(e)
+	}
+	_, err := f.h.pool.Exec(context.Background(), `UPDATE retrieval_profile_state SET next_attempt_at=$2,last_attempt_at=$2 WHERE source_id=$1`, f.source, time.Now().Add(-time.Hour))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -327,6 +332,7 @@ func TestPublicConnectorLeasesRevocationAndIsolation(t *testing.T) {
 	if _, err = f.h.pool.Exec(context.Background(), `UPDATE source_connector_state SET lease_until=$2,next_attempt_at=$2 WHERE source_id=$1`, f.source, time.Now().Add(-time.Hour)); err != nil {
 		t.Fatal(err)
 	}
+	f.ready(t)
 	_, f.worker, err = store.IssueCredential(access.Bootstrap(context.Background()), "connector-fixture", f.resource, time.Now().Add(time.Hour))
 	if err != nil {
 		t.Fatal(err)

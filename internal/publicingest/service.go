@@ -3,6 +3,7 @@ package publicingest
 import (
 	"context"
 	"errors"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/capacity"
 	"math"
 	"strings"
 	"time"
@@ -92,7 +93,7 @@ func (s *Service) location(ctx context.Context, a Admission) (Location, error) {
 	return location, nil
 }
 
-func (s *Service) Admit(ctx context.Context, source string, in AdmissionInput) (Admission, error) {
+func (s *Service) Admit(ctx context.Context, source string, in AdmissionInput, expected ...string) (Admission, error) {
 	if err := requirePublic(ctx, source, "sources.manage"); err != nil {
 		return Admission{}, err
 	}
@@ -123,7 +124,7 @@ func (s *Service) Admit(ctx context.Context, source string, in AdmissionInput) (
 			return Admission{}, err
 		}
 	}
-	return s.repo.Admit(ctx, a)
+	return s.repo.Admit(ctx, a, expected...)
 }
 
 func (s *Service) Admission(ctx context.Context, source string) (Admission, error) {
@@ -175,7 +176,7 @@ func liveWorker(auth, work context.Context, source, principalID string) (context
 	if p.ID != principalID {
 		return nil, apperr.Forbidden("connector principal differs from the admission")
 	}
-	return fresh, nil
+	return preserveWork(auth, access.WithRetrievalProfile(fresh, access.RetrievalProfile(auth))), nil
 }
 
 // Execute is a bounded worker invocation, not a polling daemon. Persistent
@@ -200,7 +201,7 @@ func (s *Service) ExecuteWindow(ctx context.Context, source string, window *Wind
 	if err != nil {
 		return Run{}, err
 	}
-	if window != nil && ((location.Adapter != STACAdapter && location.Adapter != EarthSearchAdapter && location.Adapter != USGSAdapter) || window.Validate(time.Now()) != nil || window.To.Sub(window.From) > time.Duration(st.Admission.Policy.LookbackSeconds)*time.Second) {
+	if window != nil && ((location.Adapter != STACAdapter && location.Adapter != EarthSearchAdapter && location.Adapter != USGSAdapter && location.Adapter != FIRMSAdapter && location.Adapter != "emad-json-page-v1") || window.Validate(time.Now()) != nil || window.To.Sub(window.From) > time.Duration(st.Admission.Policy.LookbackSeconds)*time.Second) {
 		return Run{}, apperr.Validation("explicit historical windows require a bounded STAC query")
 	}
 	work, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -212,6 +213,18 @@ func (s *Service) ExecuteWindow(ctx context.Context, source string, window *Wind
 	run, st, err := s.repo.Begin(bound, source, p.ID, st.Admission.ID, time.Now().UTC(), window)
 	if err != nil {
 		return Run{}, err
+	}
+	if err = capacity.Reserve(bound, s.repo.pool, run.ID, source, "connector", int64(st.Admission.Policy.MaxPages)*int64(st.Admission.Policy.MaxResponseBytes)*4, time.Now().Add(45*time.Second)); err != nil {
+		run, _ = s.repo.Finish(bound, run, "PARTIAL", "storage_or_active_capacity", time.Now().Add(time.Minute), nil, time.Now().UTC())
+		return run, err
+	}
+	defer func() {
+		cleanup, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		_ = capacity.Settle(cleanup, s.repo.pool, run.ID)
+	}()
+	if run.QueryAOI != nil {
+		st.Admission.Policy.AOI = *run.QueryAOI
 	}
 	status, code := "PARTIAL", "page_budget"
 	var last *Page
@@ -240,14 +253,22 @@ func (s *Service) ExecuteWindow(ctx context.Context, source string, window *Wind
 		if err != nil {
 			return run, err
 		}
-		if err = s.repo.ReserveRequest(bound, run, time.Now().UTC()); err != nil {
-			var applicationError *apperr.Error
-			if errors.As(err, &applicationError) && applicationError.Code == apperr.CodeConflict {
-				if applicationError.Message == "daily_quota" || applicationError.Message == "rate_limited" {
-					status, code = "PARTIAL", applicationError.Message
-				} else {
-					return run, err
-				}
+
+		costID := ""
+		err = s.repo.ReserveRequest(bound, run, time.Now().UTC(), location.MaxRequestsPerDay, true)
+		if err == nil {
+			costID, err = s.reserveCost(bound, location, run)
+		}
+		if err == nil {
+			err = s.repo.ReserveRequest(bound, run, time.Now().UTC(), location.MaxRequestsPerDay)
+		}
+		if err != nil {
+			if costID != "" {
+				_ = s.releaseUnsentCost(bound, costID)
+			}
+			var app *apperr.Error
+			if errors.As(err, &app) && app.Code == apperr.CodeConflict {
+				status, code = "PARTIAL", app.Message
 			} else {
 				status, code = "FAILED", "budget_commit_failed"
 			}
@@ -256,6 +277,10 @@ func (s *Service) ExecuteWindow(ctx context.Context, source string, window *Wind
 		fetchCtx, fetchCancel := context.WithTimeout(work, time.Duration(st.Admission.Policy.TimeoutSeconds)*time.Second)
 		page, meta, fetchErr := s.fetcher.Fetch(fetchCtx, location, FetchRequest{Admission: st.Admission, Checkpoint: st.Checkpoint, Now: time.Now().UTC(), From: *st.QueryFrom, To: *st.QueryTo})
 		fetchCancel()
+		if e := s.reconcileCost(context.WithoutCancel(bound), costID, meta, fetchErr); e != nil {
+			status, code = "FAILED", "cost_reconciliation_failed"
+			break
+		}
 		if location.Adapter == OpenSkyAdapter && meta.HTTPStatus != 0 {
 			run.Retrieval = &meta
 		}
@@ -354,7 +379,7 @@ func (s *Service) ExecuteWindow(ctx context.Context, source string, window *Wind
 	if retryAt.After(next) {
 		next = retryAt
 	}
-	if code == "daily_quota" {
+	if code == "daily_quota" || code == "account_quota" || code == "account_credits_exhausted" {
 		next = time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC)
 	}
 	run, err = s.repo.Finish(bound, run, status, code, next, last, now)
@@ -368,6 +393,18 @@ func (s *Service) ExecuteWindow(ctx context.Context, source string, window *Wind
 		projectionBudget = 1000
 	}
 	_, _ = s.Replay(bound, source, projectionBudget)
+	// Projection can exhaust its own bounded cleanup budget after evidence
+	// and run completion committed. The immutable receipt gets a fresh,
+	// separately authenticated deadline and records any publication gap.
+	receiptContext, receiptCancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer receiptCancel()
+	receiptBound, e := liveWorker(ctx, receiptContext, source, p.ID)
+	if e != nil {
+		return run, e
+	}
+	if e = s.repo.RecordReceipt(receiptBound, run, location.Adapter); e != nil {
+		return run, e
+	}
 	return run, nil
 }
 

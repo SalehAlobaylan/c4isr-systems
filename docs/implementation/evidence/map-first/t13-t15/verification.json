@@ -1,0 +1,232 @@
+{
+  "schema": "emad.map-first-t13-t15.verification.v1",
+  "recordedAt": "2026-10-27T06:34:36.241053+00:00",
+  "clientCompletionDate": "2026-10-27",
+  "baselineCommit": "a6d1d22f34692faea31db58e4a6318c539c3321a",
+  "sourceState": "Combined uncommitted working tree; no commit made",
+  "sourceFingerprint": "960d82f6a7c0b17bff10c3470a4222dc4be94ff73f907eb827ced751b6053ba6",
+  "sourceManifest": "docs/implementation/evidence/map-first/t13-t15/source-state.json",
+  "taskState": {
+    "T13": "IMPLEMENTED",
+    "T14": "IMPLEMENTED",
+    "T15": "IMPLEMENTED"
+  },
+  "image": {
+    "tag": "emad-delivery:map-first-t13-t15",
+    "id": "sha256:621654c1df29908dc843d019bbe64d753646d4a4e5379dee6d1aff8884329a5c",
+    "profile": "map",
+    "scope": "Backend/public workers; UI production build verified separately"
+  },
+  "checks": [
+    {
+      "id": "go",
+      "command": "go test -p 1 ./...",
+      "result": "PASS",
+      "environment": {
+        "GOMAXPROCS": "2"
+      },
+      "scope": "All Go packages; integration suite is recorded separately."
+    },
+    {
+      "id": "vet",
+      "command": "go vet -p 1 ./...",
+      "result": "PASS"
+    },
+    {
+      "id": "ui",
+      "command": "pnpm run contracts:generate; pnpm run build",
+      "result": "PASS",
+      "scope": "Generated typed contracts and production UI bundle; existing chunk-size advisory remains."
+    },
+    {
+      "id": "browser",
+      "command": "pnpm exec playwright test map-first-tasks analyst-scope investigations-profiles acquisition-coverage product-entry paging-international-imagery --project=no-token --workers=1",
+      "result": "PASS",
+      "cases": 49,
+      "scope": "Synthetic browser protocol fixtures, separate role identities, keyboard/focus, Arabic/local RTL, narrow/short/200% text, exact scope, retries, incompatibility and renderer failure. Explicit-area camera persistence is verified across development renderer recreation."
+    },
+    {
+      "id": "assembled-integration",
+      "result": "PASS",
+      "cases": 33,
+      "seconds": 266.824,
+      "image": "sha256:621654c1df29908dc843d019bbe64d753646d4a4e5379dee6d1aff8884329a5c",
+      "environment": {
+        "C4ISR_TEST_INTEGRATION": "1",
+        "C4ISR_TEST_DELIVERY_IMAGE": "emad-delivery:map-first-t13-t15",
+        "C4ISR_TEST_GEOGRAPHY_PREPARED": "source-backed seven-area manifest, SHA256 91d75a57031af7fec8f9da689c9e07692c5200341f251b21eb50b3effea90411"
+      },
+      "reference": "docs/implementation/evidence/map-first/t13-t15/integration-results.json"
+    },
+    {
+      "id": "scale",
+      "command": "C4ISR_TEST_SCALE=1 go test -p 1 -v -count=1 -run 'TestMapFirstGeographicSnapshot|TestMapFirstAggregateDrill' ./internal/integration",
+      "result": "PASS",
+      "rows": {
+        "reports": 100000,
+        "detailedReferencePolygons": 50000,
+        "separateHistoryFixture": 1105
+      },
+      "aggregateReadSeconds": 5.4808915,
+      "firstRecordPageSeconds": 4.0564015,
+      "scope": "Serial single-run synthetic load and restricted-role EXPLAIN, not p95/concurrency/soak qualification. Recorded before the final stored-JSON-byte accounting guard, which the final assembled suite verifies separately."
+    },
+    {
+      "id": "fresh-live-pixels",
+      "result": "PASS",
+      "areas": [
+        "Al Ain, UAE",
+        "Avignon, France"
+      ],
+      "pairs": 2,
+      "retainedNativeWindows": 20,
+      "hashVerifiedCaptureFiles": 40,
+      "reference": "docs/implementation/evidence/map-first/t13-t15/live-imagery.json",
+      "scope": "Fresh anonymous retrieval of historical June 2025 acquisitions and offline existing NDVI algorithm; no production admission, complete live API journey or independent review claimed."
+    },
+    {
+      "id": "migration-51",
+      "result": "PASS",
+      "scope": "Fresh and populated isolated upgrade/readiness exercised by the assembled suite. Shared application upgrade not run."
+    },
+    {
+      "id": "local-postgres-recovery",
+      "result": "PASS",
+      "scope": "Existing container restored after host commit-memory interruption; pg_isready accepting and Docker healthy. No shared migration or application deployment."
+    },
+    {
+      "id": "planning-ledger",
+      "command": "python scripts/ops/check_map_first_plan.py --self-test",
+      "result": "PASS",
+      "faultsInjected": 12,
+      "faultsMissed": 0
+    },
+    {
+      "id": "hygiene",
+      "result": "PASS",
+      "sourceFilesChecked": 172,
+      "artifactsChecked": 18,
+      "scope": "Diff whitespace, UTF-8/newlines, current source/artifact hashes and new-report local links; historical preview drift is explicitly documented."
+    }
+  ],
+  "migrations": [
+    {
+      "path": "db/migrations/00051_catalog_and_imagery_workflows.sql",
+      "sha256": "b3b6f6a15eab6068cfd13081742a732d82897ad50d4d31800e1bc536859135ac",
+      "sharedApplied": false
+    }
+  ],
+  "sharedInstallation": "User-reported preceding migrations assumed through 00050, not independently inspected. New 00051 requires coordinated normal upgrade. Local PostgreSQL was restored to its observed prior running state after host memory pressure.",
+  "independentUsers": "NOT_RUN; E04 remains unconfirmed; session protocol provided.",
+  "completeScenarios": "A01-A24 retain their previous NOT_RUN states.",
+  "releaseQualification": "NOT_QUALIFIED",
+  "correctedDuringVerification": [
+    "Consolidated map display/count/membership into one SQL query and kept compact revision IDs private.",
+    "Counted stored JSONB representation for read-byte budgets.",
+    "Updated the legacy AIS test to demonstrate progress beyond 10,000 history rows and rejection at the retained-byte limit.",
+    "Used the actual seven-area source manifest instead of the 17-country working profile.",
+    "Stopped regenerating previews at historical output paths; earlier JSON records were not rewritten.",
+    "Handled failed WebGL initialization without losing exact scope or draft controls.",
+    "Serialized heavy checks after Windows commit-memory pressure.",
+    "Preserved the pending exact-area/camera request across development-mode renderer recreation; added an explicit geographic-center regression check."
+  ],
+  "limitations": [
+    "Single-run 100,000-report read/page times exceed proposed interactive latency targets; five-user concurrency, mixed weather/track workload and soak remain unqualified.",
+    "Live pixel qualification is isolated; production policy/grants, full application acquisition journeys and independent human review remain separate.",
+    "Prior mutable preview output paths were regenerated during early reruns; their historical hashes do not describe these current captures. New artifact hashes are recorded here.",
+    "No shared migration 00051 or application deployment performed."
+  ],
+  "artifacts": [
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/bookmarked-scope.png",
+      "sha256": "b0297b4bf55d33eb3749af31db845f84f6a798cb4cf2a62b0418b22e2318e885",
+      "bytes": 648827
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/browser-results.txt",
+      "sha256": "69ba648e920833477651c25d556725502d1cbe8464f19ec5bcccbb0d0255d90d",
+      "bytes": 7423
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/coverage-request.png",
+      "sha256": "73efdd0d03040ada68bb32efb8acb6b311a158fba7915f4cf58707cdaa742e1e",
+      "bytes": 143008
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/france-avignon-after.png",
+      "sha256": "30ff7c58497fa0cbc69be8e52a940f5c87d2e9c8536474a3ef2849f3e4776648",
+      "bytes": 431199
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/france-avignon-before.png",
+      "sha256": "441124ea59da76ba1a82bd7051eabc1165afa10fcdce30387e3be9941ebb9658",
+      "bytes": 361513
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/geography-spatial-50000-explain.json",
+      "sha256": "03c64eb0eeda6b8cf28d567840d54dfd8d8c7495c840ba808b3c934848a9710a",
+      "bytes": 5109
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/imagery-320x700-text200.png",
+      "sha256": "946d5eb56fb1a7d3517ca6142e6afd7a7d76f934989aaedf3e8ab62fbe7396db",
+      "bytes": 68733
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/imagery-390x844-text200.png",
+      "sha256": "d79ad3cec4f67faeba1387a7f8ba6b29fd575a99cf5ec69815e012899356ce94",
+      "bytes": 166684
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/imagery-740x360-text200.png",
+      "sha256": "e290438a9ef0a9d66b82b8b3f1b8a398d16bfdc3dce0cfb878204b0a6fc2d6ee",
+      "bytes": 135383
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/integration-results.json",
+      "sha256": "ae62385cc6c4b6daed5558f1d9b789992b6d1826a49c1311ef0421d69cb4d23b",
+      "bytes": 4907
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/live-artifact-index.json",
+      "sha256": "b2640e53c1b57a6ec0f1fc17da8ed54d578f463b9a7c3f76c5645f7a0a26d992",
+      "bytes": 10563
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/live-imagery.json",
+      "sha256": "aa9e3c6dd0d09f1094a43427a91784934a387263a1c804a31593a4f0a27d7335",
+      "bytes": 25278
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/profile-policy-callers.json",
+      "sha256": "309fc041dd2c1b356c2ea8d06f4390d0f652046624de982b845e1d6055fcc1e0",
+      "bytes": 5104
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/report-spatial-100000-explain.json",
+      "sha256": "22edb81f076aa05ac47522a9f0427a3f8daa584fb469c86b997f2dd64dc96aac",
+      "bytes": 5123
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/saved-investigation.png",
+      "sha256": "004e7317f4f0ae412af149a26cadfa296a98f83abe60a376ef8c4248b97f5c44",
+      "bytes": 74665
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/scale-results.txt",
+      "sha256": "53ac7e3bad9c55504a725ecc6dfe5166aeb428b8a287d6e3f1f6bf67cf7cac63",
+      "bytes": 641
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/uae-al-ain-after.png",
+      "sha256": "6987a30eac12ddc9d07a171a24781f3c10d726425a8d7c639a8b1dc232026f33",
+      "bytes": 427523
+    },
+    {
+      "path": "docs/implementation/evidence/map-first/t13-t15/uae-al-ain-before.png",
+      "sha256": "836318bd6f1ec1abefba80834232e57a81f3b524564ba31ab052689a96d12d97",
+      "bytes": 421976
+    }
+  ],
+  "finalizationState": "VERIFIED_IMPLEMENTATION_NOT_RELEASE_QUALIFICATION"
+}

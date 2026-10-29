@@ -1,8 +1,10 @@
 import type { PublicContextState } from './usePublicContext'
 import { localDateValue, type PublicFilters } from './filters'
+import {useAnalystScope} from '@/features/workspace/AnalystScopeProvider'
 
 const fieldClass = 'block min-h-9 w-full min-w-0 rounded border border-edge bg-panel px-2 py-1'
 export function PublicFiltersForm({ data }: { data: PublicContextState }) {
+  const scope=useAnalystScope(),browserZone=Intl.DateTimeFormat().resolvedOptions().timeZone
   const set = <K extends keyof PublicFilters,>(key: K, value: PublicFilters[K]) => data.setDraft((previous) => ({ ...previous, [key]: value }))
   const date = (key: 'observedFrom' | 'observedTo' | 'asOf', value: string) => set(key, value ? new Date(value).toISOString() : '')
   return <details aria-label="Filter public evidence" className="rounded border border-edge p-2">
@@ -19,7 +21,9 @@ export function PublicFiltersForm({ data }: { data: PublicContextState }) {
         {data.draft.view !== 'latest' && <label>As-of time (local)<input className={fieldClass} type="datetime-local" required value={localDateValue(data.draft.asOf)} onChange={(e) => date('asOf', e.target.value)} /></label>}
       </div>
       <label className="flex items-center gap-2"><input type="checkbox" checked={data.draft.revisions === 'all'} onChange={(e) => set('revisions', e.target.checked ? 'all' : 'latest')} /> Show all retained revisions</label>
-      <p className="text-xs text-ink-muted">Dates are queried in UTC. Provider quality is separate from assessment confidence. AOI filters exclude reports without geometry, including some withdrawals.</p>
+      <label>Display timezone<select className={fieldClass} value={scope?.input?.temporal.timezone??browserZone} onChange={e=>{if(scope?.input)scope.changePeriod({...scope.input.temporal,timezone:e.target.value})}}>{[...new Set(['UTC',browserZone,scope?.input?.temporal.timezone].filter((v):v is string=>!!v))].map(zone=><option key={zone} value={zone}>{zone}</option>)}</select></label>
+      <label><input type="checkbox" checked={scope?.input?.temporal.backgroundImagery??false} onChange={e=>{if(scope?.input)scope.changePeriod({...scope.input.temporal,backgroundImagery:e.target.checked})}}/> Include separately dated historical imagery as background context</label>
+      <p className="text-xs text-ink-muted">Date inputs use your browser timezone ({browserZone}); queries retain UTC instants and show the selected display timezone. New intervals include the start and exclude the end. Provider quality is separate from assessment confidence. Historical imagery does not contribute to current-observation counts.</p>
       <div className="flex flex-wrap gap-2"><button type="submit" className="min-h-9 rounded border border-edge px-3">Apply public filters</button><button type="button" className="min-h-9 rounded border border-edge px-3" onClick={data.resetFilters}>Reset public filters</button></div>
       {data.filterError && <p role="alert">{data.filterError}</p>}
     </form>

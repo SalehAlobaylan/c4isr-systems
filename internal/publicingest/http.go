@@ -17,6 +17,23 @@ type Handler struct{ service *Service }
 
 func NewHandler(service *Service) *Handler { return &Handler{service} }
 func (h *Handler) Mount(r chi.Router) {
+	h.mountProfiles(r)
+	r.Post("/sources/{id}/scheduler/run", func(w http.ResponseWriter, r *http.Request) {
+		v, e := h.service.RunScheduled(r.Context(), chi.URLParam(r, "id"))
+		if e != nil {
+			httpx.Error(w, e)
+			return
+		}
+		httpx.JSON(w, 201, v)
+	})
+	r.Get("/sources/{id}/acquisition-metrics", func(w http.ResponseWriter, r *http.Request) {
+		v, e := h.service.AcquisitionMetrics(r.Context(), chi.URLParam(r, "id"))
+		if e != nil {
+			httpx.Error(w, e)
+			return
+		}
+		httpx.JSON(w, 200, v)
+	})
 	r.Get("/sources/{id}/activation", func(w http.ResponseWriter, r *http.Request) {
 		v, e := h.service.Activation(r.Context(), chi.URLParam(r, "id"))
 		if e != nil {

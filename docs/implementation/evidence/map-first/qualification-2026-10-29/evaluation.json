@@ -1,0 +1,205 @@
+{
+  "schema": "emad.map-first-product-evaluation.v1",
+  "recordedAt": "2026-10-29T14:36:12.326262+00:00",
+  "clientDate": "2026-10-29",
+  "timezone": "Asia/Riyadh",
+  "releaseStatus": "NOT_QUALIFIED",
+  "taskState": {
+    "T22": "IN_PROGRESS",
+    "T23": "IN_PROGRESS",
+    "T24": "IN_PROGRESS"
+  },
+  "sourceFingerprint": "30fc5137a1827988935220863c75566ac5f5e21d320290bd6cb173b1b9dbcc95",
+  "actualInstallation": {
+    "referenceVersions": 24,
+    "countriesReturned": 177,
+    "retainedEvidenceRevisions": 3706,
+    "imageryScenes": 20,
+    "captures": 4,
+    "distinctAcquisitionDates": 2,
+    "comparisons": 1,
+    "reviewedWorkingOutputs": 0,
+    "purposeBackfill": "NOT_APPLIED; retained references/scenes/captures are unclassified",
+    "localMapIdentities": "Reconciled with supported emad-local map profile",
+    "automaticLocalEntry": "PASS; Account remains optional; backend authorization enabled"
+  },
+  "agentOperatedWalkthrough": {
+    "scope": "Actual retained installation; not independent target-user observation",
+    "caseId": "case_01m640y30aje0nn1ywnjkvehhq",
+    "caseTitle": "[Evaluation] Retained evidence near Riyadh",
+    "caseSavedAndReopened": true,
+    "briefJob": "SUCCEEDED",
+    "briefState": "READY",
+    "outputId": "output_9e3b96005e23539602bb2eeb07d239061b03a2e9b1642367b3487923c1c7923f",
+    "renderSha256": "df5a8878660e491bc73df6aa57246ef3be8d4e428f05ce385cb346a024cdcaf2",
+    "includedEvidence": 0,
+    "approval": "NOT_PERFORMED",
+    "coverageMeaning": "Unknown; no claim of absence",
+    "blockingFinding": "Active read capacity exhausted during navigation/reopening; multiple evaluation browser contexts were present. Exact lifecycle cause remains to be isolated.",
+    "usabilityFindings": [
+      "Membership and evidence inclusion still expose raw identifiers; environment preparation requires qualification JSON.",
+      "Coordinate footer remains 43.3000,24.7000 while the deliberate study and frozen brief correctly use 46.5,24.5; clarify pointer versus study coordinates."
+    ]
+  },
+  "checks": {
+    "integration": {
+      "status": "PASS",
+      "passed": 45,
+      "skipped": [
+        "TestMapFirstQualificationConcurrentSample",
+        "TestMapFirstObservedCandidateHost",
+        "TestMapFirstFullVolumeConcurrentQualification"
+      ],
+      "cases": [
+        "TestMapFirstDurableAcquisitionLostResponseCoverageAndCancellation",
+        "TestMapFirstSharedAccountQuotaUncertainChargeAndStorageGuards",
+        "TestMapFirstCoverageUnionCappedReceiptsAndAccessIsolation",
+        "TestMapFirstCoveragePublicationRecoveryFreshnessAndUnavailableQuery",
+        "TestMapFirstVersionedAreasReleasesAndComponents",
+        "TestMapFirstTemporalReadSnapshotsPublicationRacesAndAccess",
+        "TestMapFirstCaptureScopeContainmentTimeAndAtomicity",
+        "TestMapFirstCaseSaveIntentsIndependentReviewAndRework",
+        "TestMapFirstCompositeFrozenRenderAndIndependentAttestation",
+        "TestMapFirstCompositeGrantRevokedDuringStorage",
+        "TestMapFirstFindingScopeHistoryAndCurrentOutputRights",
+        "TestMapFirstCompositeExpiryDeletionRetryAndTombstone",
+        "TestMapFirstCompositePrivateS3RoundTrip",
+        "TestMapFirstCatalogSnapshotsHistoryCapacityAndCursorIsolation",
+        "TestMapFirstGeographicSnapshotBeyond300AndExactRetainedGeometry",
+        "TestMapFirstAggregateDrillDownKeepsOriginalRevisionsAndCounts",
+        "TestMapFirstGeographicCatalogHonorsExactStudyScope",
+        "TestMapFirstReadBudgetUsesStoredJSONBytes",
+        "TestMapFirstDurableBriefRenderReviewAndOfflineBundle",
+        "TestMapFirstDeliveryCancellationDuringIOAndExpiredLeaseRecovery",
+        "TestMapFirstDeliveryUnknownUploadIdentityAndExpiryReconciliation",
+        "TestMapFirstPortableEnvironmentProductFlowAndIndependentReader",
+        "TestGeographicMapExactScopesHistoryAggregatesAndIsolation",
+        "TestP2CatalogueS3WorkerReproducibilityAndIndependentReview",
+        "TestMapFirstImageryProposalsRollingIntentsAndCaseLinks",
+        "TestMapFirstDurableInvestigationsMembershipHistoryAndConflicts",
+        "TestMapFirstPairedRecoveryRetainsCasesApprovalJobsAndPrivateBytes",
+        "TestMapFirstProvisionedMapProfileAndUpgradedDefault",
+        "TestMapFirstContentPurposeCatalogHistoryCountsAndRLS",
+        "TestMapFirstSiblingFailureUnknownCountsAndFrozenValidity",
+        "TestP3NativeMovingEvidenceSegmentsAndSourceIsolation",
+        "TestP3AISNativePartialCaptureAndRecovery",
+        "TestMapFirstPopulatedProfileMigrationPreservesHistoryAndFencesLeases",
+        "TestPublicEventSemanticsCorrectionsAndSpatialRules",
+        "TestM1NativeFIRMSUSGSReferenceAndBitemporalEvidence",
+        "TestPublicAdmissionRetrievalRevisionsAndCoverage",
+        "TestPublicPublicationRecoveryAndCheckpointResume",
+        "TestPublicConnectorLeasesRevocationAndIsolation",
+        "TestPublicInitialOutageAndDurableQuota",
+        "TestPublicRightsHistoryAndReferenceOnlyRetention",
+        "TestReferenceCatalogRealRegionTerrainAndIsolation",
+        "TestMapFirstSourceBackedSevenRegionalImportsAndAtomicActivation",
+        "TestMapFirstRetrievalProfilesOriginalRightsExecutionAndSuspension",
+        "TestP33StationWeatherRevisionsRightsAndNoTracks",
+        "TestP33ReportEvidenceIndependentReviewAndLineage"
+      ]
+    },
+    "browser": {
+      "status": "PASS",
+      "cases": 56,
+      "scope": "Existing presentation/interaction cases, not independent human usefulness"
+    },
+    "uiBuild": "PASS",
+    "vetFinal": "PASS",
+    "qualificationToolChecks": {
+      "status": "PASS",
+      "cases": 17
+    },
+    "fullVolumeReadWorkload": {
+      "status": "FAIL",
+      "reference": "full-volume-fourth/result.json",
+      "actualCounts": {
+        "reportRevisions": 100000,
+        "detailedReferenceFeatures": 50000,
+        "weatherMovingRecords": 10000,
+        "historyRows": 1000,
+        "areas": 10,
+        "analysts": 5,
+        "scheduledProfiles": 10
+      },
+      "budgets": [
+        {
+          "operation": "catalog_search",
+          "condition": "cold",
+          "targetP95Ms": 1000,
+          "observedP95Ms": 164.245,
+          "status": "PASS"
+        },
+        {
+          "operation": "catalog_search",
+          "condition": "warm",
+          "targetP95Ms": 1000,
+          "observedP95Ms": 182.938,
+          "status": "PASS"
+        },
+        {
+          "operation": "geography_search",
+          "condition": "cold",
+          "targetP95Ms": 1000,
+          "observedP95Ms": 982.699,
+          "status": "PASS"
+        },
+        {
+          "operation": "geography_search",
+          "condition": "warm",
+          "targetP95Ms": 1000,
+          "observedP95Ms": 1079.928,
+          "status": "FAIL"
+        },
+        {
+          "operation": "map_family",
+          "condition": "cold",
+          "targetP95Ms": 2000,
+          "observedP95Ms": 2854.619,
+          "status": "FAIL"
+        },
+        {
+          "operation": "map_family",
+          "condition": "warm",
+          "targetP95Ms": 2000,
+          "observedP95Ms": 6.811,
+          "status": "PASS"
+        },
+        {
+          "operation": "weather_query",
+          "condition": "cold",
+          "targetP95Ms": 1000,
+          "observedP95Ms": 952.06,
+          "status": "PASS"
+        },
+        {
+          "operation": "weather_query",
+          "condition": "warm",
+          "targetP95Ms": 1000,
+          "observedP95Ms": 5000.23,
+          "status": "FAIL"
+        }
+      ],
+      "scope": "Dense full-volume scoped reads; not raster concurrency, browser timing or soak. Experimental weather rewrite in fifth run worsened performance and was reverted; fourth run uses the final runtime query design."
+    }
+  },
+  "remaining": {
+    "24HourSoak": "NOT_RUN",
+    "independentHumanSessions": "AWAITING_OBSERVER_RECORDS",
+    "realImageryEnvironmentCompleteJourneys": "NOT_RUN",
+    "actualNominatedRollbackBinary": "NOT_RUN; repository baseline archived only",
+    "fullBackupCLIAllInstalledDependencies": "NOT_RUN"
+  },
+  "sharedChanges": {
+    "schemaMigrations": false,
+    "providerFetchesOrProcessingWorkers": false,
+    "localProfileProvisioning": true,
+    "evaluationCaseAndInternalBrief": true,
+    "deliveryWorkerOnce": true
+  },
+  "availability": {
+    "retainedInstallationUI": "http://127.0.0.1:5197",
+    "retainedInstallationAPI": "http://127.0.0.1:8097",
+    "providerFetching": "DISABLED",
+    "processingWorkers": "Only one explicitly executed delivery attempt; no continuous shared worker supervisor started"
+  }
+}

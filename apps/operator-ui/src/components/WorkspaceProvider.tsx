@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { SessionLogin } from '@/components/SessionLogin'
 
-import { createAPI } from '@/lib/api'
+import { ApiError, createAPI, LOCAL_AUTO_ENTRY, restoreLocalSession } from '@/lib/api'
 import { isCOPResource, resourceKey, WorkspaceContext, type Resource, type WorkspaceSession } from '@/lib/workspaceContext'
 import { router } from '@/router'
 import { useScrubStore } from '@/stores/scrub'
@@ -14,6 +14,7 @@ type Active = { value: WorkspaceSession; client: QueryClient; controller: AbortC
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState<Active | null>(null)
   const [error, setError] = useState('')
+  const [connectionWarning, setConnectionWarning] = useState('')
   const current = useRef<Active | null>(null)
   const generation = useRef(0)
   const loading = useRef<AbortController | null>(null)
@@ -33,6 +34,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     useScrubStore.setState({ live: true, at: null, earliest: null, latest: null })
     useToastStore.setState({ toasts: [] })
     setActive(null)
+    setConnectionWarning('')
   }, [])
 
   const select = useCallback(async (resource?: Resource, resetRoute = true) => {
@@ -46,7 +48,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       if (!resource && session.principal?.id) {
         try {
           const saved = localStorage.getItem(`emad.resource.${session.principal.id}`)
-          const chosen = session.resources?.find((r) => resourceKey(r) === saved)
+          const chosen = session.resources?.find((r) => resourceKey(r) === saved && (session.productProfile !== 'map' || r.partition === 'PUBLIC_EVIDENCE'))
           if (chosen && resourceKey(chosen) !== resourceKey(session.resource)) session = await createAPI(chosen, controller.signal).getCurrentOperator()
         } catch { /* Storage is optional; the server resource remains authoritative. */ }
       }
@@ -72,6 +74,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           try {
             const fresh = await createAPI(session.resource, controller.signal).getCurrentOperator()
             if (controller.signal.aborted || ticket !== generation.current) return
+            setConnectionWarning('')
             if (fresh.principal.id !== session.principal.id || fresh.accessRevision !== session.accessRevision ||
                 resourceKey(fresh.resource) !== resourceKey(session.resource)) {
               await select(fresh.resource)
@@ -84,8 +87,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
                 current.current=next;setActive(next)
               }
             }
-          } catch {
-            if (!controller.signal.aborted && ticket === generation.current) value.invalidate()
+          } catch (failure) {
+            if (!controller.signal.aborted && ticket === generation.current) {
+              if (failure instanceof ApiError && [401,403].includes(failure.status)) value.invalidate()
+              else setConnectionWarning('Workspace connection interrupted. Previously loaded data may be out of date. Your displayed draft is preserved.')
+            }
           }
         },
       }
@@ -93,6 +99,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       current.current = next
       setActive(next)
     } catch (failure) {
+      if (ticket === generation.current && !controller.signal.aborted && failure instanceof ApiError && failure.status === 401 && restoreLocalSession()) return
       if (ticket === generation.current && !controller.signal.aborted) setError(failure instanceof Error ? failure.message : 'Workspace access failed.')
     }
   }, [clear])
@@ -106,16 +113,21 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (!active) return
     const timer = window.setInterval(() => void active.value.revalidate(), 5_000)
     const focus = () => void active.value.revalidate()
+    const denied=()=>active.value.invalidate()
+    window.addEventListener('emad:access-denied',denied)
     window.addEventListener('focus', focus)
-    return () => { window.clearInterval(timer); window.removeEventListener('focus', focus) }
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', focus);window.removeEventListener('emad:access-denied',denied) }
   }, [active])
 
-  if (!active) return <main className="aegis-main" aria-live="polite">
-    <h1>EMAD</h1><p>{error || 'Checking workspace access…'}</p>
-    {error && <><button onClick={() => void select(undefined, false)}>Reconnect</button><SessionLogin /></>}
+  if (!active) return <main className="aegis-main workspace-entry" aria-live="polite">
+    <section className="workspace-entry-card">
+    <h1>EMAD</h1><h2>{error ? 'Workspace connection unavailable' : 'Opening your workspace'}</h2>
+    <p>{error === 'Failed to fetch' ? 'The application could not reach its server. Reconnect when the local API is running; entering an account credential will not fix a connection failure.' : error || 'Connecting to your local installation…'}</p>
+    {error && <><button className="ux-button" onClick={() => void select(undefined, false)}>Reconnect</button>{LOCAL_AUTO_ENTRY ? <><p>Your local account opens automatically. Account switching is optional.</p><SessionLogin compact /></> : <SessionLogin />}</>}
+    </section>
   </main>
 
-  return <WorkspaceContext.Provider value={active.value} key={active.generation}>
+  return <WorkspaceContext.Provider value={{...active.value,connectionWarning}} key={active.generation}>
     <QueryClientProvider client={active.client}>{children}</QueryClientProvider>
   </WorkspaceContext.Provider>
 }

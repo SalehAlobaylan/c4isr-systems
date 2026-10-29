@@ -43,7 +43,7 @@ test('Public Context entry changes scope and makes intelligence modules directly
   }
   await expect(nav.getByRole('link', { name: 'Recording & replay', exact: true })).toHaveCount(0)
   await nav.getByRole('link', { name: 'Imagery', exact: true }).click()
-  await expect(page).toHaveURL(/\/map\?tool=imagery$/)
+  await expect.poll(()=>new URL(page.url()).searchParams.get('tool')).toBe('imagery')
   await expect(page.getByRole('region',{name:'Map preview dock'}).getByRole('heading',{name:'Imagery intelligence',exact:true})).toBeVisible()
 })
 

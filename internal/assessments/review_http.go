@@ -3,6 +3,7 @@ package assessments
 import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/go-chi/chi/v5"
 	"net/http"
 )
@@ -26,7 +27,7 @@ func (r *Reviews) Mount(router chi.Router) {
 		if truncated {
 			items = items[:100]
 		}
-		httpx.JSON(w, 200, map[string]any{"items": items, "total": len(items), "truncated": truncated})
+		httpx.JSON(w, 200, queryscope.ListMetadata(req.Context(), "imagery", map[string]any{"items": items, "total": len(items), "truncated": truncated}))
 	})
 	router.Post("/assessments/report-proposals", func(w http.ResponseWriter, req *http.Request) {
 		var in Proposal

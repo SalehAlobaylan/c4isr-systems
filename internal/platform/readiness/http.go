@@ -24,10 +24,12 @@ type Worker struct {
 	RuntimeBuild string    `json:"runtimeBuild,omitempty"`
 }
 type Feature struct {
-	ID         string `json:"id"`
-	State      string `json:"state"`
-	Count      int    `json:"count"`
-	NextAction string `json:"nextAction"`
+	CountMeaning      string `json:"countMeaning,omitempty"`
+	UnclassifiedCount int    `json:"unclassifiedCount,omitempty"`
+	ID                string `json:"id"`
+	State             string `json:"state"`
+	Count             int    `json:"count"`
+	NextAction        string `json:"nextAction"`
 }
 type Report struct {
 	CheckedAt time.Time       `json:"checkedAt"`
@@ -36,6 +38,7 @@ type Report struct {
 	Workers   []Worker        `json:"workers"`
 }
 type Service struct {
+	MapOnly       bool
 	Pool          *pgxpool.Pool
 	Store         artifacts.Store
 	RuntimeBuilds []string
@@ -122,11 +125,16 @@ func (s Service) Report(ctx context.Context) (Report, error) {
 	// Table identifiers are fixed above, never request input.
 	for _, q := range queries {
 		f := Feature{ID: q[0], State: "NOT_INSTALLED", NextAction: q[2]}
-		query := fmt.Sprintf("SELECT count(*) FROM %s", q[1])
-		if q[0] == "imagery-captures" {
-			query += " WHERE status='SUCCEEDED'"
+		query := fmt.Sprintf("SELECT count(*),0 FROM %s", q[1])
+		kind := map[string]string{"reference": "reference", "imagery": "scene", "imagery-captures": "capture"}[q[0]]
+		if kind != "" {
+			query = fmt.Sprintf("SELECT count(*),count(*) FILTER(WHERE emad_content_purpose('%s',id)='unclassified') FROM %s WHERE emad_content_visible('%s',id)", kind, q[1], kind)
 		}
-		e := db.Scoped(s.Pool).QueryRow(ctx, query).Scan(&f.Count)
+		if q[0] == "imagery-captures" {
+			query += " AND status='SUCCEEDED'"
+		}
+		f.CountMeaning = map[string]string{"reference": "Retained reference versions", "imagery": "Catalogue revisions; not independent acquisitions", "imagery-captures": "Successful capture records; retries and dates counted separately", "evidence": "Retained source evidence revisions"}[q[0]]
+		e := db.Scoped(s.Pool).QueryRow(ctx, query).Scan(&f.Count, &f.UnclassifiedCount)
 		if e != nil {
 			return out, e
 		}
@@ -134,7 +142,31 @@ func (s Service) Report(ctx context.Context) (Report, error) {
 			f.State = "AVAILABLE"
 			f.NextAction = ""
 		}
+		if f.UnclassifiedCount > 0 {
+			f.State = "UNCLASSIFIED_CONTENT"
+			f.NextAction = "Source administrators can review content purpose; counts include unclassified records"
+		}
 		out.Features = append(out.Features, f)
+	}
+	if r.Partition == access.PublicEvidence && access.Allows(ctx, "sources.read") {
+		extra := [][3]string{
+			{"imagery-acquisition-dates", "SELECT count(DISTINCT input#>>'{scene,acquiredAt}') FROM imagery_capture_jobs WHERE status='SUCCEEDED' AND emad_content_visible('capture',id)", "Distinct retained acquisition timestamps; not capture attempts"},
+			{"imagery-studies", "SELECT count(DISTINCT (source_id,input->'preparationIds',input->'parameters',input->>'algorithm')) FROM imagery_jobs WHERE status='SUCCEEDED' AND input->>'kind'='NDVI_CHANGE' AND emad_content_visible('job',id)", "Distinct completed comparisons by frozen inputs/method; not reviewed conclusions"},
+		}
+		if access.Allows(ctx, "assessments.read") {
+			extra = append(extra, [3]string{"working-reviewed-outputs", "SELECT count(*) FROM assessment_review_heads h JOIN assessment_revisions r ON r.id=h.latest_id AND r.scope_id=h.scope_id JOIN assessment_review_identities i ON i.revision_id=r.id AND i.scope_id=r.scope_id WHERE r.status='PUBLISHED' AND emad_content_purpose('assessment',h.assessment_id)='working' AND i.author_human_id IS NOT NULL AND i.publisher_human_id IS NOT NULL AND i.actor_human_id=i.publisher_human_id AND i.author_human_id<>i.publisher_human_id", "Published working assessments with canonical human separation; independent usefulness is separately qualified"})
+		}
+		for _, q := range extra {
+			f := Feature{ID: q[0], State: "NOT_INSTALLED", CountMeaning: q[2], NextAction: "Inspect retained inputs and their classification"}
+			if e := db.Scoped(s.Pool).QueryRow(ctx, q[1]).Scan(&f.Count); e != nil {
+				return out, e
+			}
+			if f.Count > 0 {
+				f.State = "AVAILABLE"
+				f.NextAction = ""
+			}
+			out.Features = append(out.Features, f)
+		}
 	}
 	probe, cancel := context.WithTimeout(ctx, 2*time.Second)
 	raw, e := s.Store.Get(probe, "platform/readiness", int64(len("emad-ready")))
@@ -159,7 +191,9 @@ func (s Service) Report(ctx context.Context) (Report, error) {
 		if time.Since(v.LastSeenAt) < 15*time.Second {
 			v.State = "READY"
 		}
-		out.Workers = append(out.Workers, v)
+		if !s.MapOnly || v.Feature == "imagery" || v.Feature == "preparation" || v.Feature == "connectors" {
+			out.Workers = append(out.Workers, v)
+		}
 	}
 	return out, rows.Err()
 }

@@ -1,0 +1,745 @@
+openapi: 3.1.0
+info:
+  title: Analyst area and time contracts
+  version: 1.0.0
+paths:
+  /api/v1/areas/resolve:
+    post:
+      operationId: resolveArea
+      responses:
+        '200':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaRevision'
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AreaSelection'
+  /api/v1/areas/revisions:
+    post:
+      operationId: retainAreaRevision
+      responses:
+        '201':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaRevision'
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AreaSelection'
+  /api/v1/areas/revisions/{id}:
+    get:
+      operationId: getAreaRevision
+      responses:
+        '200':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaRevision'
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      parameters:
+      - &id001
+        name: id
+        in: path
+        required: true
+        schema: &id002
+          type: string
+  /api/v1/analyst-scope/resolve:
+    post:
+      operationId: resolveAnalystScope
+      responses:
+        '200':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScopeSnapshot'
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScopeInput'
+  /api/v1/analyst-scope/freeze:
+    post:
+      operationId: freezeAnalystScope
+      responses:
+        '201':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScopeSnapshot'
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScopeInput'
+  /api/v1/analyst-scope/snapshots/{id}:
+    get:
+      operationId: getAnalystScope
+      responses:
+        '200':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScopeSnapshot'
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      parameters:
+      - *id001
+  /api/v1/analyst-scope/read:
+    post:
+      operationId: readAnalystScope
+      responses:
+        '200':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScopeReadSnapshot'
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScopeReadInput'
+  /api/v1/analyst-scope/reads/{id}:
+    get:
+      operationId: getAnalystReadPage
+      responses:
+        '200':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema: &id004
+                type: object
+                additionalProperties: true
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      parameters:
+      - *id001
+      - name: family
+        in: query
+        required: true
+        schema: *id002
+      - name: offset
+        in: query
+        schema: &id003
+          type: integer
+      - name: limit
+        in: query
+        schema: *id003
+  /api/v1/geography/releases:
+    post:
+      operationId: createGeographicReleases
+      responses:
+        '201':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeographicRelease'
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeographicReleaseInput'
+  /api/v1/geography/releases/{id}:
+    get:
+      operationId: getGeographicReleases
+      responses:
+        '200':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GeographicRelease'
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      parameters:
+      - *id001
+  /api/v1/geography/profiles:
+    post:
+      operationId: createGeographicProfiles
+      responses:
+        '201':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionProfile'
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegionProfileInput'
+  /api/v1/geography/profiles/{id}:
+    get:
+      operationId: getGeographicProfiles
+      responses:
+        '200':
+          description: Scoped result; exact retained identity and current authorization
+            are preserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionProfile'
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      parameters:
+      - *id001
+components:
+  schemas:
+    AreaSelection:
+      type: object
+      properties:
+        revisionId: *id002
+        kind: *id002
+        name: *id002
+        regionId: *id002
+        sourceId: *id002
+        logicalKey: *id002
+        releaseId: *id002
+        geometry: *id004
+        parentRevisionId: *id002
+      additionalProperties: false
+      required: []
+    AreaComponent:
+      type: object
+      properties:
+        geometry: *id004
+        bounds:
+          type: array
+          items: &id005
+            type: number
+        areaM2: *id005
+      additionalProperties: false
+      required:
+      - geometry
+      - bounds
+      - areaM2
+    AreaDisplay:
+      type: object
+      properties:
+        state: *id002
+        latitudeLimit: *id005
+        message: *id002
+      additionalProperties: false
+      required:
+      - state
+      - latitudeLimit
+      - message
+    AreaGeography:
+      type: object
+      properties:
+        sourceId: *id002
+        logicalKey: *id002
+        regionId: *id002
+        editionId: *id002
+        releaseId: *id002
+        parentRegionId: *id002
+        attribution: *id002
+        editionSha256: *id002
+        meaning: *id002
+      additionalProperties: false
+      required:
+      - sourceId
+      - logicalKey
+      - regionId
+      - editionId
+      - attribution
+      - editionSha256
+      - meaning
+    AreaRevision:
+      type: object
+      properties:
+        schema: *id002
+        normalizationVersion: *id002
+        areaId: *id002
+        revisionId: *id002
+        resource:
+          $ref: ./openapi.yaml#/components/schemas/AccessResource
+        name: *id002
+        kind: *id002
+        geometry: *id004
+        originalGeometry: *id004
+        geometrySha256: *id002
+        normalized: &id006
+          type: boolean
+        components:
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaComponent'
+        areaM2: *id005
+        display:
+          $ref: '#/components/schemas/AreaDisplay'
+        geography:
+          $ref: '#/components/schemas/AreaGeography'
+        parentRevisionId: *id002
+        relationship: *id002
+        requiredSources:
+          type: array
+          items: *id002
+        persistent: *id006
+      additionalProperties: false
+      required:
+      - schema
+      - normalizationVersion
+      - areaId
+      - revisionId
+      - resource
+      - name
+      - kind
+      - normalized
+      - components
+      - areaM2
+      - display
+      - requiredSources
+      - persistent
+    TemporalInterval:
+      type: object
+      properties:
+        from: &id007
+          type: string
+          format: date-time
+        to: *id007
+      additionalProperties: false
+      required:
+      - from
+      - to
+    TemporalScope:
+      type: object
+      properties:
+        mode: &id008
+          type: string
+          enum:
+          - monitoring
+          - historical
+        interval: &id009
+          $ref: '#/components/schemas/TemporalInterval'
+        rollingSeconds: *id003
+        revisionView: &id010
+          type: string
+          enum:
+          - latest
+          - known_at
+          - effective_at
+        asOf: *id007
+        timezone: *id002
+        backgroundImagery: *id006
+        legacyEndInclusive:
+          type: boolean
+          description: Legacy import adapter only. Converts the old inclusive end
+            into an exclusive end at the next nanosecond; evaluated scopes omit it.
+      additionalProperties: false
+      required:
+      - mode
+      - revisionView
+      - timezone
+      - backgroundImagery
+    EvaluatedTemporalScope:
+      type: object
+      properties:
+        mode: *id008
+        interval: *id009
+        rollingSeconds: *id003
+        revisionView: *id010
+        asOf: *id007
+        timezone: *id002
+        backgroundImagery: *id006
+        evaluatedAt: *id007
+        bounds: *id002
+        frozen: *id006
+        legacyEndInclusive:
+          type: boolean
+      additionalProperties: false
+      required:
+      - mode
+      - interval
+      - revisionView
+      - timezone
+      - backgroundImagery
+      - evaluatedAt
+      - bounds
+      - frozen
+    ScopeInput:
+      type: object
+      properties:
+        area:
+          $ref: '#/components/schemas/AreaSelection'
+        temporal:
+          $ref: '#/components/schemas/TemporalScope'
+        readSnapshotId: *id002
+      additionalProperties: false
+      required:
+      - area
+      - temporal
+    ScopeCapability:
+      type: object
+      properties:
+        state: *id002
+        clock: *id002
+        reason: *id002
+      additionalProperties: false
+      required:
+      - state
+      - clock
+    ScopeSnapshot:
+      type: object
+      properties:
+        schema: *id002
+        id: *id002
+        scopeHash: *id002
+        area:
+          $ref: '#/components/schemas/AreaRevision'
+        temporal:
+          $ref: '#/components/schemas/EvaluatedTemporalScope'
+        authorizationRevision: *id002
+        capabilities:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ScopeCapability'
+        readManifest: *id004
+        requiredSources:
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+      required:
+      - schema
+      - id
+      - scopeHash
+      - area
+      - temporal
+      - authorizationRevision
+      - capabilities
+      - requiredSources
+    ScopeQueryFilters:
+      type: object
+      properties:
+        sourceId: *id002
+        quality: *id002
+        phenomenon: *id002
+        revisions: *id002
+      additionalProperties: false
+      required: []
+    ScopeReadInput:
+      type: object
+      properties:
+        area:
+          $ref: '#/components/schemas/AreaSelection'
+        temporal:
+          $ref: '#/components/schemas/TemporalScope'
+        families:
+          type: array
+          items: *id002
+        filters:
+          $ref: '#/components/schemas/ScopeQueryFilters'
+        zoom: *id003
+        includeEvents: *id006
+      additionalProperties: false
+      required:
+      - area
+      - temporal
+      - families
+      - filters
+      - zoom
+      - includeEvents
+    ScopedMapCollection:
+      type: object
+      properties:
+        type: *id002
+        features:
+          type: array
+          items: *id004
+        total:
+          type:
+          - integer
+          - 'null'
+        truncated: *id006
+        state: *id002
+        scope: *id002
+        countMeaning: *id002
+        unlocated: *id003
+        scopeHash: *id002
+        evaluatedAt: *id007
+        support:
+          $ref: '#/components/schemas/ScopeCapability'
+      additionalProperties: false
+      required:
+      - type
+      - features
+      - total
+      - truncated
+      - state
+      - scopeHash
+      - evaluatedAt
+    ScopeReadSnapshot:
+      type: object
+      properties:
+        id: *id002
+        queryFingerprint: *id002
+        scope:
+          $ref: '#/components/schemas/ScopeSnapshot'
+        expiresAt: *id007
+        layers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ScopedMapCollection'
+        events:
+          $ref: ./openapi.yaml#/components/schemas/PublicEventList
+        coverageReceipts:
+          type: array
+          items: *id004
+        receiptMeaning: *id002
+        errors:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              code: &id011
+                type: string
+              meaning: *id011
+              recoveryOwner: *id011
+            required:
+            - code
+            - meaning
+            - recoveryOwner
+        eventState: *id011
+      additionalProperties: false
+      required:
+      - id
+      - queryFingerprint
+      - scope
+      - expiresAt
+      - layers
+      - coverageReceipts
+      - receiptMeaning
+    GeographicReleaseInput:
+      type: object
+      properties:
+        sourceId: *id002
+        key: *id002
+        version: *id002
+        editionIds: &id012
+          type: array
+          items: *id002
+        expectedHead: *id002
+        activate: *id006
+      additionalProperties: false
+      required:
+      - sourceId
+      - key
+      - version
+      - editionIds
+      - expectedHead
+      - activate
+    GeographicRelease:
+      type: object
+      properties:
+        sourceId: *id002
+        key: *id002
+        version: *id002
+        editionIds: *id012
+        expectedHead: *id002
+        activate: *id006
+        id: *id002
+        sha256: *id002
+        actorId: *id002
+        recordedAt: *id007
+        editions:
+          type: array
+          items: *id004
+      additionalProperties: false
+      required:
+      - sourceId
+      - key
+      - version
+      - editionIds
+      - expectedHead
+      - activate
+      - id
+      - sha256
+      - actorId
+      - recordedAt
+      - editions
+    RegionProfileInput:
+      type: object
+      properties:
+        key: *id002
+        version: *id002
+        name: *id002
+        definition: *id002
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaSelection'
+      additionalProperties: false
+      required:
+      - key
+      - version
+      - name
+      - definition
+      - members
+    RegionProfile:
+      type: object
+      properties:
+        id: *id002
+        sha256: *id002
+        key: *id002
+        version: *id002
+        name: *id002
+        definition: *id002
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/AreaRevision'
+        requiredSources:
+          type: array
+          items: *id002
+      additionalProperties: false
+      required:
+      - id
+      - sha256
+      - key
+      - version
+      - name
+      - definition
+      - members
+      - requiredSources

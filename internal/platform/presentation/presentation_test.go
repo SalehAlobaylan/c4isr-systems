@@ -68,6 +68,21 @@ func TestTypedEvidenceAliasesResolveButRawPayloadIsUnchanged(t *testing.T) {
 	}
 }
 
+func TestPublicInputRetainsExactGeometryAndNumericRepresentation(t *testing.T) {
+	r := access.Resource{WorkspaceID: "public", EnvironmentID: "world", Partition: access.PublicEvidence}
+	ctx := WithResolver(access.Internal(context.Background(), r, "fixture"), func(context.Context, string) (string, error) {
+		t.Fatal("public evidence was sent to exercise alias resolution")
+		return "", nil
+	})
+	input := struct {
+		Geometry json.RawMessage `json:"geometry"`
+	}{json.RawMessage(`{"type":"Polygon", "coordinates":[[[39.1500,21.4800],[39.1800,21.4800],[39.1800,21.5000],[39.1500,21.5000],[39.1500,21.4800]]]}`)}
+	original := string(input.Geometry)
+	if e := ResolveInput(ctx, &input); e != nil || string(input.Geometry) != original {
+		t.Fatal("public geometry representation changed", e, string(input.Geometry))
+	}
+}
+
 func TestOrdinaryRunStatusAndErrorExcludeScheduledInput(t *testing.T) {
 	r := access.LegacyResource()
 	ctx, err := access.Bind(context.Background(), access.Principal{ID: "operator", Kind: "human", Grants: []access.Grant{{Resource: r, Permissions: []string{"scenarios.read"}}}}, r, nil)

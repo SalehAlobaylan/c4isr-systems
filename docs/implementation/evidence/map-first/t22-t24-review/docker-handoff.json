@@ -1,0 +1,5 @@
+{
+  "status": "UNAVAILABLE",
+  "exitCode": 1,
+  "scope": "Final Docker API availability check only; earlier successful isolated test logs are retained. Cause not established. No shared service restart performed."
+}

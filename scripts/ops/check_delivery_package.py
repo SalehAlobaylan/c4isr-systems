@@ -9,7 +9,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parent))
 import local
 
 def main():
- cfg=local.configuration();env=local.environment(cfg)
+ cfg=local.configuration();cfg['profile']=os.environ.get('C4ISR_PRODUCT_PROFILE','map');env=local.environment(cfg)
  folder=local.PRIVATE/'staging-contract';folder.mkdir(exist_ok=True)
  files={'postgres_password':'packaging-check-only','database_url':'postgres://c4isr:packaging-check-only@postgres:5432/c4isr?sslmode=disable','auth_tokens':'operator-01=packaging-check-only','ui_token':'packaging-check-only','grafana_admin_password':'packaging-check-only','object_access_key':cfg['accessKey'],'object_secret_key':cfg['secretKey']}
  for name,data in files.items():
@@ -24,10 +24,12 @@ def main():
  worker.update({'C4ISR_DATABASE_URL':env['C4ISR_DATABASE_URL'].replace('localhost:5433','host.docker.internal:5433').replace('127.0.0.1:5433','host.docker.internal:5433'),'C4ISR_ARTIFACT_S3_ENDPOINT':'http://host.docker.internal:3900','C4ISR_PUBLIC_CONNECTORS_FILE':'','C4ISR_RUNTIME_BUILDS_FILE':'/app/bin/runtime-builds.txt','C4ISR_ENV':'staging','C4ISR_ARTIFACT_S3_ALLOW_HTTP':'true'})
  worker.pop('C4ISR_RUNTIME_BUILDS',None)
  settings=folder/'worker.env';settings.write_text('\n'.join(k+'='+v for k,v in worker.items())+'\n',encoding='utf-8');os.chmod(settings,0o600)
- for name,app in [('worker-assets','emad-assets'),('worker-imagery','emad-imagery'),('worker-recordings','emad-recordings')]:
+ specs=[('worker-imagery','emad-imagery'),('local-map-analyst','emad-delivery')]
+ if local.product_profile(cfg)=='historical-full':specs += [('worker-assets','emad-assets'),('worker-recordings','emad-recordings')]
+ for name,app in specs:
   subprocess.run(['docker','run','--rm','--read-only','--tmpfs','/tmp','--env-file',str(settings),'--mount',f'type=bind,source={local.CREDS},target=/run/secrets,readonly','--entrypoint','/app/bin/'+app,'emad-delivery:recovery','-token-file','/run/secrets/'+name+'.token','-once'],cwd=local.ROOT,check=True)
   print(app+': scoped container startup and queue accepted.',flush=True)
  subprocess.run(['docker','run','--rm','--read-only','--tmpfs','/tmp','--entrypoint','python','emad-delivery:recovery','-c',"import sys;sys.path.insert(0,'scripts/data');import install_local,rasterio,pyproj,osmium;print('Raster worker dependencies ready')"],check=True)
- subprocess.run(['docker','run','--rm','--entrypoint','/app/bin/emad-runtime','emad-delivery:recovery','-describe'],stdout=subprocess.DEVNULL,check=True)
- print('Independent Linux runtime executable accepted.',flush=True)
+ if local.product_profile(cfg)=='historical-full':subprocess.run(['docker','run','--rm','--entrypoint','/app/bin/emad-runtime','emad-delivery:recovery','-describe'],stdout=subprocess.DEVNULL,check=True)
+ print('Linux '+local.product_profile(cfg)+' delivery executables accepted.',flush=True)
 if __name__=='__main__':main()

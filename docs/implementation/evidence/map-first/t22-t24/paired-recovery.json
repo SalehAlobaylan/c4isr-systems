@@ -1,0 +1,13 @@
+{
+  "approvalBundleUnchanged": true,
+  "briefSha256": "77656aa4061c1aec91abcff3364b1d44d3907b1912364f6cab4375e7ad49fea2",
+  "canonicalIdentityAndDeniedAccess": true,
+  "databaseDumpRestored": true,
+  "originalIntentAndAttemptPreserved": true,
+  "privateStores": 2,
+  "recordedAt": "2026-10-27T13:43:06.3777168Z",
+  "schema": "emad.map-first-paired-recovery-sample.v1",
+  "scope": "Synthetic populated case/review/delivery regression; not full installed geography/imagery/environment dependency replay or actual rollback binary qualification",
+  "status": "PASS",
+  "tablesVerified": 122
+}

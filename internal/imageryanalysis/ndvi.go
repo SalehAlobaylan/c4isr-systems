@@ -210,3 +210,20 @@ func Compare(ctx context.Context, before, after Tile, p Parameters) (Result, err
 func TileSummary(t Tile) string {
 	return fmt.Sprintf("%dx%d aligned angular cells; prepared using %s", t.Grid.Width, t.Grid.Height, t.PreparationMethod)
 }
+
+// CommonClearCells uses the same reflectance and SCL eligibility as Compare.
+// It permits a preflight to explain insufficient coverage without a result.
+func CommonClearCells(a, b Tile) (int, int) {
+	if a.Grid != b.Grid || len(a.Red) != len(b.Red) {
+		return 0, 0
+	}
+	count := 0
+	for i := range a.Red {
+		_, okA := valid(a, i)
+		_, okB := valid(b, i)
+		if okA && okB {
+			count++
+		}
+	}
+	return count, len(a.Red)
+}

@@ -33,6 +33,8 @@ export class ApiError extends Error {
 /* Contract-backed domain aliases                                      */
 /* ------------------------------------------------------------------ */
 
+export type ContentPurposeEntry = components['schemas']['ContentPurposeEntry']
+export type ContentPurposeInput = components['schemas']['ContentPurposeInput']
 export type ImageryScene = components['schemas']['ImageryScene']
 export type ImageryJob = components['schemas']['ImageryJob']
 export type ImageryResult = components['schemas']['ImageryResultArtifact']
@@ -46,6 +48,31 @@ export type ImageryCapture = components['schemas']['ImageryCapture']
 export type ExerciseEnvironmentView = components['schemas']['ExerciseEnvironmentView']
 export type PublicEvent = components['schemas']['PublicEvent']
 export type PublicEventQuery = NonNullable<paths['/api/v1/public-events']['get']['parameters']['query']>
+export type AreaSelection = components['schemas']['AreaSelection']
+export type AreaRevision = components['schemas']['AreaRevision']
+export type TemporalScope = components['schemas']['TemporalScope']
+export type RetrievalProfileInput = components['schemas']['RetrievalProfileInput']
+export type RetrievalProfile = components['schemas']['RetrievalProfile']
+export type ReferenceDepthRequestInput = components['schemas']['ReferenceDepthRequestInput']
+export type Investigation = components['schemas']['Investigation']
+export type InvestigationInput = components['schemas']['InvestigationInput']
+export type InvestigationMembership = components['schemas']['InvestigationMembership']
+export type ScopeInput = components['schemas']['ScopeInput']
+export type AcquisitionInput=components['schemas']['AcquisitionInput']
+export type AcquisitionRequest=components['schemas']['AcquisitionRequest']
+export type CoverageResult=components['schemas']['CoverageResult']
+export type CoverageAction=components['schemas']['CoverageAction']
+export type ScopeSnapshot = components['schemas']['ScopeSnapshot']
+export type ScopeReadInput = components['schemas']['ScopeReadInput']
+export type ScopeReadSnapshot = components['schemas']['ScopeReadSnapshot']
+export const fixedScopeInput = (s:ScopeSnapshot):ScopeInput => ({area:s.area.persistent?{revisionId:s.area.revisionId}:s.area.geography?{kind:s.area.kind,regionId:s.area.geography.regionId,sourceId:s.area.geography.sourceId,releaseId:s.area.geography.releaseId}:{kind:s.area.kind,name:s.area.name,geometry:s.area.originalGeometry,parentRevisionId:s.area.parentRevisionId},temporal:{mode:s.temporal.mode,interval:s.temporal.interval,revisionView:s.temporal.revisionView,asOf:s.temporal.asOf,timezone:s.temporal.timezone,backgroundImagery:s.temporal.backgroundImagery}})
+const scopeQuery = (s:ScopeSnapshot) => ({scope:JSON.stringify(fixedScopeInput(s)),scope_hash:s.scopeHash})
+async function unwrapScoped<T>(result:Promise<{data?:T;error?:unknown;response:Response}>,scope?:ScopeSnapshot):Promise<T>{
+ const resolved=await result
+ if(scope&&resolved.response.ok&&resolved.response.headers.get('X-Analyst-Scope-Hash')!==scope.scopeHash)throw new Error('The response belongs to a different scope. Refresh this view.')
+ if(resolved.response.status===401||resolved.response.status===403)window.dispatchEvent(new Event('emad:access-denied'))
+ return unwrap(Promise.resolve(resolved))
+}
 export type ContextPreview = components['schemas']['ContextPreview']
 export type ExternalTrack = components['schemas']['ExternalTrack']
 export type ReferenceDataset = components['schemas']['ReferenceDataset']
@@ -147,6 +174,18 @@ const runtimeConfig = typeof window === 'undefined' ? {} : (window.__C4ISR_CONFI
 // UI image. Vite values remain available for local development and tests.
 const sessionToken = (() => { try { return sessionStorage.getItem('emad.session-token') } catch { return null } })()
 export const API_TOKEN = (sessionToken ?? runtimeConfig.apiToken ?? import.meta.env.VITE_API_TOKEN ?? '').trim()
+
+const localEntryToken = (runtimeConfig.apiToken ?? import.meta.env.VITE_API_TOKEN ?? '').trim()
+export const LOCAL_AUTO_ENTRY = runtimeConfig.localAutoEntry === true || import.meta.env.VITE_LOCAL_AUTO_ENTRY === 'true'
+
+// A previous manual account can outlive the local installation that issued it.
+// Only explicitly configured local launchers may recover to their default account.
+export function restoreLocalSession(): boolean {
+  if (!LOCAL_AUTO_ENTRY || !localEntryToken || sessionToken === null) return false
+  try { sessionStorage.removeItem('emad.session-token') } catch { return false }
+  window.location.reload()
+  return true
+}
 export function switchSession(token: string) {
   const value = token.trim()
   if (!value || value.length > 4096 || /[\r\n]/.test(value)) throw new Error('Enter a valid credential.')
@@ -248,19 +287,62 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
 
   const api = {
     fetchHealth,
+    getGeographicAvailability:(region_id:string,release_id?:string,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/geography/availability',{params:{query:{region_id,release_id}},signal:requestSignal})),
+    requestReferenceDepth:(body:ReferenceDepthRequestInput)=>unwrapScoped(apiClient.POST('/api/v1/geography/reference-requests',{body})),
+    listReferenceDepthRequests:(requestSignal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/geography/reference-requests',{signal:requestSignal})),
+    listGeographicReleaseHeads:(requestSignal?:AbortSignal)=>unwrap(apiClient.GET('/api/v1/geography/releases',{signal:requestSignal})),
+    resolveReferenceDepthRequest:(id:string,releaseId:string)=>unwrapScoped(apiClient.POST('/api/v1/geography/reference-requests/{id}/resolve',{params:{path:{id}},body:{releaseId}})),
+    listRetrievalProfiles:(id:string,requestSignal?:AbortSignal)=>unwrap(apiClient.GET('/api/v1/sources/{id}/profiles',{params:{path:{id}},signal:requestSignal})),
+    approveRetrievalProfile:(id:string,key:string,body:RetrievalProfileInput)=>unwrap(apiClient.POST('/api/v1/sources/{id}/profiles/{key}',{params:{path:{id,key}},body})),
+    grantRetrievalExecution:(id:string,key:string,body:components['schemas']['RetrievalExecutionGrant'])=>unwrap(apiClient.POST('/api/v1/sources/{id}/profiles/{key}/execution',{params:{path:{id,key}},body})),
+    listInvestigations:(offset=0,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/investigations',{params:{query:{offset}},signal:requestSignal})),
+    getInvestigation:(id:string,revision?:string,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/investigations/{id}',{params:{path:{id},query:{revision}},signal:requestSignal})),
+    saveInvestigation:(body:InvestigationInput,id?:string)=>id?unwrapScoped(apiClient.POST('/api/v1/investigations/{id}/revisions',{params:{path:{id}},body})):unwrapScoped(apiClient.POST('/api/v1/investigations',{body})),
+    changeInvestigationMembers:(id:string,body:InvestigationMembership)=>unwrapScoped(apiClient.POST('/api/v1/investigations/{id}/members',{params:{path:{id}},body})),
     /* identity */
     getCurrentOperator: () => unwrap(apiClient.GET('/api/v1/auth/me')),
     getReadiness: () => unwrap(apiClient.GET('/api/v1/platform/readiness')),
-    createSurroundingArea: (body:{longitude:number;latitude:number;radiusM:number}) => unwrap(apiClient.POST('/api/v1/map/surrounding-area',{body})),
-    measureMapGeometry: (geometry:Record<string,unknown>) => unwrap(apiClient.POST('/api/v1/map/measure',{body:{geometry}})),
-    listGeographicRegions: (query?: {q?:string;parent?:string;kind?:'country'|'region'|'governorate'|'place'|'study';id?:string;offset?:number}) => unwrap(apiClient.GET('/api/v1/geography/regions',{params:{query}})),
+    resolveArea:(body:AreaSelection,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/areas/resolve',{body,signal:requestSignal})),
+    resolveAnalystScope:(body:ScopeInput,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/analyst-scope/resolve',{body,signal:requestSignal})),
+    freezeAnalystScope:(body:ScopeInput,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/analyst-scope/freeze',{body,signal:requestSignal})),
+    queryCoverage:(body:{scope:ScopeInput;sourceId?:string},requestSignal?:AbortSignal)=>unwrap(apiClient.POST('/api/v1/coverage/query',{body,signal:requestSignal})),
+    createAcquisition:(body:AcquisitionInput,requestSignal?:AbortSignal)=>unwrap(apiClient.POST('/api/v1/acquisitions',{body,signal:requestSignal})),
+    listAcquisitions:(source_id?:string,requestSignal?:AbortSignal)=>unwrap(apiClient.GET('/api/v1/acquisitions',{params:{query:{source_id}},signal:requestSignal})),
+    getAcquisition:(id:string,requestSignal?:AbortSignal)=>unwrap(apiClient.GET('/api/v1/acquisitions/{id}',{params:{path:{id}},signal:requestSignal})),
+    cancelAcquisition:(id:string)=>unwrap(apiClient.POST('/api/v1/acquisitions/{id}/cancel',{params:{path:{id}}})),
+    listInvestigationHistory:(id:string,requestSignal?:AbortSignal)=>unwrap(apiClient.GET('/api/v1/investigations/{id}/history',{params:{path:{id}},signal:requestSignal})),
+    listInvestigationReviews:(id:string,requestSignal?:AbortSignal)=>unwrap(apiClient.GET('/api/v1/investigations/{id}/reviews',{params:{path:{id}},signal:requestSignal})),
+    reviewInvestigation:(id:string,body:components['schemas']['CaseReviewInput'])=>unwrap(apiClient.POST('/api/v1/investigations/{id}/review',{params:{path:{id}},body})),
+    caseReviewInbox:(requestSignal?:AbortSignal)=>unwrap(apiClient.GET('/api/v1/investigations/review-inbox',{signal:requestSignal})),
+    submitDelivery:(id:string,body:components['schemas']['DeliveryInput'])=>unwrap(apiClient.POST('/api/v1/investigations/{id}/delivery-jobs',{params:{path:{id}},body})),
+    listDeliveries:(id:string,requestSignal?:AbortSignal)=>unwrap(apiClient.GET('/api/v1/investigations/{id}/delivery-jobs',{params:{path:{id}},signal:requestSignal})),
+    changeDelivery:(id:string,action:'cancel'|'retry',expectedAttempt:number)=>action==='cancel'?unwrap(apiClient.POST('/api/v1/delivery-jobs/{id}/cancel',{params:{path:{id}},body:{expectedAttempt}})):unwrap(apiClient.POST('/api/v1/delivery-jobs/{id}/retry',{params:{path:{id}},body:{expectedAttempt}})),
+    downloadBriefBundle:(id:string)=>unwrap(apiClient.GET('/api/v1/outputs/{id}/bundle',{params:{path:{id}},parseAs:'blob'})),
+    outputAttestation:(id:string)=>unwrap(apiClient.GET('/api/v1/outputs/{id}/attestation',{params:{path:{id}}})),
+    createCompositeOutput:(id:string,body:components['schemas']['CompositeOutputInput'])=>unwrap(apiClient.POST('/api/v1/investigations/{id}/outputs',{params:{path:{id}},body})),
+    getCompositeOutput:(id:string,requestSignal?:AbortSignal)=>unwrap(apiClient.GET('/api/v1/outputs/{id}',{params:{path:{id}},signal:requestSignal})),
+    stageCompositeOutput:(id:string,bytes:ArrayBuffer,media:string)=>unwrap(apiClient.PUT('/api/v1/outputs/{id}/content',{params:{path:{id}},body:'',bodySerializer:()=>bytes,headers:{'Content-Type':media}})),
+    downloadCompositeOutput:(id:string,distribution=false)=>unwrap(apiClient.GET('/api/v1/outputs/{id}/content',{params:{path:{id},query:{distribution}},parseAs:'blob'})),
+    expireCompositeOutput:(id:string)=>unwrap(apiClient.POST('/api/v1/outputs/{id}/expire',{params:{path:{id}}})),
+    readCatalog:(body:components['schemas']['CatalogInput'],requestSignal?:AbortSignal,scope?:ScopeSnapshot)=>unwrapScoped(apiClient.POST('/api/v1/catalog/reads',{body,signal:requestSignal}),scope),
+    readIndividualRecords:(id:string,family:string,aggregate?:string,cursor?:string,requestSignal?:AbortSignal,scope?:ScopeSnapshot)=>unwrapScoped(apiClient.GET('/api/v1/analyst-scope/reads/{id}/records',{params:{path:{id},query:{family,aggregate_id:aggregate,cursor,limit:100}},signal:requestSignal}),scope),
+    captureProposal:(body:components['schemas']['CaptureProposalInput'],requestSignal?:AbortSignal)=>unwrap(apiClient.POST('/api/v1/imagery/capture-proposal',{body,signal:requestSignal})),
+    checkImageryPair:(body:components['schemas']['PairInput'],requestSignal?:AbortSignal)=>unwrap(apiClient.POST('/api/v1/imagery/comparison-check',{body,signal:requestSignal})),
+    readAnalystScope:(body:ScopeReadInput,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/analyst-scope/read',{body,signal:requestSignal})),
+    getAnalystReadPage:(id:string,family:string,offset=0,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/analyst-scope/reads/{id}',{params:{path:{id},query:{family,offset,limit:100}},signal:requestSignal})),
+    createSurroundingArea: (body:{longitude:number;latitude:number;radiusM:number},requestSignal?:AbortSignal) => unwrap(apiClient.POST('/api/v1/map/surrounding-area',{body,signal:requestSignal})),
+    measureMapGeometry: (geometry:Record<string,unknown>,requestSignal?:AbortSignal) => unwrap(apiClient.POST('/api/v1/map/measure',{body:{geometry},signal:requestSignal})),
+    listGeographicRegions: (query?: {q?:string;parent?:string;kind?:'country'|'region'|'governorate'|'place'|'study';id?:string;offset?:number;source_id?:string;release_id?:string;edition_id?:string},requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/geography/regions',{params:{query},signal:requestSignal})),
     getMapFeatures: (query: {geometry?:string;family:'events'|'earthquakes'|'thermal'|'weather'|'bulletins'|'aircraft'|'vessels'|'imagery'|'coverage'|'findings';region_id?:string;bbox?:string;view?:'latest'|'known_at'|'effective_at';as_of?:string;observed_from?:string;observed_to?:string;source_id?:string;quality?:string;zoom?:number},signal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/map/features',{params:{query},signal})),
     getReferenceTile: (z:number,x:number,y:number,datasets:string[],signal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/map/reference/{z}/{x}/{y}.pbf',{params:{path:{z,x,y},query:{datasets:datasets.join(',')}},signal,parseAs:'arrayBuffer'})),
     getSourceActivation: (id: string) => unwrap(apiClient.GET('/api/v1/sources/{id}/activation', {params:{path:{id}}})),
-    getReferenceViewport: (bbox: string, datasets: string[], offset = 0) => unwrap(apiClient.GET('/api/v1/reference-features', {params:{query:{bbox,datasets:datasets.join(','),offset}}})),
+    getReferenceViewport: (bbox: string, datasets: string[], offset = 0,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/reference-features', {params:{query:{bbox,datasets:datasets.join(','),offset}},signal:requestSignal})),
     listRuntimeCapabilities: () => unwrap(apiClient.GET('/api/v1/simulation-runtime/capabilities')),
-    listImageryCaptures: (region_id?:string,geometry?:string) => unwrap(apiClient.GET('/api/v1/imagery/captures',{params:{query:{region_id,geometry}}})),
+    listContentPurpose: (view:'all'|'unclassified'='unclassified',offset=0) => unwrap(apiClient.GET('/api/v1/content-purpose',{params:{query:{view,offset}}})),
+    classifyContentPurpose: (body:ContentPurposeInput) => unwrap(apiClient.POST('/api/v1/content-purpose',{body})),
+    listImageryCaptures: (region_id?:string,geometry?:string,scope?:ScopeSnapshot,requestSignal?:AbortSignal) => unwrapScoped(apiClient.GET('/api/v1/imagery/captures',{params:{query:scope?scopeQuery(scope):{region_id,geometry}},signal:requestSignal}),scope),
     createImageryCapture: (body: components['schemas']['ImageryCaptureInput']) => unwrap(apiClient.POST('/api/v1/imagery/captures', {body})),
+    getImageryCapture:(id:string,requestSignal?:AbortSignal)=>unwrap(apiClient.GET('/api/v1/imagery/captures/{id}',{params:{path:{id}},signal:requestSignal})),
     retryImageryCapture: (id: string) => unwrap(apiClient.POST('/api/v1/imagery/captures/{id}/retry',{params:{path:{id}}})),
     cancelImageryCapture: (id: string) => unwrap(apiClient.POST('/api/v1/imagery/captures/{id}/cancel',{params:{path:{id}}})),
     getExerciseEnvironment: (id: string) => unwrap(apiClient.GET('/api/v1/exercise-view/{id}',{params:{path:{id}}})),
@@ -303,45 +385,45 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
     getSimulationModelManifest: (id: string) => unwrap(apiClient.GET('/api/v1/simulation-assets/models/{id}/manifest', { params: { path: { id } }, parseAs: 'blob' })),
     createSimulationTemplate: (body: components['schemas']['ModelActorTemplateInput']) => unwrap(apiClient.POST('/api/v1/simulation-assets/templates', { body })),
     createSimulationEnvironment: (body: components['schemas']['ModelEnvironmentInput']) => unwrap(apiClient.POST('/api/v1/simulation-assets/environments', { body })),
-    listContextRecords: (kind?: 'WEATHER' | 'REPORT', bbox?: string,region_id?:string,geometry?:string) => unwrap(apiClient.GET('/api/v1/public-context/records', { params: { query: { kind, bbox, region_id, geometry } } })),
-    getContextRecord: (id: string) => unwrap(apiClient.GET('/api/v1/public-context/records/{id}', { params: { path: { id } } })),
-    listContextHistory: (id: string) => unwrap(apiClient.GET('/api/v1/public-context/records/{id}/history', { params: { path: { id } } })),
-    listReportAssessments: () => unwrap(apiClient.GET('/api/v1/assessments/reports')),
+    listContextRecords: (kind?: 'WEATHER' | 'REPORT', bbox?: string,region_id?:string,geometry?:string,scope?:ScopeSnapshot,requestSignal?:AbortSignal) => unwrapScoped(apiClient.GET('/api/v1/public-context/records', { params: { query: scope?{kind,...scopeQuery(scope)}:{ kind, bbox, region_id, geometry } },signal:requestSignal }),scope),
+    getContextRecord: (id: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/public-context/records/{id}', { params: { path: { id } },signal:requestSignal })),
+    listContextHistory: (id: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/public-context/records/{id}/history', { params: { path: { id } },signal:requestSignal })),
+    listReportAssessments: (scope?:ScopeSnapshot,requestSignal?:AbortSignal) => unwrapScoped(apiClient.GET('/api/v1/assessments/reports',{params:{query:scope?scopeQuery(scope):undefined},signal:requestSignal}),scope),
     proposeReportAssessment: (body: components['schemas']['ReportProposal']) => unwrap(apiClient.POST('/api/v1/assessments/report-proposals', { body })),
     reviseReportAssessment: (id: string, body: components['schemas']['ReportProposal']) => unwrap(apiClient.POST('/api/v1/assessments/{id}/revisions', { params: { path: { id } }, body })),
-    listExternalTracks: (bbox?: string,region_id?:string,geometry?:string) => unwrap(apiClient.GET('/api/v1/external-tracks', { params: { query: { bbox, region_id, geometry } } })),
-    getExternalTrack: (id: string) => unwrap(apiClient.GET('/api/v1/external-tracks/{id}', { params: { path: { id } } })),
+    listExternalTracks: (bbox?: string,region_id?:string,geometry?:string,scope?:ScopeSnapshot,requestSignal?:AbortSignal) => unwrapScoped(apiClient.GET('/api/v1/external-tracks', { params: { query: scope?scopeQuery(scope):{ bbox, region_id, geometry } },signal:requestSignal }),scope),
+    getExternalTrack: (id: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/external-tracks/{id}', { params: { path: { id } },signal:requestSignal })),
     getExternalAssociations: (id: string) => unwrap(apiClient.GET('/api/v1/external-tracks/{id}/associations', { params: { path: { id } } })),
-    previewContextPackage: (body: components['schemas']['ContextPackageSelection']) => unwrap(apiClient.POST('/api/v1/context-packages/preview', { body })),
-    listImageryScenes: (bbox?: string,region_id?:string,geometry?:string) => unwrap(apiClient.GET('/api/v1/imagery/scenes', { params: { query: { bbox, region_id, geometry } } })),
+    previewContextPackage: (body: components['schemas']['ContextPackageSelection'],requestSignal?:AbortSignal) => unwrap(apiClient.POST('/api/v1/context-packages/preview', { body,signal:requestSignal })),
+    listImageryScenes: (bbox?: string,region_id?:string,geometry?:string,scope?:ScopeSnapshot,requestSignal?:AbortSignal) => unwrapScoped(apiClient.GET('/api/v1/imagery/scenes', { params: { query: scope?scopeQuery(scope):{ bbox, region_id, geometry } },signal:requestSignal }),scope),
     getImageryScene: (id: string) => unwrap(apiClient.GET('/api/v1/imagery/scenes/{id}', { params: { path: { id } } })),
-    listImageryJobs: () => unwrap(apiClient.GET('/api/v1/imagery/jobs')),
-    getImageryJob: (id: string) => unwrap(apiClient.GET('/api/v1/imagery/jobs/{id}', { params: { path: { id } } })),
-    getImageryResult: (id: string) => unwrap(apiClient.GET('/api/v1/imagery/jobs/{id}/result', { params: { path: { id } } })),
+    listImageryJobs: (scope?:ScopeSnapshot,requestSignal?:AbortSignal) => unwrapScoped(apiClient.GET('/api/v1/imagery/jobs',{params:{query:scope?scopeQuery(scope):undefined},signal:requestSignal}),scope),
+    getImageryJob: (id: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/imagery/jobs/{id}', { params: { path: { id } },signal:requestSignal })),
+    getImageryResult: (id: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/imagery/jobs/{id}/result', { params: { path: { id } },signal:requestSignal })),
     submitImageryJob: (body: ImagerySubmit) => unwrap(apiClient.POST('/api/v1/imagery/jobs', { body })),
     cancelImageryJob: (id: string) => unwrap(apiClient.POST('/api/v1/imagery/jobs/{id}/cancel', { params: { path: { id } } })),
     retryImageryJob: (id: string) => unwrap(apiClient.POST('/api/v1/imagery/jobs/{id}/retry', { params: { path: { id } } })),
-    listImageryAttempts: (id: string) => unwrap(apiClient.GET('/api/v1/imagery/jobs/{id}/attempts', { params: { path: { id } } })),
+    listImageryAttempts: (id: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/imagery/jobs/{id}/attempts', { params: { path: { id } },signal:requestSignal })),
     reserveArtifact: (body: ArtifactInput) => unwrap(apiClient.POST('/api/v1/artifacts', { body })),
     getArtifact: (id: string) => unwrap(apiClient.GET('/api/v1/artifacts/{id}', { params: { path: { id } } })),
     uploadArtifact: (id: string, bytes: ArrayBuffer) => unwrap(apiClient.PUT('/api/v1/artifacts/{id}/content', { params: { path: { id } }, body: '', bodySerializer: () => bytes, headers: { 'Content-Type': 'application/octet-stream' } })),
-    downloadArtifact: (id: string) => unwrap(apiClient.GET('/api/v1/artifacts/{id}/content', { params: { path: { id } }, parseAs: 'blob' })),
-    listIntelligenceAssessments: () => unwrap(apiClient.GET('/api/v1/assessments/intelligence')),
+    downloadArtifact: (id: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/artifacts/{id}/content', { params: { path: { id } }, parseAs: 'blob',signal:requestSignal })),
+    listIntelligenceAssessments: (scope?:ScopeSnapshot,requestSignal?:AbortSignal) => unwrapScoped(apiClient.GET('/api/v1/assessments/intelligence',{params:{query:scope?scopeQuery(scope):undefined},signal:requestSignal}),scope),
     proposeImageryAssessment: (body: ImageryProposal) => unwrap(apiClient.POST('/api/v1/assessments/imagery-proposals', { body })),
     reviseImageryAssessment: (id: string, body: ImageryProposal) => unwrap(apiClient.POST('/api/v1/assessments/{id}/revisions', { params: { path: { id } }, body })),
-    listAssessmentRevisions: (id: string) => unwrap(apiClient.GET('/api/v1/assessments/{id}/revisions', { params: { path: { id } } })),
+    listAssessmentRevisions: (id: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/assessments/{id}/revisions', { params: { path: { id } },signal:requestSignal })),
     reviewImageryAssessment: (id: string, body: ImageryReviewAction) => unwrap(apiClient.POST('/api/v1/assessments/{id}/review', { params: { path: { id } }, body })),
     submitAssessmentDraft: (id: string, body: ImageryReviewAction) => unwrap(apiClient.POST('/api/v1/assessments/{id}/submit', { params: { path: { id } }, body })),
     /* Public evidence and reference snapshots. Instances retain scope and cancellation. */
-    listPublicEvents: (params?: PublicEventQuery) => unwrap(apiClient.GET('/api/v1/public-events', { params: { query: { limit: 200, ...params } } })),
-    getPublicEvent: (id: string, query?: PublicEventQuery) => unwrap(apiClient.GET('/api/v1/public-events/{id}', { params: { path: { id }, query } })),
-    listPublicEventRevisions: (id: string, query?: PublicEventQuery) => unwrap(apiClient.GET('/api/v1/public-events/{id}/revisions', { params: { path: { id }, query: { limit: 200, ...query } } })),
-    listReferenceDatasets: () => unwrap(apiClient.GET('/api/v1/reference-datasets')),
+    listPublicEvents: (params?: PublicEventQuery,requestSignal?:AbortSignal,scope?:ScopeSnapshot) => unwrapScoped(apiClient.GET('/api/v1/public-events', { params: { query: scope?{limit:params?.limit??100,offset:params?.offset??0,source_id:params?.source_id,quality:params?.quality,phenomenon:params?.phenomenon,revisions:params?.revisions,...scopeQuery(scope)}:{ limit: 200, ...params } },signal:requestSignal }),scope),
+    getPublicEvent: (id: string, query?: PublicEventQuery,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/public-events/{id}', { params: { path: { id }, query },signal:requestSignal })),
+    listPublicEventRevisions: (id: string, query?: PublicEventQuery,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/public-events/{id}/revisions', { params: { path: { id }, query: { limit: 200, ...query } },signal:requestSignal })),
+    listReferenceDatasets: (requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/reference-datasets',{signal:requestSignal})),
     getReferenceArtifact: (id: string) => unwrap(apiClient.GET('/api/v1/reference-datasets/{id}/artifact', { params: { path: { id } }, parseAs: 'text' })),
     getReferenceFeatures: (id: string) => unwrap(apiClient.GET('/api/v1/reference-datasets/{id}/features', { params: { path: { id } } })),
-    getSourceEvidence: (id: string, evidenceID: string) => unwrap(apiClient.GET('/api/v1/sources/{id}/evidence/{evidenceID}', { params: { path: { id, evidenceID } } })),
-    getSourceOriginal: (id: string, evidenceID: string) => unwrap(apiClient.GET('/api/v1/sources/{id}/evidence/{evidenceID}/original', { params: { path: { id, evidenceID } }, parseAs: 'text' })),
-    getSourceAdmissionVersion: (id: string, admissionID: string) => unwrap(apiClient.GET('/api/v1/sources/{id}/admissions/{admissionID}', { params: { path: { id, admissionID } } })),
+    getSourceEvidence: (id: string, evidenceID: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/sources/{id}/evidence/{evidenceID}', { params: { path: { id, evidenceID } },signal:requestSignal })),
+    getSourceOriginal: (id: string, evidenceID: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/sources/{id}/evidence/{evidenceID}/original', { params: { path: { id, evidenceID } }, parseAs: 'text',signal:requestSignal })),
+    getSourceAdmissionVersion: (id: string, admissionID: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/sources/{id}/admissions/{admissionID}', { params: { path: { id, admissionID } },signal:requestSignal })),
     /* sources */
     listSources: (params?: { limit?: number; offset?: number }) =>
       unwrap(apiClient.GET('/api/v1/sources', { params: { query: params } })),

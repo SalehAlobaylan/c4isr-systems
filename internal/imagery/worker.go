@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/analystscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/artifacts"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/imageryanalysis"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"github.com/jackc/pgx/v5"
 	"time"
 )
@@ -106,6 +108,21 @@ func (s *Service) WorkOne(auth context.Context, build string) (bool, error) {
 		}
 		var resultRaw []byte
 		if status == "SUCCEEDED" {
+			for _, scene := range j.Input.Scenes {
+				policy, e := publicingest.LockPolicy(finalCtx, tx, scene.SourceID, scene.AdmissionID)
+				if e != nil || !policy.Rights.AllowAnalysis || !policy.Rights.RetainRaw {
+					status = "FAILED"
+					code = "rights_unavailable"
+					break
+				}
+				if e = publicingest.RequireProfileProcessing(platformdb.UseTx(finalCtx, tx), s.Pool, policy); e != nil {
+					status = "FAILED"
+					code = "rights_unavailable"
+					break
+				}
+			}
+		}
+		if status == "SUCCEEDED" {
 			resultRaw, _ = json.Marshal(result)
 			if j.Input.Kind == "PREPARE" {
 				_, e = tx.Exec(finalCtx, `INSERT INTO imagery_preparations(job_id,source_id,scene_id,artifact_id,document)VALUES($1,$2,$3,$4,$5)`, j.ID, j.SourceID, j.Input.Scenes[0].ID, j.Input.Artifacts[0].ID, resultRaw)
@@ -131,7 +148,7 @@ func safeProcessingError(e error) string {
 		return "processing_timeout"
 	}
 	switch e.Error() {
-	case "invalid_subset", "source_hashes_missing", "invalid_quality_mask", "invalid_reflectance", "grid_alignment_mismatch", "scene_time_incomparable", "radiometric_or_geometry_incomparable", "insufficient_common_clear_pixels", "finding_geometry_exceeds_budget", "scene_subset_mismatch", "subset_outside_scene", "rights_unavailable":
+	case "invalid_subset", "source_hashes_missing", "invalid_quality_mask", "invalid_reflectance", "grid_alignment_mismatch", "scene_time_incomparable", "radiometric_or_geometry_incomparable", "insufficient_common_clear_pixels", "finding_geometry_exceeds_budget", "scene_subset_mismatch", "subset_outside_scene", "subset_outside_selected_area", "subset_outside_selected_period", "rights_unavailable":
 		return e.Error()
 	}
 	return "artifact_or_processing_unavailable"
@@ -144,7 +161,7 @@ func (s *Service) process(ctx context.Context, j Job) (JobResult, error) {
 	tiles := []imageryanalysis.Tile{}
 	for i, a := range j.Input.Artifacts {
 		scene := j.Input.Scenes[i]
-		admission, e := s.Artifacts.Admission(ctx, scene.SourceID)
+		admission, e := s.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)
 		if e != nil || !admission.Rights.AllowAnalysis || !scene.Rights.AllowAnalysis || (scene.Rights.ExpiresAt != nil && !scene.Rights.ExpiresAt.After(time.Now())) {
 			return out, errors.New("rights_unavailable")
 		}
@@ -163,6 +180,17 @@ func (s *Service) process(ctx context.Context, j Job) (JobResult, error) {
 			return out, errors.New("scene_subset_mismatch")
 		}
 		b := tile.Grid.Bounds()
+		if j.Input.Scope != nil {
+			if !analystscope.ContainsTime(*j.Input.Scope, tile.AcquiredAt) {
+				return out, errors.New("subset_outside_selected_period")
+			}
+			if e = analystscope.ValidateBounds(ctx, s.Pool, *j.Input.Scope, b); e != nil {
+				if apperr.Is(e, apperr.CodeValidation) {
+					return out, errors.New("subset_outside_selected_area")
+				}
+				return out, e
+			}
+		}
 		var covers bool
 		if e = platformdb.Scoped(s.Pool).QueryRow(ctx, `SELECT ST_Covers(geometry,ST_MakeEnvelope($2,$3,$4,$5,4326)) FROM imagery_scenes WHERE id=$1`, scene.ID, b.West, b.South, b.East, b.North).Scan(&covers); e != nil {
 			return out, e
@@ -208,7 +236,15 @@ func (s *Service) process(ctx context.Context, j Job) (JobResult, error) {
 	if j.Input.Artifacts[1].RetainUntil.Before(retention) {
 		retention = j.Input.Artifacts[1].RetainUntil
 	}
-	a, e := s.Artifacts.Reserve(ctx, artifacts.Input{RequestKey: "result:" + j.ID + ":" + j.WorkerBuild[:12], SourceID: j.SourceID, SHA256: artifacts.Hash(raw), Bytes: int64(len(raw)), Kind: "analysis_result", MediaType: "application/json", RetainUntil: retention, Provenance: fmt.Sprintf("%s; worker %s; job %s; two frozen retained subsets", imageryanalysis.Version, j.WorkerBuild, j.ID)})
+	deps := []string{}
+	for _, scene := range j.Input.Scenes {
+		deps = append(deps, scene.AdmissionID)
+	}
+	for _, artifact := range j.Input.Artifacts {
+		deps = append(deps, artifact.AdmissionID)
+		deps = append(deps, artifact.DependencyAdmissionIDs...)
+	}
+	a, e := s.Artifacts.Reserve(ctx, artifacts.Input{DependencyAdmissionIDs: deps, RequestedAdmissionID: j.Input.Scenes[0].AdmissionID, RequestKey: "result:" + j.ID + ":" + j.WorkerBuild[:12], SourceID: j.SourceID, SHA256: artifacts.Hash(raw), Bytes: int64(len(raw)), Kind: "analysis_result", MediaType: "application/json", RetainUntil: retention, Provenance: fmt.Sprintf("%s; worker %s; job %s; two frozen retained subsets", imageryanalysis.Version, j.WorkerBuild, j.ID)})
 	if e != nil {
 		return out, e
 	}
@@ -217,7 +253,7 @@ func (s *Service) process(ctx context.Context, j Job) (JobResult, error) {
 		return out, e
 	}
 	for _, scene := range j.Input.Scenes {
-		admission, e := s.Artifacts.Admission(ctx, scene.SourceID)
+		admission, e := s.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)
 		if e != nil || !admission.Rights.AllowAnalysis {
 			return out, errors.New("rights_unavailable")
 		}

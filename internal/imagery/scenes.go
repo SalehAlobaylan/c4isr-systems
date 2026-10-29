@@ -8,6 +8,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/artifacts"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicevents"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"github.com/jackc/pgx/v5"
@@ -90,6 +91,10 @@ func (s *Service) Scenes(ctx context.Context, bounds *publicingest.Bounds, regio
 		return nil, apperr.Validation("invalid region")
 	}
 	geometry := ""
+	scopeGeometry, from, to, unsupported := queryscope.Catalog(ctx, "scenes")
+	if unsupported {
+		return []Scene{}, nil
+	}
 	if len(regions) > 1 {
 		geometry = regions[1]
 	}
@@ -98,6 +103,9 @@ func (s *Service) Scenes(ctx context.Context, bounds *publicingest.Bounds, regio
 			return nil, e
 		}
 	}
+	if scopeGeometry != "" {
+		geometry = scopeGeometry
+	}
 	b := publicingest.Bounds{}
 	if bounds != nil {
 		b = *bounds
@@ -105,7 +113,7 @@ func (s *Service) Scenes(ctx context.Context, bounds *publicingest.Bounds, regio
 			return nil, e
 		}
 	}
-	rows, e := platformdb.Scoped(s.Pool).Query(ctx, `SELECT document FROM imagery_scenes WHERE ($1::boolean OR ST_Intersects(geometry,ST_MakeEnvelope($2,$3,$4,$5,4326))) AND ($6::text='' OR EXISTS(SELECT 1 FROM geographic_regions g WHERE g.id=$6 AND ST_Intersects(g.geometry,imagery_scenes.geometry))) AND ($7::text='' OR ST_Intersects(imagery_scenes.geometry,ST_SetSRID(ST_GeomFromGeoJSON(NULLIF($7,'')),4326))) ORDER BY acquired_at DESC,id LIMIT 101`, bounds == nil, b.West, b.South, b.East, b.North, region, geometry)
+	rows, e := platformdb.Scoped(s.Pool).Query(ctx, `SELECT document FROM imagery_scenes WHERE emad_content_visible('scene',id) AND ($1::boolean OR ST_Intersects(geometry,ST_MakeEnvelope($2,$3,$4,$5,4326))) AND ($6::text='' OR EXISTS(SELECT 1 FROM geographic_regions g WHERE g.id=$6 AND ST_Intersects(g.geometry,imagery_scenes.geometry))) AND ($7::text='' OR ST_Intersects(imagery_scenes.geometry,ST_SetSRID(ST_GeomFromGeoJSON(NULLIF($7,'')),4326))) AND ($8::timestamptz IS NULL OR acquired_at>=$8) AND ($9::timestamptz IS NULL OR acquired_at<$9) ORDER BY acquired_at DESC,id LIMIT 101`, bounds == nil, b.West, b.South, b.East, b.North, region, geometry, from, to)
 	if e != nil {
 		return nil, e
 	}

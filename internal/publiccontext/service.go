@@ -10,6 +10,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicevents"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"github.com/go-chi/chi/v5"
@@ -70,7 +71,7 @@ func require(ctx context.Context) error {
 	return nil
 }
 
-const selectEntry = `SELECT e.document,original_admission.document,current_admission.document,c.last_attempt_at,c.last_success_at,c.last_failure_code,src.status FROM public_context_records r JOIN public_evidence e ON e.id=r.evidence_id AND e.scope_id=r.scope_id JOIN source_admissions original_admission ON original_admission.id=e.admission_id JOIN source_connector_state c ON c.source_id=r.source_id AND c.scope_id=r.scope_id JOIN source_admissions current_admission ON current_admission.id=c.admission_id JOIN sources src ON src.id=r.source_id `
+const selectEntry = `SELECT e.document,original_admission.document,current_admission.document,c.last_attempt_at,c.last_success_at,c.last_failure_code,src.status FROM public_context_records r JOIN public_evidence e ON e.id=r.evidence_id AND e.scope_id=r.scope_id JOIN source_admissions original_admission ON original_admission.id=e.admission_id JOIN retrieval_profile_revisions origin_profile ON origin_profile.admission_id=e.admission_id JOIN retrieval_profile_state c ON c.source_id=r.source_id AND c.scope_id=r.scope_id AND c.profile_key=origin_profile.profile_key JOIN source_admissions current_admission ON current_admission.id=c.admission_id JOIN sources src ON src.id=r.source_id `
 
 func scan(row pgx.Row) (Entry, error) {
 	var v Entry
@@ -136,6 +137,10 @@ func (s Service) List(ctx context.Context, kind, bbox string, regions ...string)
 	if kind != "" && kind != "WEATHER" && kind != "REPORT" {
 		return nil, apperr.Validation("kind must be WEATHER or REPORT")
 	}
+	scopeGeometry, from, to, unsupported := queryscope.Catalog(ctx, "weather")
+	if unsupported {
+		return []Entry{}, nil
+	}
 	args := []any{kind}
 	predicate := ""
 	if bbox != "" {
@@ -172,6 +177,18 @@ func (s Service) List(ctx context.Context, kind, bbox string, regions ...string)
 		}
 		args = append(args, regions[1])
 		predicate += ` AND ST_Intersects(r.position,ST_SetSRID(ST_GeomFromGeoJSON($` + strconv.Itoa(len(args)) + `),4326))`
+	}
+	if scopeGeometry != "" {
+		args = append(args, scopeGeometry)
+		predicate += ` AND ST_Intersects(r.position,ST_SetSRID(ST_GeomFromGeoJSON($` + strconv.Itoa(len(args)) + `),4326))`
+	}
+	if from != nil {
+		args = append(args, *from)
+		predicate += ` AND r.valid_from>=$` + strconv.Itoa(len(args))
+	}
+	if to != nil {
+		args = append(args, *to)
+		predicate += ` AND r.valid_from<$` + strconv.Itoa(len(args))
 	}
 	// Choose current revision before spatial filtering so an older location cannot
 	// reappear after its provider correction moved outside the selected AOI.
@@ -210,7 +227,7 @@ func (s Service) History(ctx context.Context, id string) ([]Entry, error) {
 	}
 	return out, rows.Err()
 }
-func list(w http.ResponseWriter, items []Entry, err error) {
+func list(ctx context.Context, w http.ResponseWriter, items []Entry, err error) {
 	if err != nil {
 		httpx.Error(w, err)
 		return
@@ -219,12 +236,12 @@ func list(w http.ResponseWriter, items []Entry, err error) {
 	if truncated {
 		items = items[:100]
 	}
-	httpx.JSON(w, 200, map[string]any{"items": items, "total": len(items), "truncated": truncated})
+	httpx.JSON(w, 200, queryscope.ListMetadata(ctx, "weather", map[string]any{"items": items, "total": len(items), "truncated": truncated}))
 }
 func (s Service) Mount(r chi.Router) {
 	r.Get("/public-context/records", func(w http.ResponseWriter, q *http.Request) {
 		v, e := s.List(q.Context(), q.URL.Query().Get("kind"), q.URL.Query().Get("bbox"), q.URL.Query().Get("region_id"), q.URL.Query().Get("geometry"))
-		list(w, v, e)
+		list(q.Context(), w, v, e)
 	})
 	r.Get("/public-context/records/{id}", func(w http.ResponseWriter, q *http.Request) {
 		v, e := s.Get(q.Context(), chi.URLParam(q, "id"))
@@ -236,6 +253,6 @@ func (s Service) Mount(r chi.Router) {
 	})
 	r.Get("/public-context/records/{id}/history", func(w http.ResponseWriter, q *http.Request) {
 		v, e := s.History(q.Context(), chi.URLParam(q, "id"))
-		list(w, v, e)
+		list(q.Context(), w, v, e)
 	})
 }

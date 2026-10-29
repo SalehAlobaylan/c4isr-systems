@@ -3,8 +3,9 @@ import json
 import os
 from datetime import datetime,timezone
 from recovery_data import ROOT,DATA,JEDDAH,encoded,sha,store_json
-from prepare_environment import build
+from prepare_environment import build, build_fixture_models
 from install_local import API,work_once,RECEIPTS
+
 
 def upload(api,path,name,licence,kind='MODEL',source_file=''):
     raw=path.read_bytes();digest=sha(raw)
@@ -27,6 +28,7 @@ def upload(api,path,name,licence,kind='MODEL',source_file=''):
 def install(public,receipts,texture):
     studio=API(partition='EXERCISE_INPUT')
     prepared=build(texture.read_bytes())
+    build_fixture_models()
     licence={'id':'emad-development-assets-v1','licenseId':'LicenseRef-EMAD-DevelopmentAssets',
              'termsUrl':'https://github.com/SalehAlobaylan/c4isr-systems','attribution':'EMAD project-authored static development models',
              'legalBasis':'Internal development and synthetic simulation; perpetual source retention; no external redistribution licence asserted. See DEVELOPMENT_ASSETS.md.',

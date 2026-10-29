@@ -24,6 +24,7 @@ import (
 // Navigation editions have their own bounded admission. They never broaden a
 // source connector's retrieval policy or replace immutable reference artifacts.
 type GeographyInput struct {
+	Staged   bool                `json:"staged,omitempty"`
 	SourceID string              `json:"sourceId"`
 	Label    string              `json:"label"`
 	Version  string              `json:"version"`
@@ -135,10 +136,14 @@ func (s *Service) AdmitGeography(ctx context.Context, in GeographyInput) (Geogra
 	return out, duplicate, err
 }
 
-const regionSelect = `SELECT g.id,ST_AsGeoJSON(g.geometry),g.properties||jsonb_build_object('regionKey',g.region_key,'parentKey',g.parent_key,'kind',g.kind,'name',g.name,'editionId',g.edition_id,'sourceId',g.source_id,'version',e.document->>'version','rights',e.document->'rights','sha256',e.document->>'sha256','admittedAt',e.document->>'admittedAt','admittedBy',e.document->>'admittedBy','attribution',e.document#>>'{rights,attribution}','receipt',e.document->'receipt','bounds',jsonb_build_array(ST_XMin(g.geometry),ST_YMin(g.geometry),ST_XMax(g.geometry),ST_YMax(g.geometry))),count(*)OVER() FROM geographic_regions g JOIN geographic_editions e ON e.id=g.edition_id `
-const latestRegions = `WITH chosen AS(SELECT DISTINCT ON(g.region_key) g.id FROM geographic_regions g JOIN geographic_editions e ON e.id=g.edition_id ORDER BY g.region_key,(e.document->>'admittedAt')::timestamptz DESC,g.id DESC) `
+const regionSelect = `SELECT g.id,ST_AsGeoJSON(g.geometry,17),g.properties||jsonb_build_object('regionKey',g.region_key,'parentKey',g.parent_key,'kind',g.kind,'name',g.name,'releaseId',(SELECT h.release_id FROM geographic_release_heads h WHERE h.source_id=g.source_id AND EXISTS(SELECT 1 FROM geographic_release_editions re WHERE re.release_id=h.release_id AND re.edition_id=g.edition_id)),'editionId',g.edition_id,'sourceId',g.source_id,'version',e.document->>'version','rights',e.document->'rights','sha256',e.document->>'sha256','admittedAt',e.document->>'admittedAt','admittedBy',e.document->>'admittedBy','attribution',e.document#>>'{rights,attribution}','receipt',e.document->'receipt','bounds',jsonb_build_array(ST_XMin(g.geometry),ST_YMin(g.geometry),ST_XMax(g.geometry),ST_YMax(g.geometry))),count(*)OVER() FROM geographic_regions g JOIN geographic_editions e ON e.id=g.edition_id `
 
-func (s *Service) Geography(ctx context.Context, q, parent, kind, id string, offset int) (Viewport, error) {
+// GeographyDiscoveryCTE selects complete per-source release heads for display discovery.
+const GeographyDiscoveryCTE = latestRegions
+
+const latestRegions = `WITH chosen AS(SELECT DISTINCT ON(g.source_id,g.region_key) g.id FROM geographic_regions g JOIN geographic_editions e ON e.id=g.edition_id LEFT JOIN geographic_release_heads h ON h.source_id=g.source_id AND h.scope_id=g.scope_id WHERE (h.release_id IS NULL AND NOT COALESCE((e.document->>'staged')::boolean,false)) OR EXISTS(SELECT 1 FROM geographic_release_editions re WHERE re.release_id=h.release_id AND re.edition_id=g.edition_id) ORDER BY g.source_id,g.region_key,(e.document->>'admittedAt')::timestamptz DESC,g.id DESC) `
+
+func (s *Service) Geography(ctx context.Context, q, parent, kind, id string, offset int, selectors ...string) (Viewport, error) {
 	out := Viewport{Type: "FeatureCollection", Features: []Feature{}}
 	if e := require(ctx, "sources.read"); e != nil {
 		return out, e
@@ -146,10 +151,30 @@ func (s *Service) Geography(ctx context.Context, q, parent, kind, id string, off
 	if kind != "" && !strings.Contains("|country|region|governorate|place|study|", "|"+kind+"|") {
 		return out, apperr.Validation("invalid geographic kind")
 	}
-	if len(q) > 160 || len(parent) > 160 || len(id) > 256 || offset < 0 || offset > 5000 {
+	if len(q) > 160 || len(parent) > 160 || len(id) > 256 || offset < 0 || offset > 100000 {
 		return out, apperr.Validation("invalid geographic selection")
 	}
-	rows, e := db.Scoped(s.pool).Query(ctx, latestRegions+regionSelect+`JOIN chosen c ON c.id=g.id WHERE ($1='' OR strpos(lower(g.name||' '||g.aliases),lower($1))>0) AND ($2='' OR g.parent_key=$2) AND ($3='' OR g.kind=$3) AND ($4='' OR g.id=$4) ORDER BY g.kind,g.name,g.id LIMIT 300 OFFSET $5`, q, parent, kind, id, offset)
+	source, release, edition := "", "", ""
+	if len(selectors) > 0 {
+		source = selectors[0]
+	}
+	if len(selectors) > 1 {
+		release = selectors[1]
+	}
+	if len(selectors) > 2 {
+		edition = selectors[2]
+	}
+	if len(source) > 512 || len(release) > 160 || len(edition) > 160 || id != "" && (q != "" || parent != "" || kind != "" || offset != 0) || release != "" && edition != "" {
+		return out, apperr.Validation("conflicting geographic discovery and exact selection")
+	}
+	// Exact retained IDs never pass through latest discovery. An explicit
+	// edition/release likewise keeps its own complete source-qualified hierarchy.
+	prefix, join := latestRegions, `JOIN chosen c ON c.id=g.id `
+	if id != "" || release != "" || edition != "" {
+		prefix = ""
+		join = ""
+	}
+	rows, e := db.Scoped(s.pool).Query(ctx, prefix+regionSelect+join+`WHERE ($1='' OR strpos(emad_geographic_search(g.name||' '||g.aliases),emad_geographic_search($1))>0) AND ($2='' OR g.parent_key=$2) AND ($3='' OR g.kind=$3) AND ($4='' OR g.id=$4) AND ($6::text='' OR g.source_id=$6) AND ($7::text='' OR EXISTS(SELECT 1 FROM geographic_release_editions re WHERE re.release_id=$7 AND re.edition_id=g.edition_id)) AND ($8::text='' OR g.edition_id=$8) ORDER BY g.kind,g.name,g.id LIMIT 300 OFFSET $5`, q, parent, kind, id, offset, source, release, edition)
 	if e != nil {
 		return out, e
 	}
@@ -164,13 +189,23 @@ func (s *Service) Geography(ctx context.Context, q, parent, kind, id string, off
 		if e = json.Unmarshal(props, &f.Properties); e != nil {
 			return out, e
 		}
+		if release != "" {
+			f.Properties["releaseId"] = release
+		}
 		out.Features = append(out.Features, f)
 	}
+	out.Offset = offset
 	out.Truncated = out.Matched > offset+len(out.Features)
+	if out.Truncated {
+		next := offset + len(out.Features)
+		out.NextOffset = &next
+	}
 	return out, rows.Err()
 }
 
 func (h *Handler) mountGeography(r chi.Router) {
+	h.mountAvailability(r)
+	h.mountReleases(r)
 	r.Post("/geography/editions", func(w http.ResponseWriter, r *http.Request) {
 		var in GeographyInput
 		dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 12<<20))
@@ -192,6 +227,12 @@ func (h *Handler) mountGeography(r chi.Router) {
 	})
 	r.Get("/geography/regions", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()
+		for key, values := range q {
+			if !map[string]bool{"q": true, "parent": true, "kind": true, "id": true, "offset": true, "source_id": true, "release_id": true, "edition_id": true}[key] || len(values) != 1 {
+				httpx.Error(w, apperr.Validation("invalid or ambiguous geography query"))
+				return
+			}
+		}
 		offset := 0
 		if raw := q.Get("offset"); raw != "" {
 			var err error
@@ -201,7 +242,7 @@ func (h *Handler) mountGeography(r chi.Router) {
 				return
 			}
 		}
-		v, e := h.s.Geography(r.Context(), q.Get("q"), q.Get("parent"), q.Get("kind"), q.Get("id"), offset)
+		v, e := h.s.Geography(r.Context(), q.Get("q"), q.Get("parent"), q.Get("kind"), q.Get("id"), offset, q.Get("source_id"), q.Get("release_id"), q.Get("edition_id"))
 		if e != nil {
 			httpx.Error(w, e)
 			return

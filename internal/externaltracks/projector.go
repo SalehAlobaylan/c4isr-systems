@@ -142,14 +142,6 @@ func (p Projector) Project(ctx context.Context, tx pgx.Tx, e publicingest.Eviden
 	return nil
 }
 func (p Projector) Maintain(ctx context.Context, tx pgx.Tx, source string, now time.Time) error {
-	var raw []byte
-	if err := tx.QueryRow(ctx, `SELECT a.document FROM source_connector_state c JOIN source_admissions a ON a.id=c.admission_id WHERE c.source_id=$1`, source).Scan(&raw); err != nil {
-		return err
-	}
-	var admission publicingest.Admission
-	if err := json.Unmarshal(raw, &admission); err != nil {
-		return err
-	}
-	_, err := tx.Exec(ctx, `UPDATE tracks SET status=CASE WHEN last_seen_at<$3 THEN 'closed' ELSE 'lost' END,closed_at=CASE WHEN last_seen_at<$3 THEN COALESCE(closed_at,$4) ELSE closed_at END,updated_at=$4 WHERE external_source_id=$1 AND last_seen_at<$2 AND status<>'closed'`, source, now.Add(-time.Duration(admission.Policy.UnavailableAfterSeconds)*time.Second), now.Add(-SegmentGap), now)
+	_, err := tx.Exec(ctx, `UPDATE tracks t SET status=CASE WHEN t.last_seen_at<$3 THEN 'closed' ELSE 'lost' END,closed_at=CASE WHEN t.last_seen_at<$3 THEN COALESCE(t.closed_at,$2) ELSE t.closed_at END,updated_at=$2 FROM external_track_segments seg JOIN public_evidence e ON e.id=seg.latest_evidence_id JOIN retrieval_profile_revisions original ON original.admission_id=e.admission_id JOIN retrieval_profiles prof ON prof.source_id=original.source_id AND prof.scope_id=original.scope_id AND prof.profile_key=original.profile_key JOIN retrieval_profile_revisions head ON head.id=prof.head_revision_id JOIN source_admissions a ON a.id=head.admission_id WHERE t.id=seg.track_id AND seg.source_id=$1 AND t.last_seen_at<$2-((a.document#>>'{policy,unavailableAfterSeconds}')::int*interval '1 second') AND t.status<>'closed'`, source, now, now.Add(-SegmentGap))
 	return err
 }

@@ -1,0 +1,2810 @@
+{
+  "schema": "emad.map-first-backlog.v2",
+  "preparedOn": "2026-10-25",
+  "baselineCommit": "a6d1d22f34692faea31db58e4a6318c539c3321a",
+  "plan": "MAP_FIRST_IMPLEMENTATION_PLAN_2026_10_25.md",
+  "governingScope": "../../EMAD_CURRENT_SCOPE.md",
+  "status": "IN_PROGRESS",
+  "authorization": "The user authorized T22-T24 after reporting migrations. T01-T21 retain scoped implementation evidence; T22-T24 qualification tooling/documentation are implemented and their actual qualification remains IN_PROGRESS. No shared migration/deployment/restart was performed.",
+  "scope": "Map-centered Public Context and Intelligence, Middle East priority plus supported worldwide workflows; portable geographic environment preparation only.",
+  "notes": [
+    "Dependencies are completion dependencies; formative user sessions and acceptance harness design can start earlier as described in the plan.",
+    "Acceptance scenarios span tasks. Run the relevant subset per task and close the full scenario only with integrated evidence.",
+    "Proposed defaults and workload targets are design choices to freeze before qualification, not measured results.",
+    "Geographic coverage, independent users and real provider acquisitions require their own evidence; cached unit tests and fixtures do not satisfy those gates.",
+    "T01 is immediate MAP-1 correctness containment and may precede completion of MAP-0.",
+    "Second-pass audit adds 54 atomic requirements and 12 hardening checks. Their presence is planning coverage; all 24 acceptance scenarios remain NOT_RUN.",
+    "T01–T18 IMPLEMENTED means source and scoped checks exist; COMPLETE still requires the task closure evidence. Shared deployment and the full acceptance scenarios are not inferred from isolated tests.",
+    "T04–T06 preserve exact areas/releases, shared temporal semantics, bounded materialized reads and pinned/follow handoffs. Isolated PostGIS/Linux/browser fixtures do not establish shared deployment, geographic coverage or independent human qualification.",
+    "T07–T12 add server-owned investigations, actual source-backed regional preparation, exact profile rights/execution grants, durable bounded acquisition, account/storage reservations, scope coverage and frozen historical reads. Provider-credit/coverage, shared installation, complete workloads and independent users retain their own qualification gates.",
+    "T13-T15 add stable catalog/aggregate paging, role/international workflows and immutable imagery intents/case links. Actual UAE/France pixel qualification is isolated. Independent users, complete journeys and latency/concurrency/soak qualification remain open.",
+    "T16-T18 add immutable authored findings, canonical save recovery, independent exact-content review and purpose-specific composite rights/storage. Protocol fixtures do not establish observed independent users or publication. T19 readable briefs and full acceptance qualification remain open.",
+    "T19-T21 implement independent durable delivery, frozen script-free briefs, offline approval bundles, area-parameterized normalization and qualified portable geographic packages. Synthetic coordinate/protocol tests and independent PROJ/GEOS checks are not surveyed accuracy, observed independent users, complete journeys or release qualification.",
+    "T22-T24 provide isolated five-session/ten-profile measurement, expanded paired recovery inventory and retention policy, bounded operation histograms, observed-session record validation and a source-pinned release ledger. Reduced synthetic samples and record checks do not close full workload, 24-hour recovery, real geographic or observed-human gates.",
+    "Pre-qualification review fixed seven tooling defects. Use the t22-t24-review candidate for future qualification; older scoped evidence is historical and no mandatory acceptance/user/operational gate was promoted."
+  ],
+  "tasks": [
+    {
+      "id": "T01",
+      "title": "Contain wrong-area submissions immediately",
+      "gate": "MAP-1",
+      "status": "IMPLEMENTED",
+      "dependsOn": [],
+      "gapIds": [
+        "GAP-02",
+        "GAP-03",
+        "GAP-10"
+      ],
+      "acceptanceIds": [
+        "A02"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md#t01-area-integrity",
+            "scope": "Implemented working-tree change; source hashes in verification.json"
+          }
+        ],
+        "installation": [],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t01-t03/verification.json",
+            "scope": "Geometry/pinned-area browser regressions, exact request coordinates, negative scope cases"
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "User reports applying the preceding migrations through 00045; shared startup/backfill was not independently checked. New migration 00046 accompanies T04–T06.",
+        "Full integrated acceptance and independent user qualification remain open."
+      ]
+    },
+    {
+      "id": "T02",
+      "title": "Map-only startup and ordinary entry",
+      "gate": "MAP-0",
+      "status": "IMPLEMENTED",
+      "dependsOn": [],
+      "gapIds": [
+        "GAP-01",
+        "GAP-08",
+        "GAP-18"
+      ],
+      "acceptanceIds": [
+        "A01"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md#t02-map-only-operation",
+            "scope": "Implemented working-tree change; source hashes in verification.json"
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t01-t03/verification.json",
+            "scope": "Isolated migrated PostGIS; Windows provisioning and Linux map delivery startup. This is not shared deployment evidence."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t01-t03/verification.json",
+            "scope": "Fresh/upgraded identity provisioning, map entry, Linux image API, staging profiles and basemap outage"
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering and operations",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "User reports applying the preceding migrations through 00045; shared startup/backfill was not independently checked. New migration 00046 accompanies T04–T06.",
+        "Full integrated acceptance and independent user qualification remain open."
+      ]
+    },
+    {
+      "id": "T03",
+      "title": "Classify content and correct visible counts",
+      "gate": "MAP-0",
+      "status": "IMPLEMENTED",
+      "dependsOn": [],
+      "gapIds": [
+        "GAP-12",
+        "GAP-18"
+      ],
+      "acceptanceIds": [
+        "A14"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md#t03-purpose-and-truthful-counts",
+            "scope": "Implemented working-tree change; source hashes in verification.json"
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t01-t03/verification.json",
+            "scope": "Isolated migrated PostGIS; Windows provisioning and Linux map delivery startup. This is not shared deployment evidence."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t01-t03/verification.json",
+            "scope": "Real PostGIS classification/RLS/counts/history, administration browser flow and receipt backfill tests"
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering and source administrator",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "User reports applying the preceding migrations through 00045; shared startup/backfill was not independently checked. New migration 00046 accompanies T04–T06.",
+        "Full integrated acceptance and independent user qualification remain open."
+      ]
+    },
+    {
+      "id": "T04",
+      "title": "Versioned areas, exact geography and component geometry",
+      "gate": "MAP-1",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T01"
+      ],
+      "gapIds": [
+        "GAP-02",
+        "GAP-03",
+        "GAP-04",
+        "GAP-07"
+      ],
+      "acceptanceIds": [
+        "A02",
+        "A03",
+        "A08"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md#t04-versioned-areas-and-exact-geography",
+            "scope": "Working-tree implementation; exact source hashes in second-batch verification.json."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t04-t06/verification.json",
+            "scope": "Isolated migrated PostGIS and Linux map-image startup/scope resolution. Not shared installation evidence."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t04-t06/verification.json",
+            "scope": "Real PostGIS exact editions, release activation, original/canonical bytes, source isolation, holes/components/date-line counts and subset checks."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Apply new migration 00046 and coordinated application/worker/UI upgrade in the shared installation.",
+        "Integrated scenario qualification across later tasks, actual regional source coverage and independent analyst use remain open."
+      ]
+    },
+    {
+      "id": "T05",
+      "title": "Shared temporal scope and query evaluation",
+      "gate": "MAP-1",
+      "status": "IMPLEMENTED",
+      "dependsOn": [],
+      "gapIds": [
+        "GAP-03",
+        "GAP-06",
+        "GAP-15"
+      ],
+      "acceptanceIds": [
+        "A04",
+        "A22"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md#t05-shared-time-and-stable-reads",
+            "scope": "Working-tree implementation; exact source hashes in second-batch verification.json."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t04-t06/verification.json",
+            "scope": "Isolated migrated PostGIS and Linux map-image startup/scope resolution. Not shared installation evidence."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t04-t06/verification.json",
+            "scope": "Shared time/legacy boundaries, unsupported history, real late-commit publication, corrections/withdrawals, stable pages, durable promotion, expiry and bounded read slots."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Apply new migration 00046 and coordinated application/worker/UI upgrade in the shared installation.",
+        "Integrated scenario qualification across later tasks, actual regional source coverage and independent analyst use remain open."
+      ]
+    },
+    {
+      "id": "T06",
+      "title": "Connect every user-facing handoff",
+      "gate": "MAP-1",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T04",
+        "T05"
+      ],
+      "gapIds": [
+        "GAP-02",
+        "GAP-03",
+        "GAP-06",
+        "GAP-08"
+      ],
+      "acceptanceIds": [
+        "A02",
+        "A04",
+        "A09"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md#t06-one-scope-through-the-user-journey",
+            "scope": "Working-tree implementation; exact source hashes in second-batch verification.json."
+          }
+        ],
+        "installation": [],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t04-t06/verification.json",
+            "scope": "Fifteen new browser protocol cases plus fifteen prior cases; scoped native capture/comparison/export lineage and offline package checks against PostGIS/S3."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Apply new migration 00046 and coordinated application/worker/UI upgrade in the shared installation.",
+        "Integrated scenario qualification across later tasks, actual regional source coverage and independent analyst use remain open."
+      ]
+    },
+    {
+      "id": "T07",
+      "title": "Minimal durable investigation",
+      "gate": "MAP-1",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T04",
+        "T05"
+      ],
+      "gapIds": [
+        "GAP-09",
+        "GAP-03",
+        "GAP-08"
+      ],
+      "acceptanceIds": [
+        "A10",
+        "A12",
+        "A23"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T07_T09_IMPLEMENTATION_2026_10_26.md",
+            "scope": "Registered-human membership/CAS, immutable authored history, cumulative source dependencies, cross-browser protocol resume and stale-save recovery; no independent-user qualification."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t07-t09/verification.json",
+            "scope": "Isolated migrated PostGIS/private S3 and compiled Linux map image; not the shared installation."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t07-t09/verification.json",
+            "scope": "Registered-human membership/CAS, immutable authored history, cumulative source dependencies, cross-browser protocol resume and stale-save recovery; no independent-user qualification."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Coordinated shared upgrade through 00050 and live provider/account policy review.",
+        "Complete integrated acceptance scenarios, installed geography, sustained workload/recovery and independent-user qualification remain open."
+      ]
+    },
+    {
+      "id": "T08",
+      "title": "Generalized regional reference installation",
+      "gate": "MAP-2",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T04"
+      ],
+      "gapIds": [
+        "GAP-02",
+        "GAP-04",
+        "GAP-15"
+      ],
+      "acceptanceIds": [
+        "A08",
+        "A15"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T07_T09_IMPLEMENTATION_2026_10_26.md",
+            "scope": "Real Natural Earth seven-country chunks in isolated PostGIS, source-qualified release atomicity, bounded search and durable reference-depth requests; no shared regional deployment or geographic accuracy qualification."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t07-t09/verification.json",
+            "scope": "Isolated migrated PostGIS/private S3 and compiled Linux map image; not the shared installation."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t07-t09/verification.json",
+            "scope": "Real Natural Earth seven-country chunks in isolated PostGIS, source-qualified release atomicity, bounded search and durable reference-depth requests; no shared regional deployment or geographic accuracy qualification."
+          }
+        ],
+        "geographic": [
+          {
+            "outcome": "PARTIAL",
+            "reference": "docs/implementation/evidence/map-first/t07-t09/verification.json",
+            "scope": "Actual source-backed seven-country import/depth in isolated PostGIS; full A08/installed geographic qualification is not claimed."
+          }
+        ],
+        "userValidation": []
+      },
+      "ownerRole": "Geospatial engineering and source administrator",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Coordinated shared upgrade through 00050 and live provider/account policy review.",
+        "Complete integrated acceptance scenarios, installed geography, sustained workload/recovery and independent-user qualification remain open."
+      ]
+    },
+    {
+      "id": "T09",
+      "title": "Retrieval-profile model and rights compatibility",
+      "gate": "MAP-2",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T04",
+        "T05"
+      ],
+      "gapIds": [
+        "GAP-05",
+        "GAP-13",
+        "GAP-14"
+      ],
+      "acceptanceIds": [
+        "A05",
+        "A06",
+        "A18"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T07_T09_IMPLEMENTATION_2026_10_26.md",
+            "scope": "Exact legacy mapping, original-profile rights, explicit revision grants, deduplicated occurrences, old-reader boundary and suspension during S3 I/O."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t07-t09/verification.json",
+            "scope": "Isolated migrated PostGIS/private S3 and compiled Linux map image; not the shared installation."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t07-t09/verification.json",
+            "scope": "Exact legacy mapping, original-profile rights, explicit revision grants, deduplicated occurrences, old-reader boundary and suspension during S3 I/O."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Backend engineering and source administrator",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Coordinated shared upgrade through 00050 and live provider/account policy review.",
+        "Complete integrated acceptance scenarios, installed geography, sustained workload/recovery and independent-user qualification remain open."
+      ]
+    },
+    {
+      "id": "T10",
+      "title": "Durable acquisition scheduling and provider quotas",
+      "gate": "MAP-2",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T09"
+      ],
+      "gapIds": [
+        "GAP-05",
+        "GAP-10",
+        "GAP-13",
+        "GAP-14"
+      ],
+      "acceptanceIds": [
+        "A05",
+        "A06",
+        "A17"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T10_T12_IMPLEMENTATION_2026_10_26.md",
+            "scope": "Durable intent/parts, same-key lost-response retry, cancellation during I/O, source/account quotas, uncertain charges, capacity guards and durable metrics; real account policy/soak remain unqualified."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+            "scope": "Isolated migrated PostGIS/private S3 and compiled Linux map image; not the shared installation."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+            "scope": "Durable intent/parts, same-key lost-response retry, cancellation during I/O, source/account quotas, uncertain charges, capacity guards and durable metrics; real account policy/soak remain unqualified."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Backend engineering and operations",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Coordinated shared upgrade through 00050 and live provider/account policy review.",
+        "Complete integrated acceptance scenarios, installed geography, sustained workload/recovery and independent-user qualification remain open."
+      ]
+    },
+    {
+      "id": "T11",
+      "title": "Area/time coverage and task readiness",
+      "gate": "MAP-2",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T03",
+        "T06",
+        "T08",
+        "T10"
+      ],
+      "gapIds": [
+        "GAP-05",
+        "GAP-13",
+        "GAP-06"
+      ],
+      "acceptanceIds": [
+        "A07",
+        "A14"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T10_T12_IMPLEMENTATION_2026_10_26.md",
+            "scope": "Exact historical footprint/window unions, capped/rejected/unpublished gaps, publication-only recovery, empty/unqueried/unavailable/stale states, credentials and source isolation."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+            "scope": "Isolated migrated PostGIS/private S3 and compiled Linux map image; not the shared installation."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+            "scope": "Exact historical footprint/window unions, capped/rejected/unpublished gaps, publication-only recovery, empty/unqueried/unavailable/stale states, credentials and source isolation."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Coordinated shared upgrade through 00050 and live provider/account policy review.",
+        "Complete integrated acceptance scenarios, installed geography, sustained workload/recovery and independent-user qualification remain open."
+      ]
+    },
+    {
+      "id": "T12",
+      "title": "Monitoring, historical study and useful quiet states",
+      "gate": "MAP-3",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T05",
+        "T06",
+        "T11"
+      ],
+      "gapIds": [
+        "GAP-06",
+        "GAP-08",
+        "GAP-13"
+      ],
+      "acceptanceIds": [
+        "A04",
+        "A07",
+        "A21"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T10_T12_IMPLEMENTATION_2026_10_26.md",
+            "scope": "SQL-family savepoints, unknown counts, frozen historical membership/focus/reconnect, explicit refresh, current provider validity notices and scoped quiet summaries."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+            "scope": "Isolated migrated PostGIS/private S3 and compiled Linux map image; not the shared installation."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+            "scope": "SQL-family savepoints, unknown counts, frozen historical membership/focus/reconnect, explicit refresh, current provider validity notices and scoped quiet summaries."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Coordinated shared upgrade through 00050 and live provider/account policy review.",
+        "Complete integrated acceptance scenarios, installed geography, sustained workload/recovery and independent-user qualification remain open."
+      ]
+    },
+    {
+      "id": "T13",
+      "title": "Scale, paging and request lifecycle",
+      "gate": "MAP-3",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T04",
+        "T05",
+        "T06",
+        "T10"
+      ],
+      "gapIds": [
+        "GAP-07",
+        "GAP-14"
+      ],
+      "acceptanceIds": [
+        "A09",
+        "A17",
+        "A22"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T13_T15_IMPLEMENTATION_2026_10_26.md",
+            "scope": "Owner/resource/scope-bound saved catalogs, exact counts and opaque continuation; aggregate revision drill-down; bounded read storage, stable paging, truthful legacy ceilings and history beyond former count caps."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t13-t15/verification.json",
+            "scope": "Isolated migrated PostGIS/private S3/compiled Linux map image; shared migration 00051 and application upgrade remain pending."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t13-t15/verification.json",
+            "scope": "Owner/resource/scope-bound saved catalogs, exact counts and opaque continuation; aggregate revision drill-down; bounded read storage, stable paging, truthful legacy ceilings and history beyond former count caps."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Apply and verify coordinated shared upgrade through 00051.",
+        "Complete acceptance scenarios, sustained/mixed/concurrent workloads and independent-user qualification remain open.",
+        "Meet proposed interactive latency targets; current serial single-run measurements are not p95 qualification."
+      ]
+    },
+    {
+      "id": "T14",
+      "title": "Analyst navigation, roles and international usability",
+      "gate": "MAP-3",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T02",
+        "T06",
+        "T07",
+        "T11"
+      ],
+      "gapIds": [
+        "GAP-08",
+        "GAP-15"
+      ],
+      "acceptanceIds": [
+        "A15",
+        "A19"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T13_T15_IMPLEMENTATION_2026_10_26.md",
+            "scope": "Effective-role navigation, explicit Gregorian/timezone/coordinates, Arabic digits/bidi and local RTL, keyboard/focus and narrow/short/text enlargement; independent users remain NOT_RUN."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t13-t15/verification.json",
+            "scope": "Isolated migrated PostGIS/private S3/compiled Linux map image; shared migration 00051 and application upgrade remain pending."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t13-t15/verification.json",
+            "scope": "Effective-role navigation, explicit Gregorian/timezone/coordinates, Arabic digits/bidi and local RTL, keyboard/focus and narrow/short/text enlargement; independent users remain NOT_RUN."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Apply and verify coordinated shared upgrade through 00051.",
+        "Complete acceptance scenarios, sustained/mixed/concurrent workloads and independent-user qualification remain open.",
+        "Run the observed-user/assistive-technology session protocol with actual participants."
+      ]
+    },
+    {
+      "id": "T15",
+      "title": "Repeatable imagery acquisition and comparison",
+      "gate": "MAP-4",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T06",
+        "T07",
+        "T10",
+        "T11",
+        "T12",
+        "T13"
+      ],
+      "gapIds": [
+        "GAP-10",
+        "GAP-03",
+        "GAP-13"
+      ],
+      "acceptanceIds": [
+        "A11"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T13_T15_IMPLEMENTATION_2026_10_26.md",
+            "scope": "Exact scene/subset proposal, deliberate adoption, retained grid/platform/tile/orbit/baseline/date/mask checks, canonical original intent retries and immutable case revision links with current membership."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t13-t15/verification.json",
+            "scope": "Isolated migrated PostGIS/private S3/compiled Linux map image; shared migration 00051 and application upgrade remain pending."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t13-t15/verification.json",
+            "scope": "Exact scene/subset proposal, deliberate adoption, retained grid/platform/tile/orbit/baseline/date/mask checks, canonical original intent retries and immutable case revision links with current membership."
+          }
+        ],
+        "geographic": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t13-t15/live-imagery.json",
+            "scope": "Fresh isolated UAE/France historical real pixels and offline comparison only; not full live application journey, production approval or independent review."
+          }
+        ],
+        "userValidation": []
+      },
+      "ownerRole": "Imagery engineering and geospatial analyst",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Apply and verify coordinated shared upgrade through 00051.",
+        "Complete acceptance scenarios, sustained/mixed/concurrent workloads and independent-user qualification remain open."
+      ]
+    },
+    {
+      "id": "T16",
+      "title": "Complete case evidence, notes and findings",
+      "gate": "MAP-4",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T07",
+        "T12"
+      ],
+      "gapIds": [
+        "GAP-09",
+        "GAP-08",
+        "GAP-11"
+      ],
+      "acceptanceIds": [
+        "A10",
+        "A12",
+        "A21",
+        "A23"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T16_T18_IMPLEMENTATION_2026_10_27.md",
+            "scope": "Exact evidence selection, immutable findings, cumulative historical/source-admission dependencies, preserved original scopes, revision comparison, account-scoped autosave/recovery and live save grants."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t16-t18/verification.json",
+            "scope": "Isolated migrated PostGIS/private stores and Linux image; shared migration 00052 and deployment remain pending."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t16-t18/verification.json",
+            "scope": "Exact evidence selection, immutable findings, cumulative historical/source-admission dependencies, preserved original scopes, revision comparison, account-scoped autosave/recovery and live save grants."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Apply and independently verify shared upgrade through 00052.",
+        "Complete observed independent-human journeys, integrated acceptance and production recovery/retention qualification."
+      ]
+    },
+    {
+      "id": "T17",
+      "title": "Handoff and independent review",
+      "gate": "MAP-4",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T16"
+      ],
+      "gapIds": [
+        "GAP-09",
+        "GAP-11",
+        "GAP-17"
+      ],
+      "acceptanceIds": [
+        "A12",
+        "A19",
+        "A24"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T16_T18_IMPLEMENTATION_2026_10_27.md",
+            "scope": "Append-only assignment/rework/approval, current revision/event CAS, canonical-human contributor exclusion, live reviewer/source grants, inbox and exact manifest/render attestations. Observed independent humans remain NOT_RUN."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t16-t18/verification.json",
+            "scope": "Isolated migrated PostGIS/private stores and Linux image; shared migration 00052 and deployment remain pending."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t16-t18/verification.json",
+            "scope": "Append-only assignment/rework/approval, current revision/event CAS, canonical-human contributor exclusion, live reviewer/source grants, inbox and exact manifest/render attestations. Observed independent humans remain NOT_RUN."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Apply and independently verify shared upgrade through 00052.",
+        "Complete observed independent-human journeys, integrated acceptance and production recovery/retention qualification."
+      ]
+    },
+    {
+      "id": "T18",
+      "title": "Output rights and composite artifact foundations",
+      "gate": "MAP-4",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T09",
+        "T16"
+      ],
+      "gapIds": [
+        "GAP-11",
+        "GAP-12",
+        "GAP-16"
+      ],
+      "acceptanceIds": [
+        "A13",
+        "A18",
+        "A23",
+        "A24"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T16_T18_IMPLEMENTATION_2026_10_27.md",
+            "scope": "Explicit original/current output permissions, typed all-source lineage, bounded frozen manifests/private bytes, post-I/O access checks, immutable render identity, exact approved distribution, retention/deletion retries and tombstones. Readable HTML briefs remain T19."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t16-t18/verification.json",
+            "scope": "Isolated migrated PostGIS/private stores and Linux image; shared migration 00052 and deployment remain pending."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t16-t18/verification.json",
+            "scope": "Explicit original/current output permissions, typed all-source lineage, bounded frozen manifests/private bytes, post-I/O access checks, immutable render identity, exact approved distribution, retention/deletion retries and tombstones. Readable HTML briefs remain T19."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Backend engineering and source administrator",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Apply and independently verify shared upgrade through 00052.",
+        "Complete observed independent-human journeys, integrated acceptance and production recovery/retention qualification.",
+        "T19 will provide readable HTML briefs/render execution; foundation staging accepts declared JSON/PNG only. Reconcile pending deletion/reservations explicitly until operational automation is qualified."
+      ]
+    },
+    {
+      "id": "T19",
+      "title": "Readable, reproducible analyst briefs",
+      "gate": "MAP-4",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T11",
+        "T15",
+        "T17",
+        "T18"
+      ],
+      "gapIds": [
+        "GAP-11",
+        "GAP-10",
+        "GAP-09"
+      ],
+      "acceptanceIds": [
+        "A13",
+        "A19",
+        "A21",
+        "A24"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T19_T21_IMPLEMENTATION_2026_10_27.md",
+            "scope": "Durable author-bound job/intent/lease/retry/cancel/recovery, safe frozen HTML/figures/coverage, sandboxed reader, independent exact-render approval and offline HTML/JSON/readable attestation bundle."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t19-t21/verification.json",
+            "scope": "Isolated migrated PostGIS/private storage/compiled Linux image only; shared installation and supervised upgrade are not inferred."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t19-t21/verification.json",
+            "scope": "Durable author-bound job/intent/lease/retry/cancel/recovery, safe frozen HTML/figures/coverage, sandboxed reader, independent exact-render approval and offline HTML/JSON/readable attestation bundle."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Application engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Independently verify the user-reported shared migration and coordinated API/UI/author-bound worker upgrade through 00053.",
+        "Complete relevant full acceptance scenarios and observed independent-user/recipient validation.",
+        "T22 mixed/concurrent workloads, measured RSS/latency, prolonged unattended operation and restore/uncertain-I/O rehearsal remain open."
+      ]
+    },
+    {
+      "id": "T20",
+      "title": "Generalize geographic preparation inputs",
+      "gate": "MAP-5",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T04",
+        "T08",
+        "T10",
+        "T18"
+      ],
+      "gapIds": [
+        "GAP-16",
+        "GAP-02",
+        "GAP-04"
+      ],
+      "acceptanceIds": [
+        "A16"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T19_T21_IMPLEMENTATION_2026_10_27.md",
+            "scope": "Explicit polygon/source-version/CRS/datum/origin/budget inputs, retained native parents/structured hashes/dates, bounded raster mosaic normalization, vector clipping, independent frame/vertical checks and isolated historical Jeddah/model fixture path."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t19-t21/verification.json",
+            "scope": "Isolated migrated PostGIS/private storage/compiled Linux image only; shared installation and supervised upgrade are not inferred."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t19-t21/verification.json",
+            "scope": "Explicit polygon/source-version/CRS/datum/origin/budget inputs, retained native parents/structured hashes/dates, bounded raster mosaic normalization, vector clipping, independent frame/vertical checks and isolated historical Jeddah/model fixture path."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Geospatial engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Independently verify the user-reported shared migration and coordinated API/UI/author-bound worker upgrade through 00053.",
+        "Complete relevant full acceptance scenarios and observed independent-user/recipient validation.",
+        "Qualify real source-backed terrain/imagery/control data and intended-use tolerances in the required geographic journeys; synthetic fixtures establish protocol/algorithm checks only.",
+        "T22 mixed/concurrent workloads, measured RSS/latency, prolonged unattended operation and restore/uncertain-I/O rehearsal remain open."
+      ]
+    },
+    {
+      "id": "T21",
+      "title": "Durable portable environment package",
+      "gate": "MAP-5",
+      "status": "IMPLEMENTED",
+      "dependsOn": [
+        "T20"
+      ],
+      "gapIds": [
+        "GAP-16",
+        "GAP-14"
+      ],
+      "acceptanceIds": [
+        "A16",
+        "A17"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T19_T21_IMPLEMENTATION_2026_10_27.md",
+            "scope": "Product preparation requests, qualification/control/accuracy/budget preflight, immutable neutral georeferenced terrain/vector/multispectral package, independent offline PROJ/GEOS reader, publication/retention/orphan fencing and source/case rights checks."
+          }
+        ],
+        "installation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t19-t21/verification.json",
+            "scope": "Isolated migrated PostGIS/private storage/compiled Linux image only; shared installation and supervised upgrade are not inferred."
+          }
+        ],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t19-t21/verification.json",
+            "scope": "Product preparation requests, qualification/control/accuracy/budget preflight, immutable neutral georeferenced terrain/vector/multispectral package, independent offline PROJ/GEOS reader, publication/retention/orphan fencing and source/case rights checks."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Geospatial engineering and operations",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Independently verify the user-reported shared migration and coordinated API/UI/author-bound worker upgrade through 00053.",
+        "Complete relevant full acceptance scenarios and observed independent-user/recipient validation.",
+        "Qualify real source-backed terrain/imagery/control data and intended-use tolerances in the required geographic journeys; synthetic fixtures establish protocol/algorithm checks only.",
+        "T22 mixed/concurrent workloads, measured RSS/latency, prolonged unattended operation and restore/uncertain-I/O rehearsal remain open."
+      ]
+    },
+    {
+      "id": "T22",
+      "title": "Workload, unattended operation and recovery qualification",
+      "gate": "MAP-6",
+      "status": "IN_PROGRESS",
+      "dependsOn": [
+        "T02",
+        "T10",
+        "T13",
+        "T15",
+        "T19",
+        "T21"
+      ],
+      "gapIds": [
+        "GAP-14",
+        "GAP-07",
+        "GAP-13"
+      ],
+      "acceptanceIds": [
+        "A09",
+        "A17",
+        "A18",
+        "A22",
+        "A23",
+        "A24"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md",
+            "scope": "Executable qualification tooling/documentation; actual gate closure remains open"
+          },
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T22_T24_REVIEW_2026_10_27.md",
+            "scope": "Seven pre-qualification tooling defects fixed; current candidate supersedes earlier source pin."
+          }
+        ],
+        "installation": [],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t22-t24/verification.json",
+            "scope": "Scoped tooling tests and isolated samples only; T23 records are validator fixtures, not observed people"
+          },
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t22-t24-review/verification.json",
+            "scope": "16 regression tests, reduced workload and isolated paired-recovery evidence only; full task qualification remains open."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Operations and quality engineering",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Full proposed dataset, map/browser budgets and simultaneous raster workload remain unqualified.",
+        "24 actual wall-clock hours with real planned process restart and RSS/object/freshness/queue growth measurements remain NOT_RUN.",
+        "Full installed dependency replay, every recovery fault and actual nominated rollback binary/forward recovery remain unqualified."
+      ]
+    },
+    {
+      "id": "T23",
+      "title": "Independent analyst/reviewer qualification",
+      "gate": "MAP-6",
+      "status": "IN_PROGRESS",
+      "dependsOn": [
+        "T14",
+        "T19",
+        "T21",
+        "T22"
+      ],
+      "gapIds": [
+        "GAP-17",
+        "GAP-15",
+        "GAP-08",
+        "GAP-11"
+      ],
+      "acceptanceIds": [
+        "A19",
+        "A20"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md",
+            "scope": "Executable qualification tooling/documentation; actual gate closure remains open"
+          },
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T22_T24_REVIEW_2026_10_27.md",
+            "scope": "Seven pre-qualification tooling defects fixed; current candidate supersedes earlier source pin."
+          }
+        ],
+        "installation": [],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t22-t24/verification.json",
+            "scope": "Scoped tooling tests and isolated samples only; T23 records are validator fixtures, not observed people"
+          },
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t22-t24-review/verification.json",
+            "scope": "16 regression tests, reduced workload and isolated paired-recovery evidence only; full task qualification remains open."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Product owner and independent target users",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "Appointed observer, real target users, distinct canonical reviewer and assistive-technology observation are required.",
+        "Complete real geographic/state journeys and observed baseline/usefulness/corrections/retests remain NOT_RUN."
+      ]
+    },
+    {
+      "id": "T24",
+      "title": "Active product documentation and release evidence",
+      "gate": "MAP-6",
+      "status": "IN_PROGRESS",
+      "dependsOn": [
+        "T03",
+        "T22",
+        "T23"
+      ],
+      "gapIds": [
+        "GAP-18",
+        "GAP-01",
+        "GAP-12",
+        "GAP-17"
+      ],
+      "acceptanceIds": [
+        "A20"
+      ],
+      "evidence": {
+        "implementation": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md",
+            "scope": "Executable qualification tooling/documentation; actual gate closure remains open"
+          },
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T22_T24_REVIEW_2026_10_27.md",
+            "scope": "Seven pre-qualification tooling defects fixed; current candidate supersedes earlier source pin."
+          }
+        ],
+        "installation": [],
+        "functional": [
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t22-t24/verification.json",
+            "scope": "Scoped tooling tests and isolated samples only; T23 records are validator fixtures, not observed people"
+          },
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/evidence/map-first/t22-t24-review/verification.json",
+            "scope": "16 regression tests, reduced workload and isolated paired-recovery evidence only; full task qualification remains open."
+          }
+        ],
+        "geographic": [],
+        "userValidation": []
+      },
+      "ownerRole": "Delivery owner",
+      "evidenceReviewerRole": "Engineering reviewer; target users for independent validation",
+      "owner": null,
+      "evidenceReviewer": null,
+      "remainingVerification": [
+        "All mandatory acceptance, P0 and independent release closure evidence must pass before delivery can be claimed.",
+        "Shared installation/profile/geographic coverage are user-reported or scope-specific, without independent verification."
+      ]
+    }
+  ],
+  "acceptanceScenarios": [
+    {
+      "id": "A01",
+      "title": "Independent map startup",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md",
+          "scope": "Only first-batch assertions exercised; the full release scenario is not marked PASS."
+        }
+      ]
+    },
+    {
+      "id": "A02",
+      "title": "Area integrity across every handoff",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md",
+          "scope": "Only first-batch assertions exercised; the full release scenario is not marked PASS."
+        },
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "scope": "Exact area/period handoffs, native capture bounds, comparison/export lineage; later investigations/briefs remain open."
+        }
+      ]
+    },
+    {
+      "id": "A03",
+      "title": "Immutable geography across updates",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "scope": "Staged/activated geographic editions, exact retained IDs/parents, immutable area/profile manifests; final release scenario remains open."
+        }
+      ]
+    },
+    {
+      "id": "A04",
+      "title": "Time interpretation",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "scope": "Monitoring/fixed/year/timezone/legacy interval semantics, history support and pinned period handoffs; later consumers remain open."
+        },
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T12. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A05",
+      "title": "Selection does not change authority",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T09, T10. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A06",
+      "title": "Multi-profile retrieval without corruption",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T09, T10. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A07",
+      "title": "Coverage, emptiness and readiness",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T11, T12. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A08",
+      "title": "Reference depth and worldwide geometry",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "scope": "Date-line components/holes/counts and high-latitude retention/display states; regional reference-depth qualification remains T08."
+        },
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T08. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A09",
+      "title": "Scale and stale-response control",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "scope": "Abort propagation, obsolete-response rejection, scope hashes and hidden workbench polling; workload/scale gates remain open."
+        }
+      ]
+    },
+    {
+      "id": "A10",
+      "title": "Durable case and conflict behavior",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T07. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A11",
+      "title": "Fresh imagery and honest analytical outcomes",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "A12",
+      "title": "Case access and independent review",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T07. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A13",
+      "title": "Useful brief and controlled output",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "A14",
+      "title": "Development content retains its meaning",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md",
+          "scope": "Only first-batch assertions exercised; the full release scenario is not marked PASS."
+        },
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T11. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A15",
+      "title": "International and role-focused interaction",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T08. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A16",
+      "title": "Portable geographic preparation",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "A17",
+      "title": "Faults, capacity and unattended use",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T10. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A18",
+      "title": "Upgrade, restore and access preservation",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T09. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A19",
+      "title": "Observed independent usefulness",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "A20",
+      "title": "Honest release ledger",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "A21",
+      "title": "Evidence semantics and changed support",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T12. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A22",
+      "title": "Stable reads under concurrent publication",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "scope": "Actual earlier-started/later-committed publication, stable materialized pages, correction/withdrawal, expiry/promotion and access invalidation; full workload/soak qualification remains open."
+        }
+      ]
+    },
+    {
+      "id": "A23",
+      "title": "Lifecycle, retention and lost access",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t10-t12/verification.json",
+          "scope": "Scoped implementation assertions only for T07. The full release scenario remains NOT_RUN."
+        }
+      ]
+    },
+    {
+      "id": "A24",
+      "title": "Review/render and durable publication races",
+      "mandatory": true,
+      "status": "NOT_RUN",
+      "evidence": []
+    }
+  ],
+  "gapCoverage": [
+    {
+      "id": "GAP-01",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T02",
+        "T24"
+      ]
+    },
+    {
+      "id": "GAP-02",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T01",
+        "T04",
+        "T06",
+        "T08",
+        "T20"
+      ]
+    },
+    {
+      "id": "GAP-03",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T01",
+        "T04",
+        "T05",
+        "T06",
+        "T07",
+        "T15"
+      ]
+    },
+    {
+      "id": "GAP-04",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T04",
+        "T08",
+        "T20"
+      ]
+    },
+    {
+      "id": "GAP-05",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T09",
+        "T10",
+        "T11"
+      ]
+    },
+    {
+      "id": "GAP-06",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T05",
+        "T06",
+        "T11",
+        "T12"
+      ]
+    },
+    {
+      "id": "GAP-07",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T04",
+        "T13",
+        "T22"
+      ]
+    },
+    {
+      "id": "GAP-08",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T02",
+        "T06",
+        "T07",
+        "T12",
+        "T14",
+        "T16",
+        "T23"
+      ]
+    },
+    {
+      "id": "GAP-09",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T07",
+        "T16",
+        "T17",
+        "T19"
+      ]
+    },
+    {
+      "id": "GAP-10",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T01",
+        "T10",
+        "T15",
+        "T19"
+      ]
+    },
+    {
+      "id": "GAP-11",
+      "priority": "P1",
+      "status": "OPEN",
+      "tasks": [
+        "T16",
+        "T17",
+        "T18",
+        "T19",
+        "T23"
+      ]
+    },
+    {
+      "id": "GAP-12",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T03",
+        "T18",
+        "T24"
+      ]
+    },
+    {
+      "id": "GAP-13",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T09",
+        "T10",
+        "T11",
+        "T12",
+        "T15",
+        "T22"
+      ]
+    },
+    {
+      "id": "GAP-14",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T09",
+        "T10",
+        "T13",
+        "T21",
+        "T22"
+      ]
+    },
+    {
+      "id": "GAP-15",
+      "priority": "P1",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T05",
+        "T08",
+        "T14",
+        "T23"
+      ]
+    },
+    {
+      "id": "GAP-16",
+      "priority": "P2",
+      "status": "OPEN",
+      "tasks": [
+        "T18",
+        "T20",
+        "T21"
+      ]
+    },
+    {
+      "id": "GAP-17",
+      "priority": "P1",
+      "status": "OPEN",
+      "tasks": [
+        "T17",
+        "T23",
+        "T24"
+      ]
+    },
+    {
+      "id": "GAP-18",
+      "priority": "P0",
+      "status": "IN_PROGRESS",
+      "tasks": [
+        "T02",
+        "T03",
+        "T24"
+      ]
+    }
+  ],
+  "audit": "MAP_FIRST_PLAN_AUDIT_2026_10_25.md",
+  "planningSources": [
+    {
+      "path": "../../EMAD_CURRENT_SCOPE.md",
+      "sha256": "7f0aa0c4c95357db69d64bfd3a60d7b05b6a01aca4183de7747ade89f9b8bee8"
+    },
+    {
+      "path": "MAP_FIRST_GAP_REPORT_2026_10_25.md",
+      "sha256": "eb7fe630715511fc301b87655515275bc2c8a67808521314cdc8c02122af7c7b"
+    }
+  ],
+  "requirements": [
+    {
+      "id": "R01.1",
+      "gapId": "GAP-01",
+      "requirement": "Map-only analyst entry and role without exercise concepts",
+      "tasks": [
+        "T02"
+      ],
+      "acceptanceIds": [
+        "A01"
+      ]
+    },
+    {
+      "id": "R01.2",
+      "gapId": "GAP-01",
+      "requirement": "Startup, packaged delivery and health independent of simulation binaries",
+      "tasks": [
+        "T02"
+      ],
+      "acceptanceIds": [
+        "A01"
+      ]
+    },
+    {
+      "id": "R01.3",
+      "gapId": "GAP-01",
+      "requirement": "Preserve historical isolation; no new simulation execution milestones",
+      "tasks": [
+        "T02",
+        "T24"
+      ],
+      "acceptanceIds": [
+        "A01",
+        "A20"
+      ]
+    },
+    {
+      "id": "R02.1",
+      "gapId": "GAP-02",
+      "requirement": "Inventory operational geography constants; fixtures explicitly remain fixtures",
+      "tasks": [
+        "T01",
+        "T08",
+        "T20"
+      ],
+      "acceptanceIds": [
+        "A02",
+        "A08",
+        "A16"
+      ]
+    },
+    {
+      "id": "R02.2",
+      "gapId": "GAP-02",
+      "requirement": "Versioned configurable Middle East overview and supported world navigation",
+      "tasks": [
+        "T04",
+        "T08"
+      ],
+      "acceptanceIds": [
+        "A03",
+        "A08"
+      ]
+    },
+    {
+      "id": "R02.3",
+      "gapId": "GAP-02",
+      "requirement": "Switch geography through the same workflow with honest missing detail",
+      "tasks": [
+        "T06",
+        "T08"
+      ],
+      "acceptanceIds": [
+        "A02",
+        "A08"
+      ]
+    },
+    {
+      "id": "R03.1",
+      "gapId": "GAP-03",
+      "requirement": "All six area forms and period survive every handoff and reopen",
+      "tasks": [
+        "T01",
+        "T04",
+        "T05",
+        "T06",
+        "T07"
+      ],
+      "acceptanceIds": [
+        "A02",
+        "A04",
+        "A10"
+      ]
+    },
+    {
+      "id": "R03.2",
+      "gapId": "GAP-03",
+      "requirement": "Local subset is deliberate and never an unrelated fallback",
+      "tasks": [
+        "T01",
+        "T04",
+        "T15"
+      ],
+      "acceptanceIds": [
+        "A02",
+        "A11"
+      ]
+    },
+    {
+      "id": "R03.3",
+      "gapId": "GAP-03",
+      "requirement": "Exact immutable geometry/edition and query meaning survive updates and races",
+      "tasks": [
+        "T04",
+        "T05",
+        "T06"
+      ],
+      "acceptanceIds": [
+        "A03",
+        "A09",
+        "A22"
+      ]
+    },
+    {
+      "id": "R04.1",
+      "gapId": "GAP-04",
+      "requirement": "Generic versioned administrative, place, coastline and infrastructure imports",
+      "tasks": [
+        "T04",
+        "T08",
+        "T20"
+      ],
+      "acceptanceIds": [
+        "A03",
+        "A08",
+        "A16"
+      ]
+    },
+    {
+      "id": "R04.2",
+      "gapId": "GAP-04",
+      "requirement": "Source-backed aliases, rights, accuracy and point-versus-polygon meaning",
+      "tasks": [
+        "T04",
+        "T08"
+      ],
+      "acceptanceIds": [
+        "A03",
+        "A08",
+        "A15"
+      ]
+    },
+    {
+      "id": "R04.3",
+      "gapId": "GAP-04",
+      "requirement": "Regional priority plus worldwide depth, atomic releases and missing-depth action",
+      "tasks": [
+        "T08"
+      ],
+      "acceptanceIds": [
+        "A08"
+      ]
+    },
+    {
+      "id": "R05.1",
+      "gapId": "GAP-05",
+      "requirement": "Area/time coverage distinguishes footprint, access, partial and empty retrieval",
+      "tasks": [
+        "T09",
+        "T10",
+        "T11"
+      ],
+      "acceptanceIds": [
+        "A05",
+        "A06",
+        "A07"
+      ]
+    },
+    {
+      "id": "R05.2",
+      "gapId": "GAP-05",
+      "requirement": "Approved bounded profiles use trusted endpoints, credentials and shared quotas",
+      "tasks": [
+        "T09",
+        "T10"
+      ],
+      "acceptanceIds": [
+        "A05",
+        "A06",
+        "A17"
+      ]
+    },
+    {
+      "id": "R05.3",
+      "gapId": "GAP-05",
+      "requirement": "Country selection never broadens execution grants; preserve source history",
+      "tasks": [
+        "T09",
+        "T10"
+      ],
+      "acceptanceIds": [
+        "A05",
+        "A06",
+        "A18"
+      ]
+    },
+    {
+      "id": "R06.1",
+      "gapId": "GAP-06",
+      "requirement": "Explicit monitoring/historical modes and source-dependent freshness",
+      "tasks": [
+        "T05",
+        "T12"
+      ],
+      "acceptanceIds": [
+        "A04",
+        "A07"
+      ]
+    },
+    {
+      "id": "R06.2",
+      "gapId": "GAP-06",
+      "requirement": "Observation, receipt, revision and acquisition clocks remain distinct",
+      "tasks": [
+        "T05",
+        "T06",
+        "T12"
+      ],
+      "acceptanceIds": [
+        "A04",
+        "A21",
+        "A22"
+      ]
+    },
+    {
+      "id": "R06.3",
+      "gapId": "GAP-06",
+      "requirement": "Quiet covered periods, unobserved areas and dated background imagery differ",
+      "tasks": [
+        "T11",
+        "T12"
+      ],
+      "acceptanceIds": [
+        "A04",
+        "A07"
+      ]
+    },
+    {
+      "id": "R07.1",
+      "gapId": "GAP-07",
+      "requirement": "Bounded PostGIS aggregation, tiles, legends and drill-down stay usable",
+      "tasks": [
+        "T13",
+        "T22"
+      ],
+      "acceptanceIds": [
+        "A09",
+        "A17"
+      ]
+    },
+    {
+      "id": "R07.2",
+      "gapId": "GAP-07",
+      "requirement": "Counts, paging and displayed subsets retain exact time/access meaning",
+      "tasks": [
+        "T04",
+        "T13",
+        "T22"
+      ],
+      "acceptanceIds": [
+        "A09",
+        "A22"
+      ]
+    },
+    {
+      "id": "R07.3",
+      "gapId": "GAP-07",
+      "requirement": "Cross-border, maritime, date-line and high-latitude geometry is explicit",
+      "tasks": [
+        "T04",
+        "T13"
+      ],
+      "acceptanceIds": [
+        "A08",
+        "A09"
+      ]
+    },
+    {
+      "id": "R08.1",
+      "gapId": "GAP-08",
+      "requirement": "Map/dock/Systems form a coherent area-to-output journey",
+      "tasks": [
+        "T02",
+        "T06",
+        "T14"
+      ],
+      "acceptanceIds": [
+        "A02",
+        "A15",
+        "A19"
+      ]
+    },
+    {
+      "id": "R08.2",
+      "gapId": "GAP-08",
+      "requirement": "Durable cases and role-appropriate actions replace technical navigation burden",
+      "tasks": [
+        "T07",
+        "T12",
+        "T14",
+        "T16"
+      ],
+      "acceptanceIds": [
+        "A10",
+        "A15"
+      ]
+    },
+    {
+      "id": "R08.3",
+      "gapId": "GAP-08",
+      "requirement": "Independent users locate, inspect, resume and find results",
+      "tasks": [
+        "T14",
+        "T23"
+      ],
+      "acceptanceIds": [
+        "A19"
+      ]
+    },
+    {
+      "id": "R09.1",
+      "gapId": "GAP-09",
+      "requirement": "Cases retain question, scope, exact evidence, notes, findings and work",
+      "tasks": [
+        "T07",
+        "T16"
+      ],
+      "acceptanceIds": [
+        "A10",
+        "A21",
+        "A23"
+      ]
+    },
+    {
+      "id": "R09.2",
+      "gapId": "GAP-09",
+      "requirement": "Ownership, conflicts, archive/resume and review handoff are durable",
+      "tasks": [
+        "T07",
+        "T16",
+        "T17"
+      ],
+      "acceptanceIds": [
+        "A10",
+        "A12",
+        "A23"
+      ]
+    },
+    {
+      "id": "R09.3",
+      "gapId": "GAP-09",
+      "requirement": "Access, immutable evidence and reviewed output survive restart across regions",
+      "tasks": [
+        "T16",
+        "T17",
+        "T19"
+      ],
+      "acceptanceIds": [
+        "A10",
+        "A12",
+        "A13",
+        "A24"
+      ]
+    },
+    {
+      "id": "R10.1",
+      "gapId": "GAP-10",
+      "requirement": "Scoped discovery, local AOI, fresh supported acquisition and retained analysis",
+      "tasks": [
+        "T01",
+        "T10",
+        "T15"
+      ],
+      "acceptanceIds": [
+        "A02",
+        "A06",
+        "A11"
+      ]
+    },
+    {
+      "id": "R10.2",
+      "gapId": "GAP-10",
+      "requirement": "Quality, clouds, masks, coverage, alignment, failure and zero change are honest",
+      "tasks": [
+        "T15"
+      ],
+      "acceptanceIds": [
+        "A11"
+      ]
+    },
+    {
+      "id": "R10.3",
+      "gapId": "GAP-10",
+      "requirement": "Additional regional/worldwide journeys need no developer preparation; indicators remain distinct",
+      "tasks": [
+        "T15",
+        "T19"
+      ],
+      "acceptanceIds": [
+        "A11",
+        "A13",
+        "A21"
+      ]
+    },
+    {
+      "id": "R11.1",
+      "gapId": "GAP-11",
+      "requirement": "Readable brief includes question, scope, coverage, findings, figures and uncertainty",
+      "tasks": [
+        "T16",
+        "T19"
+      ],
+      "acceptanceIds": [
+        "A13",
+        "A19",
+        "A21"
+      ]
+    },
+    {
+      "id": "R11.2",
+      "gapId": "GAP-11",
+      "requirement": "Exact citations and permitted reproducibility bundle accompany controlled output",
+      "tasks": [
+        "T18",
+        "T19"
+      ],
+      "acceptanceIds": [
+        "A13",
+        "A23",
+        "A24"
+      ]
+    },
+    {
+      "id": "R11.3",
+      "gapId": "GAP-11",
+      "requirement": "Independent human review binds inspected content; recipient can understand it",
+      "tasks": [
+        "T17",
+        "T19",
+        "T23"
+      ],
+      "acceptanceIds": [
+        "A12",
+        "A19",
+        "A24"
+      ]
+    },
+    {
+      "id": "R12.1",
+      "gapId": "GAP-12",
+      "requirement": "Purpose classification is separate from synthetic/real provenance and review",
+      "tasks": [
+        "T03",
+        "T18"
+      ],
+      "acceptanceIds": [
+        "A14"
+      ]
+    },
+    {
+      "id": "R12.2",
+      "gapId": "GAP-12",
+      "requirement": "Default working catalogs/counts exclude development fixtures without rewriting history",
+      "tasks": [
+        "T03"
+      ],
+      "acceptanceIds": [
+        "A14"
+      ]
+    },
+    {
+      "id": "R12.3",
+      "gapId": "GAP-12",
+      "requirement": "Support views preserve history; source revisions/acquisitions/studies/outputs differ",
+      "tasks": [
+        "T03",
+        "T24"
+      ],
+      "acceptanceIds": [
+        "A14",
+        "A20"
+      ]
+    },
+    {
+      "id": "R13.1",
+      "gapId": "GAP-13",
+      "requirement": "Task readiness reflects selected inputs, compatibility, dates and rights",
+      "tasks": [
+        "T09",
+        "T11",
+        "T15"
+      ],
+      "acceptanceIds": [
+        "A06",
+        "A07",
+        "A11"
+      ]
+    },
+    {
+      "id": "R13.2",
+      "gapId": "GAP-13",
+      "requirement": "Provider, queue, capacity and external gates have authorized recovery actions",
+      "tasks": [
+        "T10",
+        "T11",
+        "T22"
+      ],
+      "acceptanceIds": [
+        "A06",
+        "A07",
+        "A17"
+      ]
+    },
+    {
+      "id": "R13.3",
+      "gapId": "GAP-13",
+      "requirement": "Interrupt/retry/deduplicate/pace correctly; empty results and restricted feeds remain honest",
+      "tasks": [
+        "T10",
+        "T11",
+        "T12"
+      ],
+      "acceptanceIds": [
+        "A04",
+        "A06",
+        "A07"
+      ]
+    },
+    {
+      "id": "R14.1",
+      "gapId": "GAP-14",
+      "requirement": "Declared realistic density/concurrency/latency/soak profiles are measured",
+      "tasks": [
+        "T13",
+        "T22"
+      ],
+      "acceptanceIds": [
+        "A09",
+        "A17"
+      ]
+    },
+    {
+      "id": "R14.2",
+      "gapId": "GAP-14",
+      "requirement": "Cancellation, cursor stability, active quotas and history growth are bounded",
+      "tasks": [
+        "T09",
+        "T10",
+        "T13"
+      ],
+      "acceptanceIds": [
+        "A06",
+        "A09",
+        "A17",
+        "A22"
+      ]
+    },
+    {
+      "id": "R14.3",
+      "gapId": "GAP-14",
+      "requirement": "Worker/provider/storage faults and paired restore preserve complete dependencies",
+      "tasks": [
+        "T21",
+        "T22"
+      ],
+      "acceptanceIds": [
+        "A16",
+        "A17",
+        "A18",
+        "A23",
+        "A24"
+      ]
+    },
+    {
+      "id": "R15.1",
+      "gapId": "GAP-15",
+      "requirement": "Distinct analyst/reviewer/admin/restricted roles have usable starting actions",
+      "tasks": [
+        "T14",
+        "T23"
+      ],
+      "acceptanceIds": [
+        "A15",
+        "A19"
+      ]
+    },
+    {
+      "id": "R15.2",
+      "gapId": "GAP-15",
+      "requirement": "Arabic/English aliases, mixed script, timezone/year, coordinate units/datum are explicit",
+      "tasks": [
+        "T05",
+        "T08",
+        "T14"
+      ],
+      "acceptanceIds": [
+        "A04",
+        "A08",
+        "A15"
+      ]
+    },
+    {
+      "id": "R15.3",
+      "gapId": "GAP-15",
+      "requirement": "Keyboard/focus/contrast/narrow screens work without exposed credential paths",
+      "tasks": [
+        "T14",
+        "T23"
+      ],
+      "acceptanceIds": [
+        "A15",
+        "A19"
+      ]
+    },
+    {
+      "id": "R16.1",
+      "gapId": "GAP-16",
+      "requirement": "Area-driven terrain/imagery/vector preparation uses durable bounded jobs",
+      "tasks": [
+        "T20",
+        "T21"
+      ],
+      "acceptanceIds": [
+        "A16",
+        "A17"
+      ]
+    },
+    {
+      "id": "R16.2",
+      "gapId": "GAP-16",
+      "requirement": "Source rights, original lineage, CRS/datum/grid controls and resource/fidelity limits are validated",
+      "tasks": [
+        "T18",
+        "T20",
+        "T21"
+      ],
+      "acceptanceIds": [
+        "A13",
+        "A16",
+        "A18",
+        "A23"
+      ]
+    },
+    {
+      "id": "R16.3",
+      "gapId": "GAP-16",
+      "requirement": "Additional-area portable artifacts work independently of actors/runtime/Studio",
+      "tasks": [
+        "T20",
+        "T21"
+      ],
+      "acceptanceIds": [
+        "A16"
+      ]
+    },
+    {
+      "id": "R17.1",
+      "gapId": "GAP-17",
+      "requirement": "Independent target users cover the full journey across regional/worldwide states",
+      "tasks": [
+        "T17",
+        "T23"
+      ],
+      "acceptanceIds": [
+        "A19"
+      ]
+    },
+    {
+      "id": "R17.2",
+      "gapId": "GAP-17",
+      "requirement": "Measure completion, assistance and usefulness against existing practice",
+      "tasks": [
+        "T23"
+      ],
+      "acceptanceIds": [
+        "A19"
+      ]
+    },
+    {
+      "id": "R17.3",
+      "gapId": "GAP-17",
+      "requirement": "Wrong area/time blocks closure; record/retest failures without speculative completion",
+      "tasks": [
+        "T23",
+        "T24"
+      ],
+      "acceptanceIds": [
+        "A19",
+        "A20"
+      ]
+    },
+    {
+      "id": "R18.1",
+      "gapId": "GAP-18",
+      "requirement": "Current scope/product/backlog outrank historical simulation roadmaps",
+      "tasks": [
+        "T02",
+        "T03",
+        "T24"
+      ],
+      "acceptanceIds": [
+        "A01",
+        "A14",
+        "A20"
+      ]
+    },
+    {
+      "id": "R18.2",
+      "gapId": "GAP-18",
+      "requirement": "Implementation/installation/function/geography/user evidence are separate and versioned",
+      "tasks": [
+        "T24"
+      ],
+      "acceptanceIds": [
+        "A20"
+      ]
+    },
+    {
+      "id": "R18.3",
+      "gapId": "GAP-18",
+      "requirement": "All mandatory outcomes and external gates remain honest; no automatic simulation sequel",
+      "tasks": [
+        "T24"
+      ],
+      "acceptanceIds": [
+        "A20"
+      ]
+    }
+  ],
+  "hardeningChecks": [
+    {
+      "id": "H01",
+      "title": "Stable read snapshots under concurrent publication",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T05",
+        "T13",
+        "T22"
+      ],
+      "acceptanceIds": [
+        "A04",
+        "A09",
+        "A22"
+      ]
+    },
+    {
+      "id": "H02",
+      "title": "Evidence semantics and correction impact",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T12",
+        "T16",
+        "T19"
+      ],
+      "acceptanceIds": [
+        "A21"
+      ]
+    },
+    {
+      "id": "H03",
+      "title": "Retention, tombstones and partial reproducibility",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T16",
+        "T18",
+        "T22"
+      ],
+      "acceptanceIds": [
+        "A18",
+        "A23"
+      ]
+    },
+    {
+      "id": "H04",
+      "title": "Case lifecycle, exact finding revisions and identity-scoped drafts",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T06",
+        "T07",
+        "T16"
+      ],
+      "acceptanceIds": [
+        "A10",
+        "A12",
+        "A23"
+      ]
+    },
+    {
+      "id": "H05",
+      "title": "Exact rendered review, attestation and safe HTML output",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T17",
+        "T18",
+        "T19"
+      ],
+      "acceptanceIds": [
+        "A13",
+        "A24"
+      ]
+    },
+    {
+      "id": "H06",
+      "title": "Adapter capability and incomplete retrieval receipts",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T10",
+        "T11",
+        "T12"
+      ],
+      "acceptanceIds": [
+        "A06",
+        "A07"
+      ]
+    },
+    {
+      "id": "H07",
+      "title": "Crash-safe quota, storage and intent reservations",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T10",
+        "T15",
+        "T19",
+        "T21",
+        "T22"
+      ],
+      "acceptanceIds": [
+        "A06",
+        "A17",
+        "A24"
+      ]
+    },
+    {
+      "id": "H08",
+      "title": "Map-only packaging and backup writer inventory",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T02",
+        "T22"
+      ],
+      "acceptanceIds": [
+        "A01",
+        "A18"
+      ]
+    },
+    {
+      "id": "H09",
+      "title": "Explicit paging and closing-qualification dependencies",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T10",
+        "T13",
+        "T22",
+        "T23"
+      ],
+      "acceptanceIds": [
+        "A09",
+        "A17",
+        "A19"
+      ]
+    },
+    {
+      "id": "H10",
+      "title": "Release candidate identity and mandatory closure rules",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T22",
+        "T23",
+        "T24"
+      ],
+      "acceptanceIds": [
+        "A18",
+        "A19",
+        "A20"
+      ]
+    },
+    {
+      "id": "H11",
+      "title": "Geographic output accuracy and processing budgets",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T20",
+        "T21"
+      ],
+      "acceptanceIds": [
+        "A16",
+        "A17"
+      ]
+    },
+    {
+      "id": "H12",
+      "title": "Executable atomic requirement and planning consistency checks",
+      "status": "SPECIFIED",
+      "tasks": [
+        "T24"
+      ],
+      "acceptanceIds": [
+        "A20"
+      ]
+    }
+  ],
+  "externalPrerequisites": [
+    {
+      "id": "E01",
+      "requirement": "Permitted installed source/reference/DEM profiles, credentials and output-purpose rights",
+      "ownerRole": "Source administrator",
+      "status": "NOT_CONFIRMED",
+      "tasks": [
+        "T08",
+        "T09",
+        "T10",
+        "T15",
+        "T18",
+        "T20"
+      ]
+    },
+    {
+      "id": "E02",
+      "requirement": "Suitable real imagery pairs and qualified geography/vertical controls for additional areas",
+      "ownerRole": "Geospatial analyst",
+      "status": "NOT_CONFIRMED",
+      "tasks": [
+        "T15",
+        "T20",
+        "T21"
+      ]
+    },
+    {
+      "id": "E03",
+      "requirement": "Frozen workload, environment tolerances, hardware and task qualification profile",
+      "ownerRole": "Delivery owner and operations",
+      "status": "NOT_CONFIRMED",
+      "tasks": [
+        "T13",
+        "T21",
+        "T22",
+        "T23"
+      ]
+    },
+    {
+      "id": "E04",
+      "requirement": "Named independent analysts/reviewer and observed sessions",
+      "ownerRole": "Product owner",
+      "status": "NOT_CONFIRMED",
+      "tasks": [
+        "T14",
+        "T17",
+        "T23"
+      ]
+    },
+    {
+      "id": "E05",
+      "requirement": "Installed deployment paths, storage capacity and verified recovery rehearsal environment",
+      "ownerRole": "Operations",
+      "status": "NOT_CONFIRMED",
+      "tasks": [
+        "T02",
+        "T22"
+      ]
+    }
+  ],
+  "releaseCandidate": {
+    "status": "NOT_QUALIFIED",
+    "identity": null,
+    "evidence": []
+  },
+  "lastUpdatedOn": "2026-10-27",
+  "lastUpdatedTimezone": "Asia/Riyadh",
+  "reportedInstallation": {
+    "reportedOn": "2026-10-27",
+    "source": "User reported migrations after T19-T21",
+    "scope": "Assumed through 00053; exact shared schema/startup/source profiles not independently inspected",
+    "independentlyVerified": false,
+    "newMigrationRequired": "None in T22-T24; coordinated binaries/UI still require through 00053"
+  }
+}

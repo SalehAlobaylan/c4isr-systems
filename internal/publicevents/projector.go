@@ -13,6 +13,8 @@ import (
 )
 
 type Event struct {
+	DisplayPosition  json.RawMessage                  `json:"displayPosition,omitempty"`
+	CurrentValidity  *Validity                        `json:"currentValidity,omitempty"`
 	KnownAt          *time.Time                       `json:"knownAt,omitempty"`
 	EffectiveAt      *time.Time                       `json:"effectiveAt,omitempty"`
 	EffectiveBasis   string                           `json:"effectiveBasis,omitempty"`

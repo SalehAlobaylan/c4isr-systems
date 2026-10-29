@@ -1,0 +1,223 @@
+{
+  "schema": "emad.integration-results.v1",
+  "result": "PASS",
+  "cases": [
+    {
+      "test": "TestMapFirstDurableAcquisitionLostResponseCoverageAndCancellation",
+      "result": "PASS",
+      "seconds": 5.03
+    },
+    {
+      "test": "TestMapFirstSharedAccountQuotaUncertainChargeAndStorageGuards",
+      "result": "PASS",
+      "seconds": 4.14
+    },
+    {
+      "test": "TestMapFirstCoverageUnionCappedReceiptsAndAccessIsolation",
+      "result": "PASS",
+      "seconds": 4.25
+    },
+    {
+      "test": "TestMapFirstCoveragePublicationRecoveryFreshnessAndUnavailableQuery",
+      "result": "PASS",
+      "seconds": 5.4
+    },
+    {
+      "test": "TestMapFirstVersionedAreasReleasesAndComponents",
+      "result": "PASS",
+      "seconds": 4.08
+    },
+    {
+      "test": "TestMapFirstTemporalReadSnapshotsPublicationRacesAndAccess",
+      "result": "PASS",
+      "seconds": 4.46
+    },
+    {
+      "test": "TestMapFirstCaptureScopeContainmentTimeAndAtomicity",
+      "result": "PASS",
+      "seconds": 3.99
+    },
+    {
+      "test": "TestMapFirstCaseSaveIntentsIndependentReviewAndRework",
+      "result": "PASS",
+      "seconds": 3.95
+    },
+    {
+      "test": "TestMapFirstCompositeFrozenRenderAndIndependentAttestation",
+      "result": "PASS",
+      "seconds": 3.95
+    },
+    {
+      "test": "TestMapFirstCompositeGrantRevokedDuringStorage",
+      "result": "PASS",
+      "seconds": 3.88
+    },
+    {
+      "test": "TestMapFirstFindingScopeHistoryAndCurrentOutputRights",
+      "result": "PASS",
+      "seconds": 3.88
+    },
+    {
+      "test": "TestMapFirstCompositeExpiryDeletionRetryAndTombstone",
+      "result": "PASS",
+      "seconds": 5.91
+    },
+    {
+      "test": "TestMapFirstCompositePrivateS3RoundTrip",
+      "result": "PASS",
+      "seconds": 5.36
+    },
+    {
+      "test": "TestMapFirstCatalogSnapshotsHistoryCapacityAndCursorIsolation",
+      "result": "PASS",
+      "seconds": 7.06
+    },
+    {
+      "test": "TestMapFirstGeographicSnapshotBeyond300AndExactRetainedGeometry",
+      "result": "PASS",
+      "seconds": 4.51
+    },
+    {
+      "test": "TestMapFirstAggregateDrillDownKeepsOriginalRevisionsAndCounts",
+      "result": "PASS",
+      "seconds": 14.76
+    },
+    {
+      "test": "TestMapFirstReadBudgetUsesStoredJSONBytes",
+      "result": "PASS",
+      "seconds": 4.39
+    },
+    {
+      "test": "TestMapFirstDurableBriefRenderReviewAndOfflineBundle",
+      "result": "PASS",
+      "seconds": 5.78
+    },
+    {
+      "test": "TestMapFirstDeliveryCancellationDuringIOAndExpiredLeaseRecovery",
+      "result": "PASS",
+      "seconds": 4.22
+    },
+    {
+      "test": "TestMapFirstDeliveryUnknownUploadIdentityAndExpiryReconciliation",
+      "result": "PASS",
+      "seconds": 4.95
+    },
+    {
+      "test": "TestMapFirstPortableEnvironmentProductFlowAndIndependentReader",
+      "result": "PASS",
+      "seconds": 9.31
+    },
+    {
+      "test": "TestGeographicMapExactScopesHistoryAggregatesAndIsolation",
+      "result": "PASS",
+      "seconds": 60.11
+    },
+    {
+      "test": "TestP2CatalogueS3WorkerReproducibilityAndIndependentReview",
+      "result": "PASS",
+      "seconds": 9.72
+    },
+    {
+      "test": "TestMapFirstImageryProposalsRollingIntentsAndCaseLinks",
+      "result": "PASS",
+      "seconds": 5.23
+    },
+    {
+      "test": "TestMapFirstDurableInvestigationsMembershipHistoryAndConflicts",
+      "result": "PASS",
+      "seconds": 4.09
+    },
+    {
+      "test": "TestMapFirstProvisionedMapProfileAndUpgradedDefault",
+      "result": "PASS",
+      "seconds": 9.19
+    },
+    {
+      "test": "TestMapFirstContentPurposeCatalogHistoryCountsAndRLS",
+      "result": "PASS",
+      "seconds": 3.96
+    },
+    {
+      "test": "TestMapFirstSiblingFailureUnknownCountsAndFrozenValidity",
+      "result": "PASS",
+      "seconds": 4.47
+    },
+    {
+      "test": "TestP3NativeMovingEvidenceSegmentsAndSourceIsolation",
+      "result": "PASS",
+      "seconds": 11.75
+    },
+    {
+      "test": "TestP3AISNativePartialCaptureAndRecovery",
+      "result": "PASS",
+      "seconds": 4.99
+    },
+    {
+      "test": "TestMapFirstPopulatedProfileMigrationPreservesHistoryAndFencesLeases",
+      "result": "PASS",
+      "seconds": 4.49
+    },
+    {
+      "test": "TestPublicEventSemanticsCorrectionsAndSpatialRules",
+      "result": "PASS",
+      "seconds": 4.38
+    },
+    {
+      "test": "TestM1NativeFIRMSUSGSReferenceAndBitemporalEvidence",
+      "result": "PASS",
+      "seconds": 4.28
+    },
+    {
+      "test": "TestPublicAdmissionRetrievalRevisionsAndCoverage",
+      "result": "PASS",
+      "seconds": 4.2
+    },
+    {
+      "test": "TestPublicPublicationRecoveryAndCheckpointResume",
+      "result": "PASS",
+      "seconds": 3.98
+    },
+    {
+      "test": "TestPublicConnectorLeasesRevocationAndIsolation",
+      "result": "PASS",
+      "seconds": 3.83
+    },
+    {
+      "test": "TestPublicInitialOutageAndDurableQuota",
+      "result": "PASS",
+      "seconds": 3.97
+    },
+    {
+      "test": "TestPublicRightsHistoryAndReferenceOnlyRetention",
+      "result": "PASS",
+      "seconds": 4.22
+    },
+    {
+      "test": "TestReferenceCatalogRealRegionTerrainAndIsolation",
+      "result": "PASS",
+      "seconds": 4.02
+    },
+    {
+      "test": "TestMapFirstSourceBackedSevenRegionalImportsAndAtomicActivation",
+      "result": "PASS",
+      "seconds": 16.45
+    },
+    {
+      "test": "TestMapFirstRetrievalProfilesOriginalRightsExecutionAndSuspension",
+      "result": "PASS",
+      "seconds": 6.48
+    },
+    {
+      "test": "TestP33StationWeatherRevisionsRightsAndNoTracks",
+      "result": "PASS",
+      "seconds": 4.11
+    },
+    {
+      "test": "TestP33ReportEvidenceIndependentReviewAndLineage",
+      "result": "PASS",
+      "seconds": 4.34
+    }
+  ],
+  "seconds": 297.226,
+  "scope": "Isolated migrated PostGIS/private S3 and final compiled Linux API image; environment cases use synthetic admitted accuracy/controls plus independent PROJ/GEOS checks."
+}

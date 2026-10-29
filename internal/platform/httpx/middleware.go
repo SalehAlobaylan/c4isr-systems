@@ -268,11 +268,129 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 	path = strings.TrimSuffix(path, "/")
 
 	parts := pathSegments(path)
+	if (path == "/imagery/capture-proposal" || path == "/imagery/comparison-check") && method == http.MethodPost {
+		return RoutePolicy{Known: true, Permission: "sources.read"}
+	}
+	if len(parts) == 4 && parts[0] == "analyst-scope" && parts[1] == "reads" && parts[3] == "records" && method == http.MethodGet {
+		return RoutePolicy{Known: true, Permission: "observations.read"}
+	}
+	if path == "/catalog/reads" && method == http.MethodPost {
+		return RoutePolicy{Known: true, Permission: "sources.read"}
+	}
+	if len(parts) == 4 && parts[0] == "sources" && parts[2] == "scheduler" && parts[3] == "run" && method == http.MethodPost {
+		return RoutePolicy{Known: true, Permission: "connectors.execute"}
+	}
+	if len(parts) == 3 && parts[0] == "sources" && parts[2] == "acquisition-metrics" && method == http.MethodGet {
+		return RoutePolicy{Known: true, Permission: "sources.read"}
+	}
+	if len(parts) >= 1 && parts[0] == "acquisitions" {
+		if method == http.MethodGet && len(parts) <= 2 {
+			return RoutePolicy{Known: true, Permission: "acquisitions.read"}
+		}
+		if method == http.MethodPost && (len(parts) == 1 || len(parts) == 3 && parts[2] == "cancel") {
+			return RoutePolicy{Known: true, Permission: "acquisitions.request"}
+		}
+	}
+	if path == "/coverage/query" && method == http.MethodPost {
+		return RoutePolicy{Known: true, Permission: "sources.read"}
+	}
+	if path == "/coverage/adapters" && method == http.MethodGet {
+		return RoutePolicy{Known: true, Permission: "sources.read"}
+	}
+	if len(parts) >= 3 && parts[0] == "sources" && parts[2] == "profiles" {
+		if method == http.MethodGet && len(parts) == 3 {
+			return RoutePolicy{Known: true, Permission: "sources.read"}
+		}
+		if method == http.MethodPost && (len(parts) == 4 || len(parts) == 5 && parts[4] == "execution") {
+			return RoutePolicy{Known: true, Permission: "sources.manage"}
+		}
+		if method == http.MethodPost && len(parts) == 5 && parts[4] == "connector-runs" {
+			return RoutePolicy{Known: true, Permission: "connectors.execute"}
+		}
+	}
+	if len(parts) > 0 && parts[0] == "geography" {
+		if method == http.MethodGet && len(parts) == 2 && (parts[1] == "availability" || parts[1] == "releases") {
+			return RoutePolicy{Known: true, Permission: "sources.read"}
+		}
+		if len(parts) == 2 && parts[1] == "reference-requests" {
+			if method == http.MethodGet {
+				return RoutePolicy{Known: true, Permission: "sources.manage"}
+			}
+			if method == http.MethodPost {
+				return RoutePolicy{Known: true, Permission: "geography.request"}
+			}
+		}
+		if method == http.MethodPost && len(parts) == 4 && parts[1] == "reference-requests" && parts[3] == "resolve" {
+			return RoutePolicy{Known: true, Permission: "sources.manage"}
+		}
+	}
+	if len(parts) > 0 && parts[0] == "delivery-jobs" {
+		if method == http.MethodGet && len(parts) == 2 {
+			return RoutePolicy{Known: true, Permission: "outputs.read"}
+		}
+		if method == http.MethodPost && len(parts) == 3 && (parts[2] == "cancel" || parts[2] == "retry") {
+			return RoutePolicy{Known: true, Permission: "outputs.create"}
+		}
+	}
+	if len(parts) > 0 && parts[0] == "outputs" {
+		if method == http.MethodGet && (len(parts) == 2 || len(parts) == 3 && (parts[2] == "content" || parts[2] == "bundle" || parts[2] == "attestation")) {
+			return RoutePolicy{Known: true, Permission: "outputs.read"}
+		}
+		if len(parts) == 3 && (method == http.MethodPut && parts[2] == "content" || method == http.MethodPost && parts[2] == "expire") {
+			return RoutePolicy{Known: true, Permission: "outputs.create"}
+		}
+	}
+	if len(parts) > 0 && parts[0] == "investigations" {
+		if len(parts) == 3 && parts[2] == "delivery-jobs" {
+			if method == http.MethodGet {
+				return RoutePolicy{Known: true, Permission: "outputs.read"}
+			}
+			if method == http.MethodPost {
+				return RoutePolicy{Known: true, Permission: "outputs.create"}
+			}
+		}
+
+		if len(parts) == 3 && method == http.MethodGet && (parts[2] == "history" || parts[2] == "reviews") {
+			return RoutePolicy{Known: true, Permission: "investigations.read"}
+		}
+		if len(parts) == 3 && method == http.MethodPost && parts[2] == "review" {
+			return RoutePolicy{Known: true, Permission: "investigations.read"}
+		}
+		if len(parts) == 3 && method == http.MethodPost && parts[2] == "outputs" {
+			return RoutePolicy{Known: true, Permission: "outputs.create"}
+		}
+
+		if method == http.MethodGet && len(parts) <= 2 {
+			return RoutePolicy{Known: true, Permission: "investigations.read"}
+		}
+		if method == http.MethodPost && len(parts) == 1 {
+			return RoutePolicy{Known: true, Permission: "investigations.create"}
+		}
+		if method == http.MethodPost && len(parts) == 3 && parts[2] == "revisions" {
+			return RoutePolicy{Known: true, Permission: "investigations.edit"}
+		}
+		if method == http.MethodPost && len(parts) == 3 && parts[2] == "members" {
+			return RoutePolicy{Known: true, Permission: "investigations.manage"}
+		}
+	}
+	if len(parts) >= 2 && parts[0] == "areas" {
+		if method == http.MethodPost && len(parts) == 2 && (parts[1] == "resolve" || parts[1] == "revisions") || method == http.MethodGet && len(parts) == 3 && parts[1] == "revisions" {
+			return RoutePolicy{Known: true, Permission: "sources.read"}
+		}
+	}
+	if len(parts) >= 2 && parts[0] == "analyst-scope" {
+		if method == http.MethodPost && len(parts) == 2 && (parts[1] == "resolve" || parts[1] == "freeze" || parts[1] == "read") || method == http.MethodGet && len(parts) == 3 && (parts[1] == "reads" || parts[1] == "snapshots") {
+			return RoutePolicy{Known: true, Permission: "sources.read"}
+		}
+	}
+	if len(parts) == 3 && parts[0] == "geography" && (parts[1] == "releases" || parts[1] == "profiles") && method == http.MethodGet {
+		return RoutePolicy{Known: true, Permission: "sources.read"}
+	}
 	if len(parts) == 2 && parts[0] == "geography" {
 		if method == http.MethodGet && parts[1] == "regions" {
 			return RoutePolicy{Known: true, Permission: "sources.read"}
 		}
-		if method == http.MethodPost && parts[1] == "editions" {
+		if method == http.MethodPost && (parts[1] == "editions" || parts[1] == "releases" || parts[1] == "profiles") {
 			return RoutePolicy{Known: true, Permission: "sources.manage"}
 		}
 	}
@@ -414,6 +532,9 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 		if method == http.MethodPost && len(parts) == 3 && parts[2] == "review" {
 			return RoutePolicy{Known: true, Permission: "assessments.review"}
 		}
+	}
+	if path == "/content-purpose" {
+		return RoutePolicy{Known: method == http.MethodGet || method == http.MethodPost, Permission: "sources.manage"}
 	}
 	if path == "/auth/me" {
 		return RoutePolicy{Known: method == http.MethodGet}

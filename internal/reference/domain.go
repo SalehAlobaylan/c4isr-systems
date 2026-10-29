@@ -19,7 +19,23 @@ type Resolution struct {
 	Value float64 `json:"value"`
 	Unit  string  `json:"unit"`
 }
+type Accuracy struct {
+	HorizontalM float64 `json:"horizontalM"`
+	VerticalM   float64 `json:"verticalM"`
+	Provenance  string  `json:"provenance"`
+}
+type Parent struct {
+	SHA256        string    `json:"sha256"`
+	Bytes         int64     `json:"bytes"`
+	SourceID      string    `json:"sourceId"`
+	Reference     string    `json:"reference"`
+	RetrievedAt   time.Time `json:"retrievedAt"`
+	CRS           string    `json:"crs"`
+	VerticalDatum string    `json:"verticalDatum,omitempty"`
+}
 type Input struct {
+	Parents              []Parent            `json:"parents,omitempty"`
+	Accuracy             *Accuracy           `json:"accuracy,omitempty"`
 	SourceID             string              `json:"sourceId"`
 	DatasetKey           string              `json:"datasetKey"`
 	Version              string              `json:"version"`
@@ -84,6 +100,30 @@ func (in Input) validate() (Collection, error) {
 		if strings.TrimSpace(s) == "" || len(s) > 2000 {
 			return fail()
 		}
+	}
+	if len(in.Parents) > 16 {
+		return fail()
+	}
+	var parentBytes int64
+	for _, p := range in.Parents {
+		u, e := url.Parse(p.Reference)
+		raw, err := hex.DecodeString(p.SHA256)
+		if e != nil || u.Scheme != "https" || u.Hostname() == "" || u.User != nil || p.SourceID != in.SourceID || p.RetrievedAt.IsZero() || p.RetrievedAt.After(time.Now().Add(5*time.Minute)) || p.Bytes < 1 || p.Bytes > 256<<20 || err != nil || len(raw) != 32 {
+			return fail()
+		}
+		for key := range u.Query() {
+			key = strings.ToLower(key)
+			if strings.Contains(key, "token") || strings.Contains(key, "key") || strings.Contains(key, "auth") || strings.Contains(key, "signature") {
+				return fail()
+			}
+		}
+		parentBytes += p.Bytes
+	}
+	if parentBytes > 256<<20 {
+		return fail()
+	}
+	if in.Accuracy != nil && (in.Accuracy.HorizontalM <= 0 || in.Accuracy.VerticalM < 0 || math.IsNaN(in.Accuracy.HorizontalM) || math.IsInf(in.Accuracy.HorizontalM, 0) || math.IsNaN(in.Accuracy.VerticalM) || math.IsInf(in.Accuracy.VerticalM, 0) || len(in.Accuracy.Provenance) < 10 || len(in.Accuracy.Provenance) > 2000) {
+		return fail()
 	}
 	if in.Kind != "vector" && in.Kind != "elevation" {
 		return fail()

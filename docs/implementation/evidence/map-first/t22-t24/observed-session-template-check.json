@@ -1,0 +1,15 @@
+{
+  "status": "FAIL",
+  "errors": [
+    "Sessions are not pinned to this release",
+    "Observed non-synthetic sessions have not been recorded",
+    "Case contributor identities missing",
+    "Missing observed roles",
+    "Incomplete observed geography matrix",
+    "Incomplete observed selectionForms matrix",
+    "Incomplete observed evidenceStates matrix",
+    "Assistive technology observation missing"
+  ],
+  "observedSessions": 0,
+  "scope": "Record completeness and identity checks; observer must attest the underlying observations truthfully."
+}

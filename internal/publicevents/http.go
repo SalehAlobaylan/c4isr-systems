@@ -18,7 +18,7 @@ func (h *Handler) Mount(r chi.Router) {
 	r.Get("/public-events/{id}/revisions", h.history)
 }
 func (h *Handler) list(w http.ResponseWriter, r *http.Request) {
-	f, err := ParseFilters(r.URL.Query(), time.Now().UTC())
+	f, err := ScopeFilters(r.Context(), r.URL.Query())
 	if err != nil {
 		httpx.Error(w, err)
 		return

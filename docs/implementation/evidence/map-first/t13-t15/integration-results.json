@@ -1,0 +1,173 @@
+{
+  "schema": "emad.integration-results.v1",
+  "command": "go test -p 1 -json -count=1 -run 'TestMapFirst|TestPublic|TestM1|TestP3|TestP2|TestReferenceCatalog|TestGeographicMap' ./internal/integration",
+  "cases": [
+    {
+      "test": "TestMapFirstDurableAcquisitionLostResponseCoverageAndCancellation",
+      "result": "PASS",
+      "seconds": 4.53
+    },
+    {
+      "test": "TestMapFirstSharedAccountQuotaUncertainChargeAndStorageGuards",
+      "result": "PASS",
+      "seconds": 3.9
+    },
+    {
+      "test": "TestMapFirstCoverageUnionCappedReceiptsAndAccessIsolation",
+      "result": "PASS",
+      "seconds": 4.19
+    },
+    {
+      "test": "TestMapFirstCoveragePublicationRecoveryFreshnessAndUnavailableQuery",
+      "result": "PASS",
+      "seconds": 5.38
+    },
+    {
+      "test": "TestMapFirstVersionedAreasReleasesAndComponents",
+      "result": "PASS",
+      "seconds": 4
+    },
+    {
+      "test": "TestMapFirstTemporalReadSnapshotsPublicationRacesAndAccess",
+      "result": "PASS",
+      "seconds": 4.36
+    },
+    {
+      "test": "TestMapFirstCaptureScopeContainmentTimeAndAtomicity",
+      "result": "PASS",
+      "seconds": 3.98
+    },
+    {
+      "test": "TestMapFirstCatalogSnapshotsHistoryCapacityAndCursorIsolation",
+      "result": "PASS",
+      "seconds": 7.03
+    },
+    {
+      "test": "TestMapFirstGeographicSnapshotBeyond300AndExactRetainedGeometry",
+      "result": "PASS",
+      "seconds": 4.27
+    },
+    {
+      "test": "TestMapFirstAggregateDrillDownKeepsOriginalRevisionsAndCounts",
+      "result": "PASS",
+      "seconds": 13.04
+    },
+    {
+      "test": "TestMapFirstReadBudgetUsesStoredJSONBytes",
+      "result": "PASS",
+      "seconds": 4.12
+    },
+    {
+      "test": "TestGeographicMapExactScopesHistoryAggregatesAndIsolation",
+      "result": "PASS",
+      "seconds": 93
+    },
+    {
+      "test": "TestP2CatalogueS3WorkerReproducibilityAndIndependentReview",
+      "result": "PASS",
+      "seconds": 9.75
+    },
+    {
+      "test": "TestMapFirstImageryProposalsRollingIntentsAndCaseLinks",
+      "result": "PASS",
+      "seconds": 4.83
+    },
+    {
+      "test": "TestMapFirstDurableInvestigationsMembershipHistoryAndConflicts",
+      "result": "PASS",
+      "seconds": 3.83
+    },
+    {
+      "test": "TestMapFirstProvisionedMapProfileAndUpgradedDefault",
+      "result": "PASS",
+      "seconds": 6.75
+    },
+    {
+      "test": "TestMapFirstContentPurposeCatalogHistoryCountsAndRLS",
+      "result": "PASS",
+      "seconds": 3.69
+    },
+    {
+      "test": "TestMapFirstSiblingFailureUnknownCountsAndFrozenValidity",
+      "result": "PASS",
+      "seconds": 3.91
+    },
+    {
+      "test": "TestP3NativeMovingEvidenceSegmentsAndSourceIsolation",
+      "result": "PASS",
+      "seconds": 11.14
+    },
+    {
+      "test": "TestP3AISNativePartialCaptureAndRecovery",
+      "result": "PASS",
+      "seconds": 4.82
+    },
+    {
+      "test": "TestMapFirstPopulatedProfileMigrationPreservesHistoryAndFencesLeases",
+      "result": "PASS",
+      "seconds": 4.58
+    },
+    {
+      "test": "TestPublicEventSemanticsCorrectionsAndSpatialRules",
+      "result": "PASS",
+      "seconds": 4.09
+    },
+    {
+      "test": "TestM1NativeFIRMSUSGSReferenceAndBitemporalEvidence",
+      "result": "PASS",
+      "seconds": 4.21
+    },
+    {
+      "test": "TestPublicAdmissionRetrievalRevisionsAndCoverage",
+      "result": "PASS",
+      "seconds": 3.96
+    },
+    {
+      "test": "TestPublicPublicationRecoveryAndCheckpointResume",
+      "result": "PASS",
+      "seconds": 3.78
+    },
+    {
+      "test": "TestPublicConnectorLeasesRevocationAndIsolation",
+      "result": "PASS",
+      "seconds": 3.74
+    },
+    {
+      "test": "TestPublicInitialOutageAndDurableQuota",
+      "result": "PASS",
+      "seconds": 3.85
+    },
+    {
+      "test": "TestPublicRightsHistoryAndReferenceOnlyRetention",
+      "result": "PASS",
+      "seconds": 3.91
+    },
+    {
+      "test": "TestReferenceCatalogRealRegionTerrainAndIsolation",
+      "result": "PASS",
+      "seconds": 3.66
+    },
+    {
+      "test": "TestMapFirstSourceBackedSevenRegionalImportsAndAtomicActivation",
+      "result": "PASS",
+      "seconds": 15.83
+    },
+    {
+      "test": "TestMapFirstRetrievalProfilesOriginalRightsExecutionAndSuspension",
+      "result": "PASS",
+      "seconds": 5.22
+    },
+    {
+      "test": "TestP33StationWeatherRevisionsRightsAndNoTracks",
+      "result": "PASS",
+      "seconds": 4.42
+    },
+    {
+      "test": "TestP33ReportEvidenceIndependentReviewAndLineage",
+      "result": "PASS",
+      "seconds": 4.15
+    }
+  ],
+  "seconds": 266.824,
+  "scope": "Actual isolated PostGIS/private S3/Linux API; seven-country prepared source manifest; synthetic workflow fixtures explicitly distinguished from live pixels."
+}

@@ -1,0 +1,66 @@
+
+> @c4isr/operator-ui@0.1.0 build C:\Users\saleh\Desktop\c4isr-systems\apps\operator-ui
+> tsc -b && vite build
+
+vite v7.3.6 building client environment for production...
+transforming...
+✓ 545 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                                        1.78 kB │ gzip:   0.92 kB
+dist/assets/ibm-plex-mono-latin-400-normal-CvHOgSBP.woff              13.14 kB
+dist/assets/ibm-plex-mono-latin-500-normal-CB9ihrfo.woff              13.16 kB
+dist/assets/ibm-plex-mono-latin-600-normal-DWFSQ4vo.woff              13.21 kB
+dist/assets/ibm-plex-mono-latin-400-normal-DMJ8VG8y.woff2             14.71 kB
+dist/assets/ibm-plex-mono-latin-500-normal-DSY6xOcd.woff2             14.89 kB
+dist/assets/ibm-plex-mono-latin-600-normal-BgSNZQsw.woff2             15.62 kB
+dist/assets/ibm-plex-sans-latin-400-normal-CYLoc0-x.woff              22.10 kB
+dist/assets/ibm-plex-sans-latin-700-normal-Bth3BMcD.woff              22.28 kB
+dist/assets/ibm-plex-sans-latin-400-normal-CDDApCn2.woff2             22.59 kB
+dist/assets/ibm-plex-sans-latin-700-normal-Bxkt5Cjx.woff2             22.83 kB
+dist/assets/ibm-plex-sans-latin-600-normal-Cu4Hd6ag.woff              23.88 kB
+dist/assets/ibm-plex-sans-latin-500-normal-BgVn5rGT.woff              23.92 kB
+dist/assets/ibm-plex-sans-latin-500-normal-6ng42L7E.woff2             24.18 kB
+dist/assets/ibm-plex-sans-latin-600-normal-CuJfVYMP.woff2             24.25 kB
+dist/assets/ibm-plex-sans-arabic-arabic-400-normal-CyU-ddYS.woff2     42.85 kB
+dist/assets/ibm-plex-sans-arabic-arabic-400-normal-EA1o-u_Q.woff      44.14 kB
+dist/assets/ibm-plex-sans-arabic-arabic-500-normal-C4MQITzh.woff2     45.30 kB
+dist/assets/ibm-plex-sans-arabic-arabic-600-normal-0pRdybE_.woff2     45.69 kB
+dist/assets/ibm-plex-sans-arabic-arabic-600-normal-MJZ0liF5.woff      46.78 kB
+dist/assets/ibm-plex-sans-arabic-arabic-500-normal-DPXcppbm.woff      46.92 kB
+dist/assets/CoveragePanel-GbOLnaCy.css                                 3.00 kB │ gzip:   1.05 kB
+dist/assets/intelligence-DNVN2dqC.css                                 69.92 kB │ gzip:  10.05 kB
+dist/assets/index-CwxB13-E.css                                       183.95 kB │ gzip:  30.73 kB
+dist/assets/SideSheet-BQjqBMzL.js                                      0.62 kB │ gzip:   0.36 kB
+dist/assets/spatial-Bi1BTYb1.js                                        0.67 kB │ gzip:   0.38 kB
+dist/assets/ModelThumbnail-B-VoHZNq.js                                 1.96 kB │ gzip:   1.20 kB
+dist/assets/WorkbenchContext-DGeCelRk.js                               2.13 kB │ gzip:   0.99 kB
+dist/assets/LiveExerciseView-CAQph6yP.js                               2.41 kB │ gzip:   1.19 kB
+dist/assets/react-Dvc1qHla.js                                          3.97 kB │ gzip:   1.44 kB
+dist/assets/ExerciseViewport-6rbsAUOZ.js                               6.19 kB │ gzip:   2.91 kB
+dist/assets/SceneViewport-CjF2SFzb.js                                  8.83 kB │ gzip:   4.00 kB
+dist/assets/exercise-DPVfg6fQ.js                                       9.29 kB │ gzip:   3.19 kB
+dist/assets/external-tracks-CNjOGaZO.js                                9.39 kB │ gzip:   3.56 kB
+dist/assets/CoveragePanel-Cwn_riig.js                                 10.92 kB │ gzip:   4.07 kB
+dist/assets/weather-reports-BT1XwXJ9.js                               15.42 kB │ gzip:   5.05 kB
+dist/assets/systems-DQdgTZLQ.js                                       17.11 kB │ gzip:   4.96 kB
+dist/assets/OrbitControls-CdUwTpf2.js                                 19.10 kB │ gzip:   4.33 kB
+dist/assets/recordings-BNzwn2iU.js                                    21.10 kB │ gzip:   6.93 kB
+dist/assets/simulation-assets-CHqcym05.js                             22.16 kB │ gzip:   6.68 kB
+dist/assets/simulation-studio-CB7hjrUA.js                             30.21 kB │ gzip:   9.23 kB
+dist/assets/query-DJ1hmyhv.js                                         39.76 kB │ gzip:  11.65 kB
+dist/assets/table-BFF0UWXc.js                                         49.80 kB │ gzip:  13.30 kB
+dist/assets/SystemsWorkspace-Io0Pc4SW.js                              57.59 kB │ gzip:  16.87 kB
+dist/assets/intelligence-C6v_Dn7j.js                                  58.93 kB │ gzip:  17.87 kB
+dist/assets/form-DCWp8dIH.js                                          59.29 kB │ gzip:  14.84 kB
+dist/assets/router-DMu8lRKe.js                                        85.55 kB │ gzip:  30.59 kB
+dist/assets/map-MOjDrjpV.js                                          164.93 kB │ gzip:  48.77 kB
+dist/assets/GLTFLoader-dSKRQt-3.js                                   575.96 kB │ gzip: 147.30 kB
+dist/assets/index-Du8y6GMu.js                                        596.37 kB │ gzip: 182.77 kB
+dist/assets/maplibre-mOg27aYi.js                                   1,052.89 kB │ gzip: 284.51 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 7.54s

@@ -1,0 +1,143 @@
+{
+  "schema": "emad.map-first-workload-result.v1",
+  "sampleStatus": "PASS",
+  "qualification": "NOT_QUALIFIED",
+  "profile": {
+    "analysts": 5,
+    "arch": "amd64",
+    "areas": 10,
+    "cpus": 24,
+    "detailedReferenceFeatures": 0,
+    "durationSeconds": 5,
+    "goVersion": "go1.25.0",
+    "gomaxprocs": 2,
+    "historyRows": 1000,
+    "kind": "profile",
+    "os": "windows",
+    "profileIntervalSeconds": 1,
+    "providerDailyLimit": 10000,
+    "reportRevisions": 0,
+    "scheduledProfiles": 10,
+    "schema": "emad.workload-sample.v1",
+    "scope": "Reduced isolated operational sample; full scale and browser latency are separate gates",
+    "startedAt": "2026-10-27T14:00:16.6737226Z",
+    "synthetic": true,
+    "weatherMovingRecords": 0
+  },
+  "end": {
+    "completed": true,
+    "elapsedSeconds": 5.6174013,
+    "failures": 0,
+    "fullWorkload": "NOT_RUN",
+    "kind": "end",
+    "observedHumans": "NOT_RUN",
+    "workerRestart": "NOT_RUN"
+  },
+  "telemetrySamples": 5,
+  "telemetryErrors": 0,
+  "operations": [
+    {
+      "operation": "catalog_search",
+      "condition": "cold",
+      "requests": 5,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 142.03,
+      "p95Ms": 172.829,
+      "p99Ms": 172.829,
+      "maxResponseBytes": 36712,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "catalog_search",
+      "condition": "warm",
+      "requests": 20,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 84.659,
+      "p95Ms": 129.771,
+      "p99Ms": 137.075,
+      "maxResponseBytes": 36712,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scheduled_retrieval",
+      "condition": "cold",
+      "requests": 10,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 62.103,
+      "p95Ms": 105.138,
+      "p99Ms": 105.138,
+      "maxResponseBytes": 825,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scope_resolve",
+      "condition": "cold",
+      "requests": 5,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 18.994,
+      "p95Ms": 42.125,
+      "p99Ms": 42.125,
+      "maxResponseBytes": 2849,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scope_resolve",
+      "condition": "warm",
+      "requests": 20,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 5.883,
+      "p95Ms": 7.613,
+      "p99Ms": 8.41,
+      "maxResponseBytes": 2849,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    }
+  ],
+  "sampleBudgetChecks": [
+    {
+      "operation": "catalog_search",
+      "condition": "cold",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 172.829,
+      "status": "PASS"
+    },
+    {
+      "operation": "catalog_search",
+      "condition": "warm",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 129.771,
+      "status": "PASS"
+    }
+  ],
+  "budgetProfileContentSha256": "c41f9ba2cee362183be617bb5f5239d5424f558af95f62658fffaae4490a959e",
+  "durationComplete": true,
+  "missingOperations": [],
+  "incomplete": false,
+  "outcomeCountsConsistent": true,
+  "limitations": [
+    "Reduced dataset; no map-family/tile timing, browser first useful map or control response measurement.",
+    "Heap telemetry is not process/container RSS; no measured retained-object/freshness-growth qualification.",
+    "No real process restart, paired restore, actual rollback binary or independent target users in this sample.",
+    "A longer sample measures actual elapsed time but does not close missing workload/recovery gates."
+  ],
+  "samplesSha256": "fecf4ec22c00b7ac90365714fc43f66f4afd7f36ac65f08b32dab6daec7c2773",
+  "commandExitCode": 0,
+  "runnerFailure": null,
+  "runnerElapsedSeconds": 26.32800000000134,
+  "frozenDurationMatched": true,
+  "sourceUnchanged": true
+}

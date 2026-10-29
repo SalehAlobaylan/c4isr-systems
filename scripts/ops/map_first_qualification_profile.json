@@ -1,0 +1,106 @@
+{
+  "schema": "emad.map-first-qualification-profile.v1",
+  "id": "map-first-proposed-v1",
+  "status": "PROPOSED_NOT_AN_AGREED_SERVICE_GUARANTEE",
+  "dataset": {
+    "reportRevisions": 100000,
+    "detailedReferenceFeatures": 50000,
+    "weatherMovingRecords": 10000,
+    "historyRows": 1000,
+    "areas": 10
+  },
+  "concurrency": {
+    "analysts": 5,
+    "scheduledProfiles": 10,
+    "maximumActiveRasterCaptures": 4
+  },
+  "budgets": {
+    "searchCoverageP95Ms": 1000,
+    "mapFamilyTileP95Ms": 2000,
+    "firstUsefulMapMs": 3000,
+    "controlResponseMs": 100,
+    "canceledServerReadMs": 5000,
+    "detailedGeoJSONBytes": 2097152,
+    "referenceTileBytes": 524288,
+    "recoverySeconds": 300
+  },
+  "soak": {
+    "wallClockSeconds": 86400,
+    "plannedWorkerRestarts": 1
+  },
+  "geography": [
+    "Saudi Arabia",
+    "UAE",
+    "Jordan",
+    "Egypt",
+    "France",
+    "Japan",
+    "Brazil",
+    "cross-border",
+    "coastal-water",
+    "date-line",
+    "high-latitude"
+  ],
+  "selectionForms": [
+    "country",
+    "subdivision",
+    "named-study",
+    "drawn-polygon",
+    "viewport",
+    "restored-case",
+    "point-requires-area"
+  ],
+  "evidenceStates": [
+    "current",
+    "historical",
+    "corrected-late",
+    "withdrawn",
+    "successful-empty",
+    "unobserved",
+    "partial",
+    "stale",
+    "missing-credentials",
+    "denied-access",
+    "processing-failure"
+  ],
+  "requiredRecovery": [
+    "api-restart",
+    "worker-loss",
+    "stale-lease",
+    "storage-loss",
+    "provider-backoff",
+    "credential-exhaustion",
+    "storage-quota",
+    "lost-response",
+    "source-revocation",
+    "deletion-expiry-interruption",
+    "paired-restore",
+    "actual-rollback-binary-forward-recovery"
+  ],
+  "sample": {
+    "synthetic": true,
+    "reportRevisions": 0,
+    "detailedReferenceFeatures": 0,
+    "weatherMovingRecords": 0,
+    "historyRows": 1000,
+    "areas": 10,
+    "analysts": 5,
+    "scheduledProfiles": 10,
+    "defaultDurationSeconds": 5,
+    "scope": "Isolated concurrent API/history/scheduler sample. Does not qualify full scale, first useful map, browser responsiveness, process RSS, unattended restart or target-user usefulness."
+  },
+  "workflowChecks": [
+    "fresh-regional-imagery",
+    "international-imagery",
+    "new-geographic-package",
+    "case-handoff",
+    "offline-brief-reading",
+    "correct-area-period",
+    "coverage-uncertainty",
+    "keyboard-only",
+    "portrait-320px",
+    "portrait-390px",
+    "short-landscape",
+    "text-200-percent"
+  ]
+}

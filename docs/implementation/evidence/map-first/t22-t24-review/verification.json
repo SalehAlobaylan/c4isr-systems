@@ -1,0 +1,110 @@
+{
+  "schema": "emad.map-first-t22-t24-review.verification.v1",
+  "recordedAt": "2026-10-27T17:05:29.167160+00:00",
+  "clientDate": "2026-10-27",
+  "timezone": "Asia/Riyadh",
+  "scope": "Focused pre-qualification correctness/regression review of T22-T24, not an exhaustive repository audit",
+  "findingsFound": 7,
+  "findingsFixed": 7,
+  "sourceFingerprint": "363effe2c1d5957348e439b33fd5c466a0d47a315b58bde07905171b892ad933",
+  "sourceManifest": "source-state.json",
+  "taskState": {
+    "T22": "IN_PROGRESS",
+    "T23": "IN_PROGRESS",
+    "T24": "IN_PROGRESS"
+  },
+  "releaseStatus": "NOT_QUALIFIED",
+  "checks": [
+    {
+      "id": "qualification-regressions",
+      "result": "PASS",
+      "cases": 16,
+      "command": "python -m unittest discover -s scripts/ops -p test_map_first_qualification.py",
+      "reference": "qualification-tests.log",
+      "scope": "Staged/deleted source pinning; failed/timeout/incomplete/frozen-budget samples; observed record identity/evidence/workflow checks; legacy and persisted restore inventories; expiry/tombstones and object counts; real owned-process timeout; backup byte integrity."
+    },
+    {
+      "id": "workload-final",
+      "result": "PASS",
+      "reference": "workload-final/result.json",
+      "scope": "Fresh reduced five-identity, ten-profile, 1000-history-row sample, five actual measured seconds. No full workload/24-hour or browser claim."
+    },
+    {
+      "id": "workload-15-second",
+      "result": "PASS",
+      "reference": "workload/result.json",
+      "scope": "Pre-final-test-addition 15-second sample; records its own source fingerprint."
+    },
+    {
+      "id": "paired-private-recovery",
+      "result": "PASS",
+      "reference": "paired-recovery.json",
+      "log": "integration.jsonl",
+      "scope": "Actual isolated pg_dump/restore, 122 table identities, two S3 servers, exact approval bundle/intent/access/attempt preservation. Not complete installed backup CLI or all dependency/rollback qualification.",
+      "changesSinceThisRun": [
+        "scripts/ops/test_map_first_qualification.py"
+      ],
+      "note": "Only the unit test file changed; all runtime code hashes remain identical."
+    },
+    {
+      "id": "unobserved-record-negative-check",
+      "result": "REJECTED_AS_EXPECTED",
+      "reference": "unobserved-template-check.json",
+      "scope": "No real participant/session evidence supplied; human qualification remains NOT_RUN."
+    },
+    {
+      "id": "planning-harness",
+      "result": "PASS",
+      "reference": "planning-harness.json",
+      "faultsInjected": 12,
+      "faultsMissed": []
+    },
+    {
+      "id": "syntax-and-hygiene",
+      "result": "PASS",
+      "scope": "Python AST, active UTF-8/local links, git diff --check; no new Go/API/UI changes in review."
+    }
+  ],
+  "installation": {
+    "newMigration": null,
+    "sharedMigrationPerformed": false,
+    "sharedDeploymentOrRestartPerformed": false,
+    "sharedBackupOrRetentionPerformed": false
+  },
+  "qualification": "Full workload/browser budgets, 24 real hours with actual restart/recovery/growth measurements, complete geographic journeys, nominated rollback binary and observed independent users remain open.",
+  "documentationHashes": {
+    "docs/implementation/MAP_FIRST_T22_T24_REVIEW_2026_10_27.md": "a337ba41dcabac0278b5aed2da9c6a45a84cfd03677af53e69ff9ab621d17e06",
+    "docs/implementation/MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md": "2a4f66cca2ecba808b73809fa27a2ea66cccda5bb4ee1008bd78fe75dea68cf4",
+    "docs/implementation/MAP_FIRST_OPERATIONS.md": "98271f9271fad3cb8140a3b052fdc481cc394aadbf7293f708d740084cfeec51",
+    "docs/implementation/MAP_FIRST_T23_OBSERVED_SESSIONS.template.json": "32e4c1a702e9b23e8aa63c1632233145fd2ae92d467415d5adc394591cf17f74",
+    "docs/implementation/MAP_FIRST_BACKLOG_2026_10_25.json": "8e2d7d6949460e10aecf09cc5850e34a2824b83510fdda4991f59cdeb1273349"
+  },
+  "artifactHashes": {
+    "integration.jsonl": "091fbde779ab7bdb5677477b770c95174b83c2679815e0ec79aae985d967789c",
+    "paired-recovery.json": "0e236f58b09bea6801d8c42b919ae99bc15cd2c130ed2f93023d589c17e0a21a",
+    "planning-harness.json": "b60b8b2f8b58b035a5ea86210203a2feaee5ae8b26b5389535be901cfac84963",
+    "qualification-tests.log": "7e0f13a76ce501c6e9ce27d8c0602d12d71c7eb17baea6684c303826e2853955",
+    "source-state.json": "a8dc066691d5fb1a8e373fef6cf797b7e76059c42c28f98bfa85e6352e9d3aea",
+    "unobserved-template-check.json": "e89d737a2d4f4d9bf63e09d610e53fcee06099f4d812d7802b8944895ef1cd37",
+    "workload/frozen-input.json": "46d1f2357156437a08d4ac0387ec31ace55953642d776354a92461e1fa476252",
+    "workload/integration.jsonl": "8ea818dd08af9b54359a558e27c2e6279aa2c29cfbac8357650db6b3874269d9",
+    "workload/result.json": "c8561ddbfca79e114d6af8f9c0a7904b0226f44f94617bdefebc301403bc4ef1",
+    "workload/workload.jsonl": "5892bd0667a53dc0dcd3ab8ee5124fbbabcb082f5ee833f0731bd92306ec347d",
+    "workload-final/frozen-input.json": "40e17dde1556bab4d5b6b83df2ced182abea02949a297c6d4f871128246c879b",
+    "workload-final/integration.jsonl": "b9b9f8022b0bcc2b8887292c92e48a972cae51c40bd0c0f01a8a21b36937e2b2",
+    "workload-final/result.json": "dd087dca957b8a28774dd37f23945ac93716fbdf5a9afad81b93a5e2eab44302",
+    "workload-final/workload.jsonl": "fecf4ec22c00b7ac90365714fc43f66f4afd7f36ac65f08b32dab6daec7c2773",
+    "docker-handoff.json": "f753b5328d50dd4ae35368174e0ef726aeba7f021a73e82b9af64f3c3aeca6a8",
+    "docker-handoff-final.json": "f402cef5be502294cf862eb0a149ec6158ee65e1356a47d7ab860f9ede434a78"
+  },
+  "infrastructureAtHandoff": {
+    "dockerAPI": "AVAILABLE",
+    "reference": "docker-handoff-final.json",
+    "containers": {
+      "emad-garage": "Up About a minute",
+      "c4isr-postgres": "Up About a minute (healthy)"
+    },
+    "note": "Read-only recheck; shared deployment remains unverified."
+  },
+  "finalRecheckedAt": "2026-10-27T17:12:23.874275+00:00"
+}

@@ -127,7 +127,7 @@ func (s *Service) List(ctx context.Context, onlyEligible bool) ([]Dataset, error
 	if err := require(ctx, "sources.read"); err != nil {
 		return nil, err
 	}
-	rows, err := platformdb.Scoped(s.pool).Query(ctx, `SELECT document FROM reference_datasets ORDER BY dataset_key,version,id LIMIT 64`)
+	rows, err := platformdb.Scoped(s.pool).Query(ctx, `SELECT document FROM reference_datasets WHERE emad_content_visible('reference',id) ORDER BY dataset_key,version,id LIMIT 64`)
 	if err != nil {
 		return nil, err
 	}

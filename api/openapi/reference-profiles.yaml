@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info: {title: Reference depth and retrieval profiles, version: 1.0.0}
+paths:
+  /geography/releases:
+    get:
+      operationId: listGeographicReleaseHeads
+      responses:
+        '200': {description: Currently activated source releases, content: {application/json: {schema: {type: object, required: [items], properties: {items: {type: array, items: {type: object, required: [sourceId, releaseId], properties: {sourceId: {type: string}, releaseId: {type: string}}}}}}}}}
+  /geography/availability:
+    get:
+      operationId: getGeographicAvailability
+      parameters:
+        - {in: query, name: region_id, required: true, schema: {type: string}}
+        - {in: query, name: release_id, schema: {type: string}}
+      responses:
+        '200': {description: Retained navigation depth, content: {application/json: {schema: {$ref: '#/components/schemas/GeographicAvailability'}}}}
+  /geography/reference-requests:
+    post:
+      operationId: requestGeographicDepth
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReferenceDepthRequestInput'}}}}
+      responses:
+        '201': {description: Durable idempotent reference request, content: {application/json: {schema: {$ref: '#/components/schemas/ReferenceDepthRequest'}}}}
+    get:
+      operationId: listGeographicDepthRequests
+      responses:
+        '200': {description: Source-authorized administrative queue, content: {application/json: {schema: {type: object, required: [items, limit], properties: {items: {type: array, items: {$ref: '#/components/schemas/ReferenceDepthRequest'}}, limit: {type: integer}}}}}}
+  /geography/reference-requests/{id}/resolve:
+    parameters: [{in: path, name: id, required: true, schema: {type: string}}]
+    post:
+      operationId: resolveGeographicDepthRequest
+      requestBody: {required: true, content: {application/json: {schema: {type: object, required: [releaseId], properties: {releaseId: {type: string}}}}}}
+      responses:
+        '200': {description: Verified installed depth, content: {application/json: {schema: {type: object, additionalProperties: true}}}}
+  /sources/{id}/profiles:
+    parameters: [{in: path, name: id, required: true, schema: {type: string}}]
+    get:
+      operationId: listRetrievalProfiles
+      responses:
+        '200': {description: Exact current approved profile revisions, content: {application/json: {schema: {type: object, required: [items, limit], properties: {items: {type: array, items: {$ref: '#/components/schemas/RetrievalProfile'}}, limit: {type: integer}}}}}}
+  /sources/{id}/profiles/{key}:
+    parameters: [{in: path, name: id, required: true, schema: {type: string}}, {in: path, name: key, required: true, schema: {type: string}}]
+    post:
+      operationId: approveRetrievalProfile
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RetrievalProfileInput'}}}}
+      responses:
+        '201': {description: Approved immutable admission/profile revision, content: {application/json: {schema: {$ref: './openapi.yaml#/components/schemas/SourceAdmission'}}}}
+  /sources/{id}/profiles/{key}/execution:
+    parameters: [{in: path, name: id, required: true, schema: {type: string}}, {in: path, name: key, required: true, schema: {type: string}}]
+    post:
+      operationId: grantRetrievalProfileExecution
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RetrievalExecutionGrant'}}}}
+      responses:
+        '200': {description: Audited revision-specific grant, content: {application/json: {schema: {type: object, required: [profileRevisionId, enabled], properties: {profileRevisionId: {type: string}, enabled: {type: boolean}}}}}}
+  /sources/{id}/profiles/{key}/connector-runs:
+    parameters: [{in: path, name: id, required: true, schema: {type: string}}, {in: path, name: key, required: true, schema: {type: string}}]
+    post:
+      operationId: executeRetrievalProfile
+      requestBody:
+        required: false
+        content: {application/json: {schema: {type: object, required: [from, to], properties: {from: {type: string, format: date-time}, to: {type: string, format: date-time}}}}}
+      responses:
+        '201': {description: Bounded profile invocation; service grant required, content: {application/json: {schema: {type: object, additionalProperties: true}}}}
+components:
+  schemas:
+    GeographicAvailability:
+      type: object
+      required: [regionId, sourceId, releaseId, logicalKey, regions, places, state, meaning, nextAction]
+      properties:
+        regionId: {type: string}
+        sourceId: {type: string}
+        releaseId: {type: string}
+        logicalKey: {type: string}
+        regions: {type: integer}
+        places: {type: integer}
+        state: {type: string, enum: [legacy_unqualified, partial_reference_depth, reference_depth_retained]}
+        meaning: {type: string}
+        nextAction: {type: string}
+    ReferenceDepthRequestInput:
+      type: object
+      additionalProperties: false
+      required: [requestKey, regionId, reason]
+      properties:
+        requestKey: {type: string}
+        regionId: {type: string}
+        reason: {type: string, minLength: 10, maxLength: 2000}
+    ReferenceDepthRequest:
+      type: object
+      required: [id, input, requestedBy, recordedAt, state, sourceId, logicalKey, meaning]
+      properties:
+        id: {type: string}
+        input: {$ref: '#/components/schemas/ReferenceDepthRequestInput'}
+        requestedBy: {type: string}
+        recordedAt: {type: string, format: date-time}
+        state: {type: string}
+        sourceId: {type: string}
+        logicalKey: {type: string}
+        meaning: {type: string}
+        resolution: {type: [object, 'null'], additionalProperties: true}
+    RetrievalProfile:
+      type: object
+      required: [id, key, sourceId, admissionId, version, admission]
+      properties:
+        id: {type: string}
+        key: {type: string}
+        sourceId: {type: string}
+        admissionId: {type: string}
+        version: {type: integer}
+        admission: {$ref: './openapi.yaml#/components/schemas/SourceAdmission'}
+    RetrievalProfileInput:
+      type: object
+      additionalProperties: false
+      required: [expectedRevisionId, admission]
+      properties:
+        expectedRevisionId: {type: string}
+        admission: {$ref: './openapi.yaml#/components/schemas/SourceAdmissionInput'}
+    RetrievalExecutionGrant:
+      type: object
+      additionalProperties: false
+      required: [profileRevisionId, principalId, enabled]
+      properties:
+        profileRevisionId: {type: string}
+        principalId: {type: string}
+        enabled: {type: boolean}

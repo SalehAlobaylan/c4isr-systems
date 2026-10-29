@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
@@ -28,7 +29,8 @@ func BindTx(ctx context.Context, tx pgx.Tx) error {
 		return err
 	}
 	ids, _ := json.Marshal(access.SourceIDs(ctx))
-	_, err = tx.Exec(ctx, `SELECT set_config('emad.scope_id',$1,true),set_config('emad.source_ids',$2,true)`, r.ID(), string(ids))
+	p, _, _ := access.From(ctx)
+	_, err = tx.Exec(ctx, `SELECT set_config('emad.scope_id',$1,true),set_config('emad.source_ids',$2,true),set_config('emad.content_view',$3,true),set_config('emad.principal_id',$4,true),set_config('emad.human_id',$5,true),set_config('emad.case_read',$6,true),set_config('emad.profile_key',$7,true),set_config('emad.profile_policy','retrieval-v1',true),set_config('emad.scheduler_policy','durable-v1',true),set_config('emad.imagery_worker',$8,true)`, r.ID(), string(ids), access.ContentView(ctx), p.ID, p.HumanID, fmt.Sprint(access.Allows(ctx, "investigations.read")), access.RetrievalProfile(ctx), fmt.Sprint(p.Kind == "service" && (access.Allows(ctx, "imagery.jobs.execute") || access.Allows(ctx, "imagery.capture.execute"))))
 	return err
 }
 
@@ -56,6 +58,9 @@ func normalizeScopeError(ctx context.Context, err error) error {
 	return err
 }
 func (d *ScopedDB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	if tx := transaction(ctx); tx != nil {
+		return tx.Exec(ctx, sql, args...)
+	}
 	tx, err := d.begin(ctx)
 	if err != nil {
 		return pgconn.CommandTag{}, err
@@ -77,6 +82,9 @@ type scopedRow struct {
 }
 
 func (r scopedRow) Scan(dest ...any) error {
+	if tx := transaction(r.ctx); tx != nil {
+		return tx.QueryRow(r.ctx, r.sql, r.args...).Scan(dest...)
+	}
 	tx, err := r.db.begin(r.ctx)
 	if err != nil {
 		return err
@@ -128,6 +136,9 @@ func (r *scopedRows) Err() error {
 	return r.commitErr
 }
 func (d *ScopedDB) Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error) {
+	if tx := transaction(ctx); tx != nil {
+		return tx.Query(ctx, sql, args...)
+	}
 	tx, err := d.begin(ctx)
 	if err != nil {
 		return nil, err

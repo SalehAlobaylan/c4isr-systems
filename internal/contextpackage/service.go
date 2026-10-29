@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/analystscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/artifacts"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/imagery"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
@@ -34,6 +35,7 @@ func NewService(pool *pgxpool.Pool, stores ...*artifacts.Service) *Service {
 }
 
 type BuildInput struct {
+	Scope                 *analystscope.Input `json:"scope,omitempty"`
 	PreparationIDs        []string            `json:"preparationIds,omitempty"`
 	AssessmentRevisionIDs []string            `json:"assessmentRevisionIds,omitempty"`
 	PreviewID             string              `json:"previewId,omitempty"`
@@ -70,7 +72,8 @@ func (s *Service) Build(ctx context.Context, in BuildInput) (Bundle, error) {
 	if err != nil {
 		return b, err
 	}
-	return b, s.persist(ctx, b)
+	err = s.persist(ctx, &b)
+	return b, err
 }
 func (s *Service) assemble(ctx context.Context, in BuildInput) (Bundle, error) {
 	if err := require(ctx); err != nil {
@@ -86,6 +89,19 @@ func (s *Service) assemble(ctx context.Context, in BuildInput) (Bundle, error) {
 	now := time.Now().UTC()
 	m := Manifest{Schema: Schema, AOI: in.AOI, TimeWindow: in.TimeWindow, CreatedAt: now, Creator: p.ID, Approval: Approval{p.ID, now, in.Approval}, TransformVersion: simulation.TransformVersion, ProcessingVersion: "reference-snapshot-v1", GeometryQuality: in.AcceptedQuality, ImageryQuality: "not_included", Reproduction: "retained_offline", Assets: []Asset{}}
 	b := Bundle{Manifest: m, Assets: map[string][]byte{}}
+	if in.Scope != nil {
+		v, e := (analystscope.Service{Pool: s.pool}).Resolve(ctx, *in.Scope)
+		if e != nil {
+			return b, e
+		}
+		if v.Capabilities["imagery"].State != "supported" || !v.Temporal.Interval.From.Equal(in.TimeWindow.From) || !v.Temporal.Interval.To.Equal(in.TimeWindow.To) {
+			return b, apperr.Validation("export interval must equal its explicitly pinned scope interval")
+		}
+		if e = analystscope.ValidateBounds(ctx, s.pool, v, in.AOI); e != nil {
+			return b, e
+		}
+		b.Manifest.Scope = &v
+	}
 	ids := append([]string(nil), in.DatasetIDs...)
 	sort.Strings(ids)
 	for _, id := range ids {
@@ -123,17 +139,28 @@ func (s *Service) assemble(ctx context.Context, in BuildInput) (Bundle, error) {
 	}
 	return b, nil
 }
-func (s *Service) persist(ctx context.Context, b Bundle) error {
+func (s *Service) persist(ctx context.Context, b *Bundle) error {
 	fresh, err := refreshExport(ctx)
 	if err != nil {
 		return err
 	}
 	ctx = fresh
 	_, r, _ := access.From(ctx)
-	raw, _ := json.Marshal(b)
-	doc, _ := json.Marshal(b.Manifest)
 	err = platformdb.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
-		if err := s.validateFrozenDependencies(ctx, tx, b); err != nil {
+		if b.Manifest.Scope != nil {
+			saved, e := (analystscope.Service{Pool: s.pool}).Freeze(ctx, tx, analystscope.FromSnapshot(*b.Manifest.Scope))
+			if e != nil {
+				return e
+			}
+			if saved.ScopeHash != b.Manifest.Scope.ScopeHash {
+				return apperr.Conflict("export scope changed; preview again")
+			}
+			b.Manifest.Scope = &saved
+			b.ID = ID(b.Manifest)
+		}
+		raw, _ := json.Marshal(b)
+		doc, _ := json.Marshal(b.Manifest)
+		if err := s.validateFrozenDependencies(ctx, tx, *b); err != nil {
 			return err
 		}
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, r.ID()+"/context-packages"); err != nil {
@@ -176,7 +203,7 @@ func (s *Service) List(ctx context.Context) ([]map[string]any, error) {
 	if err := require(ctx); err != nil {
 		return nil, err
 	}
-	rows, err := platformdb.Scoped(s.pool).Query(ctx, `SELECT id,document FROM context_packages ORDER BY id LIMIT 64`)
+	rows, err := platformdb.Scoped(s.pool).Query(ctx, `SELECT id,document FROM context_packages WHERE emad_content_visible('package',id) ORDER BY id LIMIT 64`)
 	if err != nil {
 		return nil, err
 	}

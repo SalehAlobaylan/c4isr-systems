@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/capacity"
 	"time"
 
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
 	platformdb "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
@@ -27,6 +29,8 @@ func (r *Repository) SetProjector(p Projector) { r.projector = p }
 func NewRepository(pool *pgxpool.Pool) *Repository { return &Repository{pool: pool} }
 
 type state struct {
+	QueryRequestID           *string
+	QueryAOI                 *Bounds
 	Admission                Admission
 	Checkpoint               string
 	NextAttempt              time.Time
@@ -39,18 +43,23 @@ type state struct {
 	QueryFrom, QueryTo       *time.Time
 }
 
-const stateSQL = `SELECT a.document,s.checkpoint,s.next_attempt_at,s.last_attempt_at,s.last_success_at,s.last_failure_code,s.failures,s.lease_id,s.lease_until,s.coverage_from,s.coverage_to,s.query_from,s.query_to
+const stateSQL = `SELECT a.document,s.checkpoint,s.next_attempt_at,s.last_attempt_at,s.last_success_at,s.last_failure_code,s.failures,s.lease_id,s.lease_until,s.coverage_from,s.coverage_to,s.query_from,s.query_to,s.query_request_id,s.query_aoi
  FROM source_connector_state s JOIN source_admissions a ON a.id=s.admission_id AND a.scope_id=s.scope_id AND a.source_id=s.source_id WHERE s.source_id=$1`
 
 func scanState(row pgx.Row) (state, error) {
 	var st state
-	var doc []byte
-	err := row.Scan(&doc, &st.Checkpoint, &st.NextAttempt, &st.LastAttempt, &st.LastSuccess, &st.LastFailure, &st.Failures, &st.LeaseID, &st.LeaseUntil, &st.CoverageFrom, &st.CoverageTo, &st.QueryFrom, &st.QueryTo)
+	var doc, aoi []byte
+	err := row.Scan(&doc, &st.Checkpoint, &st.NextAttempt, &st.LastAttempt, &st.LastSuccess, &st.LastFailure, &st.Failures, &st.LeaseID, &st.LeaseUntil, &st.CoverageFrom, &st.CoverageTo, &st.QueryFrom, &st.QueryTo, &st.QueryRequestID, &aoi)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return st, apperr.NotFound("source admission", "unavailable")
 	}
 	if err != nil {
 		return st, err
+	}
+	if len(aoi) > 0 {
+		if err = json.Unmarshal(aoi, &st.QueryAOI); err != nil {
+			return st, err
+		}
 	}
 	err = json.Unmarshal(doc, &st.Admission)
 	return st, err
@@ -59,7 +68,7 @@ func (r *Repository) State(ctx context.Context, source string) (state, error) {
 	return scanState(platformdb.Scoped(r.pool).QueryRow(ctx, stateSQL, source))
 }
 
-func (r *Repository) Admit(ctx context.Context, a Admission) (Admission, error) {
+func (r *Repository) Admit(ctx context.Context, a Admission, expected ...string) (Admission, error) {
 	err := platformdb.WithTx(ctx, r.pool, func(tx pgx.Tx) error {
 		if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, "admission:"+a.SourceID); err != nil {
 			return err
@@ -92,6 +101,16 @@ func (r *Repository) Admit(ctx context.Context, a Admission) (Admission, error) 
 		if changedRights {
 			return apperr.Conflict("changed rights require a new rights record id")
 		}
+		if err = tx.QueryRow(ctx, `SELECT COALESCE(max(version),0)+1 FROM source_admissions WHERE source_id=$1`, a.SourceID).Scan(&a.Version); err != nil {
+			return err
+		}
+		var changedIdentity bool
+		if err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM source_admissions WHERE source_id=$1 AND (document->>'originalProducer'<>$2 OR document->>'dataset'<>$3 OR document->>'productVersion'<>$4))`, a.SourceID, a.OriginalProducer, a.Dataset, a.ProductVersion).Scan(&changedIdentity); err != nil {
+			return err
+		}
+		if changedIdentity {
+			return apperr.Conflict("producer/dataset/product identity requires a new source")
+		}
 		a.ID = ids.New("adm")
 		doc, err := json.Marshal(a)
 		if err != nil {
@@ -100,8 +119,11 @@ func (r *Repository) Admit(ctx context.Context, a Admission) (Admission, error) 
 		if _, err = tx.Exec(ctx, `INSERT INTO source_admissions(id,source_id,version,document) VALUES($1,$2,$3,$4)`, a.ID, a.SourceID, a.Version, doc); err != nil {
 			return err
 		}
-		_, err = tx.Exec(ctx, `INSERT INTO source_connector_state(source_id,admission_id) VALUES($1,$2)
- ON CONFLICT(scope_id,source_id) DO UPDATE SET admission_id=excluded.admission_id,checkpoint='',last_success_at=NULL,coverage_from=NULL,coverage_to=NULL,query_from=NULL,query_to=NULL,lease_id=NULL,lease_until=NULL,last_failure_code='',failures=0`, a.SourceID, a.ID)
+		if err = registerProfile(ctx, tx, a, expected); err != nil {
+			return err
+		}
+		_, err = tx.Exec(ctx, `INSERT INTO retrieval_profile_state(source_id,admission_id,profile_key) VALUES($1,$2,$3)
+ ON CONFLICT(scope_id,source_id,profile_key) DO UPDATE SET admission_id=excluded.admission_id,last_work_kind='CURRENT',checkpoint='',last_success_at=NULL,coverage_from=NULL,coverage_to=NULL,query_from=NULL,query_to=NULL,query_request_id=NULL,query_aoi=NULL,lease_id=NULL,lease_until=NULL,last_failure_code='',failures=0`, a.SourceID, a.ID, access.RetrievalProfile(ctx))
 		return err
 	})
 	return a, err
@@ -121,6 +143,20 @@ func (r *Repository) Begin(ctx context.Context, source, principal, admissionID s
 		if err != nil {
 			return err
 		}
+		work := acquisitionWork(ctx)
+		requestID := ""
+		if work != nil {
+			requestID = work.RequestID
+		}
+		if st.QueryRequestID != nil && *st.QueryRequestID != requestID {
+			return apperr.Conflict("resume the frozen acquisition query before another intent")
+		}
+		if work != nil && st.QueryRequestID == nil && st.QueryFrom == nil {
+			st.Checkpoint = ""
+		}
+		if work != nil && st.QueryRequestID == nil && st.QueryFrom != nil {
+			return apperr.Conflict("resume the current profile query before queued backfill")
+		}
 		if st.Admission.ID != admissionID || st.Admission.ConnectorPrincipalID != principal {
 			return apperr.Conflict("admission changed before execution")
 		}
@@ -138,7 +174,15 @@ func (r *Repository) Begin(ctx context.Context, source, principal, admissionID s
 				return err
 			}
 		}
-		run = Run{ID: ids.New("cnr"), SourceID: source, AdmissionID: st.Admission.ID, ConnectorID: st.Admission.ConnectorID, PrincipalID: principal, StartedAt: now, Status: "RUNNING"}
+		run = Run{ProfileKey: access.RetrievalProfile(ctx), ProfileRevisionID: "rpr_" + st.Admission.ID, ID: ids.New("cnr"), SourceID: source, AdmissionID: st.Admission.ID, ConnectorID: st.Admission.ConnectorID, PrincipalID: principal, StartedAt: now, Status: "RUNNING"}
+		if work != nil {
+			run.AcquisitionRequestID = work.RequestID
+			run.AcquisitionPartID = work.ID
+			run.QueryAOI = &work.AOI
+		}
+		if err = checkExecution(ctx, tx, run); err != nil {
+			return err
+		}
 		doc, _ := json.Marshal(run)
 		if _, err = tx.Exec(ctx, `INSERT INTO connector_runs(id,source_id,admission_id,document) VALUES($1,$2,$3,$4)`, run.ID, source, run.AdmissionID, doc); err != nil {
 			return err
@@ -166,7 +210,24 @@ func (r *Repository) Begin(ctx context.Context, source, principal, admissionID s
 			st.QueryFrom = &from
 			st.QueryTo = &to
 		}
-		_, err = tx.Exec(ctx, `UPDATE source_connector_state SET lease_id=$2,lease_until=$3,last_attempt_at=$4,query_from=$5,query_to=$6 WHERE source_id=$1`, source, run.ID, now.Add(45*time.Second), now, st.QueryFrom, st.QueryTo)
+		aoi := st.Admission.Policy.AOI
+		if work != nil {
+			aoi = work.AOI
+			st.QueryAOI = &aoi
+			st.QueryRequestID = &requestID
+		}
+		run.QueryAOI = &aoi
+		run.QueryFrom = st.QueryFrom
+		run.QueryTo = st.QueryTo
+		aoiRaw, _ := json.Marshal(aoi)
+		if _, err = tx.Exec(ctx, `UPDATE connector_runs SET document=document||jsonb_build_object('queryAoi',$2::jsonb,'queryFrom',$3::timestamptz,'queryTo',$4::timestamptz,'acquisitionRequestId',$5::text,'acquisitionPartId',$6::text) WHERE id=$1`, run.ID, aoiRaw, st.QueryFrom, st.QueryTo, run.AcquisitionRequestID, run.AcquisitionPartID); err != nil {
+			return err
+		}
+		_, err = tx.Exec(ctx, `UPDATE source_connector_state SET lease_id=$2,lease_until=$3,last_attempt_at=$4,query_from=$5,query_to=$6,checkpoint=$7 WHERE source_id=$1`, source, run.ID, now.Add(45*time.Second), now, st.QueryFrom, st.QueryTo, st.Checkpoint)
+		if err != nil {
+			return err
+		}
+		_, err = tx.Exec(ctx, `UPDATE retrieval_profile_state SET query_request_id=NULLIF($3,''),query_aoi=$4 WHERE source_id=$1 AND profile_key=$2`, source, access.RetrievalProfile(ctx), requestID, aoiRaw)
 		return err
 	})
 	return run, st, err
@@ -182,7 +243,7 @@ func checkLease(st state, run Run, now time.Time) error {
 	return nil
 }
 
-func (r *Repository) ReserveRequest(ctx context.Context, run Run, now time.Time) error {
+func (r *Repository) ReserveRequest(ctx context.Context, run Run, now time.Time, trustedSourceCeiling int, checkOnly ...bool) error {
 	return platformdb.WithTx(ctx, r.pool, func(tx pgx.Tx) error {
 		st, err := scanState(tx.QueryRow(ctx, stateSQL+` FOR UPDATE OF s`, run.SourceID))
 		if err != nil {
@@ -191,7 +252,25 @@ func (r *Repository) ReserveRequest(ctx context.Context, run Run, now time.Time)
 		if err = checkLease(st, run, now); err != nil {
 			return err
 		}
+		if err = checkExecution(ctx, tx, run); err != nil {
+			return err
+		}
 		if st.NextAttempt.After(now) {
+			return apperr.Conflict("rate_limited")
+		}
+		resource, _ := access.ResourceFrom(ctx)
+		if _, err = tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, resource.ID()+"/source-provider-budget/"+run.SourceID); err != nil {
+			return err
+		}
+		var combined int
+		var sourceNext time.Time
+		if err = tx.QueryRow(ctx, `SELECT COALESCE(sum(CASE WHEN quota_day=$2::date THEN requests_today ELSE 0 END),0),COALESCE(max(next_attempt_at),'epoch'::timestamptz) FROM retrieval_profile_state WHERE source_id=$1`, run.SourceID, now.UTC().Format("2006-01-02")).Scan(&combined, &sourceNext); err != nil {
+			return err
+		}
+		if trustedSourceCeiling < 1 || combined >= trustedSourceCeiling {
+			return apperr.Conflict("daily_quota")
+		}
+		if sourceNext.After(now) {
 			return apperr.Conflict("rate_limited")
 		}
 		var used int
@@ -200,6 +279,9 @@ func (r *Repository) ReserveRequest(ctx context.Context, run Run, now time.Time)
 		}
 		if used >= st.Admission.Policy.MaxRequestsPerDay {
 			return apperr.Conflict("daily_quota")
+		}
+		if len(checkOnly) > 0 && checkOnly[0] {
+			return nil
 		}
 		if _, err = tx.Exec(ctx, `UPDATE source_connector_state SET quota_day=$2::date,requests_today=$3,next_attempt_at=$4 WHERE source_id=$1`, run.SourceID, now.UTC().Format("2006-01-02"), used+1, now.Add(time.Duration(st.Admission.Policy.MinIntervalSeconds)*time.Second)); err != nil {
 			return err
@@ -218,6 +300,9 @@ func (r *Repository) CommitPage(ctx context.Context, run Run, before string, pag
 		if err = checkLease(st, run, now); err != nil {
 			return err
 		}
+		if err = checkExecution(ctx, tx, run); err != nil {
+			return err
+		}
 		if st.Checkpoint != before {
 			return apperr.Conflict("checkpoint changed")
 		}
@@ -228,6 +313,14 @@ func (r *Repository) CommitPage(ctx context.Context, run Run, before string, pag
 			if err := tx.QueryRow(ctx, `SELECT count(*),COALESCE(sum(octet_length(document::text)+COALESCE(octet_length(original_record),0)),0) FROM public_evidence WHERE source_id=$1`, run.SourceID).Scan(&storedCount, &storedBytes); err != nil {
 				return err
 			}
+		}
+		var estimated int64
+		for _, e := range evidence {
+			doc, _ := json.Marshal(e)
+			estimated += int64(len(doc) + len(e.OriginalRecord) + len(e.OriginalBytes) + 512)
+		}
+		if err = capacity.Check(ctx, tx, estimated, run.ID); err != nil {
+			return err
 		}
 		added, duplicates := 0, 0
 		for _, e := range evidence {
@@ -258,7 +351,7 @@ func (r *Repository) CommitPage(ctx context.Context, run Run, before string, pag
 				if moving {
 					storedCount++
 					storedBytes += int64(len(doc) + len(raw))
-					if storedCount > 10000 || storedBytes > 64*1024*1024 {
+					if storedBytes > 64*1024*1024 {
 						return apperr.Conflict("source_storage_budget")
 					}
 				}
@@ -268,11 +361,16 @@ func (r *Repository) CommitPage(ctx context.Context, run Run, before string, pag
 				added++
 			}
 		}
+		for _, e := range evidence {
+			if _, err = tx.Exec(ctx, `INSERT INTO retrieval_occurrences(source_id,run_id,evidence_id,profile_revision_id) SELECT $1,$2,id,$3 FROM public_evidence WHERE source_id=$1 AND provider_record_id=$4 AND provider_revision=$5 ON CONFLICT DO NOTHING`, run.SourceID, run.ID, "rpr_"+run.AdmissionID, e.ProviderRecordID, e.ProviderRevision); err != nil {
+				return err
+			}
+		}
 		if _, err = tx.Exec(ctx, `UPDATE source_connector_state SET checkpoint=$2 WHERE source_id=$1`, run.SourceID, page.Checkpoint); err != nil {
 			return err
 		}
 		meta, _ := json.Marshal(run.Retrieval)
-		_, err = tx.Exec(ctx, `UPDATE connector_runs SET document=document || jsonb_build_object('newEvidence',(document->>'newEvidence')::int+$2::int,'duplicates',(document->>'duplicates')::int+$3::int,'retrieval',$4::jsonb,'captureFrom',$5::timestamptz,'captureTo',$6::timestamptz) WHERE id=$1`, run.ID, added, duplicates, meta, run.CaptureFrom, run.CaptureTo)
+		_, err = tx.Exec(ctx, `UPDATE connector_runs SET document=document || jsonb_build_object('pages',COALESCE((document->>'pages')::int,0)+1,'rejectedRecords',COALESCE((document->>'rejectedRecords')::int,0)+$7::int,'providerTruncated',COALESCE((document->>'providerTruncated')::boolean,false) OR $8::boolean,'newEvidence',(document->>'newEvidence')::int+$2::int,'duplicates',(document->>'duplicates')::int+$3::int,'retrieval',$4::jsonb,'captureFrom',$5::timestamptz,'captureTo',$6::timestamptz) WHERE id=$1`, run.ID, added, duplicates, meta, run.CaptureFrom, run.CaptureTo, page.ExcludedRecords, page.PartialReason != "")
 		return err
 	})
 }
@@ -284,6 +382,9 @@ func (r *Repository) Finish(ctx context.Context, run Run, status, code string, n
 			return err
 		}
 		if err = checkLease(st, run, now); err != nil {
+			return err
+		}
+		if err = checkExecution(ctx, tx, run); err != nil {
 			return err
 		}
 		var from, to any
@@ -299,6 +400,11 @@ func (r *Repository) Finish(ctx context.Context, run Run, status, code string, n
  WHERE source_id=$1`, run.SourceID, next, code, success, status == "FAILED", now, from, to)
 		if err != nil {
 			return err
+		}
+		if success {
+			if _, err = tx.Exec(ctx, `UPDATE retrieval_profile_state SET query_request_id=NULL,query_aoi=NULL WHERE source_id=$1 AND profile_key=$2`, run.SourceID, access.RetrievalProfile(ctx)); err != nil {
+				return err
+			}
 		}
 		var doc []byte
 		meta, err := json.Marshal(run.Retrieval)
@@ -398,6 +504,15 @@ func (r *Repository) GetEvidence(ctx context.Context, source, id string) (Eviden
 		return e, err
 	}
 	err = json.Unmarshal(doc, &e)
+	if err != nil {
+		return e, err
+	}
+	if len(raw) > 0 {
+		policy, policyErr := ResolvePolicy(ctx, r.pool, source, e.AdmissionID)
+		if policyErr != nil || !policy.Rights.RetainRaw {
+			raw = nil
+		}
+	}
 	if e.OriginalMediaType == "text/csv" || e.OriginalMediaType == "application/xml" {
 		e.OriginalBytes = raw
 	} else {

@@ -107,8 +107,8 @@ func (s *Service) freeze(ctx context.Context, in BuildInput) (Bundle, error) {
 			}
 			continue
 		}
-		current, err := s.images.Artifacts.Admission(ctx, a.SourceID)
-		if err != nil || current.ID != a.Lineage.AdmissionID || !current.Rights.AllowSimulationExport {
+		current, err := s.images.Artifacts.Policy(ctx, a.SourceID, a.Lineage.AdmissionID)
+		if err != nil || current.ID != a.Lineage.AdmissionID || a.Lineage.ProfileRevisionID != "" && a.Lineage.ProfileRevisionID != current.ProfileRevisionID || !current.Rights.AllowSimulationExport {
 			return b, apperr.Conflict("source admission or export rights changed; create another preview")
 		}
 		if a.Lineage.ArtifactID != "" {
@@ -125,7 +125,8 @@ func (s *Service) freeze(ctx context.Context, in BuildInput) (Bundle, error) {
 	if err = b.Validate(now, false); err != nil {
 		return b, apperr.Validation(err.Error())
 	}
-	return b, s.persist(ctx, b)
+	err = s.persist(ctx, &b)
+	return b, err
 }
 func (s *Service) addImagery(ctx context.Context, b *Bundle, in BuildInput) error {
 	if len(in.AssessmentRevisionIDs) > 0 {
@@ -186,20 +187,21 @@ func (s *Service) addImagery(ctx context.Context, b *Bundle, in BuildInput) erro
 		return nil
 	}
 	makeAsset := func(scene imagery.Scene, id, kind string, raw []byte, extent publicingest.Bounds, lineage ImageryLineage, expiry *time.Time) (Asset, error) {
-		current, err := s.images.Artifacts.Admission(ctx, scene.SourceID)
+		current, err := s.images.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)
 		if err != nil {
 			return Asset{}, err
 		}
 		if !scene.Rights.AllowSimulationExport || !current.Rights.AllowSimulationExport {
 			return Asset{}, apperr.Forbidden("original and current source rights must allow simulation export")
 		}
-		if scene.AcquiredAt.Before(in.TimeWindow.From) || scene.AcquiredAt.After(in.TimeWindow.To) {
+		if scene.AcquiredAt.Before(in.TimeWindow.From) || scene.AcquiredAt.After(in.TimeWindow.To) || in.Scope != nil && !scene.AcquiredAt.Before(in.TimeWindow.To) {
 			return Asset{}, apperr.Validation("scene acquisition must be within the selected UTC interval")
 		}
 		if !in.ReferenceOnly && !current.Rights.RetainRaw {
 			return Asset{}, apperr.Forbidden("current source rights do not permit retained package copies")
 		}
 		lineage.AdmissionID = current.ID
+		lineage.ProfileRevisionID = current.ProfileRevisionID
 		lineage.CurrentRights = current.Rights
 		for _, limit := range []*time.Time{current.Rights.ExpiresAt, scene.Rights.ExpiresAt} {
 			if limit != nil && (expiry == nil || limit.Before(*expiry)) {
@@ -323,12 +325,11 @@ func (s *Service) validateFrozenDependencies(ctx context.Context, tx pgx.Tx, b B
 		if asset.Lineage == nil {
 			continue
 		}
-		var doc []byte
-		err := tx.QueryRow(ctx, `SELECT a.document FROM source_connector_state c JOIN source_admissions a ON a.id=c.admission_id AND a.scope_id=c.scope_id JOIN sources s ON s.id=c.source_id AND s.scope_id=c.scope_id WHERE c.source_id=$1 AND s.status='active' FOR SHARE OF c,s`, asset.SourceID).Scan(&doc)
-		var admission publicingest.Admission
-		if err != nil || json.Unmarshal(doc, &admission) != nil || admission.ID != asset.Lineage.AdmissionID || !admission.Enabled || !admission.Rights.AllowSimulationExport || (admission.Rights.ExpiresAt != nil && !admission.Rights.ExpiresAt.After(time.Now())) {
-			return apperr.Conflict("source admission or export rights changed; create another preview")
+		admission, err := publicingest.LockPolicy(ctx, tx, asset.SourceID, asset.Lineage.AdmissionID)
+		if err != nil || !admission.Rights.AllowSimulationExport || asset.Lineage.ProfileRevisionID != "" && asset.Lineage.ProfileRevisionID != admission.ProfileRevisionID {
+			return apperr.Conflict("source profile or export rights changed; create another preview")
 		}
+
 		var state, hash string
 		var until time.Time
 		if err := tx.QueryRow(ctx, `SELECT state,sha256,retain_until FROM artifacts WHERE id=$1 FOR SHARE`, asset.Lineage.ArtifactID).Scan(&state, &hash, &until); err != nil || state != "READY" || hash != asset.Lineage.ArtifactSHA256 || !until.After(time.Now()) {

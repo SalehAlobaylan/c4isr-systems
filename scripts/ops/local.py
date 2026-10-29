@@ -22,7 +22,21 @@ WINDOWS = os.name == 'nt'
 EXE = '.exe' if WINDOWS else ''
 PYTHON = ROOT / '.venv-recovery' / ('Scripts/python.exe' if WINDOWS else 'bin/python')
 COMPOSE = ['docker', 'compose', '-f', 'deployments/docker-compose.yml', '-f', 'deployments/local/docker-compose.yml']
-APPS = ['c4isr-server', 'emad-local', 'emad-imagery', 'emad-assets', 'emad-recordings', 'emad-runtime', 'emad-connectors']
+ALL_APPS = ['c4isr-server', 'emad-local', 'emad-imagery', 'emad-delivery', 'emad-assets', 'emad-recordings', 'emad-runtime', 'emad-connectors']
+
+
+def product_profile(cfg):
+    value = cfg.get('profile', 'map')
+    if value not in ['map', 'historical-full']: raise RuntimeError('Profile must be map or historical-full')
+    return value
+
+
+def apps_for(cfg):
+    return ALL_APPS if product_profile(cfg) == 'historical-full' else [a for a in ALL_APPS if a not in ['emad-assets', 'emad-recordings', 'emad-runtime']]
+
+
+def analyst_for(cfg):
+    return 'local-map-analyst' if product_profile(cfg) == 'map' else 'local-analyst'
 
 
 def write_new(path, data):
@@ -49,7 +63,7 @@ def configuration():
         os.chmod(PRIVATE,0o700)
     cfgfile = PRIVATE / 'config.json'
     if not cfgfile.exists():
-        write_new(cfgfile, json.dumps({'schema': 'emad.local.v1', 'apiPort': 8081, 'webPort': 5173,
+        write_new(cfgfile, json.dumps({'schema': 'emad.local.v1', 'profile': 'map', 'apiPort': 8081, 'webPort': 5173,
                                       'bucket': 'emad-local', 'region': 'garage',
                                       'accessKey': 'GK' + secrets.token_hex(16),
                                       'secretKey': secrets.token_hex(32), 'rpcSecret': secrets.token_hex(32)}, indent=2))
@@ -72,6 +86,8 @@ def configuration():
 
 def environment(cfg):
     env = os.environ.copy()
+    env['C4ISR_PRODUCT_PROFILE'] = product_profile(cfg)
+    env['EMAD_INSTALLER_PROFILE'] = 'local-source-admin' if product_profile(cfg) == 'map' else 'local-analyst'
     env.update({'C4ISR_ENV': 'development', 'C4ISR_DATABASE_AUTH': 'true', 'C4ISR_AUTH_REQUIRED': 'true',
                 'C4ISR_HTTP_ADDR': '127.0.0.1:' + str(cfg['apiPort']),
                 'C4ISR_ARTIFACT_S3_ENDPOINT': 'http://127.0.0.1:3900',
@@ -85,8 +101,11 @@ def environment(cfg):
     # capabilities use separately provisioned database identities.
     env.setdefault('C4ISR_AUTH_TOKENS', 'operator-01=dev-operator-token')
     descriptor = ROOT / 'bin/runtime.json'
-    if descriptor.exists():
+    if product_profile(cfg) == 'historical-full' and descriptor.exists():
         env['C4ISR_RUNTIME_BUILDS'] = json.loads(descriptor.read_text())['runtimeBuild']
+    if product_profile(cfg) == 'map':
+        env.pop('C4ISR_RUNTIME_BUILDS', None)
+        env.pop('C4ISR_RUNTIME_BUILDS_FILE', None)
     sys.path.insert(0, str(ROOT / 'scripts/data'))
     from local_connectors import configure
     entries, states = configure(env)
@@ -168,12 +187,13 @@ def setup(cfg, infrastructure_only=False):
     run([*COMPOSE, 'up', '-d'])
     run(['task', 'db:migrate'], env=env)
     (ROOT / 'bin').mkdir(exist_ok=True)
-    for app in APPS:
+    for app in apps_for(cfg):
         run(['go', 'build', '-trimpath', '-o', ROOT / 'bin' / (app + EXE), './apps/' + app])
-    result = run([ROOT / 'bin' / ('emad-runtime' + EXE), '-describe'], capture_output=True, text=True)
-    (ROOT / 'bin/runtime.json').write_text(result.stdout, encoding='utf-8')
+    if product_profile(cfg) == 'historical-full':
+        result = run([ROOT / 'bin' / ('emad-runtime' + EXE), '-describe'], capture_output=True, text=True)
+        (ROOT / 'bin/runtime.json').write_text(result.stdout, encoding='utf-8')
     env = environment(cfg)
-    run([ROOT / 'bin' / ('emad-local' + EXE), '-credentials-dir', CREDS], env=env)
+    run([ROOT / 'bin' / ('emad-local' + EXE), '-credentials-dir', CREDS, '-profile', product_profile(cfg)], env=env)
     ensure_python()
     # A successful bucket write/read, rather than a listening TCP port, proves
     # Garage's asynchronous key/bucket initialization finished.
@@ -192,9 +212,11 @@ def setup(cfg, infrastructure_only=False):
         api = spawn([ROOT / 'bin' / ('c4isr-server' + EXE)], env, 'api')
         try:
             wait_api(cfg, api)
-            run([PYTHON, ROOT / 'scripts/data/install_local.py'], env=env)
+            run([PYTHON, ROOT / 'scripts/data/install_local.py', *(['--public-only'] if product_profile(cfg) == 'map' else [])], env=env)
+            run([PYTHON, ROOT / 'scripts/data/classify_content.py', '--apply'], env=env)
         finally:
             stop(api)
+    (PRIVATE/'config.json').write_text(json.dumps(cfg,indent=2),encoding='utf-8')
     print(('Infrastructure and identities ready; content installation was skipped.' if infrastructure_only else 'Local setup complete.')+' Start the application with: task dev')
 
 
@@ -215,11 +237,13 @@ def develop(cfg):
         if not port_free(port):
             raise RuntimeError(f'Port {port} is occupied. Stop its existing development process or set a different port in private/local/config.json.')
     env = environment(cfg)
-    if not (CREDS / 'local-analyst.token').exists():
+    if not (CREDS / (analyst_for(cfg)+'.token')).exists():
         raise RuntimeError('Run task local:setup first')
     # The existing Vite injection is restricted to this local development
     # process. Production builds receive no credential or private config.
-    env['VITE_API_TOKEN'] = (CREDS / 'local-analyst.token').read_text().strip()
+    env['VITE_API_TOKEN'] = (CREDS / (analyst_for(cfg)+'.token')).read_text().strip()
+    env['VITE_LOCAL_AUTO_ENTRY'] = 'true'
+    (PRIVATE/'config.json').write_text(json.dumps(cfg,indent=2),encoding='utf-8')
     supervisor={'pid':os.getpid(),'instance':secrets.token_hex(8)}
     (PRIVATE/'supervisor.json').write_text(json.dumps(supervisor),encoding='utf-8')
     (PRIVATE/'stop-request.json').unlink(missing_ok=True)
@@ -233,11 +257,12 @@ def develop(cfg):
     try:
         api = spawn([ROOT / 'bin' / ('c4isr-server' + EXE)], env, 'api'); processes.append(api)
         wait_api(cfg, api)
-        specs = [('worker-imagery', 'emad-imagery', 'imagery'), ('worker-assets', 'emad-assets', 'assets'),
-                 ('worker-recordings', 'emad-recordings', 'recordings')]
+        specs = [('worker-imagery', 'emad-imagery', 'imagery')]
+        if product_profile(cfg) == 'historical-full': specs += [('worker-assets', 'emad-assets', 'assets'), ('worker-recordings', 'emad-recordings', 'recordings')]
         for name, app, feature in specs:
             worker([ROOT/'bin'/(app+EXE),'-token-file',CREDS/(name+'.token')],name,feature)
-        worker([ROOT/'bin'/('emad-runtime'+EXE),'-worker','-url',f"http://127.0.0.1:{cfg['apiPort']}",'-token-file',CREDS/'worker-runtime.token'],'worker-runtime')
+        if product_profile(cfg) == 'historical-full': worker([ROOT/'bin'/('emad-runtime'+EXE),'-worker','-url',f"http://127.0.0.1:{cfg['apiPort']}",'-token-file',CREDS/'worker-runtime.token'],'worker-runtime')
+        worker([ROOT/'bin'/('emad-delivery'+EXE),'-token-file',CREDS/'local-map-analyst.token'],'worker-delivery')
         worker([PYTHON,ROOT/'scripts/data/capture_worker.py'],'worker-preparation')
         states = json.loads((PRIVATE / 'provider-status.json').read_text())
         from local_connectors import source_id
@@ -248,8 +273,12 @@ def develop(cfg):
         # Launch Vite directly with Node so terminating this supervisor does not
         # leave a package-manager child holding the frontend port.
         processes.append(spawn(['node', ROOT / 'apps/operator-ui/node_modules/vite/bin/vite.js', ROOT / 'apps/operator-ui', '--host', '127.0.0.1', '--port', str(cfg['webPort']), '--strictPort'], dict(env, INIT_CWD=str(ROOT)), 'web'))
+        # The bookmarked local address follows the normal UI/API lifecycle;
+        # it must not depend on a one-hour evaluation server or another API.
+        if cfg['webPort'] != 5198 and port_free(5198):
+            processes.append(spawn(['node', ROOT / 'scripts/ops/local_web_entry.mjs', '--port', '5198', '--target', f"http://127.0.0.1:{cfg['webPort']}"], env, 'web-entry'))
         print(f"EMAD: http://127.0.0.1:{cfg['webPort']} · API: http://127.0.0.1:{cfg['apiPort']}", flush=True)
-        print('Development analyst / author session. Other credentials: private/local/credentials. Logs: private/local/logs.', flush=True)
+        print('Scoped '+product_profile(cfg)+' session. Other credentials: private/local/credentials. Logs: private/local/logs.', flush=True)
         while not done.wait(1):
             marker=PRIVATE/'stop-request.json'
             if marker.exists():
@@ -298,14 +327,16 @@ def doctor(cfg):
     run(['docker', 'info', '--format', '{{.ServerVersion}}'])
     run([*COMPOSE, 'ps'])
     try:
-        token = (CREDS / 'local-analyst.token').read_text().strip()
+        token = (CREDS / (analyst_for(cfg)+'.token')).read_text().strip()
         report = request(cfg, '/api/v1/platform/readiness', token, resource='PUBLIC_EVIDENCE')
         print(json.dumps(report, indent=2))
-        print('Simulation readiness:')
-        print(json.dumps(request(cfg,'/api/v1/platform/readiness',token,resource='EXERCISE_INPUT'),indent=2))
+        if product_profile(cfg) == 'historical-full':
+            print('Historical simulation readiness:')
+            print(json.dumps(request(cfg,'/api/v1/platform/readiness',token,resource='EXERCISE_INPUT'),indent=2))
         print('Shared API address: 127.0.0.1:'+str(cfg['apiPort'])+' (explicit IPv4, independent of localhost resolution)')
         invalid=[]
         for file in sorted(CREDS.glob('*.token')):
+            if product_profile(cfg) == 'map' and file.stem in ['local-analyst','local-author-alias','local-reviewer','local-operator','local-evaluator','worker-assets','worker-runtime','worker-recordings']: continue
             try:
                 identity=request(cfg,'/api/v1/auth/me',file.read_text(encoding='utf-8').strip())
                 print(file.stem+': VALID · '+identity['principal']['kind']+' · '+identity['resource']['partition'])
@@ -320,8 +351,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['setup', 'dev', 'doctor','stop'])
     parser.add_argument('--infrastructure-only', action='store_true')
+    parser.add_argument('--profile', choices=['map','historical-full'], default=os.environ.get('C4ISR_PRODUCT_PROFILE','map'))
     args = parser.parse_args()
     cfg = configuration()
+    cfg['profile'] = args.profile
     if args.action == 'setup': setup(cfg, args.infrastructure_only)
     elif args.action == 'dev': develop(cfg)
     elif args.action=='stop':stop_development(cfg)

@@ -21,13 +21,14 @@ import (
 type Metrics struct {
 	startedAt time.Time
 
-	requestCount sync.Map // requestKey -> *counter
-	requestBytes sync.Map // requestKey -> *counter
-	eventCount   sync.Map // topic -> *counter
-	valueCount   sync.Map // metric name -> *counter
-	requestNanos atomic.Uint64
-	requestTotal atomic.Uint64
-	databaseUp   atomic.Int64 // -1 means no health probe has completed yet.
+	requestCount     sync.Map // requestKey -> *counter
+	requestBytes     sync.Map // requestKey -> *counter
+	operationLatency sync.Map // bounded method/operation/status class -> histogram
+	eventCount       sync.Map // topic -> *counter
+	valueCount       sync.Map // metric name -> *counter
+	requestNanos     atomic.Uint64
+	requestTotal     atomic.Uint64
+	databaseUp       atomic.Int64 // -1 means no health probe has completed yet.
 
 	observationsReceived atomic.Uint64
 	observationsRejected atomic.Uint64
@@ -96,6 +97,7 @@ func (m *Metrics) ObserveRequest(method, path string, status int, bytes int, dur
 	add(&m.requestBytes, key, uint64(maxInt(bytes, 0)))
 	m.requestTotal.Add(1)
 	m.requestNanos.Add(uint64(maxInt64(duration.Nanoseconds(), 0)))
+	m.observeOperation(method, path, status, duration)
 }
 
 func boundedMethod(method string) string {
@@ -379,6 +381,7 @@ func (m *Metrics) Handler() http.HandlerFunc {
 		_, _ = fmt.Fprint(w, "# HELP c4isr_http_request_duration_seconds_count Number of completed request durations.\n")
 		_, _ = fmt.Fprint(w, "# TYPE c4isr_http_request_duration_seconds_count counter\n")
 		_, _ = fmt.Fprintf(w, "c4isr_http_request_duration_seconds_count %d\n", m.requestTotal.Load())
+		m.writeOperationLatencies(w)
 	}
 }
 

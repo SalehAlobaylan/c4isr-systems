@@ -1,0 +1,139 @@
+.scope-workflow { min-width:0; overflow-wrap:anywhere; }
+.scope-workflow form { display:grid; gap:10px; margin-block:14px; }
+.scope-workflow label:not(:has(input[type=checkbox])) { display:grid; align-items:start; gap:5px; margin-block:7px; }
+.scope-workflow input:not([type=checkbox]),.scope-workflow textarea,.scope-workflow select { width:100%; min-width:0; padding:8px; border:1px solid var(--emad-border-subtle); border-radius:4px; background:var(--emad-surface-base,#fff); color:var(--emad-text-primary); font:inherit; }
+.scope-workflow textarea { min-height:84px; resize:vertical; }
+.scope-workflow fieldset { display:grid; gap:8px; min-width:0; padding:12px; margin-block:12px; border:1px solid var(--emad-border-subtle); border-radius:5px; }
+.scope-workflow legend { padding-inline:5px; font-weight:600; }
+.scope-workflow button { max-width:100%; white-space:normal; margin:3px 6px 3px 0; padding:7px 10px; border:1px solid var(--emad-border-subtle); border-radius:4px; }
+.scope-workflow button:disabled { opacity:.5; }
+.scope-workflow nav,.scope-workflow .ux-actions { display:flex; flex-wrap:wrap; gap:5px; }
+.scope-workflow article { padding-block:10px; border-bottom:1px solid var(--emad-border-subtle); }
+
+.coverage-summary{position:relative;z-index:5;background:var(--emad-surface-panel,#101722);border:1px solid var(--emad-border-default,#344352);padding:.4rem .7rem;font-size:.8rem;max-width:100%;}.coverage-summary>summary{cursor:pointer}.coverage-summary>.coverage-details{max-height:45vh;overflow:auto;overscroll-behavior:contain;padding:.6rem 0}.coverage-details>details{border-top:1px solid var(--emad-border-default,#344352);padding:.5rem 0}.coverage-details>details>summary{cursor:pointer}.coverage-details p{overflow-wrap:anywhere}.coverage-details button{margin:.2rem}
+
+/* Narrow docks and text enlargement keep actions in normal document flow. */
+.catalog-paging{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;min-width:0}
+.catalog-paging p{flex-basis:100%;overflow-wrap:anywhere}
+.atlas-area-name{font-family:"IBM Plex Sans Arabic","IBM Plex Sans",sans-serif;background:var(--emad-surface-panel);color:var(--emad-text-primary);padding:.25rem .5rem;border:1px solid var(--emad-text-secondary);border-radius:.3rem;max-width:15rem;overflow-wrap:anywhere;pointer-events:none}
+bdi{unicode-bidi:isolate}
+:where(button,input,select,textarea,a):focus-visible{outline:3px solid var(--emad-map-selection,#ffbf69);outline-offset:3px}
+@media(max-width:430px),(max-height:440px){.scope-workflow input,.scope-workflow textarea,.scope-workflow select,.atlas-workbench-instance select{max-width:100%;min-width:0}.atlas-workbench-instance{overflow-wrap:anywhere}.atlas-map-footer{flex-wrap:wrap}.catalog-paging button{min-height:44px}.atlas-area-name{max-width:9rem}}
+
+/* Short displays and enlarged text use vertical page scrolling so the scope,
+   toolbar and draft cannot consume the workbench's entire scroll viewport. */
+@media(max-width:430px),(max-height:440px){
+ .aegis-main:has(.atlas-workspace){overflow:hidden}
+ .atlas-workspace{height:100%;min-height:0}
+ .atlas-stage{min-height:0;flex:1 1 0}
+ .atlas-map-region{min-height:100px}
+ .atlas-dock.atlas-unified-dock:not([data-size=collapsed]){flex-basis:min(55%,400px);max-height:calc(100% - 100px)}
+ .atlas-dock-body{min-height:0}
+ .coverage-summary{overflow-wrap:anywhere}
+}
+
+/* Task-first map controls. Kept beside the unlayered scope styles so the
+   viewport rules do not lose to legacy minimum-height declarations. */
+.atlas-workspace { min-width:0; height:100%; overflow:hidden; }
+.atlas-contextbar { gap:12px; padding:10px 16px; }
+.atlas-scope-actions { min-width:0; margin-left:auto; }
+.atlas-scope-actions > button[aria-label="Time & filters"] { text-align:left; max-width:290px; }
+.atlas-period-label { display:flex; flex-direction:column; align-items:flex-start; gap:1px; min-width:0; }
+.atlas-period-label strong { font-size:13px; font-weight:600; }
+.atlas-period-label small { font-size:11px; color:var(--emad-text-secondary); white-space:normal; }
+.atlas-task-actions { display:flex; flex-shrink:0; align-items:center; justify-content:space-between; gap:16px; padding:10px 16px; border-bottom:1px solid var(--emad-border-subtle); background:var(--emad-surface-panel); }
+.atlas-task-actions > div:first-child { display:flex; flex-direction:column; gap:2px; }
+.atlas-task-actions strong { font-size:15px; font-weight:600; }
+.atlas-task-actions span { font-size:12px; color:var(--emad-text-secondary); }
+.atlas-task-buttons { display:flex; align-items:center; gap:8px; }
+.atlas-task-buttons button { min-height:40px; }
+.atlas-task-buttons button[aria-pressed=true] { background:var(--emad-surface-nav);color:var(--emad-text-on-dark);border-color:var(--emad-surface-nav); }
+.atlas-breadcrumb { min-width:0; }
+.atlas-breadcrumb strong { overflow:hidden; text-overflow:ellipsis; }
+.atlas-data-notice { position:absolute; top:16px; left:16px; z-index:3; max-width:min(340px,calc(100% - 72px)); background:var(--emad-surface-panel); border:1px solid var(--emad-border-subtle); border-left:3px solid var(--emad-status-caution); border-radius:6px; padding:12px 14px; font-size:13px; }
+.atlas-data-notice > strong { font-weight:600; }
+.atlas-data-notice p { color:var(--emad-text-secondary); line-height:1.5; margin:6px 0 10px; overflow-wrap:anywhere; }
+.atlas-data-notice > div { display:flex; flex-wrap:wrap; gap:8px; }
+.atlas-data-notice details { margin-top:8px; font-size:12px; }
+.atlas-data-notice summary { cursor:pointer; color:var(--emad-text-secondary); }
+.atlas-data-notice details p { max-height:100px; overflow:auto; }
+.atlas-workbench-scope { display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding:10px 16px; font-size:12px; }
+.atlas-workbench-scope > span { flex:1 1 220px; line-height:1.5; }
+.atlas-workbench-scope > button { flex-shrink:0; }
+.atlas-content-guidance { margin-bottom:10px; font-size:12px; color:var(--emad-text-secondary); }
+.atlas-content-guidance summary { cursor:pointer; padding:6px 0; }
+.atlas-focused-workbench { display:none; }
+.scope-workflow > h2 { font-size:20px; font-weight:600; margin-bottom:6px; }
+.scope-workflow > p { color:var(--emad-text-secondary); font-size:13px; line-height:1.6; margin-bottom:12px; }
+.scope-workflow > nav[aria-label="Saved investigations"] { margin-block:12px; }
+.scope-workflow > nav[aria-label="Saved investigations"] > button { width:100%; min-height:52px; text-align:left; justify-content:flex-start; padding:10px 12px; }
+.scope-workflow > .ux-actions { margin-left:0; padding-bottom:12px; border-bottom:1px solid var(--emad-border-subtle); }
+.scope-workflow label:has(input[type=checkbox]) { display:flex; align-items:center; gap:8px; min-height:40px; font-size:13px; }
+.atlas-stage[data-panel] .atlas-dock > .map-preview-header { height:52px; min-height:52px; }
+.atlas-stage[data-panel] > .atlas-dock[data-size=collapsed] { flex-basis:52px; min-height:52px; max-height:52px; }
+.atlas-stage[data-panel] .map-preview-header button,.atlas-stage[data-panel] .atlas-toolbar-menu > summary { min-height:40px; font-size:13px; }
+@media(max-width:760px) {
+ .atlas-contextbar { display:grid; grid-template-columns:minmax(0,1fr) auto; min-height:0; gap:8px; padding:8px 10px; }
+ .atlas-search { grid-column:1/-1; width:100%; min-width:0; }
+ .atlas-search > input { min-height:44px; font-size:14px; }
+ .atlas-breadcrumb { order:0; width:auto; grid-column:1; grid-row:2; font-size:12px; }
+ .atlas-breadcrumb > strong { max-width:150px; }
+ .atlas-scope-actions { grid-column:2; grid-row:2; }
+ .atlas-scope-actions > button[aria-label="Time & filters"] { max-width:150px; padding:5px 8px; min-height:44px; }
+ .atlas-period-label small { font-size:10px; }
+ .atlas-period-label strong { font-size:12px; }
+ .atlas-focus-toggle { display:none; }
+ .atlas-task-actions { padding:8px 10px; }
+ .atlas-task-actions > div:first-child { display:none; }
+ .atlas-task-buttons { width:100%; gap:6px; }
+ .atlas-task-buttons button { flex:1; min-height:44px; padding:6px 8px; font-size:12px; }
+ .coverage-summary { padding:5px 10px; font-size:12px; }
+ .coverage-summary > summary { min-height:30px; display:flex; align-items:center; }
+ .atlas-data-notice { top:10px; left:10px; padding:10px; max-width:calc(100% - 62px); font-size:12px; max-height:calc(100% - 45px); overflow:auto; }
+ .atlas-data-notice p { margin:4px 0 8px; }
+ .atlas-stage[data-panel] .atlas-workspace-picker { flex:1 1 115px; max-width:145px; min-width:100px; font-size:12px; }
+ .atlas-stage[data-panel] .map-preview-header button,.atlas-stage[data-panel] .atlas-toolbar-menu > summary { min-height:44px; padding:6px; font-size:12px; }
+ .atlas-stage[data-panel] .atlas-situation-menu > summary > span::after { content:'Status'; font-size:12px; }
+ .atlas-stage[data-panel] .atlas-dock > .map-preview-header { gap:2px; padding:2px 6px; }
+ .atlas-stage[data-panel] > .atlas-dock.atlas-unified-dock:not([data-size=collapsed]) { flex-basis:55%; max-height:calc(100% - 100px); }
+ .atlas-stage[data-panel][data-dock=full] > .atlas-dock.atlas-unified-dock { flex-basis:100%; max-height:100%; }
+ .atlas-map-footer { font-size:10px; }
+ .atlas-workbench-scope { padding:8px 12px; }
+}
+@media(max-height:500px) {
+ .atlas-task-actions > div:first-child { display:none; }
+ .atlas-task-actions { padding-block:4px; }
+ .atlas-stage[data-panel][data-dock=full] > .atlas-dock { max-height:100%; }
+}
+
+.atlas-recovery-details > summary { padding-block:5px; }
+@media(min-width:761px) { .atlas-recovery-details > summary { display:none; } }
+@media(max-width:760px) {
+ .atlas-stage[data-panel][data-dock=full] .dock-tools > button[aria-label="Close workbench"] { display:block; min-width:44px; }
+ .atlas-stage[data-panel][data-dock=full] .dock-tools > button[aria-expanded] { display:none; }
+ .atlas-stage[data-panel][data-dock=full] .atlas-dock > .map-preview-header { border-bottom:1px solid var(--emad-border-subtle); }
+ .atlas-workbench-scope > span { flex-basis:180px; }
+}
+
+@media(max-height:500px) {
+ .atlas-period-label small { display:none; }
+ .atlas-map-region { min-height:60px; }
+ .atlas-stage[data-panel][data-dock=full] > .atlas-dock.atlas-unified-dock { position:fixed; inset:98px 0 25px; z-index:50; max-width:100%; max-height:none; }
+}
+
+/* The case journey follows question → evidence → review → delivery. */
+.case-workflow-nav { position:sticky; top:0; z-index:4; display:flex; flex-wrap:wrap; gap:4px; padding:8px 0; margin-bottom:8px; background:var(--emad-surface-panel); border-bottom:1px solid var(--emad-border-subtle); }
+.case-workflow-nav button { font-size:12px; min-height:40px; margin:0; }
+.scope-workflow [id^="case-"] { scroll-margin-top:100px; }
+.case-evidence-results { list-style:none; padding:0; margin-block:10px; }
+.case-evidence-results > li { display:flex; align-items:flex-start; gap:12px; padding:12px 0; border-bottom:1px solid var(--emad-border-subtle); }
+.case-evidence-results > li > div { flex:1; min-width:0; }
+.case-evidence-results strong { font-size:13px; font-weight:600; }
+.case-evidence-results small { display:block; color:var(--emad-text-secondary); margin-top:3px; }
+.case-evidence-results details { font-size:11px; margin-top:6px; color:var(--emad-text-secondary); }
+.case-evidence-results code { overflow-wrap:anywhere; }
+.workflow-next-action { padding:10px 12px; margin-block:10px; background:var(--emad-surface-inset); border-radius:5px; color:var(--emad-text-secondary); font-size:13px; line-height:1.6; }
+.scope-workflow [aria-label="Attached case evidence"] { padding:10px 0; }
+.scope-workflow [aria-label="Attached case evidence"] h3 { font-size:13px; font-weight:600; }
+.scope-workflow [aria-label="Unsent case recovery"] { padding:12px; border:1px solid var(--emad-status-caution); border-radius:5px; margin-block:12px; }
+@media(max-width:760px) { .case-workflow-nav button { min-height:44px; flex:1 1 40%; } }

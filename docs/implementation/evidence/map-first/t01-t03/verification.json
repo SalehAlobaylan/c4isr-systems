@@ -1,0 +1,334 @@
+{
+  "schema": "emad.map-first-t01-t03.verification.v1",
+  "recordedAt": "2026-10-25T18:56:09.512693+00:00",
+  "baselineCommit": "a6d1d22f34692faea31db58e4a6318c539c3321a",
+  "sourceState": "Uncommitted working tree",
+  "taskState": "IMPLEMENTED; full phase not qualified",
+  "host": "Windows",
+  "image": {
+    "tag": "emad-delivery:map-first-t01-t03",
+    "id": "sha256:5d27da7e272b5eccf07acccd89f8fb0cab37accaca0a30a00b3d66e62385e0aa",
+    "profile": "map"
+  },
+  "checks": [
+    {
+      "id": "go",
+      "command": "go test ./...",
+      "result": "PASS",
+      "scope": "Unit/compile suite; Docker integration tests separately enabled below"
+    },
+    {
+      "id": "vet-format",
+      "command": "go vet ./...; gofmt -l apps internal",
+      "result": "PASS"
+    },
+    {
+      "id": "ui",
+      "command": "pnpm --dir apps/operator-ui build",
+      "result": "PASS",
+      "scope": "Typecheck and production build; existing chunk-size advisory"
+    },
+    {
+      "id": "browser-new",
+      "command": "pnpm --dir apps/operator-ui exec playwright test tests/e2e/map-first-tasks.spec.ts tests/e2e/product-entry.spec.ts tests/e2e/navigation-browser.spec.ts --project=no-token --workers=2",
+      "result": "PASS",
+      "cases": 7,
+      "scope": "Executed together in the final combined 15-case run."
+    },
+    {
+      "id": "browser-existing",
+      "command": "pnpm --dir apps/operator-ui exec playwright test tests/e2e/map-first-tasks.spec.ts tests/e2e/product-entry.spec.ts tests/e2e/navigation-browser.spec.ts --project=no-token --workers=2",
+      "result": "PASS",
+      "cases": 8,
+      "scope": "Executed together in the final combined 15-case run."
+    },
+    {
+      "id": "integration-new",
+      "command": "go test -count=1 -run 'TestMapFirst' -v ./internal/integration",
+      "result": "PASS",
+      "cases": 2,
+      "scope": "PostGIS, Windows provisioning, actual Linux image API and metadata/count/access fixtures",
+      "environment": {
+        "C4ISR_TEST_INTEGRATION": "1",
+        "C4ISR_TEST_DELIVERY_IMAGE": "emad-delivery:map-first-t01-t03"
+      }
+    },
+    {
+      "id": "integration-existing",
+      "command": "go test -count=1 -run 'TestReferenceCatalogRealRegionTerrainAndIsolation|TestGeographicMapExactScopesHistoryAggregatesAndIsolation|TestP2CatalogueS3WorkerReproducibilityAndIndependentReview' -v ./internal/integration",
+      "result": "PASS",
+      "cases": 3,
+      "scope": "Real PostGIS and S3 fixtures",
+      "environment": {
+        "C4ISR_TEST_INTEGRATION": "1"
+      }
+    },
+    {
+      "id": "backfill",
+      "command": ".venv-recovery/Scripts/python.exe -m unittest discover -s scripts/data -p test_classify_content.py -v",
+      "result": "PASS",
+      "cases": 4
+    },
+    {
+      "id": "staging",
+      "command": "docker compose config --format json, map and historical-full profiles",
+      "result": "PASS",
+      "scope": "Temporary qualification config; no services deployed"
+    },
+    {
+      "id": "image",
+      "command": "docker build -f deployments/Dockerfile.workers --build-arg EMAD_PRODUCT_PROFILE=map -t emad-delivery:map-first-t01-t03 .",
+      "result": "PASS",
+      "scope": "Public executables, retained classification inventory and geospatial dependencies; simulation executables absent"
+    },
+    {
+      "id": "planning-ledger",
+      "command": "python scripts/ops/check_map_first_plan.py --self-test",
+      "result": "PASS",
+      "faultsInjected": 12,
+      "faultsMissed": 0,
+      "scope": "Progress does not convert partial assertion evidence into a candidate-qualified scenario pass."
+    },
+    {
+      "id": "contracts",
+      "command": "pnpm --dir apps/operator-ui contracts:generate",
+      "result": "PASS",
+      "scope": "Generated client byte hash unchanged after regeneration."
+    }
+  ],
+  "deployment": {
+    "sharedInstallationChanged": false,
+    "liveProviderAcquisitionPerformed": false,
+    "additionalGeographicCoverageQualified": false,
+    "independentHumanValidationPerformed": false
+  },
+  "screenshots": [
+    {
+      "path": "map-entry.png",
+      "meaning": "Mocked map-first Home"
+    },
+    {
+      "path": "capture-scope-cleared.png",
+      "meaning": "Mocked synthetic rectangular country fixture; capture inputs cleared"
+    }
+  ],
+  "sourceManifest": [
+    {
+      "path": "Taskfile.yml",
+      "sha256": "9ac1a38cfbec382dd5f6772ecf18d6d25e2bbe4d8dd6321aacac73c0955097c7"
+    },
+    {
+      "path": "api/openapi/openapi.yaml",
+      "sha256": "896e6a957beb94225ac75e401e68456335cb24e776551513e0eff9c7668beb5f"
+    },
+    {
+      "path": "apps/emad-local/main.go",
+      "sha256": "020ae393549ab9022a4bab5b5dae085da68077ee3529afbd3da12c619074087d"
+    },
+    {
+      "path": "apps/operator-ui/src/components/WorkspaceProvider.tsx",
+      "sha256": "f54a11bdd60f5c2b509fad07044a65e3946b7168932bbfb6778f77715e8fca3e"
+    },
+    {
+      "path": "apps/operator-ui/src/components/layout/AppShell.tsx",
+      "sha256": "6e7a84086fc2c7a04f554d177c53434e2991a5beb303d292cd585030f4b2d70d"
+    },
+    {
+      "path": "apps/operator-ui/src/components/layout/WorkspaceHeader.tsx",
+      "sha256": "5387cfdd04bef6fc25b1cc19dd1af83f4bf60952ed800fcbdecca3da67884946"
+    },
+    {
+      "path": "apps/operator-ui/src/components/navigation/WorkspaceChooser.tsx",
+      "sha256": "a692d5e8b1f1c3b49048a52b8c70592fe74789a3a0ca897b205f33d235a59c95"
+    },
+    {
+      "path": "apps/operator-ui/src/features/imagery/CaptureWorkbench.tsx",
+      "sha256": "56425e1595d71e2172ee66e21fefcf223850f13acfb3b63faeb7a1e11ce2994e"
+    },
+    {
+      "path": "apps/operator-ui/src/features/imagery/ContextExport.tsx",
+      "sha256": "a099a8412f2abd51c2c5d47b73c9c63aac334b39580a4e7461b92195afef8963"
+    },
+    {
+      "path": "apps/operator-ui/src/features/workspace/ContentPurposePanel.tsx",
+      "sha256": "052ba0188eddf68d30546a3bc7d0d60a6e95d1b9656040bdc585369d364b4830"
+    },
+    {
+      "path": "apps/operator-ui/src/features/workspace/MapWorkbenchChooser.tsx",
+      "sha256": "39b80a95ef745103eb9a61abe82342b3bd9248e252068d2b09f82e7b92e4f403"
+    },
+    {
+      "path": "apps/operator-ui/src/features/workspace/MapWorkbenches.tsx",
+      "sha256": "cd7b4fcdb4335f589c2d59c78c4c1d0cb18222f4593d50686cb1fee4c6c07f46"
+    },
+    {
+      "path": "apps/operator-ui/src/features/workspace/PublicAtlasWorkspace.tsx",
+      "sha256": "7d888072b033254c694e7ea2b1000995e7e04f1b4e323fa662b1f857e84d71b9"
+    },
+    {
+      "path": "apps/operator-ui/src/features/workspace/SystemsWorkspace.tsx",
+      "sha256": "d42c22d78f50a99c8f2c8cbc063752003cf72eef6cbb7ccbc84df09f485ee4a1"
+    },
+    {
+      "path": "apps/operator-ui/src/features/workspace/WorkbenchContext.tsx",
+      "sha256": "1f6f19ae38745b14589a667473f048047341aabf918f93ad48e82128c9625ae3"
+    },
+    {
+      "path": "apps/operator-ui/src/features/workspace/operationArea.ts",
+      "sha256": "47286e294fdd633ca4cbc96f9862097125f48a0667fb1141bf349380bb69f19d"
+    },
+    {
+      "path": "apps/operator-ui/src/features/workspace/usePublicOverview.ts",
+      "sha256": "548ea85cacbe3e7d88884e8945351b3b5c0b7fe0ea545bcaac0e7c13d2c8215c"
+    },
+    {
+      "path": "apps/operator-ui/src/lib/api.ts",
+      "sha256": "86a7e729eb4458f21e90d74b2ee74883e5953d4188f9c41e20d749d2e96288cc"
+    },
+    {
+      "path": "apps/operator-ui/src/lib/openapi.generated.ts",
+      "sha256": "b86750c0b517851a279b8ed101c04ae1f13eedeac56986dbb56a5aeffabb7041"
+    },
+    {
+      "path": "apps/operator-ui/src/routes/home.tsx",
+      "sha256": "f800befe9fa0e4b9770e157f54ad40dc37b90997fc44acb4d3bfe5ecbba2d283"
+    },
+    {
+      "path": "apps/operator-ui/src/routes/intelligence.tsx",
+      "sha256": "709ac9c924fde43bc8297be76ee2d3379f2051a07de63dfd1c5566d5e612a7de"
+    },
+    {
+      "path": "apps/operator-ui/tests/e2e/map-first-tasks.spec.ts",
+      "sha256": "175bdbe9c8787d819be8ade60474e9f917fb709a427c004b76054660899e25ec"
+    },
+    {
+      "path": "db/migrations/00045_content_purpose.sql",
+      "sha256": "c92a7bb310ecf4dbe2f1f1d6d656616439f524bb4fb46d09d8ba37dcc536d9c7"
+    },
+    {
+      "path": "deployments/Dockerfile.workers",
+      "sha256": "e3f533dee5092fc1bf80b825a6ee3f447aa659ff06f06f8a980e159938ca976b"
+    },
+    {
+      "path": "deployments/staging/delivery.yml",
+      "sha256": "c5d7e19e3e8a36c88c58c40942bda6e27daf985b17dc49ac87d90f5437c67d34"
+    },
+    {
+      "path": "deployments/staging/docker-compose.yml",
+      "sha256": "a710318b47f0391481f8f2d6be6ffeef9bd3c8038a9b9a970670fa78c2055c3c"
+    },
+    {
+      "path": "internal/app/app.go",
+      "sha256": "6737c855941c6b6ed6fde93a66487b750f6a98b590d509f96658f1690b111bd8"
+    },
+    {
+      "path": "internal/app/identity.go",
+      "sha256": "ffadad469f2297910f2d0c667b74b1b8dd8ea1756248ca4cf8983fc962a0a41a"
+    },
+    {
+      "path": "internal/assessments/review.go",
+      "sha256": "ca8d5bd264b2f6aa1d07928b14cfceeea6d4af2b7e9897277d117a14f0324495"
+    },
+    {
+      "path": "internal/contentpurpose/service.go",
+      "sha256": "cdd800a8bd81200c12893666d28e5597b122451e31c933926be08b8e1e39a7dd"
+    },
+    {
+      "path": "internal/contextpackage/service.go",
+      "sha256": "604d98727305a18eb4fdd5467122404263ea8ae02fbd0624662955570805be4e"
+    },
+    {
+      "path": "internal/imagery/captures.go",
+      "sha256": "451e4aa098611e5ba30430e777a7e0b627f3f46db32b6f2ed17f33bf349c32df"
+    },
+    {
+      "path": "internal/imagery/jobs.go",
+      "sha256": "d065b64bd82feb7bf4e3330ad16d7611f4210d3a43aaae6fb7a9130ebeeb77fe"
+    },
+    {
+      "path": "internal/imagery/scenes.go",
+      "sha256": "8cbc143a26f4d77d0f8dff6e2107b9b6cd71bc1e47720a882bd1b2a265c30bb5"
+    },
+    {
+      "path": "internal/integration/map_first_tasks_test.go",
+      "sha256": "753777e6cf7bd345fe1da8cf76adc05a0d32939521cf46326a3265afac97c317"
+    },
+    {
+      "path": "internal/platform/access/content_view.go",
+      "sha256": "44c9e21b1bb3388b0cff6b5751fe4ff77e70272c5a280c71579c5a3836c84825"
+    },
+    {
+      "path": "internal/platform/config/config.go",
+      "sha256": "28b73391276f664d8faaa607b3f1047a09b508863f4dcc54cd4fe332f648f87c"
+    },
+    {
+      "path": "internal/platform/db/scoped.go",
+      "sha256": "4b6a2415dc935bc54ee7bee9d714cae9374deddcc93b1594851b4041dfbd474a"
+    },
+    {
+      "path": "internal/platform/httpx/middleware.go",
+      "sha256": "5c8bd6c1bfe0c76f04bdc1ff8a3a70f7ac02b2edf5a6e29455a729276377eb26"
+    },
+    {
+      "path": "internal/platform/readiness/http.go",
+      "sha256": "04021bab1114d4ac24f8c469cfa93801ddea0bd55df439d501a2b92889a69977"
+    },
+    {
+      "path": "internal/reference/map.go",
+      "sha256": "53daef466c894bd3b0438dfb34a98271764e42dad5ad5e4f46b423dbff111751"
+    },
+    {
+      "path": "internal/reference/service.go",
+      "sha256": "e826cf0804042f262c49d493589a03406598e820bf8dc34f07451aa731e06e91"
+    },
+    {
+      "path": "internal/reference/viewport.go",
+      "sha256": "a76470bd7444c9552a1c7aa6d15d84623264a737892d50cccbc1dcf4188ad455"
+    },
+    {
+      "path": "scripts/data/classify_content.py",
+      "sha256": "654594ff4edef7caa5d14f0667db26f1e900a38213c86a52e5de2fa5286fda82"
+    },
+    {
+      "path": "scripts/data/install_local.py",
+      "sha256": "da31b5d458950398926cc45830be8fa687a5bf8ff3774eaa74d2880158be0e10"
+    },
+    {
+      "path": "scripts/data/test_classify_content.py",
+      "sha256": "09355dc23db1b5da50718ebfd7c3645057a5883e88a597b74fd73122c3b49a4c"
+    },
+    {
+      "path": "scripts/ops/check_delivery_package.py",
+      "sha256": "ef575e384991fb78434dd3b367b5e2a683517124aff258f312eed6839f6d6b47"
+    },
+    {
+      "path": "scripts/ops/check_map_first_plan.py",
+      "sha256": "40728db13b6bc8b8ec8897e060cbf92261a55ad5dee98e7da789ed5ba6f6d9b2"
+    },
+    {
+      "path": "scripts/ops/local.py",
+      "sha256": "b397ce9734b47e5f249c27c0eea90ee17492dd827d1da672eaf3b2b2f5affb50"
+    },
+    {
+      "path": "scripts/ops/paired_backup.py",
+      "sha256": "cf3e9c49033e0fc8ebae49dc35834c069aedf9e9749c331c755dcd59b995fda0"
+    }
+  ],
+  "sourceManifestSha256": "4376ae821bad6ca206ab2cfb6cbd877df9c981496e5b881cd83d78c0bd0fa2bd",
+  "remaining": [
+    "Apply reviewed upgrade and exact-ID purpose backfill to the shared installation through normal setup.",
+    "T04–T24, full scenario qualification, geographic/source expansion and independent users remain open."
+  ],
+  "handoffDate": "2026-10-26",
+  "handoffTimezone": "Asia/Riyadh",
+  "combinedBrowserRun": {
+    "command": "pnpm --dir apps/operator-ui exec playwright test tests/e2e/map-first-tasks.spec.ts tests/e2e/product-entry.spec.ts tests/e2e/navigation-browser.spec.ts --project=no-token --workers=2",
+    "passed": 15,
+    "failed": 0,
+    "durationSeconds": 19.3,
+    "ports": [
+      19173,
+      19174
+    ]
+  }
+}

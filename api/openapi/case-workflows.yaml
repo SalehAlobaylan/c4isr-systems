@@ -1,0 +1,385 @@
+paths:
+  /api/v1/investigations/{id}/review:
+    post:
+      operationId: CaseReviewInput
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: &id001
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaseReviewInput'
+      responses:
+        '201':
+          description: Exact saved revision operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CaseReviewEvent'
+  /api/v1/investigations/{id}/outputs:
+    post:
+      operationId: CompositeOutputInput
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompositeOutputInput'
+      responses:
+        '201':
+          description: Exact saved revision operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompositeOutput'
+  /api/v1/investigations/{id}/history:
+    get:
+      operationId: historyCaseWorkflow
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Authorized immutable history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: ./openapi.yaml#/components/schemas/InvestigationRevision
+                required:
+                - items
+  /api/v1/investigations/{id}/reviews:
+    get:
+      operationId: reviewsCaseWorkflow
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Authorized immutable history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CaseReviewEvent'
+                required:
+                - items
+  /api/v1/investigations/review-inbox:
+    get:
+      operationId: reviewinboxCaseWorkflow
+      parameters: []
+      responses:
+        '200':
+          description: Authorized immutable history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CaseReviewEvent'
+                required:
+                - items
+  /api/v1/outputs/{id}:
+    get:
+      operationId: getCompositeOutput
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Authorized output/tombstone
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompositeOutput'
+  /api/v1/outputs/{id}/content:
+    parameters:
+    - name: id
+      in: path
+      required: true
+      schema: *id001
+    put:
+      operationId: stageCompositeOutput
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Immutable render committed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompositeOutput'
+    get:
+      operationId: downloadCompositeOutput
+      parameters:
+      - name: distribution
+        in: query
+        schema:
+          type: boolean
+      responses:
+        '200':
+          description: Verified immutable bytes
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /api/v1/outputs/{id}/expire:
+    post:
+      operationId: expireCompositeOutput
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema: *id001
+      responses:
+        '200':
+          description: Retained tombstone
+          content:
+            application/json:
+              schema: &id002
+                type: object
+                additionalProperties: true
+components:
+  schemas:
+    FindingInput:
+      type: object
+      properties:
+        id: *id001
+        expectedRevisionId: *id001
+        title: *id001
+        conclusion: *id001
+        confidence: *id001
+        uncertainty: *id001
+        purpose:
+          type: string
+          enum:
+          - working
+          - development
+          - acceptance
+          - unclassified
+        evidence:
+          type: array
+          items:
+            $ref: ./openapi.yaml#/components/schemas/InvestigationEvidence
+      required:
+      - title
+      - conclusion
+      - confidence
+      - uncertainty
+      - purpose
+      - evidence
+    FindingRevision:
+      allOf:
+      - $ref: '#/components/schemas/FindingInput'
+      - type: object
+        properties:
+          revisionId: *id001
+          previousId: *id001
+          actorHumanId: *id001
+          scopeHash: *id001
+          requiredSources:
+            type: array
+            items: *id001
+          recordedAt: *id001
+        required:
+        - revisionId
+        - actorHumanId
+        - scopeHash
+        - requiredSources
+        - recordedAt
+    CaseNotice:
+      type: object
+      properties:
+        kind: *id001
+        id: *id001
+        state: *id001
+        meaning: *id001
+      required:
+      - kind
+      - id
+      - state
+      - meaning
+    CaseReviewInput:
+      type: object
+      properties:
+        action: *id001
+        expectedRevisionId: *id001
+        expectedEventId: *id001
+        reviewerHumanId: *id001
+        reason: *id001
+        outputId: *id001
+      required:
+      - action
+      - expectedRevisionId
+      - expectedEventId
+      - reason
+    CaseReviewEvent:
+      type: object
+      properties:
+        id: *id001
+        caseId: *id001
+        revisionId: *id001
+        action: *id001
+        reviewerHumanId: *id001
+        actorHumanId: *id001
+        contentDigest: *id001
+        reason: *id001
+        outputId: *id001
+        renderSha256: *id001
+        recordedAt: *id001
+        contributors:
+          type: array
+          items: *id001
+        outputContentDigest:
+          type: string
+      required:
+      - id
+      - caseId
+      - revisionId
+      - action
+      - reviewerHumanId
+      - actorHumanId
+      - contentDigest
+      - reason
+      - contributors
+      - recordedAt
+    CompositeOutputInput:
+      type: object
+      properties:
+        requestKey: *id001
+        expectedRevisionId: *id001
+        purpose:
+          type: string
+          enum:
+          - internal
+          - distribution
+          - environment
+        sourceUses:
+          type: object
+          additionalProperties:
+            type: string
+            enum:
+            - reference
+            - imagery
+            - raw
+            - internal
+            - environment
+        assetIds:
+          type: array
+          items: *id001
+        rendererVersion: *id001
+        styleVersion: *id001
+        retainUntil:
+          type: string
+          format: date-time
+        expectedBytes:
+          type: integer
+          minimum: 1
+          maximum: 8388608
+      required:
+      - requestKey
+      - expectedRevisionId
+      - purpose
+      - sourceUses
+      - assetIds
+      - rendererVersion
+      - styleVersion
+      - retainUntil
+      - expectedBytes
+    CompositeOutput:
+      type: object
+      properties:
+        id: *id001
+        caseId: *id001
+        revisionId: *id001
+        contentDigest: *id001
+        state: *id001
+        renderSha256: *id001
+        mediaType: *id001
+        retainUntil: *id001
+        unavailableReason: *id001
+        bytes:
+          type: integer
+        manifest: *id002
+        creatorHumanId:
+          type: string
+        renderHumanId:
+          type: string
+        superseded:
+          type: boolean
+      required:
+      - id
+      - caseId
+      - revisionId
+      - contentDigest
+      - state
+      - renderSha256
+      - mediaType
+      - retainUntil
+      - unavailableReason
+      - bytes
+      - manifest
+      - creatorHumanId
+      - renderHumanId
+      - superseded
+    OutputPermissions:
+      type: object
+      properties:
+        internalAnalysis:
+          type:
+          - boolean
+          - 'null'
+        citation:
+          type:
+          - boolean
+          - 'null'
+        includedImagery:
+          type:
+          - boolean
+          - 'null'
+        rawDistribution:
+          type:
+          - boolean
+          - 'null'
+        geographicEnvironment:
+          type:
+          - boolean
+          - 'null'
+        metadataRetention:
+          type:
+          - boolean
+          - 'null'
+      required: []

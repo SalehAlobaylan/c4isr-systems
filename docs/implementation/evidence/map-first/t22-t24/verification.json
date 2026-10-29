@@ -1,0 +1,147 @@
+{
+  "schema": "emad.map-first-t22-t24.verification.v1",
+  "recordedAt": "2026-10-27T13:44:00.634972+00:00",
+  "clientDate": "2026-10-27",
+  "timezone": "Asia/Riyadh",
+  "sourceFingerprint": "fbfe4d4f3508f862641ffdac19622f5c0a8654e5038853574558c8409e645643",
+  "sourceManifest": "source-state.json",
+  "sourceFiles": 207,
+  "sourceState": "Combined uncommitted working tree; earlier increments preserved; no commit made",
+  "taskState": {
+    "T22": "IN_PROGRESS",
+    "T23": "IN_PROGRESS",
+    "T24": "IN_PROGRESS"
+  },
+  "releaseStatus": "NOT_QUALIFIED",
+  "checks": [
+    {
+      "id": "go",
+      "result": "PASS",
+      "command": "GOMAXPROCS=2 go test -p 1 ./...",
+      "reference": "go-tests.log",
+      "scope": "Docker opt-in tests skip in this unit run; actual focused integration is recorded separately."
+    },
+    {
+      "id": "vet",
+      "result": "PASS",
+      "command": "GOMAXPROCS=2 go vet -p 1 ./...",
+      "reference": "go-vet.log"
+    },
+    {
+      "id": "linux-build",
+      "result": "PASS",
+      "command": "GOOS=linux GOARCH=amd64 go build -p 1 ./apps/c4isr-server",
+      "reference": "linux-build.log",
+      "binary": {
+        "target": "linux/amd64",
+        "bytes": 29591573,
+        "sha256": "05bf61a0aeb5df0b12d17d033519d63d9f99fa71cbed25c831fef84073f1706e",
+        "execution": "Compiled only; assembled integration ran on this Windows host. No new Docker image or shared deployment claimed."
+      }
+    },
+    {
+      "id": "qualification-and-backup-policy-tests",
+      "result": "PASS",
+      "cases": 9,
+      "command": "python -m unittest discover -s scripts/ops -p test_map_first_qualification.py",
+      "reference": "qualification-tests.log",
+      "scope": "Failure-inclusive percentiles, interrupted runs, outcome mismatch, observed-record/alias/source/hash checks, expired/tombstoned inputs, required-object/tamper rejection and legacy/v2 manifest compatibility."
+    },
+    {
+      "id": "assembled-recovery-regressions",
+      "result": "PASS",
+      "cases": 9,
+      "reference": "integration-results.json",
+      "scope": "Real isolated pg_dump/restore and two private S3 servers, approved brief/intent/access/attempt preservation, save/review, stale lease/cancel, uncertain-upload/deletion/tombstones; synthetic protocol cases."
+    },
+    {
+      "id": "concurrent-workload-sample",
+      "result": "PASS",
+      "reference": "workload-current/result.json",
+      "actualDurationSeconds": 31.0149445,
+      "scope": "Five canonical analyst identities, ten actually run schedules, 1000 acceptance history rows and ten area labels; reduced dataset, not full geographic coverage. Full timing/24-hour/restart/user gates remain unqualified."
+    },
+    {
+      "id": "unobserved-template-negative-check",
+      "result": "REJECTED_AS_EXPECTED",
+      "reference": "observed-session-template-check.json",
+      "scope": "No observed sessions; actual independent humans and assistive technology remain NOT_RUN."
+    },
+    {
+      "id": "taskfile-and-syntax",
+      "result": "PASS",
+      "reference": "taskfile-check.log",
+      "scope": "Actual task --list YAML parse plus Python AST checks."
+    },
+    {
+      "id": "hygiene",
+      "result": "PASS",
+      "command": "git diff --check",
+      "scope": "Existing CRLF normalization notices only."
+    },
+    {
+      "id": "planning-harness",
+      "result": "PASS",
+      "reference": "planning-harness.json",
+      "faultsInjected": 12,
+      "faultsMissed": [],
+      "scope": "Planning consistency only; this checker does not execute application acceptance."
+    },
+    {
+      "id": "documentation-links-and-traceability",
+      "result": "PASS",
+      "scope": "UTF-8 active README/PRODUCT/brief/report/operations and every local link; 24 tasks, 18 gaps and 54 requirements; every cited evidence file exists; source fingerprint unchanged."
+    }
+  ],
+  "installation": {
+    "requiredSchemaThrough": "00053",
+    "newMigration": null,
+    "reportedMigrations": "User reports applied; shared schema not independently inspected",
+    "sharedMigrationPerformed": false,
+    "sharedRestartPerformed": false,
+    "sharedBackupOrRetentionPerformed": false,
+    "deploymentPerformed": false
+  },
+  "qualification": {
+    "fullDatasetAndInteractiveBrowserBudgets": "NOT_RUN",
+    "24HourWithActualPlannedWorkerRestart": "NOT_RUN",
+    "fullDependencyAndNominatedRollbackRehearsal": "NOT_RUN",
+    "completeRealGeographicJourneys": "NOT_RUN",
+    "observedIndependentHumansAndAssistiveTechnology": "NOT_RUN",
+    "A01-A24": "NOT_RUN",
+    "scope": "Tooling and scoped regression evidence cannot substitute for mandatory acceptance or named release approval."
+  },
+  "artifactHashes": {
+    "go-tests.log": "71c90c96e2c57bad1d7a65f58d2f594f55fc7e6c3abf6edf83309bcd5d0fb0c7",
+    "go-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "initial-recovery-failed.log": "013d2a1c19dad15d730fe83844039bad7be3fc46f8b876ca4bc4a57a9e165d4e",
+    "initial-workload-failed.jsonl": "6992f26dd36ed6939a49376c512da38d345e1cd83364a3d475788a1a44e37bce",
+    "initial-workload-failed.log": "2638e41a254e9dddaf556862f3bbc13e36ab5d7854eb56d2da2ce4174bb02a4a",
+    "integration-results.json": "6757c0aeedceb4958b5d515ebf667d031336bb2cea5e3cc78c168b84c1f62b2c",
+    "integration.jsonl": "bad53c484ac0f8aac3863f1b0761587f4316ccb15ee6e0265f424f503b5d9d52",
+    "linux-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "observed-session-template-check.json": "1e1cf967dfc53339cf6de5ca12c27f1fc273c91fa98f7d56dd091bbb47a185b4",
+    "paired-recovery.json": "5c85264eaf496ca5dddde41164ef2582d3b392db3b04aa37ec8af4ccce770094",
+    "planning-harness.json": "b60b8b2f8b58b035a5ea86210203a2feaee5ae8b26b5389535be901cfac84963",
+    "qualification-tests.log": "69b88a7793801784e95b28af12af0968a296310a0d4fddebd152fafe1a239c82",
+    "source-state.json": "fa07b6c0362d8f74bd24b0d618c713a2e1a20d0e00fab986867ff02194a68a33",
+    "taskfile-check.log": "dde676de709a1b617a636fb0bad486fa004f887552d9be5fa24fa15c27667289",
+    "workload-current/frozen-input.json": "4fff36ca81cfad3f048ea1bfe203a675cecd5486cde558dd83290c5092709dfc",
+    "workload-current/integration.jsonl": "95af6b914ed889e4ee9c5c428f6b67cce89df2385eb6dc98ce528151522e8387",
+    "workload-current/result.json": "b5764c29e8e12f944aadacb434ca9a0438bab12b7152bd2751affb15cba2d334",
+    "workload-current/workload.jsonl": "757bd984a864849eead876a0df6390d0f8458b9bf7866868f14c651cb89a7ede",
+    "workload-final/frozen-input.json": "c85e80e3e1a3220107d70828b983274a5426634e162b004ef13e62e45c341155",
+    "workload-final/integration.jsonl": "c5e482c6552d8d496ae0500ef9f766cb580fabb2ced941d6ae0c56b37dae6c4d",
+    "workload-final/result.json": "656b4b3e81d6415e74c25350eef2d3e8cb9dbb48aace0ebd457afaee356b03fa",
+    "workload-final/workload.jsonl": "c65c4bbe347444dce61bc9f160005714e9fae26c6e3626c0905a55cadba04738"
+  },
+  "documentationHashes": {
+    "README.md": "931d75d1d0d3ebb70ed83a175ba0c86cf5e90921497822b0a944843063dd4b2f",
+    "PRODUCT.md": "4c8deb4cc4a0d30aa0aaaad46ae20ea4795256087dc245cb06b42bc3885c3510",
+    "docs/implementation/MAP_FIRST_PRODUCT_BRIEF.md": "87c9fa5c85d656a41e361586ea3246859be3a653035dc0a0f671abc660b6d980",
+    "docs/implementation/MAP_FIRST_OPERATIONS.md": "b90ddf221dce48f8af5eee86583b3b98f4cca9e57a25ed9dc77f32bde9016d3e",
+    "docs/implementation/RECOVERY_OPERATIONS.md": "24ebfffb98bc9bb72ac918d0ea6e84745806e0e2cb4968cf18a9a3d9205c95bd",
+    "docs/implementation/MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md": "2d2a4422a2d534d3d38e34943709895bd460a3db8e83821e6d73b1289da76cbf",
+    "docs/implementation/MAP_FIRST_T23_OBSERVED_SESSIONS.template.json": "f5911d6f501f84380c11074b70c4e324d6b1f98fae4a607200d652a8149a74a9"
+  }
+}

@@ -1,11 +1,16 @@
 import { ArtifactImage } from '@/features/workspace/ArtifactImage'
 import { dateLabel } from '@/features/workspace/preferences'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
+import { Link, Navigate } from '@tanstack/react-router'
 import { ApiError, createAPI } from '@/lib/api'
 import { resourceKey, useWorkspace, type Resource } from '@/lib/workspaceContext'
 
 export function HomePage() {
+  const {session}=useWorkspace()
+  return session.productProfile==='map'?<Navigate to="/map" replace/>:<HistoricalHomePage/>
+}
+
+function HistoricalHomePage() {
   const featureLabel=(id:string)=>({'reference':'Reference versions','imagery':'Catalogue scene revisions','imagery-captures':'Retained image captures','evidence':'Retained provider records','models':'Validated visual models','scenes':'Frozen scenes','artifact-storage':'Private object storage'}[id]??id)
   const { session, prefix, signal, select } = useWorkspace()
   const resources = session.resources ?? [session.resource]

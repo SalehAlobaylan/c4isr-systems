@@ -1,0 +1,144 @@
+{
+  "schema": "emad.map-first-t19-t21.verification.v1",
+  "recordedAt": "2026-10-27T12:21:04.998562+00:00",
+  "baselineCommit": "a6d1d22f34692faea31db58e4a6318c539c3321a",
+  "sourceState": "Combined uncommitted working tree; earlier increments preserved",
+  "sourceFingerprint": "14094a8f88fa9d23e91bdc991dfed520c0937da1f7f377ed52443105bd7b53a4",
+  "sourceManifest": "source-state.json",
+  "taskState": {
+    "T19": "IMPLEMENTED",
+    "T20": "IMPLEMENTED",
+    "T21": "IMPLEMENTED"
+  },
+  "image": {
+    "tag": "emad-delivery:map-first-t19-t21",
+    "id": "sha256:d511ed9cb8816e2bc60fbdeb393f93c6d929957f6e6677841a44f6bce95070c9",
+    "profile": "map"
+  },
+  "checks": [
+    {
+      "id": "go",
+      "command": "GOMAXPROCS=2 go test -p 1 ./...",
+      "result": "PASS",
+      "reference": "go-tests.log"
+    },
+    {
+      "id": "vet",
+      "command": "GOMAXPROCS=2 go vet -p 1 ./...",
+      "result": "PASS",
+      "reference": "go-vet.log"
+    },
+    {
+      "id": "contracts-ui",
+      "result": "PASS",
+      "reference": "ui-build.log",
+      "note": "Generated contracts current; existing chunk-size advisory remains."
+    },
+    {
+      "id": "integration",
+      "result": "PASS",
+      "uniqueCases": 43,
+      "reference": "integration-results.json",
+      "scope": "Final assembled run against isolated migrated PostGIS/private storage; includes compiled Linux API, durable recovery/cleanup, synthetic Saudi and French geography and legacy paths."
+    },
+    {
+      "id": "browser",
+      "result": "PASS",
+      "uniqueCases": 56,
+      "reference": "browser-regression.log",
+      "scope": "Six suites, no-token project, one worker; scoped protocol fixtures and actual Go-rendered HTML. Not observed independent humans."
+    },
+    {
+      "id": "normalization",
+      "result": "PASS",
+      "cases": 4,
+      "reference": "normalization-tests.log"
+    },
+    {
+      "id": "independent-geography-reader",
+      "result": "PASS",
+      "references": [
+        "saudi-fixture-reader.json",
+        "france-fixture-reader.json"
+      ],
+      "scope": "Offline PROJ/GEOS geometry/coordinate checks on synthetic qualified fixtures; not surveyed terrain accuracy."
+    },
+    {
+      "id": "linux-image",
+      "result": "PASS",
+      "reference": "linux-image-build.log"
+    },
+    {
+      "id": "visual-review",
+      "result": "PASS",
+      "references": [
+        "readable-brief-desktop.png",
+        "readable-brief-mobile.png"
+      ],
+      "scope": "Recipient HTML inspected at desktop and mobile sizes; print behavior covered by browser suite."
+    },
+    {
+      "id": "source-fingerprints",
+      "result": "PASS",
+      "sourceFiles": 194,
+      "mismatches": []
+    },
+    {
+      "id": "hygiene",
+      "result": "PASS",
+      "scope": "Python AST, OpenAPI/YAML parsing and git diff --check; existing CRLF notices."
+    },
+    {
+      "id": "planning-harness",
+      "result": "PASS",
+      "reference": "planning-harness.json",
+      "faultsInjected": 12,
+      "faultsMissed": [],
+      "scope": "Planning consistency only; this checker does not execute application acceptance."
+    }
+  ],
+  "installation": {
+    "precedingMigrations": "User reported applied through preceding increment; latest report may include 00053. Shared schema not independently inspected.",
+    "requiredMigration": "00053_delivery_jobs.sql",
+    "isolatedMigration": "PASS",
+    "sharedMigrationPerformed": false,
+    "deploymentPerformed": false,
+    "containerRestoration": "Pre-existing PostgreSQL found exited 255; same container started and health checked. Cause not independently established; no shared migration or application restart."
+  },
+  "qualification": {
+    "release": "NOT_QUALIFIED",
+    "T22-T24": "PLANNED",
+    "A01-A24": "NOT_RUN",
+    "observedIndependentHumans": "NOT_RUN",
+    "realSourceBackedTerrainAndSurveyControls": "NOT_RUN",
+    "mixedConcurrentAndSoak": "NOT_RUN",
+    "note": "Automated evidence establishes scoped implementation behavior only."
+  },
+  "artifactHashes": {
+    "analyst-brief.html": "79514b9405a6998480d93c04c45c776a4290253113fefc718d98edbbfe40bd2a",
+    "bookmarked-scope.png": "4b10352121acddc9e370d182b2e188cdebee4c9bd2dc9b30d4ff533afc4574df",
+    "brief-output.json": "feb85e4b469056b1925b767d35d1ad7fd484a5e540b72c169e44f2d30fe5ca63",
+    "browser-regression.log": "4d515c9cf76dfe560f58cdb908ab130c5ae3943d712ac22dc96557a8b93dd8d5",
+    "coverage-request.png": "401bb99f90cbcf8bcfd47c598e3124fb3257b456f401b61c2d2c50184f426072",
+    "france-fixture-reader.json": "273b72c89e26aaf2bf532392d18fda668b89019275468e153249841471afe609",
+    "france-fixture.zip": "7e654453bfda5ee7d27c40f280e03252d60dc1689e32fbe7382838d6b9e0e58d",
+    "go-tests.log": "773e05d240f6d3da23a1a1df0ed53ecc95577aea70f16f6d7287891be6139a52",
+    "go-vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "imagery-320x700-text200.png": "dd7aeec061df164a947f4271eab0bfced546dab1dbef8a128980f07b63e2ada5",
+    "imagery-390x844-text200.png": "73922a7ba5c2d0e92e954154894fcdc4a5409d74ed0b07c40fd324d49237d76d",
+    "imagery-740x360-text200.png": "1ce95c9e4af17eb48d8ce4c269819f3b2b1939813c17d1c18405beadd2274ef0",
+    "independent-review-fixture.png": "c7b201ecd04ab19e2be408f52ae412b625a495f8bc84848d84933523111dd7fa",
+    "integration-results.json": "7d03077b7313d2f6bb17848db78c191d4b7f1770358c4c169ec3a3ed47e73706",
+    "integration.jsonl": "de138f2c4866988cc907fb9d2503d9d0b806560ffb135121ff1a97c95dae6bf4",
+    "linux-image-build.log": "641f4c03100877902083f5f417ca4703bed85a1b00cda07bb7e6e16bdacf0732",
+    "normalization-tests.log": "9f057fce84fe7a1990f686df07a35ccdbe85d7bacf397bc4ae9bf1ace6fc48ed",
+    "planning-harness.json": "b60b8b2f8b58b035a5ea86210203a2feaee5ae8b26b5389535be901cfac84963",
+    "readable-brief-desktop.png": "8ef5c24143a8731fbbac8530ec987fda7e7390f1cee215751d997410d29479be",
+    "readable-brief-mobile.png": "1aa2e5bbb522d77f0dd7d44feab9badf0b1094d149d589a12645baf91e206655",
+    "saudi-fixture-reader.json": "13a73787605474fb041dbc96b700bea1469579e389c85e0efb7528c0c59d44b5",
+    "saudi-fixture.zip": "4337b99847d3126cfd69dc13457bf65b583ef1b7007b41bb15c88b5eabf537ea",
+    "saved-investigation.png": "2c04c4248df2f1069dfbc19412d6defab4e9a41741f80d05b2db05219920c656",
+    "source-state.json": "842610526248137026369f4001fc3f86b161f4919b254b2caae3c2293ed9a66c",
+    "ui-build.log": "18c171f0bcc5affdbcefd0dac16a64b9dc9624e9c843e00aeb7751941375a5c9"
+  }
+}

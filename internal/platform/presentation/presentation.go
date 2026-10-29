@@ -97,6 +97,12 @@ func ResolveObservation(ctx context.Context, id string) (string, error) {
 // ResolveInput recognizes typed observation references, never arbitrary payload
 // strings. Alias resolution runs through the selected resource's restricted DB.
 func ResolveInput(ctx context.Context, dst any, observationIngress ...bool) error {
+	// Public evidence has canonical IDs already. Re-encoding it through any
+	// would alter retained JSON geometry/number representations and invalidate
+	// fingerprints between the scope resolver and a submitted job.
+	if _, r, ok := access.From(ctx); ok && r.Partition == access.PublicEvidence {
+		return nil
+	}
 	if _, ok := ctx.Value(resolverKey{}).(Resolver); !ok {
 		return nil
 	}

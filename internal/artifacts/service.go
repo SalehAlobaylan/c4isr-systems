@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/capacity"
+	"math"
 	"regexp"
 	"time"
 
@@ -17,14 +19,18 @@ import (
 )
 
 type Input struct {
-	RequestKey  string    `json:"requestKey"`
-	SourceID    string    `json:"sourceId"`
-	SHA256      string    `json:"sha256"`
-	Bytes       int64     `json:"bytes"`
-	MediaType   string    `json:"mediaType"`
-	Kind        string    `json:"kind"`
-	RetainUntil time.Time `json:"retainUntil"`
-	Provenance  string    `json:"provenance"`
+	HorizontalAccuracyM    *float64  `json:"horizontalAccuracyM,omitempty"`
+	DependencyAdmissionIDs []string  `json:"dependencyAdmissionIds,omitempty"`
+	ProfileKey             string    `json:"profileKey,omitempty"`
+	RequestedAdmissionID   string    `json:"requestedAdmissionId,omitempty"`
+	RequestKey             string    `json:"requestKey"`
+	SourceID               string    `json:"sourceId"`
+	SHA256                 string    `json:"sha256"`
+	Bytes                  int64     `json:"bytes"`
+	MediaType              string    `json:"mediaType"`
+	Kind                   string    `json:"kind"`
+	RetainUntil            time.Time `json:"retainUntil"`
+	Provenance             string    `json:"provenance"`
 }
 type Artifact struct {
 	Input
@@ -73,7 +79,7 @@ func (s *Service) Admission(ctx context.Context, source string) (publicingest.Ad
 	if err := access.RequireSource(ctx, source); err != nil {
 		return a, err
 	}
-	err := platformdb.Scoped(s.Pool).QueryRow(ctx, `SELECT a.document FROM source_connector_state c JOIN source_admissions a ON a.id=c.admission_id AND a.scope_id=c.scope_id JOIN sources s ON s.id=c.source_id AND s.scope_id=c.scope_id WHERE c.source_id=$1 AND s.status='active'`, source).Scan(&raw)
+	err := platformdb.Scoped(s.Pool).QueryRow(access.WithRetrievalProfile(ctx, "default"), `SELECT a.document FROM source_connector_state c JOIN source_admissions a ON a.id=c.admission_id AND a.scope_id=c.scope_id JOIN sources s ON s.id=c.source_id AND s.scope_id=c.scope_id WHERE c.source_id=$1 AND s.status='active'`, source).Scan(&raw)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return a, apperr.NotFound("active source admission", "unavailable")
 	}
@@ -86,6 +92,61 @@ func (s *Service) Admission(ctx context.Context, source string) (publicingest.Ad
 	if !a.Enabled || (a.Rights.ExpiresAt != nil && !a.Rights.ExpiresAt.After(time.Now())) {
 		return a, apperr.Conflict("source rights disabled or expired")
 	}
+	return s.Policy(ctx, source, a.ID)
+}
+
+// Policy resolves exact lineage plus the current rights of its original profile.
+func (s *Service) Policy(ctx context.Context, source, admissionID string) (publicingest.Admission, error) {
+	a, e := publicingest.ResolvePolicy(ctx, s.Pool, source, admissionID)
+	if e != nil {
+		return a, e
+	}
+	if !a.Rights.RetainRaw {
+		return a, apperr.Forbidden("retained processing is not permitted by the original profile")
+	}
+	if e = publicingest.RequireProfileProcessing(ctx, s.Pool, a); e != nil {
+		return a, e
+	}
+	return a, nil
+}
+func (s *Service) reservationPolicy(ctx context.Context, in Input) (publicingest.Admission, error) {
+	if len(in.DependencyAdmissionIDs) > 16 {
+		return publicingest.Admission{}, apperr.Validation("artifact policy dependency budget exceeded")
+	}
+	original := in.RequestedAdmissionID
+	if original == "" && in.ProfileKey != "" && in.ProfileKey != "default" {
+		if e := platformdb.Scoped(s.Pool).QueryRow(ctx, `SELECT r.admission_id FROM retrieval_profiles p JOIN retrieval_profile_revisions r ON r.id=p.head_revision_id WHERE p.source_id=$1 AND p.profile_key=$2`, in.SourceID, in.ProfileKey).Scan(&original); e != nil {
+			return publicingest.Admission{}, apperr.NotFound("retrieval profile", "unavailable")
+		}
+	}
+	var a publicingest.Admission
+	var e error
+	if original == "" {
+		a, e = s.Admission(ctx, in.SourceID)
+	} else {
+		a, e = s.Policy(ctx, in.SourceID, original)
+	}
+	if e != nil {
+		return a, e
+	}
+	if in.ProfileKey != "" && in.ProfileKey != a.ProfileKey {
+		return a, apperr.Validation("artifact profile differs from its original admission")
+	}
+	for _, id := range in.DependencyAdmissionIDs {
+		other, e := s.Policy(ctx, in.SourceID, id)
+		if e != nil {
+			return a, e
+		}
+		if a.ProfileKey != other.ProfileKey {
+			return a, apperr.Forbidden("derived artifact cannot borrow another retrieval profile")
+		}
+		a.Rights.RetainRaw = a.Rights.RetainRaw && other.Rights.RetainRaw
+		a.Rights.AllowAnalysis = a.Rights.AllowAnalysis && other.Rights.AllowAnalysis
+		a.Rights.AllowSimulationExport = a.Rights.AllowSimulationExport && other.Rights.AllowSimulationExport
+		if other.Rights.ExpiresAt != nil && (a.Rights.ExpiresAt == nil || other.Rights.ExpiresAt.Before(*a.Rights.ExpiresAt)) {
+			a.Rights.ExpiresAt = other.Rights.ExpiresAt
+		}
+	}
 	return a, nil
 }
 
@@ -96,6 +157,9 @@ func (s *Service) Reserve(ctx context.Context, in Input) (Artifact, error) {
 	var a Artifact
 	if e := Write(ctx); e != nil {
 		return a, e
+	}
+	if in.HorizontalAccuracyM != nil && (!(*in.HorizontalAccuracyM > 0) || math.IsNaN(*in.HorizontalAccuracyM) || math.IsInf(*in.HorizontalAccuracyM, 0)) {
+		return a, apperr.Validation("source-backed finite horizontal accuracy required")
 	}
 	if !hashText.MatchString(in.SHA256) || !requestKey.MatchString(in.RequestKey) || in.Bytes < 1 || in.Bytes > MaxBytes || len(in.Provenance) < 1 || len(in.Provenance) > 2000 || !in.RetainUntil.After(time.Now()) || in.RetainUntil.After(time.Now().Add(365*24*time.Hour)) {
 		return a, apperr.Validation("invalid artifact hash, size, request key, provenance or retention")
@@ -110,7 +174,7 @@ func (s *Service) Reserve(ctx context.Context, in Input) (Artifact, error) {
 	default:
 		return a, apperr.Validation("unsupported artifact kind")
 	}
-	admission, e := s.Admission(ctx, in.SourceID)
+	admission, e := s.reservationPolicy(ctx, in)
 	if e != nil {
 		return a, e
 	}
@@ -146,7 +210,10 @@ func (s *Service) Reserve(ctx context.Context, in Input) (Artifact, error) {
 		if !errors.Is(e, pgx.ErrNoRows) {
 			return e
 		}
-		if count >= 1000 || total+in.Bytes > 512*1024*1024 {
+		if e := capacity.Check(ctx, tx, in.Bytes, ""); e != nil {
+			return e
+		}
+		if total+in.Bytes > 512*1024*1024 {
 			return apperr.Conflict("source artifact quota exhausted")
 		}
 		_, e = tx.Exec(ctx, `INSERT INTO artifacts(id,source_id,admission_id,sha256,size_bytes,media_type,kind,object_key,document,state,retain_until)VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'PENDING',$10)`, a.ID, in.SourceID, a.AdmissionID, a.SHA256, a.Bytes, a.MediaType, a.Kind, a.ObjectKey, raw, a.RetainUntil)
@@ -180,8 +247,16 @@ func (s *Service) usable(ctx context.Context, a Artifact) error {
 	if a.State != "READY" || !a.RetainUntil.After(time.Now()) || (a.Rights.ExpiresAt != nil && !a.Rights.ExpiresAt.After(time.Now())) {
 		return apperr.Conflict("artifact is incomplete, expired or deleted")
 	}
-	_, e := s.Admission(ctx, a.SourceID)
-	return e
+	input := a.Input
+	input.RequestedAdmissionID = a.AdmissionID
+	policy, e := s.reservationPolicy(ctx, input)
+	if e != nil {
+		return e
+	}
+	if !policy.Rights.RetainRaw {
+		return apperr.Forbidden("retained artifact use is no longer permitted by its profile")
+	}
+	return nil
 }
 func (s *Service) Upload(ctx context.Context, id string, b []byte) (Artifact, error) {
 	if e := Write(ctx); e != nil {
@@ -197,25 +272,41 @@ func (s *Service) Upload(ctx context.Context, id string, b []byte) (Artifact, er
 	if !a.RetainUntil.After(time.Now()) || int64(len(b)) != a.Bytes || Hash(b) != a.SHA256 {
 		return a, apperr.Validation("artifact byte count/hash/retention mismatch")
 	}
-	if _, e = s.Admission(ctx, a.SourceID); e != nil {
+	if _, e = s.Policy(ctx, a.SourceID, a.AdmissionID); e != nil {
 		return a, e
 	}
 	if e = s.Store.Put(ctx, a.ObjectKey, b, a.MediaType); e != nil {
 		return a, apperr.Conflict("artifact storage unavailable; immutable upload may be retried")
 	}
 	// Recheck rights after external I/O; a source suspension cannot complete upload.
-	if _, e = s.Admission(ctx, a.SourceID); e != nil {
+	if _, e = s.Policy(ctx, a.SourceID, a.AdmissionID); e != nil {
 		return a, e
 	}
 	if !a.RetainUntil.After(time.Now()) || (a.Rights.ExpiresAt != nil && !a.Rights.ExpiresAt.After(time.Now())) {
 		return a, apperr.Conflict("artifact retention expired during upload")
 	}
-	tag, e := platformdb.Scoped(s.Pool).Exec(ctx, `UPDATE artifacts SET state='READY' WHERE id=$1 AND state IN ('PENDING','READY')`, id)
+	e = platformdb.WithTx(ctx, s.Pool, func(tx pgx.Tx) error {
+		policy, e := publicingest.LockPolicy(ctx, tx, a.SourceID, a.AdmissionID)
+		if e != nil {
+			return e
+		}
+		if !policy.Rights.RetainRaw {
+			return apperr.Forbidden("artifact retention no longer permitted")
+		}
+		if e = publicingest.RequireProfileProcessing(platformdb.UseTx(ctx, tx), s.Pool, policy); e != nil {
+			return e
+		}
+		tag, e := tx.Exec(ctx, `UPDATE artifacts SET state='READY' WHERE id=$1 AND state IN ('PENDING','READY')`, id)
+		if e != nil {
+			return e
+		}
+		if tag.RowsAffected() != 1 {
+			return apperr.Conflict("artifact state changed during upload")
+		}
+		return nil
+	})
 	if e != nil {
 		return a, e
-	}
-	if tag.RowsAffected() != 1 {
-		return a, apperr.Conflict("artifact state changed during upload")
 	}
 	return s.Get(ctx, id)
 }

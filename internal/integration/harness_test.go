@@ -33,10 +33,11 @@ const integrationEnv = "C4ISR_TEST_INTEGRATION"
 const integrationToken = "integration-token"
 
 type harness struct {
-	t      *testing.T
-	server *httptest.Server
-	pool   *pgxpool.Pool
-	app    *app.App
+	t                   *testing.T
+	server              *httptest.Server
+	pool                *pgxpool.Pool
+	app                 *app.App
+	postgresContainerID string // disposable recovery rehearsal only
 }
 
 func newHarness(t *testing.T, options ...app.Option) *harness {
@@ -110,7 +111,7 @@ func newConfiguredHarness(t *testing.T, configure func(*config.Config), options 
 	}
 	server := httptest.NewServer(application.Handler())
 
-	h := &harness{t: t, server: server, pool: pool, app: application}
+	h := &harness{t: t, server: server, pool: pool, app: application, postgresContainerID: container.GetContainerID()}
 	t.Cleanup(func() {
 		server.Close()
 		application.Close()

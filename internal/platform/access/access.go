@@ -378,6 +378,8 @@ func Deny(ctx context.Context, permission, reason string) {
 }
 
 var Permissions = []string{
+	"geography.request", "acquisitions.read", "acquisitions.request",
+	"investigations.review", "outputs.read", "outputs.create", "outputs.distribute", "investigations.read", "investigations.create", "investigations.edit", "investigations.manage",
 	"imagery.capture.execute",
 	"sim.recordings.read", "sim.recordings.manage", "sim.recordings.execute", "sim.evaluation.release", "exercise.ingest", "sim.truth.record", "sim.assets.import", "sim.runtime.control", "sim.runtime.execute",
 	"connectors.execute", "assessments.review", "context.export", "imagery.jobs.submit", "imagery.jobs.execute",

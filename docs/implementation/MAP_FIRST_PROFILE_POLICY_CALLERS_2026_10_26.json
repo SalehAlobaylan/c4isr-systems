@@ -1,0 +1,232 @@
+{
+  "schema": "emad.map-first-profile-callers.v1",
+  "recordedOn": "2026-10-26",
+  "scope": "Non-test runtime Go/Python callers; includes T10 scheduler additions. Original-profile rights resolution replaces universal Artifacts.Admission use; source-only reservation explicitly retains default compatibility.",
+  "calls": [
+    {
+      "path": "internal/acquisition/service.go",
+      "line": 301,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/acquisition/service.go",
+      "line": 313,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/analystscope/reads.go",
+      "line": 190,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/artifacts/service.go",
+      "line": 80,
+      "match": "source_connector_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/artifacts/service.go",
+      "line": 98,
+      "match": "ResolvePolicy(",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/artifacts/service.go",
+      "line": 284,
+      "match": "LockPolicy(",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/assessments/review.go",
+      "line": 435,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/contextpackage/export.go",
+      "line": 328,
+      "match": "LockPolicy(",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/externaltracks/http.go",
+      "line": 48,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/imagery/captures.go",
+      "line": 305,
+      "match": "LockPolicy(",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/imagery/worker.go",
+      "line": 112,
+      "match": "LockPolicy(",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publiccontext/service.go",
+      "line": 74,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/capabilities.go",
+      "line": 103,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/profiles.go",
+      "line": 72,
+      "match": "LockPolicy(",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/profiles.go",
+      "line": 88,
+      "match": "LockPolicy(",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/profiles.go",
+      "line": 94,
+      "match": "ResolvePolicy(",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/profiles.go",
+      "line": 100,
+      "match": "ResolvePolicy(",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 47,
+      "match": "source_connector_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 125,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 226,
+      "match": "source_connector_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 230,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 267,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 277,
+      "match": "source_connector_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 286,
+      "match": "source_connector_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 369,
+      "match": "source_connector_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 396,
+      "match": "source_connector_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 405,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 511,
+      "match": "ResolvePolicy(",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/repository.go",
+      "line": 554,
+      "match": "source_connector_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/scheduler.go",
+      "line": 55,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/scheduler.go",
+      "line": 68,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/scheduler.go",
+      "line": 99,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/scheduler.go",
+      "line": 142,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/publicingest/scheduler.go",
+      "line": 153,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/reference/map.go",
+      "line": 194,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    },
+    {
+      "path": "internal/reference/map.go",
+      "line": 205,
+      "match": "retrieval_profile_state",
+      "purpose": "Profile-aware original/current policy or state; server-bound profile key selects the compatibility view."
+    }
+  ],
+  "knownDefaultPaths": [
+    "internal/publicingest/activation.go",
+    "internal/publicingest/repository.go:Summaries",
+    "scripts/ops/local.py:legacy maintenance"
+  ],
+  "notes": [
+    "Run/occurrence identity remains source/provider-record/provider-revision; profile is retrieval authority, not independent evidence.",
+    "Rows are a review inventory, not executed proof. See the integration verification for rights and migration checks."
+  ]
+}

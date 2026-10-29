@@ -35,11 +35,13 @@ func setupContext(t *testing.T, f *publicFixture, report bool) {
 }
 func TestP33StationWeatherRevisionsRightsAndNoTracks(t *testing.T) {
 	f := newPublicFixture(t)
+	f.admission.Policy.AOI.East = 48 // correction stays admitted while moving outside the selected [46,47] study
 	setupContext(t, f, false)
 	at := time.Now().UTC().Add(-time.Hour).Truncate(time.Second)
 	temperature := 0
+	longitude := 46.7
 	f.fetcher.delegate = nativeFixtureFunc(func(_ context.Context, l publicingest.Location, in publicingest.FetchRequest) (publicingest.Page, publicingest.Retrieval, error) {
-		raw := fmt.Sprintf(`[{"icaoId":"OERK","obsTime":%d,"metarType":"METAR","rawOb":"SYNTHETIC STATION SAMPLE","lat":24.7,"lon":46.7,"temp":%d,"wdir":"VRB","visib":"10+"}]`, at.Unix(), temperature)
+		raw := fmt.Sprintf(`[{"icaoId":"OERK","obsTime":%d,"metarType":"METAR","rawOb":"SYNTHETIC STATION SAMPLE","lat":24.7,"lon":%f,"temp":%d,"wdir":"VRB","visib":"10+"}]`, at.Unix(), longitude, temperature)
 		p, e := publicingest.DecodeMETAR([]byte(raw), in)
 		return p, publicingest.Retrieval{LocationID: l.ID, HTTPStatus: 200}, e
 	})
@@ -66,6 +68,16 @@ func TestP33StationWeatherRevisionsRightsAndNoTracks(t *testing.T) {
 	code, b = scopeRequest(t, f.h, f.manager, "GET", "/api/v1/public-context/records/"+id+"/history", nil, nil)
 	if code != 200 || b["total"] != float64(2) {
 		t.Fatal(code, b)
+	}
+	// An indexed spatial candidate lookup must still exclude an old station
+	// revision when a newer revision moved outside the selected study area.
+	longitude = 47.5
+	at = at.Add(time.Minute)
+	f.ready(t)
+	f.execute(t)
+	code, b = scopeRequest(t, f.h, f.manager, "GET", "/api/v1/public-context/records?kind=WEATHER&bbox=46,24,47,25", nil, nil)
+	if code != 200 || b["total"] != float64(0) {
+		t.Fatal("old in-area station revision resurrected", code, b)
 	}
 	if code, _ := scopeRequest(t, f.h, f.manager, "GET", "/api/v1/public-context/records?bbox=NaN,24,47,25", nil, nil); code != 400 {
 		t.Fatal(code)

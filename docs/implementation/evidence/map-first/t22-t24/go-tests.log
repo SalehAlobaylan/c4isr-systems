@@ -1,0 +1,78 @@
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/c4isr-server	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-admin	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-assets	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-connectors	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-context	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-delivery	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-imagery	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-local	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/apps/emad-recordings	0.572s
+?   	github.com/SalehAlobaylan/c4isr-systems/apps/emad-runtime	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/acquisition	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/alerts	0.455s
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/analystscope	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/app	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/arearule	0.471s
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/areas	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/artifacts	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/assessments	0.473s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/assets	0.537s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/audit	0.587s
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/catalog	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/classifications	0.464s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/commands	0.520s
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/contentpurpose	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/contextpackage	0.537s
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/coverage	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/dbgen	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/environmentprep	0.513s
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/eventrules	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/events	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/exerciseingest	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/externaltracks	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/geospatial	0.545s
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/imagery	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/imageryanalysis	0.469s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/incidents	0.470s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/integration	1.678s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/investigations	11.116s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/missions	0.586s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/modelassets	0.652s
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/nativeexercise	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/observations	0.511s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/operators	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/picture	0.490s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/access	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/capacity	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/caselink	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/config	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/db	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/freshness	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/geo	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/intents	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/jsoncanon	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/logging	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/pgconv	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/presentation	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/readiness	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/reads	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/platform/runctx	[no test files]
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/publiccontext	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/publicevents	0.522s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/publicingest	0.901s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/realtime	(cached)
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/recordings	0.498s
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/reference	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/scenarios	0.787s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/simruntime	0.470s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/simscene	0.503s
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/simulation	(cached)
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/sources	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/telemetry	0.593s
+?   	github.com/SalehAlobaylan/c4isr-systems/internal/testsupport	[no test files]
+ok  	github.com/SalehAlobaylan/c4isr-systems/internal/tracks	0.500s

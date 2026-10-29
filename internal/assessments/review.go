@@ -108,7 +108,7 @@ func (r *Reviews) jobEvidence(ctx context.Context, id string) (imagery.Job, erro
 		return j, apperr.Conflict("derived result hash differs")
 	}
 	for _, scene := range j.Input.Scenes {
-		a, e := r.Imagery.Artifacts.Admission(ctx, scene.SourceID)
+		a, e := r.Imagery.Artifacts.Policy(ctx, scene.SourceID, scene.AdmissionID)
 		if e != nil || !a.Rights.AllowAnalysis || !scene.Rights.AllowAnalysis {
 			return j, apperr.Forbidden("evidence analysis rights unavailable")
 		}
@@ -386,7 +386,11 @@ func (r *Reviews) list(ctx context.Context, reports bool) ([]ReviewRevision, err
 	if e := artifacts.Public(ctx, "assessments.read"); e != nil {
 		return nil, e
 	}
-	rows, e := platformdb.Scoped(r.Pool).Query(ctx, `SELECT r.document FROM assessment_review_heads h JOIN assessment_revisions r ON r.id=h.latest_id AND r.scope_id=h.scope_id WHERE (r.document ? 'reportEvidence')=$1 ORDER BY r.document->>'recordedAt' DESC,r.id LIMIT 101`, reports)
+	geometry, from, to, unsupported := imagery.ScopeArgs(ctx)
+	if unsupported {
+		return []ReviewRevision{}, nil
+	}
+	rows, e := platformdb.Scoped(r.Pool).Query(ctx, `SELECT r.document FROM assessment_review_heads h JOIN assessment_revisions r ON r.id=h.latest_id AND r.scope_id=h.scope_id WHERE emad_content_visible('assessment',r.assessment_id) AND (r.document ? 'reportEvidence')=$1 AND (($2::text='' AND $3::timestamptz IS NULL AND $4::timestamptz IS NULL) OR (NOT $1 AND EXISTS(SELECT 1 FROM imagery_jobs j WHERE j.id=r.document#>>'{evidence,id}' AND `+imagery.JobScopePredicate("j", 2)+`)) OR ($1 AND EXISTS(SELECT 1 FROM public_context_records c WHERE c.evidence_id=r.document#>>'{reportEvidence,id}' AND ($2='' OR ST_Intersects(c.position,ST_SetSRID(ST_GeomFromGeoJSON(NULLIF($2,'')),4326))) AND ($3::timestamptz IS NULL OR c.valid_from>=$3) AND ($4::timestamptz IS NULL OR c.valid_from<$4)))) ORDER BY r.document->>'recordedAt' DESC,r.id LIMIT 101`, reports, geometry, from, to)
 	if e != nil {
 		return nil, e
 	}
@@ -428,7 +432,7 @@ func (r *Reviews) reportEvidence(ctx context.Context, id string) (publicingest.E
 	}
 	var original, active []byte
 	var retained bool
-	err = platformdb.Scoped(r.Pool).QueryRow(ctx, `SELECT a.document,curr.document,e.original_record IS NOT NULL FROM public_evidence e JOIN source_admissions a ON a.id=e.admission_id JOIN source_connector_state c ON c.source_id=e.source_id AND c.scope_id=e.scope_id JOIN source_admissions curr ON curr.id=c.admission_id WHERE e.id=$1`, id).Scan(&original, &active, &retained)
+	err = platformdb.Scoped(r.Pool).QueryRow(ctx, `SELECT a.document,curr.document,e.original_record IS NOT NULL FROM public_evidence e JOIN source_admissions a ON a.id=e.admission_id JOIN retrieval_profile_revisions origin_profile ON origin_profile.admission_id=e.admission_id JOIN retrieval_profile_state c ON c.source_id=e.source_id AND c.scope_id=e.scope_id AND c.profile_key=origin_profile.profile_key JOIN source_admissions curr ON curr.id=c.admission_id WHERE e.id=$1`, id).Scan(&original, &active, &retained)
 	if err != nil {
 		return v, err
 	}
@@ -437,7 +441,7 @@ func (r *Reviews) reportEvidence(ctx context.Context, id string) (publicingest.E
 		if err = json.Unmarshal(raw, &a); err != nil {
 			return v, err
 		}
-		if !retained || !a.Rights.AllowAnalysis || !a.Rights.RetainRaw || a.Rights.ExpiresAt != nil && !a.Rights.ExpiresAt.After(time.Now()) {
+		if !a.Enabled || !retained || !a.Rights.AllowAnalysis || !a.Rights.RetainRaw || a.Rights.ExpiresAt != nil && !a.Rights.ExpiresAt.After(time.Now()) {
 			return v, apperr.Forbidden("retained report analysis rights unavailable")
 		}
 	}

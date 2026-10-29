@@ -13,6 +13,8 @@ import (
 
 // Config is the runtime configuration of the C4ISR server.
 type Config struct {
+	ProductProfile string
+
 	ArtifactS3Endpoint  string
 	ArtifactS3Bucket    string
 	ArtifactS3Region    string
@@ -76,6 +78,7 @@ func Load() (Config, error) {
 		defaultLogFormat = "text"
 	}
 	cfg := Config{
+		ProductProfile:       envOr("C4ISR_PRODUCT_PROFILE", "map"),
 		ArtifactS3Endpoint:   strings.TrimSpace(os.Getenv("C4ISR_ARTIFACT_S3_ENDPOINT")),
 		ArtifactS3Bucket:     strings.TrimSpace(os.Getenv("C4ISR_ARTIFACT_S3_BUCKET")),
 		ArtifactS3Region:     envOr("C4ISR_ARTIFACT_S3_REGION", "us-east-1"),
@@ -159,10 +162,14 @@ func Load() (Config, error) {
 	if cfg.ArtifactS3SecretKey, err = secretEnv("C4ISR_ARTIFACT_S3_SECRET_KEY"); err != nil {
 		return Config{}, err
 	}
-	if value, e := secretEnv("C4ISR_RUNTIME_BUILDS"); e != nil {
-		return Config{}, e
-	} else if value != "" {
-		cfg.RuntimeBuilds = strings.Fields(value)
+	if !cfg.MapOnly() {
+		if value, e := secretEnv("C4ISR_RUNTIME_BUILDS"); e != nil {
+			return Config{}, e
+		} else if value != "" {
+			cfg.RuntimeBuilds = strings.Fields(value)
+		}
+	} else {
+		cfg.RuntimeBuilds = nil
 	}
 	if value := os.Getenv("C4ISR_ARTIFACT_S3_ALLOW_HTTP"); value != "" {
 		cfg.ArtifactS3AllowHTTP, err = parseBool("C4ISR_ARTIFACT_S3_ALLOW_HTTP", value)
@@ -194,7 +201,24 @@ func validateEnvironment(value string) error {
 
 // Validate enforces configuration safety invariants for both environment-
 // loaded configuration and in-process test/application harnesses.
+const ProfileMap = "map"
+const ProfileHistoricalFull = "historical-full"
+
+// Profile keeps embedded legacy harnesses compatible; environment-loaded
+// deployments explicitly default to the map product.
+func (cfg Config) Profile() string {
+	if cfg.ProductProfile == "" {
+		return ProfileHistoricalFull
+	}
+	return cfg.ProductProfile
+}
+func (cfg Config) MapOnly() bool { return cfg.Profile() == ProfileMap }
+
 func (cfg Config) Validate() error {
+	if cfg.Profile() != ProfileMap && cfg.Profile() != ProfileHistoricalFull {
+		return fmt.Errorf("C4ISR_PRODUCT_PROFILE must be map or historical-full")
+	}
+
 	environment := strings.ToLower(strings.TrimSpace(cfg.Environment))
 	if err := validateEnvironment(environment); err != nil {
 		return err
