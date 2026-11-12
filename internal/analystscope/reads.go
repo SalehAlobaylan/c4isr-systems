@@ -49,12 +49,31 @@ type ReadSnapshot struct {
 	EventState       string                             `json:"eventState,omitempty"`
 	ID               string                             `json:"id"`
 	QueryFingerprint string                             `json:"queryFingerprint"`
+	ViewKey          string                             `json:"viewKey"`
 	Scope            Snapshot                           `json:"scope"`
 	ExpiresAt        time.Time                          `json:"expiresAt"`
 	Layers           map[string]reference.MapCollection `json:"layers"`
 	Events           *publicevents.QueryResult          `json:"events,omitempty"`
 	CoverageReceipts []json.RawMessage                  `json:"coverageReceipts"`
 	ReceiptMeaning   string                             `json:"receiptMeaning"`
+}
+
+// ViewKey identifies the logical view a refresh supersedes. It is stable
+// across a zoom change of the same map view — that churn is what exhausted the
+// read budget — and differs for a different area or period, another family
+// set, another filter, or events instead of layers. The stored fingerprint
+// keeps its own meaning: it identifies one exact query, zoom included.
+func ViewKey(ctx context.Context, scope Snapshot, families []string, filters QueryFilters, includeEvents bool) string {
+	sorted := append([]string(nil), families...)
+	sort.Strings(sorted)
+	raw, _ := json.Marshal(struct {
+		Scope    string
+		Content  string
+		Families []string
+		Filters  QueryFilters
+		Events   bool
+	}{scope.ScopeHash, access.ContentView(ctx), sorted, filters, includeEvents})
+	return areas.Hash(raw)
 }
 
 func QueryValues(scope Snapshot, f QueryFilters) url.Values {
@@ -130,7 +149,7 @@ func (s Service) Read(ctx context.Context, in ReadInput) (ReadSnapshot, error) {
 				return e
 			}
 		}
-		out = ReadSnapshot{Errors: map[string]LayerError{}, RecordSets: map[string][]string{}, ID: ids.New("read"), Scope: scope, ExpiresAt: now.Add(5 * time.Minute), Layers: map[string]reference.MapCollection{}, CoverageReceipts: []json.RawMessage{}, ReceiptMeaning: "Pinned connector/admission state observed in this database snapshot. These receipts do not establish complete provider coverage or factual absence."}
+		out = ReadSnapshot{Errors: map[string]LayerError{}, RecordSets: map[string][]string{}, ID: ids.New("read"), Scope: scope, ExpiresAt: now.Add(5 * time.Minute), Layers: map[string]reference.MapCollection{}, CoverageReceipts: []json.RawMessage{}, ReceiptMeaning: "Pinned connector/admission state observed in this database snapshot. These receipts do not establish complete provider coverage or factual absence.", ViewKey: ViewKey(ctx, scope, in.Families, in.Filters, in.IncludeEvents)}
 		// Creation, cleanup and page/citation validation use the same clock,
 		// even when the application and database hosts have clock skew.
 		if e = tx.QueryRow(ctx, `SELECT clock_timestamp()+interval '5 minutes'`).Scan(&out.ExpiresAt); e != nil {
@@ -230,6 +249,13 @@ func (s Service) Read(ctx context.Context, in ReadInput) (ReadSnapshot, error) {
 		if len(raw) > 8<<20 {
 			return apperr.Conflict("read manifest exceeds 8 MiB; narrow the query")
 		}
+		// A refresh of the same logical view supersedes the retained read it
+		// replaces. Removing it inside this transaction frees its budget slot
+		// for the manifest stored immediately afterwards, so repeatedly
+		// refreshing one view cannot exhaust the bounded read capacity.
+		if e = reads.Supersede(ctx, tx, "map", out.ViewKey); e != nil {
+			return e
+		}
 		e = reads.Save(ctx, tx, out.ID, "map", raw, out.ExpiresAt)
 		return e
 	})
@@ -297,6 +323,28 @@ func (s Service) ReadPage(ctx context.Context, id, family string, offset, limit 
 	result["requiresNarrowerScope"] = layer.State == "aggregated"
 	return result, nil
 }
+// Release drops a retained read manifest so the budget slot it holds is
+// available immediately instead of at expiry. The deletion runs inside a
+// transaction bound to the caller's scope and principal, so row-level
+// security prevents one principal from releasing another principal's read.
+func (s Service) Release(ctx context.Context, id string) (bool, error) {
+	if e := areas.Require(ctx); e != nil {
+		return false, e
+	}
+	if id == "" || len(id) > 160 {
+		return false, apperr.Validation("invalid read snapshot identity")
+	}
+	released := false
+	e := db.WithTx(ctx, s.Pool, func(tx pgx.Tx) error {
+		var e error
+		released, e = reads.Release(ctx, tx, id)
+		return e
+	})
+	if e != nil {
+		return false, e
+	}
+	return released, nil
+}
 func (s Service) mountReads(r chi.Router) {
 	s.mountRecords(r)
 	r.Post("/analyst-scope/read", func(w http.ResponseWriter, r *http.Request) {
@@ -312,6 +360,21 @@ func (s Service) mountReads(r chi.Router) {
 			return
 		}
 		httpx.JSON(w, 200, v)
+	})
+	r.Post("/analyst-scope/reads/{id}/release", func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+		defer cancel()
+		id := chi.URLParam(r, "id")
+		released, e := s.Release(ctx, id)
+		if e != nil {
+			httpx.Error(w, e)
+			return
+		}
+		if !released {
+			httpx.Error(w, apperr.NotFound("read snapshot", id))
+			return
+		}
+		httpx.JSON(w, 200, map[string]any{"id": id, "released": true})
 	})
 	r.Get("/analyst-scope/reads/{id}", func(w http.ResponseWriter, r *http.Request) {
 		q := r.URL.Query()

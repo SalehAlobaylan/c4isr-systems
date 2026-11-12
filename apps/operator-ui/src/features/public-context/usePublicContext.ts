@@ -1,4 +1,5 @@
 import {historicalReadOptions,useAnalystScope,rectangleGeometry,monitoringPeriod} from '@/features/workspace/AnalystScopeProvider'
+import {useReadSnapshotRelease} from '@/features/workspace/useReadSnapshotRelease'
 import {fixedScopeInput} from '@/lib/api'
 import {parseRectangle} from '@/features/workspace/operationArea'
 import { useWorkspacePreference } from '@/features/workspace/preferences'
@@ -43,7 +44,12 @@ export function usePublicContext({cartography=true,loadEvents=true,regionId,geom
   useEffect(()=>setPage(0),[scope?.scopeHash,effectiveView])
   const [showEvents, setShowEvents] = useWorkspacePreference('show-events',true,(v):v is boolean=>typeof v==='boolean')
   const [showReference, setShowReference] = useWorkspacePreference('show-reference',true,(v):v is boolean=>typeof v==='boolean')
-  const eventBatch=useQuery({...historicalReadOptions(scope),queryKey:[...prefix,'public-events','read',scope?.scopeHash,scope?.authorizationRevision,saved.filters.sourceId,saved.filters.quality,saved.filters.phenomenon,saved.filters.revisions],queryFn:({signal})=>api.readAnalystScope({...fixedScopeInput(scope!),families:[],includeEvents:true,filters:{sourceId:saved.filters.sourceId,quality:saved.filters.quality,phenomenon:saved.filters.phenomenon,revisions:saved.filters.revisions},zoom:0},signal),enabled:enabled&&loadEvents&&session.permissions.includes('observations.read'),retry:false})
+  const eventsEnabled=enabled&&loadEvents&&session.permissions.includes('observations.read')
+  const eventBatch=useQuery({...historicalReadOptions(scope),queryKey:[...prefix,'public-events','read',scope?.scopeHash,scope?.authorizationRevision,saved.filters.sourceId,saved.filters.quality,saved.filters.phenomenon,saved.filters.revisions],queryFn:({signal})=>api.readAnalystScope({...fixedScopeInput(scope!),families:[],includeEvents:true,filters:{sourceId:saved.filters.sourceId,quality:saved.filters.quality,phenomenon:saved.filters.phenomenon,revisions:saved.filters.revisions},zoom:0},signal),enabled:eventsEnabled,retry:false})
+  // The retained event read holds a bounded budget slot. A changed scope or
+  // filter supersedes it, and closing the view releases it, so ordinary
+  // navigation cannot exhaust the read capacity.
+  useReadSnapshotRelease(eventsEnabled?eventBatch.data?.id:undefined,[...prefix,'public-events','read'])
   const events={...eventBatch,isError:eventBatch.isError||eventBatch.data?.eventState==='unavailable',data:eventBatch.data?.events?{...eventBatch.data.events,items:eventBatch.data.events.items.slice(pageOffset,pageOffset+100),truncated:eventBatch.data.events.total>pageOffset+100}:undefined}
 
   const datasets = useQuery({ queryKey: [...prefix, 'reference-datasets'], queryFn: ({signal}) => api.listReferenceDatasets(signal), enabled:enabled&&session.permissions.includes('sources.read') })

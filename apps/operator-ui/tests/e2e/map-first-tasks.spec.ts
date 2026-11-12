@@ -27,10 +27,10 @@ test('map entry ignores a saved exercise and never requests simulation onboardin
  const calls:string[]=[]
  page.on('request',r=>{if(/\/api\/v1\/(simulation|scenarios)/.test(r.url()))calls.push(r.url())})
  await page.goto('/')
- await expect(page.getByRole('heading',{name:'Explore an area and its evidence'})).toBeVisible()
+ await expect(page).toHaveURL(url=>url.pathname==='/map')
+ await expect(page.getByRole('searchbox',{name:'Find a country, region or place'})).toBeVisible()
  await page.screenshot({path:'test-results/map-entry.png',fullPage:true})
  await expect(page.getByRole('button',{name:'Simulation',exact:true})).toHaveCount(0)
- await page.getByRole('link',{name:'Open Public Context →',exact:true}).click()
  await expect(page.getByTestId('workspace-basis')).toContainText('Public sources')
  expect(calls).toEqual([])
 })

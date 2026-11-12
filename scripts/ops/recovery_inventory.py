@@ -14,7 +14,7 @@ def sql(container, database, statement):
         ['docker', 'exec', '-i', container, 'psql', '-X', '-qAt', '-U', 'c4isr',
          '-d', database, '-v', 'ON_ERROR_STOP=1'],
         input="SET TIME ZONE 'UTC'; SET extra_float_digits=3;\n" + statement,
-        capture_output=True, text=True, check=True)
+        capture_output=True, text=True, encoding='utf-8', check=True)
     return result.stdout.strip()
 
 
@@ -68,6 +68,48 @@ def inventory(container, database='c4isr'):
           FROM composite_output_events e JOIN composite_outputs o
           ON (o.id,o.scope_id)=(e.output_id,e.scope_id)
           WHERE e.document->>'action'='UPLOAD_PLANNED'""")
+    if 'geographic_assets' in tables:
+        families.append("""SELECT object_key key, id entity_id, document->>'sha256' sha256,
+          size_bytes bytes, 'geographic' family,
+          CASE WHEN restore_allowed THEN state ELSE 'EXPIRED' END state, retain_until,
+          restore_allowed AND state='READY' AND retain_until>clock_timestamp() required
+          FROM (
+            WITH admission_policy AS (
+              SELECT old.id,old.scope_id,
+                s.status='active' AND old.document->>'enabled'='true' AND live.document->>'enabled'='true'
+                  AND old.document#>>'{rights,retainRaw}'='true' AND live.document#>>'{rights,retainRaw}'='true'
+                  AND COALESCE((old.document#>>'{rights,expiresAt}')::timestamptz,'infinity')>clock_timestamp()
+                  AND COALESCE((live.document#>>'{rights,expiresAt}')::timestamptz,'infinity')>clock_timestamp() can_retain,
+                old.document#>>'{rights,allowAnalysis}'='true' AND live.document#>>'{rights,allowAnalysis}'='true'
+                  AND old.document#>>'{rights,outputPermissions,geographicEnvironment}'='true'
+                  AND live.document#>>'{rights,outputPermissions,geographicEnvironment}'='true' can_prepare
+              FROM source_admissions old
+              JOIN retrieval_profile_revisions r ON r.admission_id=old.id AND r.scope_id=old.scope_id
+              JOIN retrieval_profiles p ON (p.scope_id,p.source_id,p.profile_key)=(r.scope_id,r.source_id,r.profile_key)
+              JOIN retrieval_profile_revisions h ON h.id=p.head_revision_id
+              JOIN source_admissions live ON live.id=h.admission_id AND live.scope_id=h.scope_id
+              JOIN sources s ON (s.id,s.scope_id)=(old.source_id,old.scope_id)
+            )
+            SELECT a.*,a.state='READY' AND CASE
+              WHEN a.document#>>'{representation,format}'<>'release-zip' THEN COALESCE(policy.can_retain,false)
+              ELSE EXISTS(
+                SELECT 1 FROM geographic_environment_releases r
+                JOIN geographic_environment_builds b ON (b.id,b.scope_id)=(r.build_id,r.scope_id)
+                WHERE (r.bundle_id,r.scope_id)=(a.id,a.scope_id)
+                  AND COALESCE((SELECT state FROM geographic_environment_release_events
+                    WHERE (release_id,scope_id)=(r.id,r.scope_id) ORDER BY occurred_at DESC,id DESC LIMIT 1),'EXPIRED')
+                      NOT IN ('EXPIRED','WITHDRAWN','SUPERSEDED')
+                  AND NOT EXISTS(
+                    SELECT 1 FROM jsonb_array_elements(b.recipe->'inputs') input
+                    LEFT JOIN geographic_assets parent ON parent.id=input->>'id' AND parent.scope_id=b.scope_id
+                    LEFT JOIN admission_policy ap ON (ap.id,ap.scope_id)=(parent.admission_id,parent.scope_id)
+                    WHERE NOT COALESCE(ap.can_retain AND ap.can_prepare AND parent.state='READY'
+                                      AND parent.retain_until>clock_timestamp(),false)
+                  )
+              ) END AS restore_allowed
+            FROM geographic_assets a
+            LEFT JOIN admission_policy policy ON (policy.id,policy.scope_id)=(a.admission_id,a.scope_id)
+          ) resolved_geographic_objects""")
     if families:
         result['objects'] = json.loads(sql(container, database,
             'SELECT COALESCE(json_agg(r ORDER BY key,family),\'[]\') FROM (' +
@@ -102,7 +144,7 @@ def restore_policy(snapshot, now):
     forbidden, required = set(), {}
     for row in snapshot.get('objects', []):
         until = datetime.fromisoformat(row['retain_until'].replace('Z', '+00:00'))
-        if row['state'] in ('TOMBSTONED', 'DELETE_PENDING', 'DELETED') or until <= now:
+        if row['state'] in ('TOMBSTONED', 'DELETE_PENDING', 'DELETED', 'EXPIRED') or until <= now:
             forbidden.add(row['key'])
         elif row['required']:
             prior = required.get(row['key'])

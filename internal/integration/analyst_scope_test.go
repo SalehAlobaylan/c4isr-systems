@@ -265,8 +265,10 @@ func TestMapFirstTemporalReadSnapshotsPublicationRacesAndAccess(t *testing.T) {
 	}
 	// Promotion copies the exact bounded result/receipts into durable scope
 	// evidence rather than retaining a database transaction or expiring cursor.
-	cite := analystscope.FromSnapshot(beforeCommit.Scope)
-	cite.ReadSnapshotID = beforeCommit.ID
+	// A refresh of the same logical view supersedes the manifest it replaces,
+	// so the citation names the manifest this view currently retains.
+	cite := analystscope.FromSnapshot(withdrawn.Scope)
+	cite.ReadSnapshotID = withdrawn.ID
 	var frozen analystscope.Snapshot
 	e = db.WithTx(ctx, f.h.pool, func(tx pgx.Tx) error { var e error; frozen, e = svc.Freeze(ctx, tx, cite); return e })
 	if e != nil || len(frozen.ReadManifest) == 0 {
@@ -281,16 +283,16 @@ func TestMapFirstTemporalReadSnapshotsPublicationRacesAndAccess(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if _, e = svc.ReadPage(restricted, beforeCommit.ID, "event_records", 0, 100); e == nil {
+	if _, e = svc.ReadPage(restricted, withdrawn.ID, "event_records", 0, 100); e == nil {
 		t.Fatal("access revision did not invalidate cursor")
 	}
 	if _, e = svc.Get(restricted, frozen.ID); e == nil {
 		t.Fatal("durable citation leaked a required source")
 	}
-	if _, e = f.h.pool.Exec(context.Background(), `UPDATE analyst_read_snapshots SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1`, beforeCommit.ID); e != nil {
+	if _, e = f.h.pool.Exec(context.Background(), `UPDATE analyst_read_snapshots SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1`, withdrawn.ID); e != nil {
 		t.Fatal(e)
 	}
-	if _, e = svc.ReadPage(ctx, beforeCommit.ID, "event_records", 0, 100); e == nil {
+	if _, e = svc.ReadPage(ctx, withdrawn.ID, "event_records", 0, 100); e == nil {
 		t.Fatal("expired cursor remained readable")
 	}
 	if e = db.WithTx(ctx, f.h.pool, func(tx pgx.Tx) error { _, e := svc.Freeze(ctx, tx, cite); return e }); !apperr.Is(e, apperr.CodeConflict) {
@@ -299,9 +301,21 @@ func TestMapFirstTemporalReadSnapshotsPublicationRacesAndAccess(t *testing.T) {
 	if _, e = svc.Get(ctx, frozen.ID); e != nil {
 		t.Fatal("durable citation expired with its cursor", e)
 	}
+	// Refreshing one logical view supersedes its retained manifest instead of
+	// consuming another budget slot; genuinely different views stay bounded.
+	refreshed, e := svc.Read(ctx, analystscope.ReadInput{Input: in, Families: []string{"earthquakes"}, IncludeEvents: true})
+	if e != nil || refreshed.ID == withdrawn.ID {
+		t.Fatal("refresh did not supersede the retained manifest", e)
+	}
+	var live int
+	if e = f.h.pool.QueryRow(context.Background(), `SELECT count(*) FROM analyst_read_snapshots WHERE principal_id='scope-fixture' AND expires_at>clock_timestamp()`).Scan(&live); e != nil || live != 4 {
+		t.Fatal("refreshing one view accumulated retained manifests", live, e)
+	}
 	bounded := false
 	for i := 0; i < 17; i++ {
-		_, e := svc.Read(ctx, analystscope.ReadInput{Input: in, Families: []string{"weather"}})
+		variant := in
+		variant.Temporal.Interval = &queryscope.Interval{From: start.Add(time.Duration(i+1) * time.Second), To: end}
+		_, e := svc.Read(ctx, analystscope.ReadInput{Input: variant, Families: []string{"weather"}})
 		if apperr.Is(e, apperr.CodeConflict) {
 			bounded = true
 			break

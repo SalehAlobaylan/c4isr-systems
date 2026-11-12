@@ -1,0 +1,138 @@
+{
+  "schema": "emad.environment-source-review.v1",
+  "purpose": "Private development and staging preparation. Environment release requires the authorized reviewer to approve the staged manifest.",
+  "areas": [
+    {
+      "key": "jeddah",
+      "name": "Jeddah reference context",
+      "area": {
+        "west": 39.144,
+        "south": 21.464,
+        "east": 39.216,
+        "north": 21.536
+      },
+      "providers": {
+        "osm": "Geofabrik GCC States extract"
+      },
+      "retainUntil": "2027-02-10T00:00:00Z"
+    },
+    {
+      "key": "al-ain",
+      "name": "Al Ain reference context",
+      "area": {
+        "west": 55.73,
+        "south": 24.2,
+        "east": 55.75,
+        "north": 24.22
+      },
+      "providers": {
+        "osm": "Geofabrik GCC States extract"
+      },
+      "retainUntil": "2027-02-10T00:00:00Z"
+    },
+    {
+      "key": "avignon",
+      "name": "Avignon reference context",
+      "area": {
+        "west": 4.82,
+        "south": 43.95,
+        "east": 4.84,
+        "north": 43.97
+      },
+      "providers": {
+        "osm": "OpenStreetMap v0.6 buffered map extract"
+      },
+      "retainUntil": "2027-02-10T00:00:00Z"
+    }
+  ],
+  "sources": {
+    "surface": {
+      "originalProducer": "Copernicus",
+      "upstreamProvider": "Copernicus public COG distribution",
+      "dataset": "Copernicus GLO-30 Public DSM",
+      "productVersion": "GLO-30 Public COG",
+      "rights": {
+        "id": "copdem-glo30-local-v1",
+        "legalBasis": "Public GLO-30 license with source notice for the retained tiles and adaptations. Restricted installation and private reproducibility.",
+        "termsUrl": "https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM",
+        "attribution": "Produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.",
+        "retainRaw": true,
+        "allowAnalysis": true,
+        "allowSimulationExport": false,
+        "outputPermissions": {
+          "internalAnalysis": true,
+          "metadataRetention": true,
+          "citation": true,
+          "geographicEnvironment": true,
+          "rawDistribution": true
+        }
+      }
+    },
+    "geoid": {
+      "originalProducer": "US NGA",
+      "upstreamProvider": "PROJ datumgrid CDN",
+      "dataset": "NGA EGM2008 geoid",
+      "productVersion": "2.5 arc-minute GeoTIFF",
+      "rights": {
+        "id": "nga-egm2008-local-v1",
+        "legalBasis": "The publisher identifies the exact EGM2008 grid as public domain. Restricted installation and private reproducibility.",
+        "termsUrl": "https://cdn.proj.org/us_nga_README.txt",
+        "attribution": "US NGA EGM2008 via PROJ-data and GeographicLib.",
+        "retainRaw": true,
+        "allowAnalysis": true,
+        "allowSimulationExport": false,
+        "outputPermissions": {
+          "internalAnalysis": true,
+          "metadataRetention": true,
+          "citation": true,
+          "geographicEnvironment": true,
+          "rawDistribution": true
+        }
+      }
+    },
+    "imagery": {
+      "originalProducer": "Copernicus",
+      "upstreamProvider": "Retained Sentinel-2 L2A capture windows",
+      "dataset": "Sentinel-2 L2A window",
+      "productVersion": "Retained 2025 bands",
+      "rights": {
+        "id": "sentinel2-window-local-v1",
+        "legalBasis": "Copernicus Sentinel reproduction and adaptation terms, with notice identifying the source year. Restricted installation and private reproducibility.",
+        "termsUrl": "https://cds.climate.copernicus.eu/licences/ec-sentinel",
+        "attribution": "Contains modified Copernicus Sentinel data 2025.",
+        "retainRaw": true,
+        "allowAnalysis": true,
+        "allowSimulationExport": false,
+        "outputPermissions": {
+          "internalAnalysis": true,
+          "metadataRetention": true,
+          "citation": true,
+          "geographicEnvironment": true,
+          "rawDistribution": true
+        }
+      }
+    },
+    "osm": {
+      "originalProducer": "OpenStreetMap contributors",
+      "upstreamProvider": "OpenStreetMap retained extract",
+      "dataset": "OpenStreetMap source vectors",
+      "productVersion": "Retained attributed snapshot",
+      "rights": {
+        "id": "osm-odbl-private-v1",
+        "legalBasis": "ODbL 1.0 retained inputs and separate derived vector databases. Use and rebuild access are restricted to the private installation.",
+        "termsUrl": "https://www.openstreetmap.org/copyright",
+        "attribution": "© OpenStreetMap contributors. The derived OSM vector database is under ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/).",
+        "retainRaw": true,
+        "allowAnalysis": true,
+        "allowSimulationExport": false,
+        "outputPermissions": {
+          "internalAnalysis": true,
+          "metadataRetention": true,
+          "citation": true,
+          "geographicEnvironment": true,
+          "rawDistribution": true
+        }
+      }
+    }
+  }
+}

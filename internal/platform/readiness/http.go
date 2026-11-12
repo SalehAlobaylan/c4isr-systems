@@ -38,10 +38,11 @@ type Report struct {
 	Workers   []Worker        `json:"workers"`
 }
 type Service struct {
-	MapOnly       bool
-	Pool          *pgxpool.Pool
-	Store         artifacts.Store
-	RuntimeBuilds []string
+	EnvironmentLibrary bool
+	MapOnly            bool
+	Pool               *pgxpool.Pool
+	Store              artifacts.Store
+	RuntimeBuilds      []string
 }
 
 func (s Service) Mount(r chi.Router) {
@@ -75,13 +76,16 @@ func (s Service) Beat(ctx context.Context, feature, build string) error {
 	if p.Kind != "service" {
 		return apperr.Forbidden("worker service identity required")
 	}
-	permissions := map[string]string{"connectors": "connectors.execute", "imagery": "imagery.jobs.execute", "assets": "sim.assets.import", "runtime": "sim.runtime.execute", "recordings": "sim.recordings.execute", "preparation": "imagery.capture.execute"}
+	permissions := map[string]string{"connectors": "connectors.execute", "imagery": "imagery.jobs.execute", "assets": "sim.assets.import", "runtime": "sim.runtime.execute", "recordings": "sim.recordings.execute", "preparation": "imagery.capture.execute", "environment-library": "environments.execute"}
 	permission, ok := permissions[feature]
 	if !ok {
 		return apperr.Validation("unknown worker feature")
 	}
 	if e := access.Require(ctx, permission); e != nil {
 		return e
+	}
+	if feature == "environment-library" && (!s.EnvironmentLibrary || r.Partition != access.PublicEvidence) {
+		return apperr.Forbidden("environment worker feature is unavailable")
 	}
 	if feature == "runtime" {
 		admitted := false
@@ -191,7 +195,11 @@ func (s Service) Report(ctx context.Context) (Report, error) {
 		if time.Since(v.LastSeenAt) < 15*time.Second {
 			v.State = "READY"
 		}
-		if !s.MapOnly || v.Feature == "imagery" || v.Feature == "preparation" || v.Feature == "connectors" {
+		if v.Feature == "environment-library" {
+			if s.EnvironmentLibrary && access.Allows(ctx, "environments.read") {
+				out.Workers = append(out.Workers, v)
+			}
+		} else if !s.MapOnly || v.Feature == "imagery" || v.Feature == "preparation" || v.Feature == "connectors" {
 			out.Workers = append(out.Workers, v)
 		}
 	}

@@ -52,7 +52,7 @@ const mapRoute = createRoute({
     mapState:mapJSONSearch(search.mapState,4096),
     area:mapJSONSearch(search.area,8192),
     region:search.region===undefined?undefined:typeof search.region==='string'&&search.region.length<=256?search.region:'invalid',
-    tool:typeof search.tool==='string'&&['systems','investigations','coverage','geography','imagery','review','context','weather','tracks','sources','jobs','simulation'].includes(search.tool)?search.tool:undefined,
+    tool:typeof search.tool==='string'&&['systems','investigations','coverage','geography','imagery','review','context','weather','tracks','sources','jobs','simulation','environments'].includes(search.tool)?search.tool:undefined,
     investigation:typeof search.investigation==='string'&&search.investigation.length<=160?search.investigation:undefined,
     workbench:mapJSONSearch(search.workbench,2048),
     publicView: search.publicView === undefined ? undefined : (JSON.stringify(search.publicView).length > 4096 ? 'invalid' : typeof search.publicView === 'string' ? search.publicView : JSON.stringify(search.publicView)),

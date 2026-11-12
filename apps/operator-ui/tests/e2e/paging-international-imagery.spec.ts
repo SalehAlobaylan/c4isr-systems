@@ -47,7 +47,7 @@ test('installed MapLibre workers load local RTL and shape mixed Arabic with pack
 for(const size of [{width:320,height:700},{width:390,height:844},{width:740,height:360}])test(`keyboard and scope stay reachable at ${size.width}x${size.height}`,async({page})=>{
  await page.setViewportSize(size);await setup(page);await page.goto(url('imagery'))
  await expect(page.getByRole('region',{name:'Real satellite imagery'})).toBeVisible()
- await expect(page.getByText(/2025.*Asia\/Dubai/).first()).toBeVisible()
+ await expect(page.getByText(/2025.*Asia\/Dubai/).filter({visible:true}).first()).toBeVisible()
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true)
  // A 200% text enlargement is tested separately from a viewport resize.
  await page.addStyleTag({content:'html{font-size:200%}'});await page.getByRole('button',{name:'Map workspace',exact:true}).click();await expect(page.getByRole('dialog')).toBeVisible();await page.keyboard.press('Escape')

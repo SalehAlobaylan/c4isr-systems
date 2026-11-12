@@ -1,5 +1,7 @@
 # C4ISR Systems
 
+**Environment preparation — 12 November 2026.** The Geographic Environment Library has staged Jeddah, Al Ain and Avignon in Windows development and Linux staging. The data packages and restore evidence are available for review. Human release approval and a 24-hour staging observation are open. [Installation evidence](docs/implementation/ENVIRONMENT_FOUNDATION_EVIDENCE_2026_11_12.md) [Operating instructions](docs/implementation/ENVIRONMENT_LIBRARY_OPERATIONS.md)
+
 > **Current product phase:** A map-centered Public Context and Intelligence system for the **Middle East and the rest of the world**. Simulation is deferred for a separate design discussion; current preparation is limited to reusable geographic environments. Read the [current scope](EMAD_CURRENT_SCOPE.md) and [map-first gap report](docs/implementation/MAP_FIRST_GAP_REPORT_2026_10_25.md). Existing simulation code and the historical instructions below do not make further simulation work part of this phase. The supported startup below uses the map profile and preserves existing data.
 
 EMAD's current product is map-centered **Public Context & Intelligence for the Middle East and supported worldwide workflows**. Reusable geographic environment preparation is included; future simulation design remains a separate phase.
@@ -83,7 +85,7 @@ Key rules preserved by the implementation:
 - **PostGIS is authoritative** — containment, proximity, and distance decisions run in SQL (`ST_Contains`, `ST_DWithin`, `ST_Distance`).
 - **Scenarios are deterministic** — fixed seed, fixed ordering, replayable via the same application boundaries real integrations will use.
 
-Use the [v2 implementation plan](EMAD_IMPLEMENTATION_PLAN_v2.md) for forward development. `ARCHITECTURE.md`, `PRODUCT.md`, and `IMPLEMENTATION_PLAN.md` retain earlier design and implementation history where compatible with the v2 direction. Material implementation decisions are recorded in `docs/decisions.md`.
+The [v2 implementation plan](EMAD_IMPLEMENTATION_PLAN_v2.md) is retained as historical design and implementation history; **new work follows [EMAD_CURRENT_SCOPE.md](EMAD_CURRENT_SCOPE.md)** and the current preparation plan at [docs/implementation/ENVIRONMENT_FOUNDATION_PLAN_2026_11_11.md](docs/implementation/ENVIRONMENT_FOUNDATION_PLAN_2026_11_11.md). `ARCHITECTURE.md`, `PRODUCT.md`, and `IMPLEMENTATION_PLAN.md` retain earlier design and implementation history where compatible with the v2 direction. Material implementation decisions are recorded in `docs/decisions.md`.
 
 ## Repository layout
 

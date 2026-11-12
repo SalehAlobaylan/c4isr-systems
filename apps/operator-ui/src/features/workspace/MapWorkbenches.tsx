@@ -7,6 +7,7 @@ import {scopePeriodLabel} from './AnalystScopeProvider'
 import {useWorkspace} from '@/lib/workspaceContext'
 import {PublicSystemsWorkspace} from './SystemsWorkspace'
 import {SimulationGateway} from './SimulationGateway'
+import {EnvironmentLibrary} from './EnvironmentLibrary'
 
 const groupFor=(tool?:MapTool)=>tool==='review'||tool==='context'?'imagery':tool
 type Entry={host:WorkbenchHost;routeKey?:string;tool:MapTool;pinned:boolean}
@@ -40,7 +41,7 @@ export function MapWorkbenches({tool,host,routeKey,geography}:{tool?:MapTool;hos
     {visible&&entry.pinned&&differs&&<div><p>Adopting the map scope replaces area and period, clears scene/pair choices and export previews, and clears the selected result. Completed records retain their original inputs.</p><button className="ux-button" onClick={()=>{const next=adopt(entry);entries.current.set(key,{...entry,host:next});host.update(next.search);refresh()}}>Use current map scope</button></div>}
    </div>
    {entry.host.areaError&&<p role="alert">{entry.host.areaError}</p>}
-   {toolPermissions[entry.tool]&&!session.permissions.includes(toolPermissions[entry.tool]!)?<p role="status" className="ux-notice">This capability requires {toolPermissions[entry.tool]}. Other permitted map tools remain available.</p>:key==='systems'?<PublicSystemsWorkspace/>:key==='investigations'?<PublicSystemsWorkspace initialTab="investigations"/>:key==='coverage'?<PublicSystemsWorkspace initialTab="coverage"/>:key==='sources'?<PublicSystemsWorkspace initialTab="sources"/>:key==='jobs'?<PublicSystemsWorkspace initialTab="jobs"/>:key==='imagery'?<IntelligencePage/>:key==='weather'?<WeatherReportsPage/>:key==='tracks'?<ExternalTracksPage/>:key==='simulation'?<SimulationGateway/>:geography}
+   {toolPermissions[entry.tool]&&!session.permissions.includes(toolPermissions[entry.tool]!)?<p role="status" className="ux-notice">This capability requires {toolPermissions[entry.tool]}. Other permitted map tools remain available.</p>:key==='systems'?<PublicSystemsWorkspace/>:key==='investigations'?<PublicSystemsWorkspace initialTab="investigations"/>:key==='coverage'?<PublicSystemsWorkspace initialTab="coverage"/>:key==='sources'?<PublicSystemsWorkspace initialTab="sources"/>:key==='jobs'?<PublicSystemsWorkspace initialTab="jobs"/>:key==='imagery'?<IntelligencePage/>:key==='weather'?<WeatherReportsPage/>:key==='tracks'?<ExternalTracksPage/>:key==='simulation'?<SimulationGateway/>:key==='environments'?<EnvironmentLibrary/>:geography}
   </WorkbenchContext.Provider></div>
  })}</>
 }

@@ -45,6 +45,8 @@ services:
     environment:
       <<: *worker-env
       C4ISR_HTTP_ADDR: :8080
+      C4ISR_ENVIRONMENT_LIBRARY_ENABLED: ${C4ISR_ENVIRONMENT_LIBRARY_ENABLED:-false}
+      C4ISR_ENVIRONMENT_TOOLCHAIN: ${C4ISR_ENVIRONMENT_TOOLCHAIN:-}
     secrets:
       - object_access_key
       - object_secret_key
@@ -125,6 +127,27 @@ services:
       - object_secret_key
       - source: delivery_author
         target: delivery-author.token
+  environment-library:
+    <<: *worker
+    profiles: [environment-library]
+    entrypoint: [/app/bin/emad-environment]
+    command: [-token-file, /run/secrets/worker-environment.token, -processor, /app/scripts/data/environment_library.py]
+    environment:
+      <<: *worker-env
+      C4ISR_PUBLIC_CONNECTORS_FILE: ''
+      C4ISR_ENVIRONMENT_LIBRARY_ENABLED: ${C4ISR_ENVIRONMENT_LIBRARY_ENABLED:-false}
+      C4ISR_ENVIRONMENT_TOOLCHAIN: ${C4ISR_ENVIRONMENT_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_SPOOL: /data/attempts
+    mem_limit: 2304m
+    volumes: [emad-staging-environment-scratch:/data]
+    deploy:
+      replicas: 2
+    secrets:
+      - database_url
+      - object_access_key
+      - object_secret_key
+      - source: environment_worker
+        target: worker-environment.token
   connectors:
     <<: *worker
     # One exact-source identity per instance. Create separate services for each
@@ -141,6 +164,7 @@ volumes:
   emad-staging-objects:
   emad-staging-object-meta:
   emad-staging-preparation:
+  emad-staging-environment-scratch:
 secrets:
   object_access_key: {file: '${STAGING_SECRET_DIR:-./.secrets}/object_access_key'}
   object_secret_key: {file: '${STAGING_SECRET_DIR:-./.secrets}/object_secret_key'}
@@ -153,3 +177,4 @@ secrets:
   connector_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-usgs.token'}
 
   delivery_author: {file: '${STAGING_SECRET_DIR:-./.secrets}/delivery-author.token'}
+  environment_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-environment.token'}

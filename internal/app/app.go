@@ -28,6 +28,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/events"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/exerciseingest"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/externaltracks"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/geoenv"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/geospatial"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/imagery"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/incidents"
@@ -464,12 +465,16 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 		areas.Service{Pool: pool}.Mount(r)
 		analystscope.Service{Pool: pool}.Mount(r)
 		catalog.Service{Pool: pool}.Mount(r)
+		if cfg.EnvironmentLibraryEnabled || cfg.EnvironmentToolchain != "" {
+			objects, _ := h.blobStore.(artifacts.GeographicStore)
+			geoenv.Service{Pool: pool, Store: objects, Toolchain: cfg.EnvironmentToolchain, Spool: cfg.EnvironmentSpool, Parallel: cfg.EnvironmentParallel, ReadOnly: !cfg.EnvironmentLibraryEnabled, UploadSlots: make(chan struct{}, 2)}.Mount(r)
+		}
 		investigations.Service{Pool: pool, Store: h.blobStore}.Mount(r)
 		blobStore := h.blobStore
 		if blobStore == nil {
 			blobStore = artifacts.Unavailable{}
 		}
-		readiness.Service{Pool: pool, Store: blobStore, RuntimeBuilds: cfg.RuntimeBuilds, MapOnly: cfg.MapOnly()}.Mount(r)
+		readiness.Service{Pool: pool, Store: blobStore, RuntimeBuilds: cfg.RuntimeBuilds, MapOnly: cfg.MapOnly(), EnvironmentLibrary: cfg.EnvironmentLibraryEnabled}.Mount(r)
 		r.Get("/auth/me", func(w http.ResponseWriter, req *http.Request) {
 			resources, err := store.SelectableResources(req.Context())
 			if err != nil {

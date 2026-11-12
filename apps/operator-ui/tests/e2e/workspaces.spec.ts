@@ -31,7 +31,7 @@ test('workspace switch discards pending responses, selection and replay state', 
   await expect(page.getByTestId('scrub-mode')).toHaveText('Replay')
   await page.getByRole('button', { name: 'Public Context', exact: true }).click()
   await expect(page.getByTestId('workspace-basis')).toContainText('Public sources')
-  await expect(page).toHaveURL(/\/map$/)
+  await expect(page).toHaveURL(url=>url.pathname==='/map'&&!url.searchParams.has('selected'))
   await page.screenshot({ path: '../../tmp/f0-6-public-workspace.png' })
   await expect(page.getByRole('region', { name: 'Scenario run' })).toHaveCount(0)
   release()

@@ -89,6 +89,12 @@ func (s *Store) Authenticate(ctx context.Context, token string, legacyPermission
 	return s.authenticate(ctx, "token_hash", h[:], legacyPermissions)
 }
 
+// AuthenticateExplicitCredential reloads a durable task's original
+// credential. Legacy role grants confer no authority in this path.
+func (s *Store) AuthenticateExplicitCredential(ctx context.Context, id string) (Session, error) {
+	return s.authenticate(ctx, "id", id, func(string) []string { return nil })
+}
+
 func (s *Store) authenticate(ctx context.Context, column string, value any, legacyPermissions func(string) []string) (Session, error) {
 	if column != "id" && column != "token_hash" {
 		panic("invalid credential lookup")

@@ -63,6 +63,9 @@ func seedContextBrowser(t *testing.T, h *harness, locations publicingest.Registr
 			if _, e := h.pool.Exec(ctx, `UPDATE source_connector_state SET next_attempt_at=now()-interval '1 hour' WHERE source_id=$1`, source); e != nil {
 				t.Fatal(e)
 			}
+			if _, e := h.pool.Exec(ctx, `UPDATE provider_budget_state SET next_at='epoch' WHERE group_key=$1`, "location:"+principal); e != nil {
+				t.Fatal(e)
+			}
 		}
 		fetcher.delegate = nil
 		list := call(integrationToken, "GET", "/api/v1/public-context/records", nil, 200, headers)

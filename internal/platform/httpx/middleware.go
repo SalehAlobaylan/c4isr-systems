@@ -274,8 +274,17 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 	if len(parts) == 4 && parts[0] == "analyst-scope" && parts[1] == "reads" && parts[3] == "records" && method == http.MethodGet {
 		return RoutePolicy{Known: true, Permission: "observations.read"}
 	}
+	if len(parts) == 4 && parts[0] == "analyst-scope" && parts[1] == "reads" && parts[3] == "release" && method == http.MethodPost {
+		return RoutePolicy{Known: true, Permission: "sources.read"}
+	}
 	if path == "/catalog/reads" && method == http.MethodPost {
 		return RoutePolicy{Known: true, Permission: "sources.read"}
+	}
+	if method == http.MethodDelete && len(parts) == 3 && parts[0] == "catalog" && parts[1] == "reads" {
+		return RoutePolicy{Known: true, Permission: "sources.read"}
+	}
+	if permission := geographicEnvironmentPermission(method, parts); permission != "" {
+		return RoutePolicy{Known: true, Permission: permission}
 	}
 	if len(parts) == 4 && parts[0] == "sources" && parts[2] == "scheduler" && parts[3] == "run" && method == http.MethodPost {
 		return RoutePolicy{Known: true, Permission: "connectors.execute"}
@@ -949,6 +958,9 @@ func Recoverer(logger *slog.Logger) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if p := recover(); p != nil {
+					if p == http.ErrAbortHandler {
+						panic(p)
+					}
 					logger.Error("panic recovered",
 						"panic", "handler failure",
 						"stack", string(debug.Stack()),

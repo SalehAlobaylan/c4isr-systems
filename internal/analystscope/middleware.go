@@ -21,6 +21,11 @@ func (s Service) CatalogQueries(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		if r.Method == "GET" && !q.Has("scope_hash") && (r.URL.Path == "/api/v1/picture" || r.URL.Path == "/api/v1/picture/window") {
+			// Picture scope is a legacy selector inside its authorized run.
+			next.ServeHTTP(w, r)
+			return
+		}
 		supported := map[string]bool{"/api/v1/imagery/scenes": true, "/api/v1/imagery/captures": true, "/api/v1/imagery/jobs": true, "/api/v1/assessments/intelligence": true, "/api/v1/assessments/reports": true, "/api/v1/public-context/records": true, "/api/v1/external-tracks": true, "/api/v1/public-events": true}
 		if r.Method != "GET" || !supported[strings.TrimSuffix(r.URL.Path, "/")] || len(q["scope"]) != 1 || len(q["scope_hash"]) != 1 || len(q.Get("scope")) > 3<<20 {
 			httpx.Error(w, apperr.Validation("unsupported or ambiguous scoped catalog request"))

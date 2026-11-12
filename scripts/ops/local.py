@@ -22,7 +22,7 @@ WINDOWS = os.name == 'nt'
 EXE = '.exe' if WINDOWS else ''
 PYTHON = ROOT / '.venv-recovery' / ('Scripts/python.exe' if WINDOWS else 'bin/python')
 COMPOSE = ['docker', 'compose', '-f', 'deployments/docker-compose.yml', '-f', 'deployments/local/docker-compose.yml']
-ALL_APPS = ['c4isr-server', 'emad-local', 'emad-imagery', 'emad-delivery', 'emad-assets', 'emad-recordings', 'emad-runtime', 'emad-connectors']
+ALL_APPS = ['c4isr-server', 'emad-local', 'emad-imagery', 'emad-delivery', 'emad-environment', 'emad-assets', 'emad-recordings', 'emad-runtime', 'emad-connectors']
 
 
 def product_profile(cfg):
@@ -86,6 +86,7 @@ def configuration():
 
 def environment(cfg):
     env = os.environ.copy()
+    library = env.get('C4ISR_ENVIRONMENT_LIBRARY_ENABLED', 'false').lower() == 'true'
     env['C4ISR_PRODUCT_PROFILE'] = product_profile(cfg)
     env['EMAD_INSTALLER_PROFILE'] = 'local-source-admin' if product_profile(cfg) == 'map' else 'local-analyst'
     env.update({'C4ISR_ENV': 'development', 'C4ISR_DATABASE_AUTH': 'true', 'C4ISR_AUTH_REQUIRED': 'true',
@@ -97,6 +98,14 @@ def environment(cfg):
                 'VITE_API_PROXY_TARGET': 'http://127.0.0.1:' + str(cfg['apiPort']),
                 'C4ISR_LOG_LEVEL': 'warn'})
     env.setdefault('C4ISR_DATABASE_URL', 'postgres://c4isr:c4isr@localhost:5433/c4isr?sslmode=disable')
+    if library:
+        ensure_python()
+        env['C4ISR_ENVIRONMENT_TOOLCHAIN'] = run(
+            [PYTHON, ROOT / 'scripts/data/environment_library.py', 'toolchain'],
+            capture_output=True, text=True).stdout.strip()
+        spool = PRIVATE / 'environment-spool'
+        spool.mkdir(mode=0o700, exist_ok=True)
+        env['C4ISR_ENVIRONMENT_SPOOL'] = str(spool)
     # Preserve the existing explicit development bootstrap credential. New
     # capabilities use separately provisioned database identities.
     env.setdefault('C4ISR_AUTH_TOKENS', 'operator-01=dev-operator-token')
@@ -264,6 +273,12 @@ def develop(cfg):
         if product_profile(cfg) == 'historical-full': worker([ROOT/'bin'/('emad-runtime'+EXE),'-worker','-url',f"http://127.0.0.1:{cfg['apiPort']}",'-token-file',CREDS/'worker-runtime.token'],'worker-runtime')
         worker([ROOT/'bin'/('emad-delivery'+EXE),'-token-file',CREDS/'local-map-analyst.token'],'worker-delivery')
         worker([PYTHON,ROOT/'scripts/data/capture_worker.py'],'worker-preparation')
+        if env.get('C4ISR_ENVIRONMENT_LIBRARY_ENABLED', 'false').lower() == 'true':
+            credential = CREDS / 'worker-environment.token'
+            if credential.is_file():
+                worker([ROOT/'bin'/('emad-environment'+EXE),'-token-file',credential,'-python',PYTHON],'worker-environment')
+            else:
+                print('Environment worker requires a provisioned source-scoped credential.', flush=True)
         states = json.loads((PRIVATE / 'provider-status.json').read_text())
         from local_connectors import source_id
         for connector, state in states.items():

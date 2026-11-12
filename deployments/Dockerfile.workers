@@ -4,7 +4,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 ARG EMAD_PRODUCT_PROFILE=map
-RUN mkdir /out && apps="c4isr-server emad-admin emad-imagery emad-delivery emad-connectors" && if [ "$EMAD_PRODUCT_PROFILE" = historical-full ]; then apps="$apps emad-assets emad-recordings emad-runtime"; elif [ "$EMAD_PRODUCT_PROFILE" != map ]; then exit 1; fi && for app in $apps; do CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/$app ./apps/$app; done
+RUN mkdir /out && apps="c4isr-server emad-admin emad-imagery emad-delivery emad-environment emad-connectors" && if [ "$EMAD_PRODUCT_PROFILE" = historical-full ]; then apps="$apps emad-assets emad-recordings emad-runtime"; elif [ "$EMAD_PRODUCT_PROFILE" != map ]; then exit 1; fi && for app in $apps; do CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/$app ./apps/$app; done
 RUN if [ "$EMAD_PRODUCT_PROFILE" = historical-full ]; then /out/emad-runtime -describe > /out/runtime.json && sha256sum /out/emad-runtime | cut -d' ' -f1 > /out/runtime-builds.txt; else touch /out/runtime-builds.txt; fi
 
 FROM node:24-bookworm-slim AS validator

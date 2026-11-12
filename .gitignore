@@ -6,7 +6,7 @@ tmp/
 private/
 .venv-imagery/
 .venv-recovery/
-coverage/
+/coverage/
 *.out
 *.test
 backups/

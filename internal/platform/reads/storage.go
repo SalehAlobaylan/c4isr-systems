@@ -31,10 +31,37 @@ func Save(ctx context.Context, tx pgx.Tx, id, kind string, raw []byte, expiry ti
 		return apperr.Conflict("read exceeds 8 MiB stored representation; select a smaller area, interval or source")
 	}
 	if slot == 0 || used+storedBytes > 64<<20 {
-		return apperr.Conflict("active read capacity exhausted; close a view or wait for expiry before refreshing")
+		// The budget is a lifecycle bound, not a tuning knob: the honest
+		// failure names the two real remedies instead of hiding the cause.
+		return apperr.Conflict("active read capacity exhausted; close a view (its retained read is released when the view closes) or wait for expiry before refreshing")
 	}
 	_, e = tx.Exec(ctx, `INSERT INTO analyst_read_snapshots(id,authorization_revision,expires_at,document,budget_slot,snapshot_kind)VALUES($1,$2,$3,$4,$5,$6)`, id, access.AccessRevision(ctx), expiry, raw, slot, kind)
 	return Normalize(e)
+}
+
+// Supersede removes the retained read that a refresh of the same logical view
+// replaces, identified by the view key the reader stored in its document. It
+// runs inside the caller's transaction so the freed budget slot is reused by
+// the replacement instead of being held until expiry. The row-level security
+// policy keeps the deletion inside the caller's own scope and principal.
+func Supersede(ctx context.Context, tx pgx.Tx, kind, viewKey string) error {
+	if viewKey == "" {
+		return nil
+	}
+	_, e := tx.Exec(ctx, `DELETE FROM analyst_read_snapshots WHERE snapshot_kind=$1 AND document->>'viewKey'=$2`, kind, viewKey)
+	return Normalize(e)
+}
+
+// Release drops one retained read so its budget slot is available immediately
+// rather than at expiry. It reports whether a row was actually released; a
+// snapshot that belongs to another principal, or one that already expired,
+// is not visible to the caller and is therefore never removed.
+func Release(ctx context.Context, tx pgx.Tx, id string) (bool, error) {
+	tag, e := tx.Exec(ctx, `DELETE FROM analyst_read_snapshots WHERE id=$1`, id)
+	if e != nil {
+		return false, Normalize(e)
+	}
+	return tag.RowsAffected() > 0, nil
 }
 func Normalize(e error) error {
 	var pe *pgconn.PgError

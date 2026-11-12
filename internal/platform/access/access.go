@@ -378,6 +378,7 @@ func Deny(ctx context.Context, permission, reason string) {
 }
 
 var Permissions = []string{
+	"environments.read", "environments.manage", "environments.build", "environments.execute", "environments.qualify", "environments.release", "environments.download",
 	"geography.request", "acquisitions.read", "acquisitions.request",
 	"investigations.review", "outputs.read", "outputs.create", "outputs.distribute", "investigations.read", "investigations.create", "investigations.edit", "investigations.manage",
 	"imagery.capture.execute",

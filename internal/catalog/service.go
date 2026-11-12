@@ -207,7 +207,9 @@ func (s Service) Read(ctx context.Context, in Input) (Page, error) {
 			}
 			doc, _ := json.Marshal(snap)
 			if in.ReplaceSnapshotID != "" {
-				if _, e := tx.Exec(ctx, `DELETE FROM analyst_read_snapshots WHERE id=$1 AND snapshot_kind='catalog' AND document->>'fingerprint'=$2`, in.ReplaceSnapshotID, fingerprint); e != nil {
+				// Ownership and scope are enforced by RLS. A view can replace
+				// its prior read even when a filter or area has changed.
+				if _, e := tx.Exec(ctx, `DELETE FROM analyst_read_snapshots WHERE id=$1 AND snapshot_kind='catalog'`, in.ReplaceSnapshotID); e != nil {
 					return e
 				}
 			}
@@ -300,6 +302,18 @@ func (s Service) query(in Input, scope *analystscope.Snapshot) (string, []any) {
 	return "", nil
 }
 func (s Service) Mount(r chi.Router) {
+	r.Delete("/catalog/reads/{id}", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		if e := areas.Require(ctx); e != nil {
+			httpx.Error(w, e)
+			return
+		}
+		if _, e := db.Scoped(s.Pool).Exec(ctx, `DELETE FROM analyst_read_snapshots WHERE id=$1 AND snapshot_kind='catalog'`, chi.URLParam(r, "id")); e != nil {
+			httpx.Error(w, e)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})
 	r.Post("/catalog/reads", func(w http.ResponseWriter, r *http.Request) {
 		var in Input
 		if !areas.Decode(w, r, &in) {

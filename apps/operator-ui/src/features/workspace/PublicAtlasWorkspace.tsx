@@ -7,6 +7,7 @@ import {useNavigate,useSearch} from '@tanstack/react-router'
 import type {Feature,FeatureCollection,Position,Geometry} from 'geojson'
 import {useAPI,fixedScopeInput,type ScopeInput} from '@/lib/api'
 import {useAnalystScope,monitoringPeriod,scopePeriodLabel,historicalReadOptions} from './AnalystScopeProvider'
+import {useReadSnapshotRelease} from './useReadSnapshotRelease'
 import {useWorkspace} from '@/lib/workspaceContext'
 import {usePublicContext} from '@/features/public-context/usePublicContext'
 import {PublicContextPanel} from '@/features/public-context/PublicContextPanel'
@@ -107,6 +108,11 @@ export function PublicAtlasWorkspace(){
  useEffect(()=>{setSelected([]);setProposalOverlay(empty)},[scopeKey])
  const scopeCoverage=useCoverage(activeScope,!paused),historical=activeScope?.temporal.mode==='historical',readFamilies=historical?queryLayers.filter(k=>session.permissions.includes(layerInfo[k].permission)):enabledLayers
  const mapBatch=useQuery({...historicalReadOptions(activeScope),queryKey:[...prefix,'atlas-read',scopeKey,activeScope?.authorizationRevision,temporal.source_id,temporal.quality,historical?'fixed-study':Math.floor(camera.zoom),readFamilies],queryFn:({signal})=>api.readAnalystScope({...fixedScopeInput(activeScope!),families:readFamilies,filters:{sourceId:temporal.source_id,quality:temporal.quality},zoom:Math.floor(camera.zoom),includeEvents:false},signal),enabled:!!activeScope&&!analyst.error&&enabledLayers.length>0&&!paused,retry:false,gcTime:300_000})
+  // The retained map read holds a bounded budget slot. The server supersedes
+  // the previous manifest of the same view; this releases the one a changed
+  // scope, layer set or filter superseded, and the one this view held when it
+  // unmounted, so navigation cannot exhaust the read capacity.
+  useReadSnapshotRelease(mapBatch.data?.id,[...prefix,'atlas-read'])
  const mapQueries=queryLayers.map(k=>({...mapBatch,isError:mapBatch.isError||mapBatch.data?.layers[k]?.state==='unavailable',data:mapBatch.data?.scope.scopeHash===scopeKey?mapBatch.data.layers[k] as unknown as MapResponse:undefined}))
 
  const currentLayers=useMemo(()=>Object.fromEntries(queryLayers.map((k,i)=>[k,mapQueries[i].data])) as Partial<Record<AtlasLayer,MapResponse>>,[...mapQueries.map(q=>q.data)])
@@ -179,7 +185,7 @@ export function PublicAtlasWorkspace(){
    <div className="atlas-stage" data-orientation={dockLayout.orientation} data-dock={focus?'collapsed':size} data-panel={sheet||tool||'previews'} data-compact-controls={dockLayout.compactControls} style={{'--atlas-dock-size':dockLayout.extent} as CSSProperties}>
      <div className="public-map-canvas atlas-map-region">
        <AtlasCanvas proposalOverlay={proposalOverlay} cameraRef={cameraRef} initialCamera={camera} onCamera={setCamera} onPointer={updatePointer} onBounds={setViewport} regions={geographicFeatures} scope={exactSelection??sketchArea??scope} selection={record} boundaryLevel={boundaryLevel} features={rendered} datasets={data.showReference?data.selectedLayers:[]} referenceOpacity={referenceOpacity} basemap={basemap} onSelect={inspect} onRegion={chooseRegion} mode={mode} onDraw={onDraw} sketch={sketch} rasters={visibleRasters} swipe={swipe} onError={setMapError}/>
-       {unavailableLayers.length>0&&!focus&&<aside className="atlas-data-notice" aria-label="Map data availability"><strong>{readCapacityExhausted?'Too many retained views are open':'Some evidence layers could not load'}</strong><details className="atlas-recovery-details" open={layoutViewport.width>760}><summary>Details & recovery</summary><p>{readCapacityExhausted?'Close other EMAD tabs and retry after their saved views expire. Your saved investigations are safe.':`${unavailableLayers.map(k=>layerInfo[k].name).join(', ')}. The basemap remains available; missing layers do not mean no evidence exists.`}</p><div><button className="ux-button" disabled={mapBatch.isFetching} onClick={()=>void mapBatch.refetch()}>{mapBatch.isFetching?'Retrying…':'Retry layers'}</button><button className="ux-button" onClick={()=>openTool('sources')}>Check sources</button></div><details><summary>Technical details</summary><p>{mapBatch.error?.message??'One or more retained evidence queries are unavailable.'}</p></details></details></aside>}
+       {unavailableLayers.length>0&&!focus&&<aside className="atlas-data-notice" aria-label="Map data availability"><strong>{readCapacityExhausted?'Too many retained views are open':'Some evidence layers could not load'}</strong><details className="atlas-recovery-details" open={layoutViewport.width>760}><summary>Details & recovery</summary><p>{readCapacityExhausted?'Close another EMAD view — each open view holds one retained read — and retry. Leaving a view releases its read immediately. Your saved investigations are safe.':`${unavailableLayers.map(k=>layerInfo[k].name).join(', ')}. The basemap remains available; missing layers do not mean no evidence exists.`}</p><div><button className="ux-button" disabled={mapBatch.isFetching} onClick={()=>void mapBatch.refetch()}>{mapBatch.isFetching?'Retrying…':'Retry layers'}</button><button className="ux-button" onClick={()=>openTool('sources')}>Check sources</button></div><details><summary>Technical details</summary><p>{mapBatch.error?.message??'One or more retained evidence queries are unavailable.'}</p></details></details></aside>}
        <div className="atlas-map-footer">
          <span ref={coordinateLabel}>Pointer · {pointerLabel(pointer.current)}</span>
          {rasters.length>0&&<button aria-label="Retained raster acquisitions" onClick={()=>setSheet('layers')}>Sentinel-2 · {dateLabel(capture?.properties?.date)}{comparison?` ↔ ${dateLabel(comparison.properties?.date)}`:''}{quality?' · SCL exclusions':''}</button>}

@@ -48,6 +48,54 @@ tags:
   - { name: picture, description: 'Reconstruction of the operational picture at a point in time.' }
   - { name: imagery, description: 'Scoped imagery, artifacts, independent analysis and evidence review.' }
 paths:
+  /api/v1/environment-sources/{id}/admissions:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-sources~1{id}~1admissions'
+  /api/v1/catalog/reads/{id}:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1catalog~1reads~1{id}'
+  /api/v1/environment-profiles:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-profiles'
+  /api/v1/geographic-environments:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1geographic-environments'
+  /api/v1/geographic-environments/{id}:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1geographic-environments~1{id}'
+  /api/v1/geographic-environments/{id}/eligibility:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1geographic-environments~1{id}~1eligibility'
+  /api/v1/geographic-environments/{id}/preflight:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1geographic-environments~1{id}~1preflight'
+  /api/v1/geographic-environments/{id}/builds:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1geographic-environments~1{id}~1builds'
+  /api/v1/environment-builds/{id}:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-builds~1{id}'
+  /api/v1/environment-builds/{id}/attempts:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-builds~1{id}~1attempts'
+  /api/v1/environment-builds/{id}/cancel:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-builds~1{id}~1cancel'
+  /api/v1/environment-builds/{id}/retry:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-builds~1{id}~1retry'
+  /api/v1/environment-assets:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-assets'
+  /api/v1/environment-assets/{id}/content:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-assets~1{id}~1content'
+  /api/v1/environment-releases:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases'
+  /api/v1/environment-releases/{id}:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}'
+  /api/v1/environment-releases/{id}/manifest:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1manifest'
+  /api/v1/environment-releases/{id}/quality:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1quality'
+  /api/v1/environment-releases/{id}/stac:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1stac'
+  /api/v1/environment-releases/{id}/prepared:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1prepared'
+  /api/v1/environment-releases/{id}/rebuild:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1rebuild'
+  /api/v1/environment-releases/{id}/verify:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1verify'
+  /api/v1/environment-releases/{id}/release:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1release'
+  /api/v1/environment-releases/{id}/withdraw:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1withdraw'
   /api/v1/investigations/{id}/delivery-jobs:
     $ref: './deliveries.yaml#/paths/~1api~1v1~1investigations~1{id}~1delivery-jobs'
   /api/v1/delivery-jobs/{id}:
@@ -136,6 +184,8 @@ paths:
     $ref: './analyst-scope.yaml#/paths/~1api~1v1~1analyst-scope~1read'
   /api/v1/analyst-scope/reads/{id}:
     $ref: './analyst-scope.yaml#/paths/~1api~1v1~1analyst-scope~1reads~1{id}'
+  /api/v1/analyst-scope/reads/{id}/release:
+    $ref: './analyst-scope.yaml#/paths/~1api~1v1~1analyst-scope~1reads~1{id}~1release'
   /api/v1/geography/releases:
     get:
       $ref: './reference-profiles.yaml#/paths/~1geography~1releases/get'
@@ -4584,6 +4634,42 @@ components:
             required: [subjectType, subjectId, type, conclusion]
             properties: { subjectType: { type: string }, subjectId: { type: string }, type: { type: string }, conclusion: { type: string }, confidence: { type: number, minimum: 0, maximum: 1 }, method: { type: string }, createdBy: { type: string }, evidence: { type: array, items: { type: object, required: [type, id], properties: { type: { type: string }, id: { type: string } } } } }
   schemas:
+    EnvironmentProfile:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentProfile'
+    EnvironmentDefinitionInput:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentDefinitionInput'
+    EnvironmentDefinition:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentDefinition'
+    EnvironmentDefinitions:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentDefinitions'
+    EnvironmentRepresentation:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentRepresentation'
+    EnvironmentAssetInput:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentAssetInput'
+    EnvironmentAsset:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentAsset'
+    EnvironmentAssets:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentAssets'
+    EnvironmentPreflight:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentPreflight'
+    EnvironmentBuildInput:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentBuildInput'
+    EnvironmentBuild:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentBuild'
+    EnvironmentAttempt:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentAttempt'
+    EnvironmentReview:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentReview'
+    EnvironmentQuality:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentQuality'
+    EnvironmentMember:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentMember'
+    EnvironmentManifest:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentManifest'
+    EnvironmentRelease:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentRelease'
+    EnvironmentReleases:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentReleases'
     DeliveryJob: {$ref: './deliveries.yaml#/components/schemas/DeliveryJob'}
     DeliveryInput: {$ref: './deliveries.yaml#/components/schemas/DeliveryInput'}
     EnvironmentPreparationInput: {$ref: './deliveries.yaml#/components/schemas/EnvironmentPreparationInput'}

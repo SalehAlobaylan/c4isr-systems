@@ -67,6 +67,9 @@ func mac(key []byte, s string) []byte {
 	return h.Sum(nil)
 }
 func (s *S3) request(ctx context.Context, method, key string, body []byte) (*http.Request, error) {
+	return s.signedRequest(ctx, method, key, bytes.NewReader(body), int64(len(body)), Hash(body))
+}
+func (s *S3) signedRequest(ctx context.Context, method, key string, body io.Reader, size int64, payload string) (*http.Request, error) {
 	if (key == "" && method != "PUT") || strings.ContainsAny(key, "?\\#\r\n") || strings.Contains(key, "..") || strings.HasPrefix(key, "/") {
 		return nil, errors.New("invalid object key")
 	}
@@ -79,13 +82,13 @@ func (s *S3) request(ctx context.Context, method, key string, body []byte) (*htt
 			return ""
 		}
 		return "/" + strings.Join(parts, "/")
-	}(), bytes.NewReader(body))
+	}(), body)
 	if e != nil {
 		return nil, errors.New("invalid S3 request")
 	}
 	now := time.Now().UTC()
 	stamp, day := now.Format("20060102T150405Z"), now.Format("20060102")
-	payload := Hash(body)
+	req.ContentLength = size
 	req.Header.Set("X-Amz-Date", stamp)
 	req.Header.Set("X-Amz-Content-Sha256", payload)
 	headers := "host:" + req.URL.Host + "\nx-amz-content-sha256:" + payload + "\nx-amz-date:" + stamp + "\n"

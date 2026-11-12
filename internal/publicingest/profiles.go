@@ -163,7 +163,7 @@ func (s *Service) grantProfile(ctx context.Context, source, key string, in Execu
 	}
 	// Validate a live scoped service identity without changing its source grants.
 	var eligible bool
-	e := s.repo.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM principals p JOIN principal_grants g ON g.principal_id=p.id WHERE p.id=$1 AND p.kind='service' AND p.disabled_at IS NULL AND g.workspace_id=$2 AND g.environment_id=$3 AND g.partition='PUBLIC_EVIDENCE' AND g.run_id='' AND g.permissions&&ARRAY['connectors.execute','imagery.jobs.execute','imagery.capture.execute'] AND (cardinality(g.source_ids)=0 OR $4=ANY(g.source_ids)))`, in.PrincipalID, r.WorkspaceID, r.EnvironmentID, source).Scan(&eligible)
+	e := s.repo.pool.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM principals p JOIN principal_grants g ON g.principal_id=p.id WHERE p.id=$1 AND p.kind='service' AND p.disabled_at IS NULL AND g.workspace_id=$2 AND g.environment_id=$3 AND g.partition='PUBLIC_EVIDENCE' AND g.run_id='' AND g.permissions&&ARRAY['connectors.execute','imagery.jobs.execute','imagery.capture.execute','environments.execute'] AND (cardinality(g.source_ids)=0 OR $4=ANY(g.source_ids)))`, in.PrincipalID, r.WorkspaceID, r.EnvironmentID, source).Scan(&eligible)
 	if e != nil {
 		return e
 	}

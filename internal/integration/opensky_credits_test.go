@@ -41,6 +41,16 @@ func TestOpenSkyCreditExhaustionIsDurableAndUnknownIsNotAnAllowance(t *testing.T
 		t.Fatal("activation lost durable zero balance", activation)
 	}
 	f.ready(t)
+	code, blocked := scopeRequest(t, f.h, f.worker, "POST", "/api/v1/sources/"+f.source+"/connector-runs", nil, nil)
+	if code != 201 || blocked["failureCode"] != "account_credits_exhausted" || blocked["requests"] != float64(0) {
+		t.Fatal("clearing pacing must not replenish credits", code, blocked)
+	}
+	// Advance the fixture across the configured UTC credit reset, then
+	// confirm that a response without a balance is still reported as unknown.
+	if _, err := f.h.pool.Exec(context.Background(), `UPDATE provider_budget_state SET day=day-1`); err != nil {
+		t.Fatal(err)
+	}
+	f.ready(t)
 	f.fetcher.delegate = nativeFixtureFunc(func(_ context.Context, l publicingest.Location, in publicingest.FetchRequest) (publicingest.Page, publicingest.Retrieval, error) {
 		return publicingest.Page{Records: []publicingest.Record{}, CoverageFrom: in.From, CoverageTo: in.To}, publicingest.Retrieval{LocationID: l.ID, HTTPStatus: 200}, nil
 	})

@@ -28,7 +28,7 @@ services:
     command:
       - >-
         goose -dir /app/db/migrations postgres
-        "$$(cat /run/secrets/database_url)" up
+        "$$(tr -d '\r' </run/secrets/database_url)" up
     environment:
       C4ISR_ENV: staging
     secrets:

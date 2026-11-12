@@ -14,7 +14,8 @@ DATA = Path(os.environ.get('EMAD_PRIVATE_DIR',str(ROOT/'private/local'))) / 'dat
 SAUDI = {'west': 34., 'south': 16., 'east': 56., 'north': 33.}
 JEDDAH = {'west': 39.144, 'south': 21.464, 'east': 39.216, 'north': 21.536}
 ALLOWED = {'naturalearth.s3.amazonaws.com', 'download.geofabrik.de', 'copernicus-dem-30m.s3.amazonaws.com',
-           'cdn.proj.org', 'earth-search.aws.element84.com', 'e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com'}
+           'cdn.proj.org', 'earth-search.aws.element84.com', 'e84-earth-search-sentinel-data.s3.us-west-2.amazonaws.com',
+           'api.openstreetmap.org'}
 
 
 def encoded(value):

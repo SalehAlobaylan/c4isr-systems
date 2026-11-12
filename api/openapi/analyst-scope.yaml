@@ -224,6 +224,42 @@ paths:
       - name: limit
         in: query
         schema: *id003
+  /api/v1/analyst-scope/reads/{id}/release:
+    post:
+      operationId: releaseAnalystRead
+      summary: Release a retained read so its budget slot is free immediately
+      description: >-
+        Drops the caller's own retained read manifest. The bounded read budget
+        slot it held becomes available at once instead of at expiry. A read
+        that belongs to another principal is not visible to the caller and is
+        never released by this request.
+      responses:
+        '200':
+          description: The retained read is released; its budget slot is free
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                properties:
+                  id: *id002
+                  released:
+                    type: boolean
+                required:
+                - id
+                - released
+        '400':
+          $ref: ./openapi.yaml#/components/responses/BadRequest
+        '401':
+          $ref: ./openapi.yaml#/components/responses/Unauthorized
+        '403':
+          $ref: ./openapi.yaml#/components/responses/Forbidden
+        '404':
+          $ref: ./openapi.yaml#/components/responses/NotFound
+        '409':
+          $ref: ./openapi.yaml#/components/responses/Conflict
+      parameters:
+      - *id001
   /api/v1/geography/releases:
     post:
       operationId: createGeographicReleases
@@ -615,6 +651,12 @@ components:
       properties:
         id: *id002
         queryFingerprint: *id002
+        viewKey:
+          description: >-
+            Identity of the logical view this read belongs to. A refresh of the
+            same view supersedes the retained read it replaces, so the view
+            keeps one budget slot instead of accumulating one per refresh.
+          type: string
         scope:
           $ref: '#/components/schemas/ScopeSnapshot'
         expiresAt: *id007

@@ -1,0 +1,710 @@
+paths:
+  /api/v1/environment-sources/{id}/admissions:
+    post:
+      operationId: admitRetainedGeographicSource
+      summary: Record reviewed offline geographic source rights
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/RetainedGeographicAdmission'}
+      responses:
+        '201':
+          description: Exact retained-source admission and profile revision
+          content:
+            application/json:
+              schema: {type: object, additionalProperties: true}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/catalog/reads/{id}:
+    delete:
+      operationId: releaseCatalogRead
+      summary: Release catalog read
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '204':
+          description: Catalog snapshot released
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-profiles:
+    get:
+      operationId: listEnvironmentProfiles
+      summary: List environment profiles
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"type":"array","items":{"$ref":"#/components/schemas/EnvironmentProfile"}}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/geographic-environments:
+    get:
+      operationId: listEnvironmentDefinitions
+      summary: List environment definitions
+      parameters:
+        - {"name":"after","in":"query","schema":{"type":"string"}}
+        - {"name":"profile","in":"query","schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentDefinitions"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+    post:
+      operationId: createEnvironmentDefinition
+      summary: Create environment definition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/EnvironmentDefinitionInput"}
+      responses:
+        '201':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentDefinition"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/geographic-environments/{id}:
+    get:
+      operationId: getEnvironmentDefinition
+      summary: Get environment definition
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentDefinition"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+    put:
+      operationId: reviseEnvironmentDefinition
+      summary: Revise environment definition
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/EnvironmentDefinitionInput"}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentDefinition"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/geographic-environments/{id}/eligibility:
+    get:
+      operationId: getEnvironmentEligibility
+      summary: Get environment eligibility
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentPreflight"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/geographic-environments/{id}/preflight:
+    get:
+      operationId: getEnvironmentPreflight
+      summary: Get environment preflight
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentPreflight"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/geographic-environments/{id}/builds:
+    post:
+      operationId: submitEnvironmentBuild
+      summary: Submit environment build
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/EnvironmentBuildInput"}
+      responses:
+        '202':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentBuild"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-builds/{id}:
+    get:
+      operationId: getEnvironmentBuild
+      summary: Get environment build
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentBuild"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-builds/{id}/attempts:
+    get:
+      operationId: listEnvironmentAttempts
+      summary: List environment attempts
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"type":"array","items":{"$ref":"#/components/schemas/EnvironmentAttempt"}}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-builds/{id}/cancel:
+    post:
+      operationId: cancelEnvironmentBuild
+      summary: Cancel environment build
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentBuild"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-builds/{id}/retry:
+    post:
+      operationId: retryEnvironmentBuild
+      summary: Retry environment build
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentBuild"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-assets:
+    get:
+      operationId: listEnvironmentAssets
+      summary: List environment assets
+      parameters:
+        - {"name":"after","in":"query","schema":{"type":"string"}}
+        - {"name":"layer","in":"query","schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentAssets"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+    post:
+      operationId: reserveEnvironmentAsset
+      summary: Reserve environment asset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/EnvironmentAssetInput"}
+      responses:
+        '201':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentAsset"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-assets/{id}/content:
+    get:
+      operationId: downloadEnvironmentOriginal
+      summary: Download environment original
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Authorized retained object
+          content:
+            application/octet-stream:
+              schema: {"type":"string","format":"binary"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+    put:
+      operationId: uploadEnvironmentOriginal
+      summary: Upload environment original
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {"type":"string","format":"binary"}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentAsset"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases:
+    get:
+      operationId: listEnvironmentReleases
+      summary: List environment releases
+      parameters:
+        - {"name":"after","in":"query","schema":{"type":"string"}}
+        - {"name":"build","in":"query","schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentReleases"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}:
+    get:
+      operationId: getEnvironmentRelease
+      summary: Get environment release
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentRelease"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/manifest:
+    get:
+      operationId: getEnvironmentManifest
+      summary: Get environment manifest
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentManifest"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/quality:
+    get:
+      operationId: getEnvironmentQuality
+      summary: Get environment quality
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentQuality"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/stac:
+    get:
+      operationId: getEnvironmentSTAC
+      summary: Get environment STAC
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"type":"object","additionalProperties":true}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/prepared:
+    get:
+      operationId: downloadEnvironmentPrepared
+      summary: Download environment prepared
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Authorized retained object
+          content:
+            application/octet-stream:
+              schema: {"type":"string","format":"binary"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/rebuild:
+    get:
+      operationId: downloadEnvironmentRebuild
+      summary: Download environment rebuild
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Authorized retained object
+          content:
+            application/octet-stream:
+              schema: {"type":"string","format":"binary"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/verify:
+    post:
+      operationId: verifyEnvironmentRelease
+      summary: Verify environment release
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/EnvironmentReview"}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentRelease"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/release:
+    post:
+      operationId: publishEnvironmentRelease
+      summary: Publish environment release
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/EnvironmentReview"}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentRelease"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/withdraw:
+    post:
+      operationId: withdrawEnvironmentRelease
+      summary: Withdraw environment release
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {"$ref":"#/components/schemas/EnvironmentReview"}
+      responses:
+        '200':
+          description: Scoped environment library result
+          content:
+            application/json:
+              schema: {"$ref":"#/components/schemas/EnvironmentRelease"}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+components:
+  schemas:
+    RetainedGeographicAdmission:
+      type: object
+      required: [originalProducer, upstreamProvider, dataset, productVersion, coverageDescription, area, rights, enabled]
+      properties:
+        originalProducer: {type: string}
+        upstreamProvider: {type: string}
+        dataset: {type: string}
+        productVersion: {type: string}
+        coverageDescription: {type: string}
+        area:
+          type: object
+          required: [west, south, east, north]
+          properties:
+            west: {type: number}
+            south: {type: number}
+            east: {type: number}
+            north: {type: number}
+        rights: {type: object, additionalProperties: true}
+        enabled: {type: boolean}
+        expectedRevisionId: {type: string}
+    EnvironmentProfile:
+      type: object
+      required: [id, name, requiredLayers]
+      properties:
+        id: {"type":"string"}
+        name: {"type":"string"}
+        requiredLayers: {"type":"array","items":{"type":"string"}}
+        optionalLayers: {"type":"array","items":{"type":"string"}}
+    EnvironmentDefinitionInput:
+      type: object
+      required: [name, areaRevisionId, profileId, assetIds, expectedRevision]
+      properties:
+        name: {"type":"string"}
+        areaRevisionId: {"type":"string"}
+        profileId: {"type":"string"}
+        assetIds: {"type":"array","items":{"type":"string"}}
+        expectedRevision: {"type":"integer"}
+    EnvironmentDefinition:
+      type: object
+      required: [id, revision, name, areaRevisionId, profileId, assetIds, expectedRevision]
+      properties:
+        id: {"type":"string"}
+        revision: {"type":"integer"}
+        name: {"type":"string"}
+        areaRevisionId: {"type":"string"}
+        profileId: {"type":"string"}
+        assetIds: {"type":"array","items":{"type":"string"}}
+        expectedRevision: {"type":"integer"}
+    EnvironmentDefinitions:
+      type: object
+      required: [items]
+      properties:
+        items: {"type":"array","items":{"$ref":"#/components/schemas/EnvironmentDefinition"}}
+        next: {"type":"string"}
+    EnvironmentRepresentation:
+      type: object
+      required: [layer, format, producer, productEdition, dataTime, retrievedAt, crs, verticalDatum, nativeResolution, semantics, uncertainty, evidence, footprint]
+      properties:
+        layer: {"type":"string"}
+        format: {"type":"string"}
+        producer: {"type":"string"}
+        productEdition: {"type":"string"}
+        dataTime: {"type":"string"}
+        retrievedAt: {"type":"string"}
+        crs: {"type":"string"}
+        verticalDatum: {"type":"string"}
+        nativeResolution: {"type":"string"}
+        semantics: {"type":"string"}
+        uncertainty: {"type":"string"}
+        evidence: {"type":"string"}
+        footprint: {"type":"object","additionalProperties":true}
+    EnvironmentAssetInput:
+      type: object
+      required: [requestKey, sourceId, admissionId, sha256, bytes, retainUntil, representation]
+      properties:
+        requestKey: {"type":"string"}
+        sourceId: {"type":"string"}
+        admissionId: {"type":"string"}
+        referenceId: {"type":"string"}
+        sceneId: {"type":"string"}
+        sha256: {"type":"string"}
+        bytes: {"type":"integer"}
+        retainUntil: {"type":"string"}
+        representation: {"$ref":"#/components/schemas/EnvironmentRepresentation"}
+    EnvironmentAsset:
+      type: object
+      required: [id, state, mediaType, sourceId, admissionId, sha256, bytes, retainUntil, representation, rights]
+      properties:
+        id: {"type":"string"}
+        state: {"type":"string"}
+        mediaType: {"type":"string"}
+        sourceId: {"type":"string"}
+        admissionId: {"type":"string"}
+        sha256: {"type":"string"}
+        bytes: {"type":"integer"}
+        retainUntil: {"type":"string"}
+        representation: {"$ref":"#/components/schemas/EnvironmentRepresentation"}
+        rights: {"type":"object","additionalProperties":true}
+    EnvironmentAssets:
+      type: object
+      required: [items]
+      properties:
+        items: {"type":"array","items":{"$ref":"#/components/schemas/EnvironmentAsset"}}
+        next: {"type":"string"}
+    EnvironmentPreflight:
+      type: object
+      required: [eligible, diagnostics, inputs, inputBytes, rebuildAllowed]
+      properties:
+        eligible: {"type":"boolean"}
+        diagnostics: {"type":"array","items":{"type":"string"}}
+        inputs: {"type":"array","items":{"$ref":"#/components/schemas/EnvironmentAsset"}}
+        inputBytes: {"type":"integer"}
+        rebuildAllowed: {"type":"boolean"}
+    EnvironmentBuildInput:
+      type: object
+      required: [requestKey, revision]
+      properties:
+        requestKey: {"type":"string"}
+        revision: {"type":"integer"}
+    EnvironmentBuild:
+      type: object
+      required: [id, definitionId, definitionRevision, state, attempt, createdAt, inputSha256]
+      properties:
+        id: {"type":"string"}
+        definitionId: {"type":"string"}
+        definitionRevision: {"type":"integer"}
+        state: {"type":"string"}
+        attempt: {"type":"integer"}
+        failureCode: {"type":"string"}
+        createdAt: {"type":"string"}
+        inputSha256: {"type":"string"}
+    EnvironmentAttempt:
+      type: object
+      required: [attempt, state, code, at]
+      properties:
+        attempt: {"type":"integer"}
+        state: {"type":"string"}
+        code: {"type":"string"}
+        at: {"type":"string"}
+    EnvironmentReview:
+      type: object
+      required: [manifestSha256, note]
+      properties:
+        manifestSha256: {"type":"string"}
+        note: {"type":"string"}
+    EnvironmentQuality:
+      type: object
+      required: [coordinateErrorM, physicalAccuracy, meaning, heightMethod, unsupported]
+      properties:
+        coordinateErrorM: {"type":"number"}
+        physicalAccuracy: {"type":"string"}
+        meaning: {"type":"string"}
+        heightMethod: {"type":"string"}
+        unsupported: {"type":"array","items":{"type":"string"}}
+    EnvironmentMember:
+      type: object
+      required: [name, layer, sha256, bytes, inputId, details]
+      properties:
+        name: {"type":"string"}
+        layer: {"type":"string"}
+        sha256: {"type":"string"}
+        bytes: {"type":"integer"}
+        inputId: {"type":"string"}
+        details: {"type":"object","additionalProperties":true}
+    EnvironmentManifest:
+      type: object
+      required: [schema, inputSha256, toolchainSha256, profileId, areaRevisionId, area, frame, inputs, members, quality]
+      properties:
+        schema: {"type":"string"}
+        inputSha256: {"type":"string"}
+        toolchainSha256: {"type":"string"}
+        profileId: {"type":"string"}
+        areaRevisionId: {"type":"string"}
+        area: {"type":"object","additionalProperties":true}
+        frame: {"type":"object","additionalProperties":true}
+        inputs: {"type":"array","items":{"$ref":"#/components/schemas/EnvironmentAsset"}}
+        members: {"type":"array","items":{"$ref":"#/components/schemas/EnvironmentMember"}}
+        quality: {"$ref":"#/components/schemas/EnvironmentQuality"}
+    EnvironmentRelease:
+      type: object
+      required: [id, buildId, name, state, manifestSha256, bundleId, createdAt]
+      properties:
+        id: {"type":"string"}
+        buildId: {"type":"string"}
+        name: {"type":"string"}
+        state: {"type":"string"}
+        manifestSha256: {"type":"string"}
+        manifest: {"$ref":"#/components/schemas/EnvironmentManifest"}
+        bundleId: {"type":"string"}
+        createdAt: {"type":"string"}
+    EnvironmentReleases:
+      type: object
+      required: [items]
+      properties:
+        items: {"type":"array","items":{"$ref":"#/components/schemas/EnvironmentRelease"}}
+        next: {"type":"string"}

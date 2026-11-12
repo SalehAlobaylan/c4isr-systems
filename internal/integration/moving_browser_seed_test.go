@@ -42,6 +42,9 @@ func seedMovingBrowser(t *testing.T, h *harness, locations publicingest.Registry
 		if _, err := h.pool.Exec(context.Background(), `UPDATE source_connector_state SET next_attempt_at=now()-interval '1 hour' WHERE source_id=$1`, source); err != nil {
 			t.Fatal(err)
 		}
+		if _, err := h.pool.Exec(context.Background(), `UPDATE provider_budget_state SET next_at='epoch' WHERE group_key='location:browser-moving'`); err != nil {
+			t.Fatal(err)
+		}
 	}
 	fetcher.delegate = nil
 	_, list := scopeRequest(t, h, integrationToken, "GET", "/api/v1/external-tracks", nil, headers)

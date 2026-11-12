@@ -303,6 +303,32 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
     getCurrentOperator: () => unwrap(apiClient.GET('/api/v1/auth/me')),
     getReadiness: () => unwrap(apiClient.GET('/api/v1/platform/readiness')),
     resolveArea:(body:AreaSelection,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/areas/resolve',{body,signal:requestSignal})),
+    persistArea:(body:AreaSelection,signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/areas/revisions',{body,signal})),
+    environmentProfiles:(signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-profiles',{signal})),
+    environmentAssets:(after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-assets',{params:{query:{after}},signal})),
+    environmentDefinitions:(after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/geographic-environments',{params:{query:{after}},signal})),
+    saveEnvironment:(body:components['schemas']['EnvironmentDefinitionInput'],id?:string,signal?:AbortSignal)=>id
+      ? unwrapScoped(apiClient.PUT('/api/v1/geographic-environments/{id}',{params:{path:{id}},body,signal}))
+      : unwrapScoped(apiClient.POST('/api/v1/geographic-environments',{body,signal})),
+    environmentPreflight:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/geographic-environments/{id}/preflight',{params:{path:{id}},signal})),
+    submitEnvironment:(id:string,body:components['schemas']['EnvironmentBuildInput'],signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/geographic-environments/{id}/builds',{params:{path:{id}},body,signal})),
+    environmentBuild:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-builds/{id}',{params:{path:{id}},signal})),
+    cancelEnvironment:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/environment-builds/{id}/cancel',{params:{path:{id}},signal})),
+    environmentReleases:(build?:string,after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases',{params:{query:{build,after}},signal})),
+    environmentRelease:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}',{params:{path:{id}},signal})),
+    reviewEnvironment:(id:string,action:'verify'|'release'|'withdraw',body:components['schemas']['EnvironmentReview'],signal?:AbortSignal)=> {
+      const params={path:{id}}
+      if(action==='verify')return unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/verify',{params,body,signal}))
+      if(action==='release')return unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/release',{params,body,signal}))
+      return unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/withdraw',{params,body,signal}))
+    },
+    downloadEnvironment:async(id:string,rebuild:boolean,signal?:AbortSignal)=>{
+      const path=rebuild?'/api/v1/environment-releases/{id}/rebuild':'/api/v1/environment-releases/{id}/prepared'
+      const result=await apiClient.GET(path,{params:{path:{id}},parseAs:'stream',signal})
+      const body=await unwrapScoped(Promise.resolve(result))
+      if(!body)throw new Error('The package stream is unavailable.')
+      return {body,length:Number(result.response.headers.get('Content-Length'))}
+    },
     resolveAnalystScope:(body:ScopeInput,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/analyst-scope/resolve',{body,signal:requestSignal})),
     freezeAnalystScope:(body:ScopeInput,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/analyst-scope/freeze',{body,signal:requestSignal})),
     queryCoverage:(body:{scope:ScopeInput;sourceId?:string},requestSignal?:AbortSignal)=>unwrap(apiClient.POST('/api/v1/coverage/query',{body,signal:requestSignal})),
@@ -325,11 +351,13 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
     downloadCompositeOutput:(id:string,distribution=false)=>unwrap(apiClient.GET('/api/v1/outputs/{id}/content',{params:{path:{id},query:{distribution}},parseAs:'blob'})),
     expireCompositeOutput:(id:string)=>unwrap(apiClient.POST('/api/v1/outputs/{id}/expire',{params:{path:{id}}})),
     readCatalog:(body:components['schemas']['CatalogInput'],requestSignal?:AbortSignal,scope?:ScopeSnapshot)=>unwrapScoped(apiClient.POST('/api/v1/catalog/reads',{body,signal:requestSignal}),scope),
+    releaseCatalog:(id:string)=>unwrap(apiClient.DELETE('/api/v1/catalog/reads/{id}',{params:{path:{id}}})),
     readIndividualRecords:(id:string,family:string,aggregate?:string,cursor?:string,requestSignal?:AbortSignal,scope?:ScopeSnapshot)=>unwrapScoped(apiClient.GET('/api/v1/analyst-scope/reads/{id}/records',{params:{path:{id},query:{family,aggregate_id:aggregate,cursor,limit:100}},signal:requestSignal}),scope),
     captureProposal:(body:components['schemas']['CaptureProposalInput'],requestSignal?:AbortSignal)=>unwrap(apiClient.POST('/api/v1/imagery/capture-proposal',{body,signal:requestSignal})),
     checkImageryPair:(body:components['schemas']['PairInput'],requestSignal?:AbortSignal)=>unwrap(apiClient.POST('/api/v1/imagery/comparison-check',{body,signal:requestSignal})),
     readAnalystScope:(body:ScopeReadInput,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/analyst-scope/read',{body,signal:requestSignal})),
     getAnalystReadPage:(id:string,family:string,offset=0,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/analyst-scope/reads/{id}',{params:{path:{id},query:{family,offset,limit:100}},signal:requestSignal})),
+    releaseAnalystRead:(id:string,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/analyst-scope/reads/{id}/release',{params:{path:{id}},signal:requestSignal})),
     createSurroundingArea: (body:{longitude:number;latitude:number;radiusM:number},requestSignal?:AbortSignal) => unwrap(apiClient.POST('/api/v1/map/surrounding-area',{body,signal:requestSignal})),
     measureMapGeometry: (geometry:Record<string,unknown>,requestSignal?:AbortSignal) => unwrap(apiClient.POST('/api/v1/map/measure',{body:{geometry},signal:requestSignal})),
     listGeographicRegions: (query?: {q?:string;parent?:string;kind?:'country'|'region'|'governorate'|'place'|'study';id?:string;offset?:number;source_id?:string;release_id?:string;edition_id?:string},requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/geography/regions',{params:{query},signal:requestSignal})),

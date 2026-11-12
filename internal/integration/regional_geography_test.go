@@ -12,7 +12,19 @@ import (
 )
 
 func TestMapFirstSourceBackedSevenRegionalImportsAndAtomicActivation(t *testing.T) {
-	path := os.Getenv("C4ISR_TEST_GEOGRAPHY_PREPARED")
+	checkRegionalNavigation(t, "C4ISR_TEST_GEOGRAPHY_PREPARED", []string{"SAU", "ARE", "EGY", "TUR", "FRA", "JPN", "USA"}, true)
+}
+
+func TestEnvironmentFoundationRegionalNavigation(t *testing.T) {
+	checkRegionalNavigation(t, "C4ISR_TEST_ENVIRONMENT_REGIONAL_PREPARED", []string{
+		"BHR", "CYP", "EGY", "IRN", "IRQ", "ISR", "JOR", "KWT", "LBN",
+		"OMN", "PSX", "QAT", "SAU", "SYR", "TUR", "ARE", "YEM",
+	}, false)
+}
+
+func checkRegionalNavigation(t *testing.T, input string, expected []string, frenchAliases bool) {
+	t.Helper()
+	path := os.Getenv(input)
 	if path == "" {
 		t.Skip("requires source-backed prepared regional manifest")
 	}
@@ -34,8 +46,8 @@ func TestMapFirstSourceBackedSevenRegionalImportsAndAtomicActivation(t *testing.
 	if e = json.Unmarshal(raw, &plan); e != nil {
 		t.Fatal(e)
 	}
-	if len(plan.Chunks) < 2 || len(plan.Depth) != 7 {
-		t.Fatal("source-backed seven-area manifest required")
+	if len(plan.Chunks) < 2 || len(plan.Depth) != len(expected) {
+		t.Fatal("source-backed manifest must include the exact profile membership")
 	}
 	ids := []string{}
 	for index, in := range plan.Chunks {
@@ -60,7 +72,7 @@ func TestMapFirstSourceBackedSevenRegionalImportsAndAtomicActivation(t *testing.
 	if e != nil {
 		t.Fatal("real source release", e)
 	}
-	for _, code := range []string{"SAU", "ARE", "EGY", "TUR", "FRA", "JPN", "USA"} {
+	for _, code := range expected {
 		area, e := (areas.Service{Pool: f.h.pool}).Resolve(ctx, areas.Selection{Kind: "administrative", SourceID: f.source, LogicalKey: "country:" + code, ReleaseID: release.ID})
 		if e != nil {
 			t.Fatal(code, "exact source country", e)
@@ -72,9 +84,11 @@ func TestMapFirstSourceBackedSevenRegionalImportsAndAtomicActivation(t *testing.
 		t.Logf("%s: %d source subdivisions, %d source place points", code, availability.Regions, availability.Places)
 	}
 	// Source aliases are retained while normalized discovery accepts accents.
-	french, e := svc.Geography(ctx, "cotes", "", "region", "", 0, f.source, release.ID)
-	if e != nil || french.Matched == 0 {
-		t.Fatal("accent-normalized source search", french.Matched, e)
+	if frenchAliases {
+		french, e := svc.Geography(ctx, "cotes", "", "region", "", 0, f.source, release.ID)
+		if e != nil || french.Matched == 0 {
+			t.Fatal("accent-normalized source search", french.Matched, e)
+		}
 	}
 	var sourceBytes int
 	if e = f.h.pool.QueryRow(context.Background(), `SELECT sum(octet_length(artifact)) FROM geographic_editions WHERE id=ANY($1::text[])`, ids).Scan(&sourceBytes); e != nil || sourceBytes == 0 {
@@ -107,7 +121,14 @@ func TestMapFirstSourceBackedSevenRegionalImportsAndAtomicActivation(t *testing.
 	if e = store.AddGrant(access.Bootstrap(context.Background()), "source-reviewer", access.Grant{Resource: f.resource, Permissions: []string{"geography.request"}}); e != nil {
 		t.Fatal(e)
 	}
-	request := reference.ReferenceRequestInput{RequestKey: "retained-depth-request", RegionID: firstArea.Geography.RegionID, Reason: "Verify the retained subdivision and place detail for this analytical study"}
+	depthArea := firstArea
+	if !frenchAliases {
+		depthArea, e = (areas.Service{Pool: f.h.pool}).Resolve(ctx, areas.Selection{Kind: "administrative", SourceID: f.source, LogicalKey: "country:" + expected[0], ReleaseID: release.ID})
+		if e != nil {
+			t.Fatal(e)
+		}
+	}
+	request := reference.ReferenceRequestInput{RequestKey: "retained-depth-request", RegionID: depthArea.Geography.RegionID, Reason: "Verify the retained subdivision and place detail for this analytical study"}
 	code, pending := scopeRequest(t, f.h, f.manager, "POST", "/api/v1/geography/reference-requests", request, nil)
 	if code != 201 {
 		t.Fatal(code, pending)

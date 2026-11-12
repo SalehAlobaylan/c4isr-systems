@@ -4,6 +4,418 @@
  */
 
 export interface paths {
+    "/api/v1/environment-sources/{id}/admissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record reviewed offline geographic source rights */
+        post: operations["admitRetainedGeographicSource"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/reads/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Release catalog read */
+        delete: operations["releaseCatalogRead"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-profiles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List environment profiles */
+        get: operations["listEnvironmentProfiles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geographic-environments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List environment definitions */
+        get: operations["listEnvironmentDefinitions"];
+        put?: never;
+        /** Create environment definition */
+        post: operations["createEnvironmentDefinition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geographic-environments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get environment definition */
+        get: operations["getEnvironmentDefinition"];
+        /** Revise environment definition */
+        put: operations["reviseEnvironmentDefinition"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geographic-environments/{id}/eligibility": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get environment eligibility */
+        get: operations["getEnvironmentEligibility"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geographic-environments/{id}/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get environment preflight */
+        get: operations["getEnvironmentPreflight"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geographic-environments/{id}/builds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit environment build */
+        post: operations["submitEnvironmentBuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-builds/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get environment build */
+        get: operations["getEnvironmentBuild"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-builds/{id}/attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List environment attempts */
+        get: operations["listEnvironmentAttempts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-builds/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel environment build */
+        post: operations["cancelEnvironmentBuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-builds/{id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry environment build */
+        post: operations["retryEnvironmentBuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List environment assets */
+        get: operations["listEnvironmentAssets"];
+        put?: never;
+        /** Reserve environment asset */
+        post: operations["reserveEnvironmentAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-assets/{id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download environment original */
+        get: operations["downloadEnvironmentOriginal"];
+        /** Upload environment original */
+        put: operations["uploadEnvironmentOriginal"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List environment releases */
+        get: operations["listEnvironmentReleases"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get environment release */
+        get: operations["getEnvironmentRelease"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get environment manifest */
+        get: operations["getEnvironmentManifest"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get environment quality */
+        get: operations["getEnvironmentQuality"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/stac": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get environment STAC */
+        get: operations["getEnvironmentSTAC"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/prepared": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download environment prepared */
+        get: operations["downloadEnvironmentPrepared"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/rebuild": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download environment rebuild */
+        get: operations["downloadEnvironmentRebuild"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify environment release */
+        post: operations["verifyEnvironmentRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish environment release */
+        post: operations["publishEnvironmentRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw environment release */
+        post: operations["withdrawEnvironmentRelease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/investigations/{id}/delivery-jobs": {
         parameters: {
             query?: never;
@@ -731,6 +1143,26 @@ export interface paths {
         get: operations["getAnalystReadPage"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analyst-scope/reads/{id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Release a retained read so its budget slot is free immediately
+         * @description Drops the caller's own retained read manifest. The bounded read budget slot it held becomes available at once instead of at expiry. A read that belongs to another principal is not visible to the caller and is never released by this request.
+         */
+        post: operations["releaseAnalystRead"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4988,6 +5420,156 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        EnvironmentProfile: {
+            id: string;
+            name: string;
+            requiredLayers: string[];
+            optionalLayers?: string[];
+        };
+        EnvironmentDefinitionInput: {
+            name: string;
+            areaRevisionId: string;
+            profileId: string;
+            assetIds: string[];
+            expectedRevision: number;
+        };
+        EnvironmentDefinition: {
+            id: string;
+            revision: number;
+            name: string;
+            areaRevisionId: string;
+            profileId: string;
+            assetIds: string[];
+            expectedRevision: number;
+        };
+        EnvironmentDefinitions: {
+            items: components["schemas"]["EnvironmentDefinition"][];
+            next?: string;
+        };
+        EnvironmentRepresentation: {
+            layer: string;
+            format: string;
+            producer: string;
+            productEdition: string;
+            dataTime: string;
+            retrievedAt: string;
+            crs: string;
+            verticalDatum: string;
+            nativeResolution: string;
+            semantics: string;
+            uncertainty: string;
+            evidence: string;
+            footprint: {
+                [key: string]: unknown;
+            };
+        };
+        EnvironmentAssetInput: {
+            requestKey: string;
+            sourceId: string;
+            admissionId: string;
+            referenceId?: string;
+            sceneId?: string;
+            sha256: string;
+            bytes: number;
+            retainUntil: string;
+            representation: components["schemas"]["EnvironmentRepresentation"];
+        };
+        EnvironmentAsset: {
+            id: string;
+            state: string;
+            mediaType: string;
+            sourceId: string;
+            admissionId: string;
+            sha256: string;
+            bytes: number;
+            retainUntil: string;
+            representation: components["schemas"]["EnvironmentRepresentation"];
+            rights: {
+                [key: string]: unknown;
+            };
+        };
+        EnvironmentAssets: {
+            items: components["schemas"]["EnvironmentAsset"][];
+            next?: string;
+        };
+        EnvironmentPreflight: {
+            eligible: boolean;
+            diagnostics: string[];
+            inputs: components["schemas"]["EnvironmentAsset"][];
+            inputBytes: number;
+            rebuildAllowed: boolean;
+        };
+        EnvironmentBuildInput: {
+            requestKey: string;
+            revision: number;
+        };
+        EnvironmentBuild: {
+            id: string;
+            definitionId: string;
+            definitionRevision: number;
+            state: string;
+            attempt: number;
+            failureCode?: string;
+            createdAt: string;
+            inputSha256: string;
+        };
+        EnvironmentAttempt: {
+            attempt: number;
+            state: string;
+            code: string;
+            at: string;
+        };
+        EnvironmentReview: {
+            manifestSha256: string;
+            note: string;
+        };
+        EnvironmentQuality: {
+            coordinateErrorM: number;
+            physicalAccuracy: string;
+            meaning: string;
+            heightMethod: string;
+            unsupported: string[];
+        };
+        EnvironmentMember: {
+            name: string;
+            layer: string;
+            sha256: string;
+            bytes: number;
+            inputId: string;
+            details: {
+                [key: string]: unknown;
+            };
+        };
+        EnvironmentManifest: {
+            schema: string;
+            inputSha256: string;
+            toolchainSha256: string;
+            profileId: string;
+            areaRevisionId: string;
+            area: {
+                [key: string]: unknown;
+            };
+            frame: {
+                [key: string]: unknown;
+            };
+            inputs: components["schemas"]["EnvironmentAsset"][];
+            members: components["schemas"]["EnvironmentMember"][];
+            quality: components["schemas"]["EnvironmentQuality"];
+        };
+        EnvironmentRelease: {
+            id: string;
+            buildId: string;
+            name: string;
+            state: string;
+            manifestSha256: string;
+            manifest?: components["schemas"]["EnvironmentManifest"];
+            bundleId: string;
+            createdAt: string;
+        };
+        EnvironmentReleases: {
+            items: components["schemas"]["EnvironmentRelease"][];
+            next?: string;
+        };
         DeliveryJob: {
             id: string;
             caseId: string;
@@ -5640,6 +6222,8 @@ export interface components {
         ScopeReadSnapshot: {
             id: string;
             queryFingerprint: string;
+            /** @description Identity of the logical view this read belongs to. A refresh of the same view supersedes the retained read it replaces, so the view keeps one budget slot instead of accumulating one per refresh. */
+            viewKey?: string;
             scope: components["schemas"]["ScopeSnapshot"];
             /** Format: date-time */
             expiresAt: string;
@@ -7941,6 +8525,24 @@ export interface components {
             }[];
             limitations: string[];
         };
+        RetainedGeographicAdmission: {
+            originalProducer: string;
+            upstreamProvider: string;
+            dataset: string;
+            productVersion: string;
+            coverageDescription: string;
+            area: {
+                west: number;
+                south: number;
+                east: number;
+                north: number;
+            };
+            rights: {
+                [key: string]: unknown;
+            };
+            enabled: boolean;
+            expectedRevisionId?: string;
+        };
         InvestigationList: {
             items: components["schemas"]["Investigation"][];
             total: number;
@@ -8490,6 +9092,909 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    admitRetainedGeographicSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RetainedGeographicAdmission"];
+            };
+        };
+        responses: {
+            /** @description Exact retained-source admission and profile revision */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    releaseCatalogRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catalog snapshot released */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listEnvironmentProfiles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentProfile"][];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listEnvironmentDefinitions: {
+        parameters: {
+            query?: {
+                after?: string;
+                profile?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentDefinitions"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createEnvironmentDefinition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentDefinitionInput"];
+            };
+        };
+        responses: {
+            /** @description Scoped environment library result */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentDefinition"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentDefinition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentDefinition"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reviseEnvironmentDefinition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentDefinitionInput"];
+            };
+        };
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentDefinition"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentEligibility: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentPreflight"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentPreflight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentPreflight"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    submitEnvironmentBuild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentBuildInput"];
+            };
+        };
+        responses: {
+            /** @description Scoped environment library result */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentBuild"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentBuild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentBuild"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listEnvironmentAttempts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentAttempt"][];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    cancelEnvironmentBuild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentBuild"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    retryEnvironmentBuild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentBuild"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listEnvironmentAssets: {
+        parameters: {
+            query?: {
+                after?: string;
+                layer?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentAssets"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reserveEnvironmentAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentAssetInput"];
+            };
+        };
+        responses: {
+            /** @description Scoped environment library result */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentAsset"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    downloadEnvironmentOriginal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized retained object */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    uploadEnvironmentOriginal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentAsset"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listEnvironmentReleases: {
+        parameters: {
+            query?: {
+                after?: string;
+                build?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentReleases"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentRelease"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentManifest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentManifest"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentQuality: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentQuality"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentSTAC: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    downloadEnvironmentPrepared: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized retained object */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    downloadEnvironmentRebuild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized retained object */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    verifyEnvironmentRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentReview"];
+            };
+        };
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentRelease"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    publishEnvironmentRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentReview"];
+            };
+        };
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentRelease"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    withdrawEnvironmentRelease: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentReview"];
+            };
+        };
+        responses: {
+            /** @description Scoped environment library result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentRelease"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     listCaseDeliveries: {
         parameters: {
             query?: never;
@@ -9732,6 +11237,36 @@ export interface operations {
                 content: {
                     "application/json": {
                         [key: string]: unknown;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    releaseAnalystRead: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The retained read is released; its budget slot is free */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        id: string;
+                        released: boolean;
                     };
                 };
             };

@@ -13,7 +13,11 @@ import (
 
 // Config is the runtime configuration of the C4ISR server.
 type Config struct {
-	ProductProfile string
+	ProductProfile            string
+	EnvironmentLibraryEnabled bool
+	EnvironmentToolchain      string
+	EnvironmentSpool          string
+	EnvironmentParallel       int
 
 	ArtifactS3Endpoint  string
 	ArtifactS3Bucket    string
@@ -177,6 +181,18 @@ func Load() (Config, error) {
 			return Config{}, err
 		}
 	}
+	if value := os.Getenv("C4ISR_ENVIRONMENT_LIBRARY_ENABLED"); value != "" {
+		cfg.EnvironmentLibraryEnabled, err = parseBool("C4ISR_ENVIRONMENT_LIBRARY_ENABLED", value)
+		if err != nil {
+			return Config{}, err
+		}
+	}
+	cfg.EnvironmentToolchain = strings.TrimSpace(os.Getenv("C4ISR_ENVIRONMENT_TOOLCHAIN"))
+	cfg.EnvironmentSpool = strings.TrimSpace(os.Getenv("C4ISR_ENVIRONMENT_SPOOL"))
+	cfg.EnvironmentParallel = 1
+	if environment == EnvironmentStaging {
+		cfg.EnvironmentParallel = 2
+	}
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
 	}
@@ -215,6 +231,12 @@ func (cfg Config) Profile() string {
 func (cfg Config) MapOnly() bool { return cfg.Profile() == ProfileMap }
 
 func (cfg Config) Validate() error {
+	if cfg.EnvironmentLibraryEnabled {
+		raw, err := hex.DecodeString(cfg.EnvironmentToolchain)
+		if err != nil || len(raw) != 32 || cfg.EnvironmentToolchain != strings.ToLower(cfg.EnvironmentToolchain) || cfg.ArtifactS3Endpoint == "" {
+			return fmt.Errorf("geographic environment library requires a pinned toolchain digest and private object storage")
+		}
+	}
 	if cfg.Profile() != ProfileMap && cfg.Profile() != ProfileHistoricalFull {
 		return fmt.Errorf("C4ISR_PRODUCT_PROFILE must be map or historical-full")
 	}

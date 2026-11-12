@@ -5,6 +5,8 @@ import { expect, test, type Page } from '@playwright/test'
 
 import { json, list, mockOperationalWorkflow } from './fixtures-operational'
 import { mockSession } from './session'
+import { resolveScopeFixture } from './fixtures-analyst-scope'
+import type { ScopeReadInput } from '../../src/lib/api'
 
 async function openEvidence(page:Page) {
   await mapControl(page,'Evidence inspector')
@@ -67,12 +69,21 @@ test('public filters bookmark historical meaning and retain exact FIRMS CSV', as
   await page.route('**/api/v1/auth/me', (route) => json(route, mockSession({ 'x-emad-partition': 'PUBLIC_EVIDENCE', 'x-emad-run-id': '' })))
   const report = { evidenceId: 'evi-firms', sourceId: 'public-firms', providerRecordId: 'derived-pixel', providerRevision: 'content-revision', admissionId: 'firms-admission', observationId: 'obs-firms', revisionAt: '2026-10-20T05:00:00Z', receivedAt: '2026-10-20T05:00:00Z', knownAt: '2026-10-20T05:00:01Z', effectiveAt: '2026-10-20T04:00:00Z', effectiveBasis: 'reported_observation_no_revision_time', qualityClass: 'nominal', reported: { semanticKind: 'point_event', type: 'thermal.detection', title: 'Reported VIIRS thermal detection', observedAt: '2026-10-20T04:00:00Z', position: { lat: 21.5, lng: 39.2 }, geometryRole: 'reported_location', withdrawn: false, properties: { scanKm: .4, trackKm: .37 }, quality: { providerConfidence: 'nominal' } } }
   const original = 'latitude,longitude,confidence\n21.5,39.2,n\n'
-  const requests: URL[] = []
+  const reads: ScopeReadInput[] = []
   await page.route(/\/api\/v1\/public-events(?:[/?].*)?$/, (route) => {
-    const u = new URL(route.request().url()); requests.push(u)
+    const u = new URL(route.request().url())
     if (u.pathname.endsWith('/revisions')) return json(route, { ...list([report]), truncated: false })
     if (u.pathname.endsWith('/evi-firms')) return json(route, report)
     return json(route, list(u.searchParams.get('quality') === 'low' ? [] : [report]))
+  })
+  await page.route('**/api/v1/analyst-scope/read', async route => {
+    const input = route.request().postDataJSON() as ScopeReadInput
+    if (!input.includeEvents) return route.fallback()
+    reads.push(input)
+    const scope = await resolveScopeFixture(page, input)
+    const items = input.filters?.quality === 'low' ? [] : [report]
+    return json(route, {id: 'event-read-' + scope.scopeHash, scope, layers: {}, errors: {},
+      expiresAt: new Date(Date.now()+300000).toISOString(), events: {...list(items), truncated: false}})
   })
   await page.route('**/api/v1/reference-datasets', (route) => json(route, list([])))
   await page.route('**/api/v1/sources?*', (route) => json(route, list([{ id: 'public-firms', name: 'NASA FIRMS NOAA-20', ingestion: { state: 'unavailable' } }])))
@@ -97,7 +108,13 @@ test('public filters bookmark historical meaning and retain exact FIRMS CSV', as
   await expect(page).toHaveURL(/publicView=/)
   await expect(page.getByLabel('Public view meaning')).toContainText('Later arrivals and publications are excluded')
   await expect(page.getByLabel('Operations rail')).toHaveCount(0)
-  await expect.poll(() => requests.some((u) => u.pathname.endsWith('/public-events') && u.searchParams.get('source_id') === 'public-firms' && u.searchParams.get('view') === 'known_at' && u.searchParams.get('bbox') === '39,21,40,22' && u.searchParams.has('as_of'))).toBe(true)
+  await expect.poll(() => reads.some((input) => {
+    if (input.filters?.sourceId !== 'public-firms') return false
+    const ring = (input.area.geometry?.coordinates as number[][][] | undefined)?.[0]
+    return input.temporal.revisionView === 'known_at' && !!input.temporal.asOf &&
+      !!ring && Math.min(...ring.map(p => p[0])) === 39 && Math.max(...ring.map(p => p[0])) === 40 &&
+      Math.min(...ring.map(p => p[1])) === 21 && Math.max(...ring.map(p => p[1])) === 22
+  })).toBe(true)
   const bookmark = page.url()
   await page.reload()
   await openEvidence(page)
@@ -129,7 +146,13 @@ test('public filters bookmark historical meaning and retain exact FIRMS CSV', as
   await expect(filters.getByRole('button', { name: 'Reset public filters' })).toBeVisible()
   await page.screenshot({ path: '../../tmp/p16-filters-mobile.png', fullPage: true })
   await filters.getByRole('button', { name: 'Reset public filters' }).click()
-  await expect(page).not.toHaveURL(/publicView=/)
+  await expect(page).toHaveURL(url => {
+    const raw = url.searchParams.get('publicView')
+    if (!raw) return true
+    const parsed = JSON.parse(raw)
+    const value = typeof parsed === 'string' ? JSON.parse(parsed) : parsed
+    return value.view === 'latest' && !value.asOf && !value.quality && !value.sourceId
+  })
   await expect(page.getByLabel('Public view meaning')).toContainText('Latest published')
 })
 

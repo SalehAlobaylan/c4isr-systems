@@ -2,6 +2,8 @@
 
 **User scope correction: 25 October 2026.** This records the current phase and takes precedence over earlier implementation sequences and recommendations where they conflict. Historical implementation records and immutable evidence remain intact.
 
+**Preparation clarification: 11 November 2026.** The current assignment is to deepen, organize and harden the data and geographic environment foundations so a later team can design simulation systems and software. It does not start simulation design or an exercise pilot. The [environment foundation analysis and execution plan](docs/implementation/ENVIRONMENT_FOUNDATION_PLAN_2026_11_11.md) records the retained-data audit, required structure, implementation order and preparation exit criteria. Existing map-first qualification gates keep their recorded state.
+
 ## Current objective
 
 Build a useful **map-centered Public Context and Intelligence system for the Middle East and the rest of the world**.
