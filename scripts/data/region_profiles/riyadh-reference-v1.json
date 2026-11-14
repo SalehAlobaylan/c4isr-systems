@@ -1,0 +1,19 @@
+{
+  "schema": "emad.environment-candidate-area.v1",
+  "key": "riyadh",
+  "revisionId": "riyadh-reference-v1",
+  "name": "Riyadh urban reference",
+  "country": "SAU",
+  "area": {
+    "west": 46.732,
+    "south": 24.684,
+    "east": 46.792,
+    "north": 24.744
+  },
+  "meaning": "Bounded urban study area for Riyadh reference preparation and 3D inspection.",
+  "referencePoint": {
+    "longitude": 46.761685,
+    "latitude": 24.714444,
+    "source": "https://ungegn.un.org/dashboard/cities/details?crM49=682&id=85"
+  }
+}

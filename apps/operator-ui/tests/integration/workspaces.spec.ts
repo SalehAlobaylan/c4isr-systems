@@ -17,7 +17,7 @@ test('scenario to audit survives explicit run selection and public workspace swi
   await start.getByLabel('Playback speed').click()
   await page.getByRole('option', { name: '50×', exact: true }).click()
   await start.getByRole('button', { name: /Start/ }).click()
-  await expect(page).toHaveURL(/\/map$/)
+  await expect(page).toHaveURL(/\/map(?:\?|$)/)
   const context = page.getByRole('region',{name:'Workspace context'})
   await expect(context).not.toHaveAttribute('data-resource',/legacy/)
   const selected = JSON.parse((await context.getAttribute('data-resource'))!)
@@ -50,7 +50,7 @@ test('scenario to audit survives explicit run selection and public workspace swi
   await expect(page.getByText('command.issued', { exact: true }).first()).toBeVisible()
   await page.getByRole('button', { name: 'Public Context', exact: true }).click()
   await expect(page.getByTestId('workspace-basis')).toContainText('Public sources')
-  await expect(page).toHaveURL(/\/map$/)
+  await expect(page).toHaveURL(/\/map(?:\?|$)/)
   expect(await page.locator('body').innerText()).not.toContain('Browser compatibility exercise')
   const afterSwitch = apiScopes.length
   await page.goto(`${fixture.url}/tracks`)

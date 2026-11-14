@@ -148,33 +148,206 @@ class QualificationTests(unittest.TestCase):
         self.assertIn('Reviewer is a case contributor or alias', result['errors'])
         self.assertIn('Observed non-synthetic sessions have not been recorded', result['errors'])
 
-    def test_complete_record_then_source_and_evidence_drift(self):
-        # Validator-only in-memory fixture; never persisted as user evidence.
+    def observed_record(self, profile=None):
+        """Validator-only in-memory fixture; never persisted as user evidence."""
+        profile = profile or load(PROFILE)
         evidence = {'path': Path(__file__).resolve().relative_to(ROOT).as_posix(), 'sha256': sha(__file__)}
+
+        def task(check, **overrides):
+            row = {'task': check, 'outcome': 'PASS', 'attempts': 1, 'completedUnassisted': 1,
+                   'assistedCompletions': 0, 'assistanceCount': 0, 'wrongAreaOrWrongPeriod': False,
+                   'coverageVersusAbsenceExplained': True, 'resultAndReviewStateExplained': True,
+                   'critical': False, 'retested': False}
+            row.update(overrides)
+            return row
+
+        def session(role, human, participant, checks, matrix=False):
+            row = {'participantId': participant, 'canonicalHumanId': human, 'observerId': 'observer',
+                   'role': role, 'consent': {'obtained': True, 'obtainedAt': '2026-10-27T09:55:00+03:00',
+                                             'scope': 'Observed navigation, brief reading and explanation; no case prose retained.'},
+                   'startedAt': '2026-10-27T10:00:00+03:00', 'endedAt': '2026-10-27T10:05:00+03:00',
+                   'locale': 'en', 'timezone': 'Asia/Riyadh', 'device': 'fixture', 'inputMethod': 'keyboard',
+                   'assistance': 'none', 'baselineWorkflow': 'fixture', 'baselineSeconds': 90,
+                   'completionSeconds': 80, 'usefulness': 'fixture', 'explanation': 'fixture',
+                   'outcome': 'PASS', 'evidence': [evidence], 'corrections': [], 'retestEvidence': [],
+                   'tasks': [task(check) for check in checks]}
+            for key in ('geography', 'selectionForms', 'evidenceStates', 'workflowChecks'):
+                row[key] = list(profile[key]) if matrix else []
+            return row
+
+        sessions = [session('analyst', 'analyst-1', 'participant-1', profile['workflowChecks'], matrix=True),
+                    session('analyst', 'analyst-2', 'participant-2', ['correct-area-period', 'coverage-uncertainty']),
+                    session('analyst', 'analyst-3', 'participant-3',
+                            ['keyboard-only', 'portrait-320px', 'portrait-390px', 'short-landscape', 'text-200-percent']),
+                    session('reviewer', 'reviewer-1', 'participant-4', ['case-handoff']),
+                    session('source-administrator', 'admin-1', 'participant-5', ['source-administrator-recovery-path']),
+                    session('restricted-reader', 'reader-1', 'participant-6', ['offline-brief-reading'])]
+        assistive = dict(evidence, participantId='reader-1', technology='screen reader',
+                         observedAt='2026-10-27T10:40:00+03:00', observerId='observer')
+        document = {'schema': 'emad.observed-map-sessions.v1', 'status': 'OBSERVED', 'synthetic': False,
+                    'releaseFingerprint': 'a'*64,
+                    'caseContributorHumanIds': ['analyst-1', 'analyst-2', 'analyst-3'],
+                    'observer': {'observerId': 'observer', 'appointedBy': 'product validation',
+                                 'attestedAt': '2026-10-27T11:00:00+03:00'},
+                    'reviewerIndependence': {'asserted': True, 'reviewerCanonicalHumanIds': ['reviewer-1'],
+                                             'attestedBy': 'observer', 'attestedAt': '2026-10-27T11:00:00+03:00',
+                                             'basis': 'The reviewer is a different canonical human from every case contributor.'},
+                    'assistiveTechnologyEvidence': assistive, 'sessions': sessions}
+        return document
+
+    def test_complete_record_then_source_and_evidence_drift(self):
         profile = load(PROFILE)
-        row = {'participantId': 'fixture', 'canonicalHumanId': 'author', 'observerId': 'observer',
-            'startedAt': '2026-10-27T10:00:00+03:00', 'endedAt': '2026-10-27T10:05:00+03:00',
-            'locale': 'en', 'timezone': 'Asia/Riyadh', 'device': 'fixture', 'inputMethod': 'keyboard',
-            'assistance': 'none', 'baselineWorkflow': 'fixture', 'baselineSeconds': 90,
-            'completionSeconds': 80, 'usefulness': 'fixture', 'explanation': 'fixture',
-            'outcome': 'PASS', 'evidence': [evidence]}
-        row.update({key: profile[key] for key in ('geography', 'selectionForms', 'evidenceStates', 'workflowChecks')})
-        sessions = [dict(row, role=role, participantId=role, canonicalHumanId='author' if role == 'analyst' else role)
-                    for role in ('analyst', 'reviewer', 'source-administrator', 'restricted-reader')]
-        doc = {'schema': 'emad.observed-map-sessions.v1', 'status': 'OBSERVED', 'synthetic': False,
-               'releaseFingerprint': 'a'*64, 'caseContributorHumanIds': ['author'],
-               'sessions': sessions, 'assistiveTechnologyEvidence': evidence}
-        self.assertEqual(validate_sessions(doc, 'a'*64, profile)['status'], 'PASS')
-        self.assertEqual(validate_sessions(doc, 'other-release', profile)['status'], 'FAIL')
-        broken = copy.deepcopy(doc); broken['sessions'][0]['evidence'][0]['sha256'] = 'wrong'
+        document = self.observed_record(profile)
+        result = validate_sessions(document, 'a'*64, profile)
+        self.assertEqual(result['status'], 'PASS')
+        self.assertEqual(result['qualification'], 'NOT_QUALIFIED')
+        self.assertEqual(result['a19Status'], 'NOT_RUN')
+        self.assertEqual(validate_sessions(document, 'other-release', profile)['status'], 'FAIL')
+        broken = copy.deepcopy(document); broken['sessions'][0]['evidence'][0]['sha256'] = 'wrong'
         self.assertEqual(validate_sessions(broken, 'a'*64, profile)['status'], 'FAIL')
-        broken=copy.deepcopy(doc)
-        for session in broken['sessions']:session['workflowChecks']=[]
-        self.assertEqual(validate_sessions(broken, 'a'*64, profile)['status'],'FAIL')
-        broken=copy.deepcopy(doc);broken['releaseFingerprint']=''
-        self.assertEqual(validate_sessions(broken, '', profile)['status'],'FAIL')
-        broken=copy.deepcopy(doc);broken['sessions'][1]['participantId']=broken['sessions'][0]['participantId']
-        self.assertEqual(validate_sessions(broken, 'a'*64, profile)['status'],'FAIL')
+        broken = copy.deepcopy(document)
+        for session in broken['sessions']: session['workflowChecks'] = []
+        self.assertEqual(validate_sessions(broken, 'a'*64, profile)['status'], 'FAIL')
+        broken = copy.deepcopy(document); broken['releaseFingerprint'] = ''
+        self.assertEqual(validate_sessions(broken, '', profile)['status'], 'FAIL')
+        broken = copy.deepcopy(document); broken['sessions'][1]['participantId'] = broken['sessions'][0]['participantId']
+        self.assertEqual(validate_sessions(broken, 'a'*64, profile)['status'], 'FAIL')
+
+    def test_failed_journey_is_recorded_and_reported_not_rejected(self):
+        profile = load(PROFILE)
+        document = self.observed_record(profile)
+        failed = document['sessions'][1]
+        failed['outcome'] = 'FAIL'
+        failed['tasks'][0].update({'outcome': 'FAIL', 'completedUnassisted': 0})
+        result = validate_sessions(document, 'a'*64, profile)
+        self.assertEqual(result['status'], 'PASS')
+        self.assertEqual(result['outcomes']['FAIL'], 1)
+        self.assertEqual(result['unresolvedJourneys'][0]['task'], 'correct-area-period')
+        self.assertEqual(result['qualification'], 'NOT_QUALIFIED')
+        self.assertEqual(result['a19Status'], 'NOT_RUN')
+
+    def test_critical_failure_must_be_repaired_and_retested(self):
+        profile = load(PROFILE)
+        document = self.observed_record(profile)
+        critical = document['sessions'][1]
+        critical['outcome'] = 'FAIL'
+        critical['tasks'][0].update({'outcome': 'FAIL', 'completedUnassisted': 0, 'critical': True})
+        result = validate_sessions(document, 'a'*64, profile)
+        self.assertEqual(result['status'], 'PASS')
+        condition = next(c for c in result['exitMetric']['conditions']
+                         if c['condition'] == 'critical-failures-repaired-and-retested')
+        self.assertEqual(condition['status'], 'NOT_MET')
+        repaired = copy.deepcopy(document)
+        session = repaired['sessions'][1]
+        session['tasks'][0]['retested'] = True
+        session['corrections'] = [{'task': 'correct-area-period', 'defect': 'wrong period selected',
+                                   'repair': 'explicit period selector', 'retestOutcome': 'PASS'}]
+        session['retestEvidence'] = [session['evidence'][0]]
+        result = validate_sessions(repaired, 'a'*64, profile)
+        self.assertEqual(result['status'], 'PASS')
+        condition = next(c for c in result['exitMetric']['conditions']
+                         if c['condition'] == 'critical-failures-repaired-and-retested')
+        self.assertEqual(condition['status'], 'MET')
+        inconsistent = copy.deepcopy(repaired)
+        inconsistent['sessions'][1]['tasks'][0]['retested'] = False
+        self.assertEqual(validate_sessions(inconsistent, 'a'*64, profile)['status'], 'FAIL')
+
+    def test_synthetic_and_missing_sessions_still_fail(self):
+        profile = load(PROFILE)
+        document = self.observed_record(profile)
+        synthetic = copy.deepcopy(document); synthetic['synthetic'] = True
+        result = validate_sessions(synthetic, 'a'*64, profile)
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertIn('Observed non-synthetic sessions have not been recorded', result['errors'])
+        missing = copy.deepcopy(document); missing['sessions'] = []
+        result = validate_sessions(missing, 'a'*64, profile)
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertIn('No observed sessions were recorded', result['errors'])
+        empty = copy.deepcopy(document); empty['status'] = 'NOT_RUN'
+        result = validate_sessions(empty, 'a'*64, profile)
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertEqual(result['observedSessions'], 6)
+
+    def test_empty_template_validates_without_crashing(self):
+        template = json.loads((ROOT / 'docs/implementation/MAP_FIRST_T23_OBSERVED_SESSIONS.template.json')
+                              .read_text(encoding='utf-8'))
+        result = validate_sessions(template, 'a'*64, load(PROFILE))
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertEqual(result['observedSessions'], 0)
+        self.assertEqual(result['qualification'], 'NOT_QUALIFIED')
+        self.assertEqual(result['a19Status'], 'NOT_RUN')
+        self.assertEqual(result['exitMetric']['status'], 'NOT_EVALUABLE')
+        for condition in result['exitMetric']['conditions']:
+            if condition['condition'] != 'participant-sample':
+                self.assertEqual(condition['status'], 'NOT_EVALUABLE')
+
+    def test_missing_reviewer_still_fails(self):
+        profile = load(PROFILE)
+        document = self.observed_record(profile)
+        document['sessions'] = [s for s in document['sessions'] if s['role'] != 'reviewer']
+        result = validate_sessions(document, 'a'*64, profile)
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertIn('No independent reviewer was observed', result['errors'])
+        self.assertIn('Missing observed roles', result['errors'])
+        self.assertEqual(result['participantSample']['status'], 'NOT_MET')
+        below = self.observed_record(profile)
+        below['sessions'] = [s for s in below['sessions'] if not (s['role'] == 'analyst' and s['canonicalHumanId'] == 'analyst-3')]
+        result = validate_sessions(below, 'a'*64, profile)
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertIn('Observed target analyst sample is below the A19 minimum', result['errors'])
+
+    def test_reviewer_must_be_independent_of_contributors(self):
+        profile = load(PROFILE)
+        document = self.observed_record(profile)
+        reviewer = next(s for s in document['sessions'] if s['role'] == 'reviewer')
+        reviewer['canonicalHumanId'] = 'analyst-1'
+        result = validate_sessions(document, 'a'*64, profile)
+        self.assertEqual(result['status'], 'FAIL')
+        self.assertIn('Reviewer is a case contributor or alias', result['errors'])
+        self.assertIn('Reviewer is also an observed analyst', result['errors'])
+        unasserted = self.observed_record(profile)
+        unasserted['reviewerIndependence']['asserted'] = False
+        self.assertEqual(validate_sessions(unasserted, 'a'*64, profile)['status'], 'FAIL')
+
+    def test_unassisted_rate_is_measured_and_thresholded(self):
+        profile = load(PROFILE)
+        document = self.observed_record(profile)
+        result = validate_sessions(document, 'a'*64, profile)
+        self.assertEqual(result['status'], 'PASS')
+        self.assertEqual(result['exitMetric']['threshold'], 0.80)
+        self.assertEqual(result['exitMetric']['unassistedRate'], 1.0)
+        condition = next(c for c in result['exitMetric']['conditions']
+                         if c['condition'] == 'unassisted-rate-at-least-80-percent')
+        self.assertEqual(condition['status'], 'MET')
+        assisted = self.observed_record(profile)
+        for task in assisted['sessions'][0]['tasks'][:5]:
+            task.update({'completedUnassisted': 0, 'assistedCompletions': 1, 'assistanceCount': 1})
+        result = validate_sessions(assisted, 'a'*64, profile)
+        self.assertEqual(result['status'], 'PASS')
+        self.assertAlmostEqual(result['exitMetric']['unassistedRate'], 17/22)
+        condition = next(c for c in result['exitMetric']['conditions']
+                         if c['condition'] == 'unassisted-rate-at-least-80-percent')
+        self.assertEqual(condition['status'], 'NOT_MET')
+        self.assertEqual(result['exitMetric']['status'], 'NOT_MET')
+        self.assertEqual(result['exitMetric']['assistanceCount'], 5)
+        over = self.observed_record(profile)
+        over['sessions'][0]['tasks'][0].update({'completedUnassisted': 2, 'attempts': 1})
+        self.assertEqual(validate_sessions(over, 'a'*64, profile)['status'], 'FAIL')
+
+    def test_wrong_area_and_workflow_coverage_are_reported(self):
+        profile = load(PROFILE)
+        document = self.observed_record(profile)
+        document['sessions'][0]['tasks'][0]['wrongAreaOrWrongPeriod'] = True
+        result = validate_sessions(document, 'a'*64, profile)
+        self.assertEqual(result['status'], 'PASS')
+        condition = next(c for c in result['exitMetric']['conditions']
+                         if c['condition'] == 'no-wrong-area-or-wrong-period')
+        self.assertEqual(condition['status'], 'NOT_MET')
+        uncovered = self.observed_record(profile)
+        uncovered['sessions'][0]['tasks'] = [t for t in uncovered['sessions'][0]['tasks']
+                                             if t['task'] != 'case-handoff']
+        uncovered['sessions'][3]['tasks'] = []
+        self.assertEqual(validate_sessions(uncovered, 'a'*64, profile)['status'], 'FAIL')
 
     def test_expired_and_tombstoned_objects_are_not_resurrected(self):
         now = datetime.now(timezone.utc)

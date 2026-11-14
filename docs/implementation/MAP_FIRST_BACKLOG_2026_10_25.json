@@ -2,7 +2,8 @@
   "schema": "emad.map-first-backlog.v2",
   "preparedOn": "2026-10-25",
   "baselineCommit": "a6d1d22f34692faea31db58e4a6318c539c3321a",
-  "plan": "MAP_FIRST_IMPLEMENTATION_PLAN_2026_10_25.md",
+  "plan": "MAP_FIRST_PLAN.md",
+  "planSection": "#implementation-plan",
   "governingScope": "../../EMAD_CURRENT_SCOPE.md",
   "status": "IN_PROGRESS",
   "authorization": "The user authorized T22-T24 after reporting migrations. T01-T21 retain scoped implementation evidence; T22-T24 qualification tooling/documentation are implemented and their actual qualification remains IN_PROGRESS. No shared migration/deployment/restart was performed.",
@@ -21,7 +22,10 @@
     "T16-T18 add immutable authored findings, canonical save recovery, independent exact-content review and purpose-specific composite rights/storage. Protocol fixtures do not establish observed independent users or publication. T19 readable briefs and full acceptance qualification remain open.",
     "T19-T21 implement independent durable delivery, frozen script-free briefs, offline approval bundles, area-parameterized normalization and qualified portable geographic packages. Synthetic coordinate/protocol tests and independent PROJ/GEOS checks are not surveyed accuracy, observed independent users, complete journeys or release qualification.",
     "T22-T24 provide isolated five-session/ten-profile measurement, expanded paired recovery inventory and retention policy, bounded operation histograms, observed-session record validation and a source-pinned release ledger. Reduced synthetic samples and record checks do not close full workload, 24-hour recovery, real geographic or observed-human gates.",
-    "Pre-qualification review fixed seven tooling defects. Use the t22-t24-review candidate for future qualification; older scoped evidence is historical and no mandatory acceptance/user/operational gate was promoted."
+    "Pre-qualification review fixed seven tooling defects. Use the t22-t24-review candidate for future qualification; older scoped evidence is historical and no mandatory acceptance/user/operational gate was promoted.",
+    "29 October 2026 product evaluation is the latest qualification result: the release is NOT_QUALIFIED with measured dense-workload latency failures, an unresolved read-capacity blocker and no independent observed sessions. Its findings are recorded against T22, T23 and T24 and in the releaseCandidate block; no task status was promoted.",
+    "Records index: docs/implementation/README.md lists every implementation record, its era and status, the evidence layout and the open gates.",
+    "Governing scope re-pinned on 12 November 2026 after the Riyadh priority and environment/3D plan links were recorded in EMAD_CURRENT_SCOPE.md. The change was reviewed before the fingerprint was updated; no task, acceptance result or historical evidence was promoted by it."
   ],
   "tasks": [
     {
@@ -42,7 +46,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md#t01-area-integrity",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t01-area-integrity",
             "scope": "Implemented working-tree change; source hashes in verification.json"
           }
         ],
@@ -84,7 +88,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md#t02-map-only-operation",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t02-map-only-operation",
             "scope": "Implemented working-tree change; source hashes in verification.json"
           }
         ],
@@ -131,7 +135,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md#t03-purpose-and-truthful-counts",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t03-purpose-and-truthful-counts",
             "scope": "Implemented working-tree change; source hashes in verification.json"
           }
         ],
@@ -184,7 +188,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md#t04-versioned-areas-and-exact-geography",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t04-versioned-areas-and-exact-geography",
             "scope": "Working-tree implementation; exact source hashes in second-batch verification.json."
           }
         ],
@@ -233,7 +237,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md#t05-shared-time-and-stable-reads",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t05-shared-time-and-stable-reads",
             "scope": "Working-tree implementation; exact source hashes in second-batch verification.json."
           }
         ],
@@ -287,7 +291,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md#t06-one-scope-through-the-user-journey",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t06-one-scope-through-the-user-journey",
             "scope": "Working-tree implementation; exact source hashes in second-batch verification.json."
           }
         ],
@@ -334,7 +338,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T07_T09_IMPLEMENTATION_2026_10_26.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t07-t09",
             "scope": "Registered-human membership/CAS, immutable authored history, cumulative source dependencies, cross-browser protocol resume and stale-save recovery; no independent-user qualification."
           }
         ],
@@ -385,7 +389,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T07_T09_IMPLEMENTATION_2026_10_26.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t07-t09",
             "scope": "Real Natural Earth seven-country chunks in isolated PostGIS, source-qualified release atomicity, bounded search and durable reference-depth requests; no shared regional deployment or geographic accuracy qualification."
           }
         ],
@@ -444,7 +448,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T07_T09_IMPLEMENTATION_2026_10_26.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t07-t09",
             "scope": "Exact legacy mapping, original-profile rights, explicit revision grants, deduplicated occurrences, old-reader boundary and suspension during S3 I/O."
           }
         ],
@@ -497,7 +501,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T10_T12_IMPLEMENTATION_2026_10_26.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t10-t12",
             "scope": "Durable intent/parts, same-key lost-response retry, cancellation during I/O, source/account quotas, uncertain charges, capacity guards and durable metrics; real account policy/soak remain unqualified."
           }
         ],
@@ -551,7 +555,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T10_T12_IMPLEMENTATION_2026_10_26.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t10-t12",
             "scope": "Exact historical footprint/window unions, capped/rejected/unpublished gaps, publication-only recovery, empty/unqueried/unavailable/stale states, credentials and source isolation."
           }
         ],
@@ -605,7 +609,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T10_T12_IMPLEMENTATION_2026_10_26.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t10-t12",
             "scope": "SQL-family savepoints, unknown counts, frozen historical membership/focus/reconnect, explicit refresh, current provider validity notices and scoped quiet summaries."
           }
         ],
@@ -659,7 +663,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T13_T15_IMPLEMENTATION_2026_10_26.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t13-t15",
             "scope": "Owner/resource/scope-bound saved catalogs, exact counts and opaque continuation; aggregate revision drill-down; bounded read storage, stable paging, truthful legacy ceilings and history beyond former count caps."
           }
         ],
@@ -713,7 +717,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T13_T15_IMPLEMENTATION_2026_10_26.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t13-t15",
             "scope": "Effective-role navigation, explicit Gregorian/timezone/coordinates, Arabic digits/bidi and local RTL, keyboard/focus and narrow/short/text enlargement; independent users remain NOT_RUN."
           }
         ],
@@ -769,7 +773,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T13_T15_IMPLEMENTATION_2026_10_26.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t13-t15",
             "scope": "Exact scene/subset proposal, deliberate adoption, retained grid/platform/tile/orbit/baseline/date/mask checks, canonical original intent retries and immutable case revision links with current membership."
           }
         ],
@@ -829,7 +833,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T16_T18_IMPLEMENTATION_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t16-t18",
             "scope": "Exact evidence selection, immutable findings, cumulative historical/source-admission dependencies, preserved original scopes, revision comparison, account-scoped autosave/recovery and live save grants."
           }
         ],
@@ -881,7 +885,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T16_T18_IMPLEMENTATION_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t16-t18",
             "scope": "Append-only assignment/rework/approval, current revision/event CAS, canonical-human contributor exclusion, live reviewer/source grants, inbox and exact manifest/render attestations. Observed independent humans remain NOT_RUN."
           }
         ],
@@ -935,7 +939,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T16_T18_IMPLEMENTATION_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t16-t18",
             "scope": "Explicit original/current output permissions, typed all-source lineage, bounded frozen manifests/private bytes, post-I/O access checks, immutable render identity, exact approved distribution, retention/deletion retries and tombstones. Readable HTML briefs remain T19."
           }
         ],
@@ -992,7 +996,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T19_T21_IMPLEMENTATION_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t19-t21",
             "scope": "Durable author-bound job/intent/lease/retry/cancel/recovery, safe frozen HTML/figures/coverage, sandboxed reader, independent exact-render approval and offline HTML/JSON/readable attestation bundle."
           }
         ],
@@ -1046,7 +1050,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T19_T21_IMPLEMENTATION_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t19-t21",
             "scope": "Explicit polygon/source-version/CRS/datum/origin/budget inputs, retained native parents/structured hashes/dates, bounded raster mosaic normalization, vector clipping, independent frame/vertical checks and isolated historical Jeddah/model fixture path."
           }
         ],
@@ -1098,7 +1102,7 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T19_T21_IMPLEMENTATION_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t19-t21",
             "scope": "Product preparation requests, qualification/control/accuracy/budget preflight, immutable neutral georeferenced terrain/vector/multispectral package, independent offline PROJ/GEOS reader, publication/retention/orphan fencing and source/case rights checks."
           }
         ],
@@ -1160,12 +1164,12 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t22-t24",
             "scope": "Executable qualification tooling/documentation; actual gate closure remains open"
           },
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T22_T24_REVIEW_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t22-t24-review",
             "scope": "Seven pre-qualification tooling defects fixed; current candidate supersedes earlier source pin."
           }
         ],
@@ -1180,6 +1184,21 @@
             "outcome": "PASS",
             "reference": "docs/implementation/evidence/map-first/t22-t24-review/verification.json",
             "scope": "16 regression tests, reduced workload and isolated paired-recovery evidence only; full task qualification remains open."
+          },
+          {
+            "outcome": "FAIL",
+            "reference": "docs/implementation/evidence/map-first/qualification-2026-10-29/evaluation.json",
+            "scope": "29 October 2026 dense-workload run: cold map-family p95 2854.619 ms against a 2000 ms budget, warm geography p95 1079.928 ms against 1000 ms, warm weather ~5000 ms with timeouts. The retained failure is the current measurement; targets must not be relaxed."
+          },
+          {
+            "outcome": "PARTIAL",
+            "reference": "docs/implementation/evidence/map-first/recovery-2026-11-12/required-recovery.json",
+            "scope": "Required-recovery executor run on 12 November 2026: 9 PASS, 0 FAIL, 3 NOT_RUN of 12 declared rehearsals. Passing: stale-lease, storage-loss, provider-backoff, credential-exhaustion, storage-quota, lost-response, source-revocation, deletion-expiry-interruption, paired-restore. Not run: api-restart and worker-loss (no process-level harness) and the rollback-binary rehearsal (no installed binary nominated). A rehearsal that did not run is not evidence that the fault is handled."
+          },
+          {
+            "outcome": "FAIL",
+            "reference": "docs/implementation/evidence/map-first/qualification-2026-11-12/full-volume/result.json",
+            "scope": "Full declared dataset, 60 s, run on 12 November 2026. The run completed (incomplete=false) and the planned worker restart passed. Measured: catalog_search/cold PASS 154.2 ms (target 1000), catalog_search/warm PASS 185.0 ms (target 1000), geography_search/cold FAIL 1346.7 ms (target 1000), geography_search/warm FAIL 1267.0 ms (target 1000), weather_query/cold FAIL 1377.8 ms (target 1000), weather_query/warm FAIL 5000.5 ms (target 1000), map_family/cold FAIL 3744.8 ms (target 2000), map_family/warm PASS 7.6 ms (target 2000), -/- PASS 69163.0 ms (target 2097152), -/- PASS 20714.0 ms (target 524288). 5 of 10 measured budgets are outside their target; the targets were not relaxed."
           }
         ],
         "geographic": [],
@@ -1190,9 +1209,10 @@
       "owner": null,
       "evidenceReviewer": null,
       "remainingVerification": [
-        "Full proposed dataset, map/browser budgets and simultaneous raster workload remain unqualified.",
+        "Dense-workload latency remains open with a complete measured baseline (12 November 2026): map_family cold 3744.76 ms against 2000, geography_search cold 1346.74 ms and warm 1266.97 ms against 1000, weather_query cold 1377.76 ms and warm 5000.51 ms (timeout) against 1000. catalog_search passes cold and warm, map_family warm passes at 7.62 ms, and both payload budgets pass. See docs/implementation/evidence/map-first/qualification-2026-11-12/full-volume/result.json.",
         "24 actual wall-clock hours with real planned process restart and RSS/object/freshness/queue growth measurements remain NOT_RUN.",
-        "Full installed dependency replay, every recovery fault and actual nominated rollback binary/forward recovery remain unqualified."
+        "Read lifecycle: map-family read snapshots are never released or replaced, so ordinary navigation hits 'active read capacity exhausted'. The fix is a lifecycle change, not a quota increase.",
+        "Nine of the twelve declared recovery rehearsals now pass in isolation (see docs/implementation/evidence/map-first/recovery-2026-11-12/required-recovery.json). The three open ones are api-restart and worker-loss, which need a process-level restart/kill harness, and the rollback-binary rehearsal, which needs an actual installed binary; the retained source archive is not accepted as one."
       ]
     },
     {
@@ -1220,13 +1240,18 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t22-t24",
             "scope": "Executable qualification tooling/documentation; actual gate closure remains open"
           },
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T22_T24_REVIEW_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t22-t24-review",
             "scope": "Seven pre-qualification tooling defects fixed; current candidate supersedes earlier source pin."
+          },
+          {
+            "outcome": "PASS",
+            "reference": "docs/implementation/MAP_FIRST_T23_OBSERVED_SESSION_PROTOCOL.md",
+            "scope": "Published observed-session protocol: the T14 foundation plus the frozen-brief, geographic-package, case-handoff and offline-recipient journeys, every enforced workflowChecks entry and A19's per-task attempt/assistance accounting. Instrument only; no session was observed."
           }
         ],
         "installation": [],
@@ -1240,6 +1265,16 @@
             "outcome": "PASS",
             "reference": "docs/implementation/evidence/map-first/t22-t24-review/verification.json",
             "scope": "16 regression tests, reduced workload and isolated paired-recovery evidence only; full task qualification remains open."
+          },
+          {
+            "outcome": "PASS",
+            "reference": "scripts/ops/test_map_first_qualification.py",
+            "scope": "Validator-only regressions for the A19-aligned session assessment: a FAIL journey is recorded and reported, synthetic/missing sessions and a missing reviewer still fail, and the unassisted rate is measured against the 0.80 threshold. In-memory fixtures, not observed people."
+          },
+          {
+            "outcome": "FAIL",
+            "reference": "docs/implementation/evidence/map-first/t22-t24/observed-session-template-check.json",
+            "scope": "Observed-session template validation reports zero observed sessions; the template is not evidence that a session occurred."
           }
         ],
         "geographic": [],
@@ -1251,7 +1286,9 @@
       "evidenceReviewer": null,
       "remainingVerification": [
         "Appointed observer, real target users, distinct canonical reviewer and assistive-technology observation are required.",
-        "Complete real geographic/state journeys and observed baseline/usefulness/corrections/retests remain NOT_RUN."
+        "Complete real geographic/state journeys and observed baseline/usefulness/corrections/retests remain NOT_RUN.",
+        "The T23 protocol extension is published (docs/implementation/MAP_FIRST_T23_OBSERVED_SESSION_PROTOCOL.md): the T14 foundation plus the frozen-brief, geographic-package, case-handoff and offline-recipient journeys, the enforced workflowChecks matrix and A19's per-task attempt/assistance accounting. Observers must now run it.",
+        "The session validator is aligned with A19: a FAIL or BLOCKED journey is recorded and reported rather than rejected, the participant sample and the unassisted rate are measured against the 0.80 threshold, and the assessment never awards qualification. No session has been recorded, so every A19 exit condition is unmeasured."
       ]
     },
     {
@@ -1277,12 +1314,12 @@
         "implementation": [
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t22-t24",
             "scope": "Executable qualification tooling/documentation; actual gate closure remains open"
           },
           {
             "outcome": "PASS",
-            "reference": "docs/implementation/MAP_FIRST_T22_T24_REVIEW_2026_10_27.md",
+            "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t22-t24-review",
             "scope": "Seven pre-qualification tooling defects fixed; current candidate supersedes earlier source pin."
           }
         ],
@@ -1297,6 +1334,11 @@
             "outcome": "PASS",
             "reference": "docs/implementation/evidence/map-first/t22-t24-review/verification.json",
             "scope": "16 regression tests, reduced workload and isolated paired-recovery evidence only; full task qualification remains open."
+          },
+          {
+            "outcome": "FAIL",
+            "reference": "docs/implementation/MAP_FIRST_PRODUCT.md#29-october-2026-product-evaluation",
+            "scope": "29 October 2026 evaluation: the release ledger was not reachable as current release evidence, the 29 October findings were not linked from the active documentation, and the backlog still carried the 27 October view."
           }
         ],
         "geographic": [],
@@ -1308,7 +1350,10 @@
       "evidenceReviewer": null,
       "remainingVerification": [
         "All mandatory acceptance, P0 and independent release closure evidence must pass before delivery can be claimed.",
-        "Shared installation/profile/geographic coverage are user-reported or scope-specific, without independent verification."
+        "Shared installation/profile/geographic coverage are user-reported or scope-specific, without independent verification.",
+        "Regenerate the release ledger against the current candidate and link the active documentation to it; the retained ledgers are pinned to older source fingerprints.",
+        "Populate per-gap links (source revision, installed profile, functional/geographic/user evidence) and name owners and evidence reviewers; every task currently has owner null and empty userValidation.",
+        "The 29 October evaluation must be linked from the active documentation and this backlog."
       ]
     }
   ],
@@ -1321,7 +1366,7 @@
       "evidence": [
         {
           "outcome": "PARTIAL",
-          "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md",
+          "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t01-t03",
           "scope": "Only first-batch assertions exercised; the full release scenario is not marked PASS."
         }
       ]
@@ -1334,12 +1379,12 @@
       "evidence": [
         {
           "outcome": "PARTIAL",
-          "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md",
+          "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t01-t03",
           "scope": "Only first-batch assertions exercised; the full release scenario is not marked PASS."
         },
         {
           "outcome": "PARTIAL",
-          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t04-t06",
           "scope": "Exact area/period handoffs, native capture bounds, comparison/export lineage; later investigations/briefs remain open."
         }
       ]
@@ -1352,7 +1397,7 @@
       "evidence": [
         {
           "outcome": "PARTIAL",
-          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t04-t06",
           "scope": "Staged/activated geographic editions, exact retained IDs/parents, immutable area/profile manifests; final release scenario remains open."
         }
       ]
@@ -1365,7 +1410,7 @@
       "evidence": [
         {
           "outcome": "PARTIAL",
-          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t04-t06",
           "scope": "Monitoring/fixed/year/timezone/legacy interval semantics, history support and pinned period handoffs; later consumers remain open."
         },
         {
@@ -1422,7 +1467,7 @@
       "evidence": [
         {
           "outcome": "PARTIAL",
-          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t04-t06",
           "scope": "Date-line components/holes/counts and high-latitude retention/display states; regional reference-depth qualification remains T08."
         },
         {
@@ -1440,7 +1485,7 @@
       "evidence": [
         {
           "outcome": "PARTIAL",
-          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t04-t06",
           "scope": "Abort propagation, obsolete-response rejection, scope hashes and hidden workbench polling; workload/scale gates remain open."
         }
       ]
@@ -1493,7 +1538,7 @@
       "evidence": [
         {
           "outcome": "PARTIAL",
-          "reference": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md",
+          "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t01-t03",
           "scope": "Only first-batch assertions exercised; the full release scenario is not marked PASS."
         },
         {
@@ -1584,7 +1629,7 @@
       "evidence": [
         {
           "outcome": "PARTIAL",
-          "reference": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
+          "reference": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t04-t06",
           "scope": "Actual earlier-started/later-committed publication, stable materialized pages, correction/withdrawal, expiry/promotion and access invalidation; full workload/soak qualification remains open."
         }
       ]
@@ -1607,7 +1652,13 @@
       "title": "Review/render and durable publication races",
       "mandatory": true,
       "status": "NOT_RUN",
-      "evidence": []
+      "evidence": [
+        {
+          "outcome": "PARTIAL",
+          "reference": "docs/implementation/evidence/map-first/t16-t18/verification.json",
+          "scope": "Scoped implementation assertions only: frozen render, independent attestation, grant revocation during storage, delivery expiry reconciliation and case save-intent conflict handling. The full release scenario remains NOT_RUN."
+        }
+      ]
     }
   ],
   "gapCoverage": [
@@ -1811,15 +1862,23 @@
       ]
     }
   ],
-  "audit": "MAP_FIRST_PLAN_AUDIT_2026_10_25.md",
+  "audit": "MAP_FIRST_PLAN.md",
+  "auditSection": "#plan-audit",
   "planningSources": [
     {
       "path": "../../EMAD_CURRENT_SCOPE.md",
-      "sha256": "7f0aa0c4c95357db69d64bfd3a60d7b05b6a01aca4183de7747ade89f9b8bee8"
+      "sha256": "b5422ee448f3acd33988d1a8986750e1f9073dc403f4dd53f43c10c5c1acbc72"
     },
     {
-      "path": "MAP_FIRST_GAP_REPORT_2026_10_25.md",
-      "sha256": "eb7fe630715511fc301b87655515275bc2c8a67808521314cdc8c02122af7c7b"
+      "path": "MAP_FIRST_PLAN.md",
+      "sha256": "f871b99312f609a97604acfb43fe090b98a0c4809cfdeb85d20f1f9c013993db",
+      "consolidatedFrom": [
+        "MAP_FIRST_PLAN.md#gap-report",
+        "MAP_FIRST_PLAN.md#gap-analysis",
+        "MAP_FIRST_PLAN.md#implementation-plan",
+        "MAP_FIRST_PLAN.md#plan-audit"
+      ],
+      "note": "The gap report, gap analysis, implementation plan and plan audit were merged into this record on 11 November 2026. The sections are gap-report, gap-analysis, implementation-plan and plan-audit."
     }
   ],
   "requirements": [
@@ -2796,14 +2855,20 @@
   "releaseCandidate": {
     "status": "NOT_QUALIFIED",
     "identity": null,
-    "evidence": []
+    "evidence": [
+      {
+        "outcome": "FAIL",
+        "reference": "docs/implementation/MAP_FIRST_PRODUCT.md#29-october-2026-product-evaluation",
+        "scope": "29 October 2026 product evaluation. Release NOT_QUALIFIED: unresolved read-capacity exhaustion blocking ordinary navigation, cold map-family p95 2854.619 ms against a 2000 ms budget, warm geography p95 1079.928 ms against 1000 ms, warm weather ~5000 ms with timeouts, no independent observed sessions, 24-hour soak and installed backup/rollback rehearsals NOT_RUN."
+      }
+    ]
   },
-  "lastUpdatedOn": "2026-10-27",
+  "lastUpdatedOn": "2026-11-12",
   "lastUpdatedTimezone": "Asia/Riyadh",
   "reportedInstallation": {
-    "reportedOn": "2026-10-27",
-    "source": "User reported migrations after T19-T21",
-    "scope": "Assumed through 00053; exact shared schema/startup/source profiles not independently inspected",
+    "reportedOn": "2026-11-11",
+    "source": "Read-only administrative inventory of the retained PostGIS container during the environment-foundation audit",
+    "scope": "Schema independently verified at migration 53. API/worker health, object-store contents and shared startup were not independently verified.",
     "independentlyVerified": false,
     "newMigrationRequired": "None in T22-T24; coordinated binaries/UI still require through 00053"
   }

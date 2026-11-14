@@ -1,21 +1,21 @@
 import maplibregl, {type GeoJSONSource, type Map as LibreMap} from 'maplibre-gl'
 import {useEffect,useImperativeHandle,useRef,useState,type Ref} from 'react'
 import type {Feature,FeatureCollection} from 'geojson'
-import {useAPI} from '@/lib/api'
+import {LOCAL_BASEMAP_ONLY,useAPI} from '@/lib/api'
+import {openStreetArchive} from './streetMap'
 import {resolveTokenColor} from '@/lib/tokens'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
 export type Camera={lng:number;lat:number;zoom:number;bearing:number;pitch:number}
 export type AtlasHandle={fitBounds:(bounds:[number,number,number,number])=>void;focus:(lng:number,lat:number)=>void;previous:()=>void;north:()=>void;restore:(camera:Camera)=>void}
-export type AtlasLayer='earthquakes'|'thermal'|'weather'|'bulletins'|'aircraft'|'vessels'|'imagery'|'coverage'|'findings'
-export const layerInfo:Record<AtlasLayer,{name:string;glyph:string;token:string;permission:string}>={
- earthquakes:{name:'Earthquake reports',glyph:'◆',token:'--emad-map-severity-medium',permission:'observations.read'},thermal:{name:'Thermal detections',glyph:'▲',token:'--emad-map-severity-high',permission:'observations.read'},weather:{name:'Weather stations',glyph:'●',token:'--emad-signal-teal',permission:'sources.read'},bulletins:{name:'Official bulletins',glyph:'▣',token:'--emad-link',permission:'sources.read'},aircraft:{name:'Aircraft',glyph:'✈',token:'--emad-map-entity-track',permission:'tracks.read'},vessels:{name:'Vessels',glyph:'⛵',token:'--emad-map-entity-asset',permission:'tracks.read'},imagery:{name:'Retained imagery',glyph:'▧',token:'--emad-signal-teal',permission:'sources.read'},coverage:{name:'Source query areas',glyph:'▱',token:'--emad-text-secondary',permission:'sources.read'},findings:{name:'Derived findings',glyph:'▨',token:'--emad-map-severity-medium',permission:'assessments.read'}}
+export {layerInfo, type AtlasLayer} from './LayerCatalog'
+import {layerInfo, type AtlasLayer} from './LayerCatalog'
 const empty:FeatureCollection={type:'FeatureCollection',features:[]}
 const color=(token:string)=>resolveTokenColor(token)??'transparent'
 export type RasterOverlay={url:string;bounds:[number,number,number,number];opacity:number;label:string;side?:'before'|'after';role?:'quality'}
 let rtlReady:Promise<void>|undefined
 function loadLocalRTL(){return rtlReady??=maplibregl.setRTLTextPlugin(new URL(`${import.meta.env.BASE_URL}vendor/rtl-text-0.3.0/mapbox-gl-rtl-text.js`,location.origin).href,false)}
-export function AtlasCanvas({proposalOverlay=empty,cameraRef,initialCamera,onCamera,onPointer,onBounds,regions,scope,selection,boundaryLevel,features,datasets,referenceOpacity,basemap,onSelect,onRegion,mode,onDraw,sketch,rasters,swipe=.5,onError}:{proposalOverlay?:FeatureCollection;cameraRef:Ref<AtlasHandle>;initialCamera:Camera;onCamera:(c:Camera)=>void;onPointer:(p:[number,number])=>void;onBounds:(b:[number,number,number,number])=>void;regions:FeatureCollection;scope?:Feature;selection?:Feature;boundaryLevel:'auto'|'country'|'region';features:Partial<Record<AtlasLayer,FeatureCollection>>;datasets:string[];referenceOpacity:number;basemap:'streets'|'quiet'|'reference';onSelect:(f:Feature[])=>void;onRegion:(f:Feature)=>void;mode:'inspect'|'measure'|'area';onDraw:(p:[number,number])=>void;sketch:FeatureCollection;rasters:RasterOverlay[];swipe?:number;onError:(message:string)=>void}){
+export function AtlasCanvas({proposalOverlay=empty,cameraRef,initialCamera,onCamera,onPointer,onBounds,regions,scope,selection,boundaryLevel,features,datasets,referenceOpacity,basemap,streetArchive,onSelect,onRegion,mode,onDraw,sketch,rasters,swipe=.5,onError}:{proposalOverlay?:FeatureCollection;cameraRef:Ref<AtlasHandle>;initialCamera:Camera;onCamera:(c:Camera)=>void;onPointer:(p:[number,number])=>void;onBounds:(b:[number,number,number,number])=>void;regions:FeatureCollection;scope?:Feature;selection?:Feature;boundaryLevel:'auto'|'country'|'region';features:Partial<Record<AtlasLayer,FeatureCollection>>;datasets:string[];referenceOpacity:number;basemap:'streets'|'quiet'|'reference';streetArchive?:ArrayBuffer;onSelect:(f:Feature[])=>void;onRegion:(f:Feature)=>void;mode:'inspect'|'measure'|'area';onDraw:(p:[number,number])=>void;sketch:FeatureCollection;rasters:RasterOverlay[];swipe?:number;onError:(message:string)=>void}){
  const api=useAPI(),root=useRef<HTMLDivElement>(null),map=useRef<LibreMap|null>(null),[ready,setReady]=useState(false),callbacks=useRef({onCamera,onPointer,onBounds,onSelect,onRegion,boundaryLevel,mode,onDraw,onError})
  callbacks.current={onCamera,onPointer,onBounds,onSelect,onRegion,boundaryLevel,mode,onDraw,onError}
  const canonicalRegions=useRef(regions),canonicalFeatures=useRef(features)
@@ -29,7 +29,7 @@ export function AtlasCanvas({proposalOverlay=empty,cameraRef,initialCamera,onCam
    const protocol='emadref'+crypto.randomUUID().replaceAll('-',''),requestController=new AbortController()
    maplibregl.addProtocol(protocol,async(request,controller)=>{const [z,x,y,ids]=request.url.slice(protocol.length+3).split('/');if(requestController.signal.aborted||controller.signal.aborted)throw new DOMException('Aborted','AbortError');const bytes=await api.getReferenceTile(Number(z),Number(x),Number(y),decodeURIComponent(ids).split(','),controller.signal);if(controller.signal.aborted)throw new DOMException('Aborted','AbortError');return {data:bytes}})
    let m:LibreMap
-   try{m=new maplibregl.Map({container:root.current,center:[initialCamera.lng,initialCamera.lat],zoom:initialCamera.zoom,bearing:initialCamera.bearing,pitch:initialCamera.pitch,maxZoom:19,minZoom:1,renderWorldCopies:false,attributionControl:{compact:true},style:{version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:19,attribution:'© OpenStreetMap contributors'}},layers:[{id:'background',type:'background',paint:{'background-color':color('--emad-surface-canvas')}},{id:'osm',type:'raster',source:'osm',paint:{'raster-saturation':-.55,'raster-opacity':.82}}]}})}catch{requestController.abort();maplibregl.removeProtocol(protocol);root.current?.replaceChildren();callbacks.current.onError('The map renderer is unavailable on this device. Use retained lists and workbenches; your exact selected area is preserved.');return}
+   try{m=new maplibregl.Map({container:root.current,center:[initialCamera.lng,initialCamera.lat],zoom:initialCamera.zoom,bearing:initialCamera.bearing,pitch:initialCamera.pitch,maxZoom:19,minZoom:1,renderWorldCopies:false,attributionControl:{compact:true},style:{version:8,sources:LOCAL_BASEMAP_ONLY?{}:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:19,attribution:'© OpenStreetMap contributors'}},layers:[{id:'background',type:'background',paint:{'background-color':color('--emad-surface-canvas')}},...(LOCAL_BASEMAP_ONLY?[]:[{id:'osm',type:'raster' as const,source:'osm',layout:{visibility:'none' as const},paint:{'raster-saturation':-.55,'raster-opacity':.82}}])]}})}catch{requestController.abort();maplibregl.removeProtocol(protocol);root.current?.replaceChildren();callbacks.current.onError('The map renderer is unavailable on this device. Use retained lists and workbenches; your exact selected area is preserved.');return}
    map.current=m
    void loadLocalRTL().then(()=>{if(!requestController.signal.aborted&&root.current)root.current.dataset.rtlStatus=maplibregl.getRTLTextPluginStatus()}).catch(()=>{if(!requestController.signal.aborted)callbacks.current.onError('Local Arabic shaping could not load. Retained names remain available in the accessible list.')})
    m.addControl(new maplibregl.NavigationControl({visualizePitch:true}),'top-right');m.addControl(new maplibregl.FullscreenControl({container:root.current.closest<HTMLElement>('.atlas-workspace')??root.current}),'top-right');m.addControl(new maplibregl.ScaleControl({maxWidth:100,unit:'metric'}),'bottom-left')
@@ -38,6 +38,7 @@ export function AtlasCanvas({proposalOverlay=empty,cameraRef,initialCamera,onCam
      const addGeo=(id:string,data:FeatureCollection=empty)=>m.addSource(id,{type:'geojson',data,promoteId:id==='regions'?'id':undefined})
      addGeo('capture-proposal');addGeo('regions');addGeo('scope');addGeo('sketch');addGeo('selection')
      m.addSource('references',{type:'vector',tiles:[`${protocol}://{z}/{x}/{y}/none`],minzoom:0,maxzoom:16})
+     m.addLayer({id:'region-land',source:'regions',type:'fill',filter:['==',['get','kind'],'country'],layout:{visibility:'none'},paint:{'fill-color':color('--emad-map-ground')}})
      m.addLayer({id:'region-fill',source:'regions',type:'fill',paint:{'fill-color':color('--emad-signal-teal'),'fill-opacity':['case',['boolean',['feature-state','hover'],false],.16,.015]}})
      m.addLayer({id:'region-line',source:'regions',type:'line',paint:{'line-color':color('--emad-text-secondary'),'line-width':['case',['==',['get','kind'],'country'],1,.65],'line-opacity':.45}})
      m.addLayer({id:'scope-fill',source:'scope',type:'fill',paint:{'fill-color':color('--emad-signal-teal'),'fill-opacity':.06}})
@@ -76,6 +77,7 @@ export function AtlasCanvas({proposalOverlay=empty,cameraRef,initialCamera,onCam
      const hits=m.queryRenderedFeatures([[e.point.x-10,e.point.y-10],[e.point.x+10,e.point.y+10]],{layers}),cluster=hits.find(f=>f.properties.cluster)
      if(cluster){const src=m.getSource(cluster.source) as GeoJSONSource;const zoom=await src.getClusterExpansionZoom(cluster.properties.cluster_id);if(!requestController.signal.aborted&&cluster.geometry.type==='Point')m.easeTo({center:cluster.geometry.coordinates as [number,number],zoom});return}
      if(hits.length){const unique=[...new Map(hits.map(f=>{const original=Object.values(canonicalFeatures.current).flatMap(c=>c?.features??[]).find(v=>v.properties?.recordId===f.properties.recordId&&v.geometry.type===f.geometry.type);return [String(f.properties.recordId),original??f as Feature]})).values()];callbacks.current.onSelect(unique);return}
+     const streetLayers=['street-roads','street-buildings','street-water'].filter(id=>m.getLayer(id));const streets=streetLayers.length?m.queryRenderedFeatures(e.point,{layers:streetLayers}):[];if(streets.length){callbacks.current.onSelect(streets.slice(0,8).map(f=>({type:'Feature',id:f.id,geometry:f.geometry,properties:{...f.properties,kind:'retained street',title:f.properties.name||f.properties.source_id,source:'OpenStreetMap contributors',meaning:'Rendered tile geometry from the retained OpenStreetMap edition.'}})) as Feature[]);return}
      const refs=m.queryRenderedFeatures(e.point,{layers:['ref-fill','ref-line','ref-point']});if(refs.length){callbacks.current.onSelect(refs.slice(0,8).map(f=>({type:'Feature',id:f.id,geometry:f.geometry,properties:{...f.properties,kind:'reference',meaning:'Visible vector-tile geometry. Inspect the retained dataset for the full feature.'}})) as Feature[]);return}
      const boundaries=m.queryRenderedFeatures(e.point,{layers:['region-fill']});if(boundaries[0]){const original=canonicalRegions.current.features.find(f=>String(f.id)===String(boundaries[0].id));if(original)callbacks.current.onRegion(original)}
    })
@@ -87,7 +89,23 @@ export function AtlasCanvas({proposalOverlay=empty,cameraRef,initialCamera,onCam
  useEffect(()=>{const m=map.current;if(!ready||!m)return;(m.getSource('regions') as GeoJSONSource).setData({type:'FeatureCollection',features:regions.features.map(f=>({...f,properties:{...f.properties,id:f.id}}))});(m.getSource('scope') as GeoJSONSource).setData({type:'FeatureCollection',features:scope?[scope]:[]})},[ready,regions,scope])
  useEffect(()=>{const m=map.current;if(!ready||!m)return;for(const kind of Object.keys(layerInfo) as AtlasLayer[]){const collection=features[kind]??empty;(m.getSource(kind+'-areas') as GeoJSONSource).setData({type:'FeatureCollection',features:collection.features.filter(f=>f.geometry.type!=='Point')});(m.getSource(kind+'-points') as GeoJSONSource).setData({type:'FeatureCollection',features:collection.features.filter(f=>f.geometry.type==='Point')})}},[ready,features])
  useEffect(()=>{const m=map.current;if(!ready||!m)return;const protocol=root.current?.dataset.protocol;(m.getSource('references') as maplibregl.VectorTileSource).setTiles([`${protocol}://{z}/{x}/{y}/${encodeURIComponent(datasets.join(',')||'none')}`]);for(const id of ['ref-fill','ref-line','ref-point'])m.setLayoutProperty(id,'visibility',datasets.length?'visible':'none')},[ready,datasets.join(',')])
- useEffect(()=>{const m=map.current;if(!ready||!m)return;m.setPaintProperty('ref-line','line-opacity',referenceOpacity);m.setPaintProperty('ref-fill','fill-opacity',referenceOpacity*.2);m.setPaintProperty('ref-point','circle-opacity',referenceOpacity);m.setLayoutProperty('osm','visibility',basemap==='reference'?'none':'visible');m.setPaintProperty('osm','raster-opacity',basemap==='quiet'?.4:.82)},[ready,referenceOpacity,basemap])
+ useEffect(()=>{const m=map.current;if(!ready||!m)return;m.setPaintProperty('ref-line','line-opacity',referenceOpacity);m.setPaintProperty('ref-fill','fill-opacity',referenceOpacity*.2);m.setPaintProperty('ref-point','circle-opacity',referenceOpacity);if(m.getLayer('osm')){m.setLayoutProperty('osm','visibility',basemap==='reference'||streetArchive?'none':'visible');m.setPaintProperty('osm','raster-opacity',basemap==='quiet'?.4:.82)}},[ready,referenceOpacity,basemap,streetArchive])
+ useEffect(()=>{
+   const m=map.current
+   if(!ready||!m)return
+   const reference=basemap==='reference'
+   m.setPaintProperty('background','background-color',color(reference?'--emad-map-water':'--emad-surface-canvas'))
+   m.setLayoutProperty('region-land','visibility',reference?'visible':'none')
+ },[ready,basemap])
+ useEffect(()=>{
+   const m=map.current
+   if(!ready||!m||!streetArchive)return
+   const controller=new AbortController()
+   let close:(()=>void)|undefined
+   void openStreetArchive(m,streetArchive,controller.signal,'region-fill').then(streets=>{close=streets.close;if(controller.signal.aborted)close();else if(root.current)root.current.dataset.streetMap='loaded'})
+     .catch(()=>{if(!controller.signal.aborted)callbacks.current.onError('The retained street map could not open. Reference geography remains available.')})
+   return()=>{controller.abort();close?.();if(root.current)delete root.current.dataset.streetMap}
+ },[ready,streetArchive])
  useEffect(()=>{if(ready)(map.current?.getSource('selection') as GeoJSONSource)?.setData({type:'FeatureCollection',features:selection?[selection]:[]})},[ready,selection])
  useEffect(()=>{if(ready)(map.current?.getSource('capture-proposal') as GeoJSONSource)?.setData(proposalOverlay)},[ready,proposalOverlay])
  useEffect(()=>{if(ready)(map.current?.getSource('sketch') as GeoJSONSource)?.setData(sketch)},[ready,sketch])

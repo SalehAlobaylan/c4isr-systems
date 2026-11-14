@@ -26,19 +26,28 @@ const (
 	Manage   = "environments.manage"
 	Build    = "environments.build"
 	Execute  = "environments.execute"
+	Monitor  = "environments.monitor"
 	Qualify  = "environments.qualify"
 	Release  = "environments.release"
 	Download = "environments.download"
 )
 
 type Service struct {
-	Pool        *pgxpool.Pool
-	Store       artifacts.GeographicStore
-	Toolchain   string
-	Parallel    int
-	Spool       string
-	ReadOnly    bool
-	UploadSlots chan struct{}
+	Pool                 *pgxpool.Pool
+	Store                artifacts.GeographicStore
+	Toolchain            string
+	EnrichmentToolchain  string
+	ObservationToolchain string
+	CoastalToolchain     string
+	DisplayToolchain     string
+	DisplayProcessor     func(context.Context, string, string) error
+	LayerToolchain       string
+	LayerProcessor       func(context.Context, string, DisplayBuildRecipe) error
+	DisplayOnly          bool
+	Parallel             int
+	Spool                string
+	ReadOnly             bool
+	UploadSlots          chan struct{}
 }
 
 var digestPattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
@@ -66,7 +75,18 @@ var profiles = []Profile{
 	{"overview-v1", "Regional overview", []string{"countries", "subdivisions", "places", "coasts"}, nil},
 	{"reference-surface-v1", "Reference surface", []string{"surface"}, []string{"geoid"}},
 	{"reference-context-v1", "Reference context", []string{"surface", "imagery", "roads", "buildings", "water"}, []string{"geoid"}},
+	{enrichmentProfile, "Enriched reference context", []string{"surface", "imagery", "roads", "buildings", "water", "geoid", "land-cover"}, []string{"ground", "modeled-building-context"}},
+	{observationProfile, "Reference observations", []string{"surface", "geoid"}, []string{"imagery", "roads", "buildings", "water", "radar", "weather-field"}},
+	{coastalProfile, "Regional coastal context", []string{"bathymetry"}, nil},
 }
+
+const enrichmentProfile = "reference-enrichment-v1"
+const observationProfile = "reference-observation-v1"
+const coastalProfile = "coastal-context-v1"
+const weatherEdition = "WeatherBench 2 ERA5 1959-2023_01_10-full_37-1h-0p25deg-chunk-1"
+
+var radarProduct = regexp.MustCompile(`^S1[ABC]_IW_GRDH_1SDV_[0-9]{8}T[0-9]{6}_[0-9]{8}T[0-9]{6}_[0-9]{6}_[A-F0-9]{6}_rtc$`)
+var radarCRS = regexp.MustCompile(`^EPSG:32[67](0[1-9]|[1-5][0-9]|60)$`)
 
 func profile(id string) (Profile, bool) {
 	for _, p := range profiles {
@@ -120,7 +140,12 @@ type Asset struct {
 }
 
 func media(format string) string {
-	return map[string]string{"geotiff": "image/tiff", "geojson": "application/geo+json", "osm-pbf": "application/vnd.openstreetmap.data+pbf", "osm-xml": "application/xml", "geopackage": "application/geopackage+sqlite3", "shapefile-zip": "application/zip", "release-zip": "application/zip"}[format]
+	return map[string]string{"geotiff": "image/tiff", "geojson": "application/geo+json", "osm-pbf": "application/vnd.openstreetmap.data+pbf", "osm-xml": "application/xml", "geopackage": "application/geopackage+sqlite3", "shapefile-zip": "application/zip", "release-zip": "application/zip",
+		"radar-capture-zip": "application/zip", "era5-pressure-json": "application/json", "gebco-pair-zip": "application/zip"}[format]
+}
+
+func originalFormat(format string) bool {
+	return media(format) != "" && format != "release-zip"
 }
 
 func assetSelect() string {
@@ -262,13 +287,6 @@ func (s Service) reserve(ctx context.Context, in AssetInput) (Asset, error) {
 		if !apperr.Is(err, apperr.CodeNotFound) {
 			return err
 		}
-		var bytes int64
-		if err = tx.QueryRow(ctx, `SELECT COALESCE(sum(size_bytes),0) FROM geographic_assets WHERE owner_id=$1 AND retain_until>clock_timestamp() AND state<>'EXPIRED'`, p.ID).Scan(&bytes); err != nil {
-			return err
-		}
-		if bytes+in.Bytes > 16<<30 {
-			return apperr.Conflict("retained geographic storage budget exceeded")
-		}
 		return insertAsset(ctx, tx, a, []string{a.SourceID})
 	})
 	return a, err
@@ -279,6 +297,17 @@ func objectKey(scope string, a Asset) string {
 }
 
 func insertAsset(ctx context.Context, tx pgx.Tx, a Asset, sources []string) error {
+	_, resource, _ := access.From(ctx)
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, resource.ID()+":geoasset:"+a.owner); err != nil {
+		return err
+	}
+	var available bool
+	if err := tx.QueryRow(ctx, `SELECT emad_geographic_owner_capacity($1,$2)`, a.owner, a.Bytes).Scan(&available); err != nil {
+		return err
+	}
+	if !available {
+		return apperr.Conflict("retained geographic storage budget exceeded")
+	}
 	raw, err := json.Marshal(a)
 	if err != nil {
 		return err
@@ -300,7 +329,7 @@ func (s Service) upload(ctx context.Context, id string, body io.Reader, length i
 		return a, err
 	}
 	p, _, _ := access.From(ctx)
-	if a.owner != p.ID || a.Representation.Format == "release-zip" {
+	if a.owner != p.ID || !originalFormat(a.Representation.Format) {
 		return a, apperr.NotFound("geographic upload", "unavailable")
 	}
 	if s.Store == nil || a.State == "EXPIRED" || length != a.Bytes {
@@ -312,14 +341,24 @@ func (s Service) upload(ctx context.Context, id string, body io.Reader, length i
 	if a.State == "READY" {
 		return a, nil
 	}
-	if err = s.markUpload(ctx, a.ID); err != nil {
-		return a, err
-	}
-	file, err := os.CreateTemp(s.Spool, "emad-geoasset-*")
+	unlock, err := s.markUpload(ctx, a.ID)
 	if err != nil {
 		return a, err
 	}
-	defer os.Remove(file.Name())
+	defer unlock()
+	root := s.workerUploadRoot()
+	if err := os.MkdirAll(root, 0700); err != nil {
+		return a, err
+	}
+	dir, err := os.MkdirTemp(root, attemptDirectoryPrefix)
+	if err != nil {
+		return a, err
+	}
+	defer os.RemoveAll(dir)
+	file, err := os.CreateTemp(dir, "original-*")
+	if err != nil {
+		return a, err
+	}
 	defer file.Close()
 	n, err := io.Copy(file, io.LimitReader(body, a.Bytes+1))
 	if err != nil || n != a.Bytes {
@@ -355,12 +394,20 @@ func (s Service) upload(ctx context.Context, id string, body io.Reader, length i
 	return a, err
 }
 
-func (s Service) markUpload(ctx context.Context, id string) error {
-	tag, err := db.Scoped(s.Pool).Exec(ctx, `UPDATE geographic_assets SET upload_until=clock_timestamp()+interval '32 minutes' WHERE id=$1 AND state='PENDING' AND retain_until>clock_timestamp() AND (upload_until IS NULL OR upload_until<=clock_timestamp())`, id)
-	if err == nil && tag.RowsAffected() != 1 {
-		return apperr.Conflict("upload reservation expired or is being verified")
+func (s Service) markUpload(ctx context.Context, id string) (func(), error) {
+	var until time.Time
+	err := db.Scoped(s.Pool).QueryRow(ctx, `UPDATE geographic_assets SET upload_until=clock_timestamp()+interval '32 minutes' WHERE id=$1 AND state='PENDING' AND retain_until>clock_timestamp() AND (upload_until IS NULL OR upload_until<=clock_timestamp()) RETURNING upload_until`, id).Scan(&until)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, apperr.Conflict("upload reservation expired or is being verified")
 	}
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return func() {
+		cleanup, cancel := context.WithTimeout(context.WithoutCancel(ctx), 3*time.Second)
+		defer cancel()
+		_, _ = db.Scoped(s.Pool).Exec(cleanup, `UPDATE geographic_assets SET upload_until=NULL WHERE id=$1 AND state='PENDING' AND upload_until=$2`, id, until)
+	}, nil
 }
 
 func sourcesOf(area []string, assets []Asset) []string {

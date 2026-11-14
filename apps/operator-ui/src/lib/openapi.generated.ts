@@ -4,6 +4,368 @@
  */
 
 export interface paths {
+    "/api/v1/context-packages/geographic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Freeze an exact geographic release and selected reported observations
+         * @description Requires a human with context.export, observations.read, environments.read and all dependency source grants. The scoped read must contain available event membership and use the exact release area. Original and current policies must permit geographic context export.
+         */
+        post: operations["freezeGeographicContext"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/context-packages/{id}/geographic": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Reopen the same geographic handoff while dependencies remain permitted */
+        get: operations["getGeographicContext"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/displays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List published displays for an authorized release
+         * @description Requires environments.read and all parent source grants. Reviewers may inspect staged and verified releases. Other readers require a released parent.
+         */
+        get: operations["listEnvironmentDisplays"];
+        put?: never;
+        /**
+         * Reserve a geographic display against the exact release manifest
+         * @description Requires environments.qualify. An identical retry by the same owner returns the existing reservation. Changed intent, mismatched dependencies, unavailable storage and exceeded quota return conflict. Pending reservations are private.
+         */
+        post: operations["reserveEnvironmentDisplay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/viewing-packages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Issue a portable viewing manifest for released geographic displays
+         * @description Requires environments.download and explicit portable viewing permission in each selected dependency's original and current admission. Expiry is bounded by the earliest applicable retention or rights date. Use the SHA-256 of the exact issuance response for offline verification.
+         */
+        post: operations["issueEnvironmentViewingPackage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/display-builds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Queue a durable geographic display from a pinned release
+         * @description Requires environments.qualify and the parent source grants. The request key is idempotent within the caller's scope. Read the shared environment build and attempt endpoints with the returned ID. The imagery recipe takes the exact retained Sentinel-2 scene JSON as a string.
+         */
+        post: operations["submitEnvironmentDisplayBuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-display-builds/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a queued or running display build
+         * @description Requires the submitting reviewer and environments.qualify. Cancellation fences the active worker lease.
+         */
+        post: operations["cancelEnvironmentDisplayBuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-displays/{id}/manifest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the manifest of a published display
+         * @description Requires environments.read and current eligibility for the parent release and its sources.
+         */
+        get: operations["getEnvironmentDisplay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-displays/{id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a verified geographic display
+         * @description Requires environments.download and current eligibility for the parent release and its sources. If-Range must equal the strong ETag to retain a requested range.
+         */
+        get: operations["downloadEnvironmentDisplay"];
+        /**
+         * Verify and publish the reserved geographic display
+         * @description Requires environments.qualify and the reservation owner. Send the exact Content-Length and binary bytes. Corrupt content returns a validation error. An identical retry after publication returns the ready record.
+         */
+        put: operations["publishEnvironmentDisplay"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-operations/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read scoped geographic operations metrics
+         * @description Requires operational.read and an authorized environment steward or worker identity.
+         */
+        get: operations["getEnvironmentOperationsMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-operations/storage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Inspect pending geographic uploads and unreclaimed objects
+         * @description Requires environments.manage. The report never includes private object keys.
+         */
+        get: operations["getEnvironmentStorageBacklog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-sources/{id}/impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Review retained geographic source policy and dependent releases
+         * @description Requires environments.manage and sources.manage. Dependencies remain available under source grants after policy disablement.
+         */
+        get: operations["getEnvironmentSourceImpact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/quality-report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read source, native sample and coordinate quality evidence */
+        get: operations["getStructuredEnvironmentQuality"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-worker/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim a scoped geographic build
+         * @description Requires a scoped service identity with environments.execute and an exact configured processor digest. Scope-wide capacity applies across source grants. A claim is returned only for a job visible to that identity.
+         */
+        post: operations["claimEnvironmentBuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-worker/reconcile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reconcile an expired geographic reservation
+         * @description Requires a scoped service identity with environments.execute.
+         */
+        post: operations["reconcileEnvironmentWorker"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-worker/builds/{id}/inputs/{asset}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download one frozen input of the claimed build
+         * @description Requires a scoped service identity with environments.execute.
+         */
+        get: operations["downloadEnvironmentWorkerInput"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-worker/builds/{id}/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Renew an active geographic build lease
+         * @description Requires a scoped service identity with environments.execute.
+         */
+        post: operations["renewEnvironmentWorkerLease"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-worker/builds/{id}/fail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a bounded preparation failure
+         * @description Requires a scoped service identity with environments.execute.
+         */
+        post: operations["failEnvironmentWorkerBuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-worker/builds/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Publish a verified prepared archive
+         * @description Requires a scoped service identity with environments.execute.
+         */
+        post: operations["completeEnvironmentWorkerBuild"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/environment-sources/{id}/admissions": {
         parameters: {
             query?: never;
@@ -235,7 +597,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Download environment original */
+        /**
+         * Download environment original
+         * @description Authorization is checked per request. Protected responses use no-store. An If-Range mismatch returns the full representation. Interrupted responses must be retried and verified against the strong SHA-256 ETag and length.
+         */
         get: operations["downloadEnvironmentOriginal"];
         /** Upload environment original */
         put: operations["uploadEnvironmentOriginal"];
@@ -297,6 +662,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/environment-releases/{id}/lineage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get release lineage and effective input permissions */
+        get: operations["getEnvironmentLineage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read the immutable release decision history
+         * @description Requires environment read and review authority and the release's source scope. History remains available to reviewers after withdrawal.
+         */
+        get: operations["getEnvironmentDecisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/environment-releases/{id}/quality": {
         parameters: {
             query?: never;
@@ -338,7 +740,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Download environment prepared */
+        /**
+         * Download environment prepared
+         * @description Authorization is checked on each full or range request. Compare a resumed response with the original strong SHA-256 ETag and validate Content-Range, final length and digest before saving the package.
+         */
         get: operations["downloadEnvironmentPrepared"];
         put?: never;
         post?: never;
@@ -423,8 +828,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List investigation delivery jobs */
         get: operations["listCaseDeliveries"];
         put?: never;
+        /** Submit an investigation delivery job */
         post: operations["submitCaseDelivery"];
         delete?: never;
         options?: never;
@@ -439,6 +846,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Get a delivery job */
         get: operations["getCaseDelivery"];
         put?: never;
         post?: never;
@@ -457,6 +865,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Cancel a delivery job */
         post: operations["cancelCaseDelivery"];
         delete?: never;
         options?: never;
@@ -473,6 +882,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Retry a delivery job */
         post: operations["retryCaseDelivery"];
         delete?: never;
         options?: never;
@@ -487,6 +897,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Download the published output bundle */
         get: operations["getOutputBundle"];
         put?: never;
         post?: never;
@@ -503,6 +914,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Get the output attestation */
         get: operations["getOutputAttestation"];
         put?: never;
         post?: never;
@@ -521,6 +933,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Review an exact investigation revision */
         post: operations["CaseReviewInput"];
         delete?: never;
         options?: never;
@@ -537,6 +950,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Create a composite investigation output */
         post: operations["CompositeOutputInput"];
         delete?: never;
         options?: never;
@@ -551,6 +965,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List investigation revision history */
         get: operations["historyCaseWorkflow"];
         put?: never;
         post?: never;
@@ -567,6 +982,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List investigation reviews */
         get: operations["reviewsCaseWorkflow"];
         put?: never;
         post?: never;
@@ -583,6 +999,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List investigations awaiting review */
         get: operations["reviewinboxCaseWorkflow"];
         put?: never;
         post?: never;
@@ -599,6 +1016,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Get a composite output */
         get: operations["getCompositeOutput"];
         put?: never;
         post?: never;
@@ -617,7 +1035,9 @@ export interface paths {
             };
             cookie?: never;
         };
+        /** Download the composite output */
         get: operations["downloadCompositeOutput"];
+        /** Store the composite output render */
         put: operations["stageCompositeOutput"];
         post?: never;
         delete?: never;
@@ -635,6 +1055,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Expire a composite output */
         post: operations["expireCompositeOutput"];
         delete?: never;
         options?: never;
@@ -651,6 +1072,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Create a scoped catalog read */
         post: operations["catalogInput"];
         delete?: never;
         options?: never;
@@ -667,6 +1089,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Propose an imagery capture */
         post: operations["captureProposalInput"];
         delete?: never;
         options?: never;
@@ -683,6 +1106,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Check an imagery comparison pair */
         post: operations["pairInput"];
         delete?: never;
         options?: never;
@@ -697,6 +1121,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List retained individual records */
         get: operations["readIndividualRecords"];
         put?: never;
         post?: never;
@@ -713,8 +1138,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List acquisition requests */
         get: operations["listAcquisitions"];
         put?: never;
+        /** Create an acquisition request */
         post: operations["createAcquisition"];
         delete?: never;
         options?: never;
@@ -731,6 +1158,7 @@ export interface paths {
             };
             cookie?: never;
         };
+        /** Get an acquisition request */
         get: operations["getAcquisition"];
         put?: never;
         post?: never;
@@ -751,6 +1179,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Cancel an acquisition request */
         post: operations["cancelAcquisition"];
         delete?: never;
         options?: never;
@@ -767,6 +1196,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Query source coverage */
         post: operations["queryCoverage"];
         delete?: never;
         options?: never;
@@ -781,6 +1211,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List installed coverage adapters */
         get: operations["coverageAdapters"];
         put?: never;
         post?: never;
@@ -801,6 +1232,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Run a scheduled acquisition */
         post: operations["runScheduledAcquisition"];
         delete?: never;
         options?: never;
@@ -817,6 +1249,7 @@ export interface paths {
             };
             cookie?: never;
         };
+        /** Get source acquisition metrics */
         get: operations["acquisitionMetrics"];
         put?: never;
         post?: never;
@@ -833,6 +1266,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Get available geographic detail */
         get: operations["getGeographicAvailability"];
         put?: never;
         post?: never;
@@ -849,8 +1283,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List geographic detail requests */
         get: operations["listGeographicDepthRequests"];
         put?: never;
+        /** Request geographic detail */
         post: operations["requestGeographicDepth"];
         delete?: never;
         options?: never;
@@ -869,6 +1305,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Resolve a geographic detail request */
         post: operations["resolveGeographicDepthRequest"];
         delete?: never;
         options?: never;
@@ -885,6 +1322,7 @@ export interface paths {
             };
             cookie?: never;
         };
+        /** List current retrieval profiles */
         get: operations["listRetrievalProfiles"];
         put?: never;
         post?: never;
@@ -906,6 +1344,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Approve a retrieval profile revision */
         post: operations["approveRetrievalProfile"];
         delete?: never;
         options?: never;
@@ -925,6 +1364,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Set a retrieval profile execution grant */
         post: operations["grantRetrievalProfileExecution"];
         delete?: never;
         options?: never;
@@ -944,6 +1384,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Execute a retrieval profile */
         post: operations["executeRetrievalProfile"];
         delete?: never;
         options?: never;
@@ -958,8 +1399,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List investigations */
         get: operations["listInvestigations"];
         put?: never;
+        /** Create an investigation */
         post: operations["createInvestigation"];
         delete?: never;
         options?: never;
@@ -976,6 +1419,7 @@ export interface paths {
             };
             cookie?: never;
         };
+        /** Get an investigation revision */
         get: operations["getInvestigation"];
         put?: never;
         post?: never;
@@ -996,6 +1440,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Save a new investigation revision */
         post: operations["saveInvestigation"];
         delete?: never;
         options?: never;
@@ -1014,6 +1459,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Change investigation membership */
         post: operations["changeInvestigationMembers"];
         delete?: never;
         options?: never;
@@ -1030,6 +1476,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Resolve an area selection */
         post: operations["resolveArea"];
         delete?: never;
         options?: never;
@@ -1046,6 +1493,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Retain an area revision */
         post: operations["retainAreaRevision"];
         delete?: never;
         options?: never;
@@ -1060,6 +1508,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Get a retained area revision */
         get: operations["getAreaRevision"];
         put?: never;
         post?: never;
@@ -1078,6 +1527,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Resolve analyst scope */
         post: operations["resolveAnalystScope"];
         delete?: never;
         options?: never;
@@ -1094,6 +1544,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Freeze an analyst scope snapshot */
         post: operations["freezeAnalystScope"];
         delete?: never;
         options?: never;
@@ -1108,6 +1559,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Get a frozen analyst scope */
         get: operations["getAnalystScope"];
         put?: never;
         post?: never;
@@ -1126,6 +1578,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Create a scoped evidence read */
         post: operations["readAnalystScope"];
         delete?: never;
         options?: never;
@@ -1140,6 +1593,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Get a scoped evidence read page */
         get: operations["getAnalystReadPage"];
         put?: never;
         post?: never;
@@ -1176,8 +1630,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List active geographic releases */
         get: operations["listGeographicReleaseHeads"];
         put?: never;
+        /** Create a geographic release */
         post: operations["createGeographicReleases"];
         delete?: never;
         options?: never;
@@ -1192,6 +1648,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Get a geographic release */
         get: operations["getGeographicReleases"];
         put?: never;
         post?: never;
@@ -1210,6 +1667,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Create a geographic profile */
         post: operations["createGeographicProfiles"];
         delete?: never;
         options?: never;
@@ -1224,6 +1682,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Get a geographic profile */
         get: operations["getGeographicProfiles"];
         put?: never;
         post?: never;
@@ -1242,6 +1701,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Create a surrounding study area */
         post: operations["createSurroundingArea"];
         delete?: never;
         options?: never;
@@ -1258,6 +1718,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Measure map geometry */
         post: operations["measureMapGeometry"];
         delete?: never;
         options?: never;
@@ -1272,6 +1733,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** List geographic regions */
         get: operations["listGeographicRegions"];
         put?: never;
         post?: never;
@@ -1290,6 +1752,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
+        /** Admit a geographic edition */
         post: operations["admitGeographicEdition"];
         delete?: never;
         options?: never;
@@ -1304,6 +1767,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Read scoped map features */
         get: operations["getMapFeatures"];
         put?: never;
         post?: never;
@@ -1320,6 +1784,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
+        /** Read a geographic reference tile */
         get: operations["getReferenceTile"];
         put?: never;
         post?: never;
@@ -4571,6 +5036,37 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/external-tracks/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Read a bounded history of source-admitted moving reports
+         * @description Requires tracks.read and observations.read. Returns up to 200 retained reports in an exact area and elapsed window of at most six hours; no interpolation. Reports are filtered by platform publication when cutoff is present.
+         */
+        get: operations["readExternalTrackHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/assessments/reports": {
         parameters: {
             query?: never;
@@ -5425,6 +5921,8 @@ export interface components {
             name: string;
             requiredLayers: string[];
             optionalLayers?: string[];
+            contract?: components["schemas"]["EnvironmentProfileContract"];
+            contractSha256?: string;
         };
         EnvironmentDefinitionInput: {
             name: string;
@@ -5454,6 +5952,7 @@ export interface components {
             dataTime: string;
             retrievedAt: string;
             crs: string;
+            /** @description Source vertical reference. Examples include EGM2008, ellipsoid, above-ground for relative heights, and not-applicable for categorical rasters. */
             verticalDatum: string;
             nativeResolution: string;
             semantics: string;
@@ -5498,6 +5997,14 @@ export interface components {
             inputs: components["schemas"]["EnvironmentAsset"][];
             inputBytes: number;
             rebuildAllowed: boolean;
+            profileContractSha256?: string;
+            /** @description Declared footprint coverage prior to valid-sample checks */
+            coverage?: {
+                layer: string;
+                required: boolean;
+                /** @enum {string} */
+                status: "NO_ELIGIBLE_INPUT" | "DECLARED_COVERED" | "DECLARED_INCOMPLETE";
+            }[];
         };
         EnvironmentBuildInput: {
             requestKey: string;
@@ -5512,6 +6019,8 @@ export interface components {
             failureCode?: string;
             createdAt: string;
             inputSha256: string;
+            /** @description Published display identity for a successful terrain build. */
+            displayId?: string;
         };
         EnvironmentAttempt: {
             attempt: number;
@@ -5529,6 +6038,46 @@ export interface components {
             meaning: string;
             heightMethod: string;
             unsupported: string[];
+            coastal?: {
+                grid: {
+                    edition: string;
+                    datum: string;
+                    spacingDegrees: number;
+                    window: number[];
+                    elevation: number[];
+                    tid: number[];
+                };
+                summary: {
+                    minimumElevationM: number;
+                    missingSourceType: number;
+                    coastVersion: string;
+                    nearCoast: {
+                        [key: string]: number;
+                    };
+                    coastline: number[][][];
+                };
+            };
+            observations?: {
+                weather?: components["schemas"]["EnvironmentWeatherField"];
+            };
+            enrichment?: {
+                modeledBuildingContext?: {
+                    member: string;
+                    inputId: string;
+                    centroids: number;
+                    modeledHeights: number;
+                    unknown: number;
+                    medianM: number | null;
+                    /** @enum {string} */
+                    unit: "m";
+                    /** @enum {string} */
+                    origin: "inferred";
+                    /** @enum {string} */
+                    physicalAccuracy: "UNKNOWN";
+                    edition: string;
+                    meaning: string;
+                }[];
+            };
         };
         EnvironmentMember: {
             name: string;
@@ -5565,6 +6114,35 @@ export interface components {
             manifest?: components["schemas"]["EnvironmentManifest"];
             bundleId: string;
             createdAt: string;
+        };
+        EnvironmentDisplay: components["schemas"]["EnvironmentDisplayInput"] & {
+            id: string;
+            /** @constant */
+            schemaVersion: 1;
+            releaseId: string;
+            areaRevisionId: string;
+            /** @enum {string} */
+            state: "PENDING" | "READY" | "EXPIRED";
+            frame: {
+                [key: string]: unknown;
+            };
+            bounds: number[];
+            physicalAccuracy: string;
+            /** @description X east, Y up, Z south in metres. */
+            axisOrder: ("east" | "up" | "south")[];
+            /** @constant */
+            verticalDatum: "WGS84 ellipsoid";
+            /** @enum {string} */
+            mediaType: "model/gltf-binary" | "application/json" | "application/vnd.pmtiles";
+            /** Format: date-time */
+            retainUntil: string;
+        };
+        EnvironmentDisplayBuildInput: {
+            requestKey: string;
+            manifestSha256: string;
+            /** @enum {string} */
+            recipe: "terrain-glb-v1" | "terrain-glb-v2" | "imagery-display-v1" | "roads-display-v1" | "buildings-display-v1" | "water-display-v1";
+            sceneMetadata?: string;
         };
         EnvironmentReleases: {
             items: components["schemas"]["EnvironmentRelease"][];
@@ -5714,6 +6292,10 @@ export interface components {
             includedImagery?: boolean | null;
             rawDistribution?: boolean | null;
             geographicEnvironment?: boolean | null;
+            /** @description Explicit permission for a portable geographic viewing derivative under this admission. */
+            geographicViewerExport?: boolean | null;
+            /** @description Permission to pin admitted data in an immutable geographic context handoff. */
+            geographicContextExport?: boolean | null;
             metadataRetention?: boolean | null;
         };
         InvestigationRevision: {
@@ -6202,6 +6784,11 @@ export interface components {
             filters: components["schemas"]["ScopeQueryFilters"];
             zoom: number;
             includeEvents: boolean;
+            /**
+             * @description A geographic preview returns display data without allocating a saved read handle. A geographic handoff uses an independent pageable handle.
+             * @enum {string}
+             */
+            purpose?: "geographic_preview" | "geographic_handoff";
         };
         ScopedMapCollection: {
             type: string;
@@ -6812,6 +7399,24 @@ export interface components {
             citedTo: string;
             documentUrl: string;
             corroborationMeaning: string;
+            eventHistory?: {
+                providerId: string;
+                category: string;
+                /** Format: date-time */
+                closedAt: string | null;
+                geometries: {
+                    /** Format: date-time */
+                    date: string;
+                    /** @enum {string} */
+                    type: "Point" | "Polygon" | "MultiPolygon";
+                    coordinates: unknown;
+                }[];
+                citations: {
+                    id: string;
+                    /** Format: uri */
+                    url: string;
+                }[];
+            };
             lineageKeys: string[];
         };
         ContextRecord: {
@@ -8409,12 +9014,21 @@ export interface components {
                 lastSeenAt: string;
                 state: string;
                 runtimeBuild?: string;
+                /** @description Processor digest reported by the environment worker. */
+                toolchainSha256?: string;
             }[];
         };
         WorkerHeartbeat: {
             /** @enum {string} */
-            feature: "connectors" | "imagery" | "assets" | "runtime" | "recordings" | "preparation";
+            feature: "connectors" | "imagery" | "assets" | "runtime" | "recordings" | "preparation" | "environment-library";
             runtimeBuild?: string;
+            /** @description Processor digest reported by an environment worker. */
+            toolchainSha256?: string;
+            /**
+             * Format: int64
+             * @description Logical bytes used by the environment worker's private scratch directory when sampled.
+             */
+            scratchBytes?: number;
         };
         RuntimeCapability: {
             runtimeBuild: string;
@@ -8525,6 +9139,266 @@ export interface components {
             }[];
             limitations: string[];
         };
+        GeographicContextDependency: {
+            releaseId: string;
+            manifestSha256: string;
+            displays: {
+                id: string;
+                sha256: string;
+            }[];
+        };
+        GeographicContextInput: {
+            requestKey: string;
+            geography: components["schemas"]["GeographicContextDependency"];
+            readId: string;
+            evidenceIds: string[];
+            /** @description Required only when selecting exact moving reports. */
+            movingTrackId?: string;
+            movingEvidenceIds?: string[];
+            /** @constant */
+            missingData: "explicit_unavailable";
+        };
+        FrozenMoving: {
+            trackId: string;
+            areaRevisionId: string;
+            meaning: string;
+            items: (components["schemas"]["ExternalAssociation"] & {
+                admissionId: string;
+                providerRecordId: string;
+                providerRevision: string;
+                contentSha256: string;
+                /** Format: date-time */
+                availableAt: string;
+                /** Format: date-time */
+                retrievedAt: string;
+            })[];
+            gaps: {
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+                /** @enum {string} */
+                reason: "report_gap" | "quarantined_report" | "window_edge_unknown" | "result_cap";
+            }[];
+        };
+        GeographicContextHandoff: {
+            /** @constant */
+            schema: "emad.geographic-context.v1";
+            id: string;
+            intentSha256: string;
+            geography: components["schemas"]["GeographicContextDependency"];
+            scope: components["schemas"]["ScopeSnapshot"];
+            readId: string;
+            queryFingerprint: string;
+            /** @constant */
+            missingData: "explicit_unavailable";
+            selectionMeaning: string;
+            observedWindow: {
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+            };
+            /** Format: date-time */
+            availabilityCutoff?: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            moving?: components["schemas"]["FrozenMoving"];
+            observations: {
+                evidenceId: string;
+                sourceId: string;
+                admissionId: string;
+                providerRecordId: string;
+                providerRevision: string;
+                contentSha256: string;
+                /** Format: date-time */
+                retrievedAt: string;
+                /** Format: date-time */
+                availableAt: string;
+                /** Format: date-time */
+                providerUpdatedAt?: string;
+                reported: {
+                    [key: string]: unknown;
+                };
+                providerReport?: components["schemas"]["ContextRecord"];
+            }[];
+            terms: {
+                sourceId: string;
+                admissionId: string;
+                currentAdmissionId: string;
+                rightsId: string;
+                attribution: string;
+                termsUrl: string;
+                legalBasis: string;
+                /** Format: date-time */
+                expiresAt?: string;
+            }[];
+        };
+        EnvironmentDisplayInput: {
+            requestKey: string;
+            manifestSha256: string;
+            toolchainSha256: string;
+            /** @enum {string} */
+            recipe: "terrain-glb-v1" | "terrain-glb-v2" | "imagery-display-v1" | "roads-display-v1" | "buildings-display-v1" | "water-display-v1" | "street-pmtiles-v1" | "land-cover-display-v1" | "ground-delta-display-v1" | "ground-glb-v1" | "radar-display-v1";
+            inputs: {
+                name: string;
+                sha256: string;
+            }[];
+            sha256: string;
+            bytes: number;
+        };
+        EnvironmentViewingIssuance: {
+            /** @constant */
+            schema: "emad.viewing-issuance.v1";
+            id: string;
+            releaseId: string;
+            name: string;
+            manifestSha256: string;
+            /** @constant */
+            viewerVersion: "emad-geographic-viewer-v1";
+            viewerSha256: string;
+            navigationSha256: string;
+            /** Format: date-time */
+            issuedAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            displays: components["schemas"]["EnvironmentDisplay"][];
+            terms: {
+                inputId: string;
+                originalAdmissionId: string;
+                currentAdmissionId: string;
+                originalPolicyId: string;
+                termsUrl: string;
+                attribution: string;
+                legalBasis: string;
+            }[];
+        };
+        EnvironmentStorageBacklog: {
+            next?: string;
+            items: {
+                assetId: string;
+                releaseId?: string;
+                displayId?: string;
+                buildId?: string;
+                state: string;
+                failureCode?: string;
+                bytes: number;
+                /** Format: date-time */
+                retainUntil: string;
+                /** Format: date-time */
+                uploadUntil?: string;
+                /** Format: date-time */
+                purgeRetryAt?: string;
+                purgeAttempts: number;
+            }[];
+        };
+        EnvironmentSourceImpact: {
+            sourceId: string;
+            sourceStatus: string;
+            currentPolicy: {
+                id: string;
+                profileRevisionId: string;
+                /** Format: date-time */
+                approvedAt: string;
+                approvedBy: string;
+                analystQuestion?: string;
+                productVersion: string;
+                enabled: boolean;
+                rights: {
+                    [key: string]: unknown;
+                };
+                policy: {
+                    [key: string]: unknown;
+                };
+            };
+            retainedInputs: number;
+            retainedBytes: number;
+            pendingInputs: number;
+            tombstones: number;
+            /** Format: date-time */
+            nextExpiry?: string;
+            releases: {
+                next?: string;
+                items: {
+                    id: string;
+                    manifestSha256: string;
+                    state: string;
+                    displays: number;
+                }[];
+            };
+        };
+        EnvironmentProfileContract: {
+            schema: string;
+            profileId: string;
+            maxComponents: number;
+            maxInputs: number;
+            maxInputBytes: number;
+            latitudeLimit: number;
+            longitudeSpanLimit: number;
+            coordinateLimitM: number;
+            egm2008GridSha256: string;
+            horizontalReference: string;
+            rasterMask: string;
+            layers: {
+                layer: string;
+                required: boolean;
+                formats: string[];
+                verticalDatums?: string[];
+                meaning: string;
+            }[];
+        };
+        EnvironmentQualityReport: {
+            schema: string;
+            manifestSha256: string;
+            profileId: string;
+            /** @description Empty for legacy releases that did not pin a contract digest */
+            profileContractSha256?: string;
+            profileContract?: components["schemas"]["EnvironmentProfileContract"];
+            coordinateCheck: {
+                maximumErrorM: number;
+                limitM: number;
+                statistic: string;
+            };
+            physicalAccuracy: string;
+            frame: {
+                [key: string]: unknown;
+            };
+            coverage?: {
+                member: string;
+                layer: string;
+                /** @enum {string} */
+                state: "UNKNOWN" | "SAMPLE_MASK_RECORDED" | "FEATURE_COUNT_RECORDED";
+                registration?: string;
+                component?: number | null;
+                selectedSamples?: number;
+                validSamples?: number;
+                validFraction?: number;
+                featureCount?: number;
+            }[];
+            sources: {
+                assetId: string;
+                layer: string;
+                dataTime: string;
+                horizontalCrs: string;
+                verticalDatum: string;
+                nativeResolution: string;
+                providerUncertainty: string;
+                semantics: string;
+            }[];
+            members: {
+                name: string;
+                layer: string;
+                sha256: string;
+                bytes: number;
+                inputId?: string;
+                component?: number | null;
+                details?: {
+                    [key: string]: unknown;
+                } | null;
+            }[];
+        };
         RetainedGeographicAdmission: {
             originalProducer: string;
             upstreamProvider: string;
@@ -8542,6 +9416,58 @@ export interface components {
             };
             enabled: boolean;
             expectedRevisionId?: string;
+            intendedUse?: string;
+        };
+        EnvironmentWeatherField: {
+            edition: string;
+            /** @enum {string} */
+            verticalCoordinate: "pressure-hPa";
+            nativeSpacingDegrees: number;
+            validTimes: string[];
+            pressureHPa: number[];
+            latitudes: number[];
+            longitudes: number[];
+            aboveGroundMask: boolean[];
+            variables: {
+                [key: string]: {
+                    units: string;
+                    samples: (number | null)[];
+                };
+            };
+        };
+        EnvironmentLineageInput: {
+            assetId: string;
+            sourceId: string;
+            admissionId: string;
+            currentAdmissionId: string;
+            sha256: string;
+            bytes: number;
+            referenceId?: string;
+            sceneId?: string;
+            representation: components["schemas"]["EnvironmentRepresentation"];
+            attribution: string;
+            /** Format: date-time */
+            retainUntil: string;
+            /** Format: date-time */
+            policyExpiresAt?: string;
+            /** @description Source policy allows original distribution, subject to caller download permissions */
+            originalDownload: boolean;
+            viewerExport?: boolean;
+            contextExport?: boolean;
+            /** @enum {string} */
+            parentState?: "RETAINED_INPUT" | "LINKED" | "UNAVAILABLE";
+        };
+        EnvironmentLineage: {
+            releaseId: string;
+            manifestSha256: string;
+            inputs: components["schemas"]["EnvironmentLineageInput"][];
+            members: {
+                name: string;
+                layer: string;
+                sha256: string;
+                bytes: number;
+                inputId?: string;
+            }[];
         };
         InvestigationList: {
             items: components["schemas"]["Investigation"][];
@@ -9092,6 +10018,733 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    freezeGeographicContext: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GeographicContextInput"];
+            };
+        };
+        responses: {
+            /** @description Immutable handoff manifest and its canonical location */
+            201: {
+                headers: {
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeographicContextHandoff"];
+                };
+            };
+            /** @description Handoff denied or a dependency is unavailable */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getGeographicContext: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Original frozen manifest */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GeographicContextHandoff"];
+                };
+            };
+            /** @description A dependency is unavailable or access changed */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listEnvironmentDisplays: {
+        parameters: {
+            query?: {
+                after?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped page of published geographic displays */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["EnvironmentDisplay"][];
+                        next?: string;
+                    };
+                };
+            };
+            /** @description Display request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reserveEnvironmentDisplay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentDisplayInput"];
+            };
+        };
+        responses: {
+            /** @description Display manifest and current state */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentDisplay"];
+                };
+            };
+            /** @description Display request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    issueEnvironmentViewingPackage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    manifestSha256: string;
+                    viewerSha256: string;
+                    navigationSha256: string;
+                    displays: string[];
+                    /** Format: date-time */
+                    expiresAt?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Audited portable viewer issuance manifest */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentViewingIssuance"];
+                };
+            };
+            /** @description Issuance denied */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    submitEnvironmentDisplayBuild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentDisplayBuildInput"];
+            };
+        };
+        responses: {
+            /** @description Durable display build */
+            202: {
+                headers: {
+                    /** @description Relative build status URL */
+                    Location?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentBuild"];
+                };
+            };
+            /** @description Display build request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    cancelEnvironmentDisplayBuild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Canceled display build */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentBuild"];
+                };
+            };
+            /** @description Cancellation rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentDisplay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Display manifest and current state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentDisplay"];
+                };
+            };
+            /** @description Display request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    downloadEnvironmentDisplay: {
+        parameters: {
+            query?: never;
+            header?: {
+                Range?: string;
+                "If-Range"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Verified display bytes */
+            200: {
+                headers: {
+                    ETag?: string;
+                    "Accept-Ranges"?: "bytes";
+                    "Content-Length"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "model/gltf-binary": string;
+                    "application/json": Record<string, never>;
+                    "application/vnd.pmtiles": string;
+                };
+            };
+            /** @description One range of the verified display */
+            206: {
+                headers: {
+                    ETag?: string;
+                    "Content-Range"?: string;
+                    "Accept-Ranges"?: "bytes";
+                    "Content-Length"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "model/gltf-binary": string;
+                    "application/json": Record<string, never>;
+                    "application/vnd.pmtiles": string;
+                };
+            };
+            /** @description Unsatisfiable or unsupported byte range */
+            416: {
+                headers: {
+                    "Content-Range"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Display request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    publishEnvironmentDisplay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "model/gltf-binary": string;
+                "application/json": Record<string, never>;
+                "application/vnd.pmtiles": string;
+            };
+        };
+        responses: {
+            /** @description Display manifest and current state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentDisplay"];
+                };
+            };
+            /** @description Display request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentOperationsMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Prometheus gauges derived from persisted geographic state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentStorageBacklog: {
+        parameters: {
+            query?: {
+                after?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description At most 50 visible storage reservations or tombstones */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentStorageBacklog"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentSourceImpact: {
+        parameters: {
+            query?: {
+                after?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Scoped inventory and at most 20 dependent release identities */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentSourceImpact"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getStructuredEnvironmentQuality: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Quality evidence for the visible immutable manifest */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentQualityReport"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    claimEnvironmentBuild: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    toolchainSha256: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Frozen recipe and time-limited lease */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        jobId: string;
+                        lease: string;
+                        /** Format: date-time */
+                        leaseUntil: string;
+                        inputSha256: string;
+                        /** @description The frozen emad.environment-recipe.v1 document */
+                        recipe: {
+                            [key: string]: unknown;
+                        };
+                    };
+                };
+            };
+            /** @description No eligible build is available, or scope-wide worker capacity is in use */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Worker request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reconcileEnvironmentWorker: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One eligible reservation reconciled or none available */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Worker request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    downloadEnvironmentWorkerInput: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Environment-Lease": string;
+            };
+            path: {
+                id: string;
+                asset: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exact retained input bytes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Single byte range */
+            206: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Worker request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    renewEnvironmentWorkerLease: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Environment-Lease": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lease renewed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Worker request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    failEnvironmentWorkerBuild: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Environment-Lease": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    code: "transient_io" | "invalid_input" | "invalid_output" | "scratch_budget_exceeded";
+                };
+            };
+        };
+        responses: {
+            /** @description Failure recorded or scheduled for retry */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Worker request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    completeEnvironmentWorkerBuild: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Environment-Lease": string;
+                "X-Artifact-SHA256": string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/zip": string;
+            };
+        };
+        responses: {
+            /** @description Exact archive published or exact completion already recorded */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Worker request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     admitRetainedGeographicSource: {
         parameters: {
             query?: never;
@@ -9607,7 +11260,12 @@ export interface operations {
     downloadEnvironmentOriginal: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description One satisfiable byte range */
+                Range?: string;
+                /** @description Exact strong ETag required to reuse a partial download */
+                "If-Range"?: string;
+            };
             path: {
                 id: string;
             };
@@ -9618,11 +11276,43 @@ export interface operations {
             /** @description Authorized retained object */
             200: {
                 headers: {
+                    /** @description Quoted SHA-256 of the full object */
+                    ETag?: string;
+                    "Accept-Ranges"?: "bytes";
+                    "Content-Length"?: number;
+                    /** @description Attachment with a generated filename */
+                    "Content-Disposition"?: string;
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/octet-stream": string;
                 };
+            };
+            /** @description One range of the authorized retained object */
+            206: {
+                headers: {
+                    /** @description Quoted SHA-256 of the full object */
+                    ETag?: string;
+                    "Accept-Ranges"?: "bytes";
+                    "Content-Length"?: number;
+                    /** @description Attachment with a generated filename */
+                    "Content-Disposition"?: string;
+                    "Cache-Control"?: "no-store";
+                    "Content-Range"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Range is unsupported or unsatisfiable */
+            416: {
+                headers: {
+                    "Content-Range"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request rejected */
             "4XX": {
@@ -9675,6 +11365,8 @@ export interface operations {
             query?: {
                 after?: string;
                 build?: string;
+                /** @description Limit to visible releases that depend on this authorized source */
+                source?: string;
             };
             header?: never;
             path?: never;
@@ -9764,6 +11456,75 @@ export interface operations {
             };
         };
     };
+    getEnvironmentLineage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Frozen release lineage under current source authorization */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentLineage"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentDecisions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Decisions in recorded order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        state: string;
+                        manifestSha256: string;
+                        humanId?: string;
+                        note: string;
+                        /** Format: date-time */
+                        occurredAt: string;
+                    }[];
+                };
+            };
+            /** @description Decision history unavailable under the current scope */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     getEnvironmentQuality: {
         parameters: {
             query?: never;
@@ -9831,7 +11592,12 @@ export interface operations {
     downloadEnvironmentPrepared: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description One satisfiable byte range */
+                Range?: string;
+                /** @description Exact strong ETag required to reuse a partial download */
+                "If-Range"?: string;
+            };
             path: {
                 id: string;
             };
@@ -9842,11 +11608,43 @@ export interface operations {
             /** @description Authorized retained object */
             200: {
                 headers: {
+                    /** @description Quoted SHA-256 of the full object */
+                    ETag?: string;
+                    "Accept-Ranges"?: "bytes";
+                    "Content-Length"?: number;
+                    /** @description Attachment with a generated filename */
+                    "Content-Disposition"?: string;
+                    "Cache-Control"?: "no-store";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/octet-stream": string;
                 };
+            };
+            /** @description One range of the authorized retained object */
+            206: {
+                headers: {
+                    /** @description Quoted SHA-256 of the full object */
+                    ETag?: string;
+                    "Accept-Ranges"?: "bytes";
+                    "Content-Length"?: number;
+                    /** @description Attachment with a generated filename */
+                    "Content-Disposition"?: string;
+                    "Cache-Control"?: "no-store";
+                    "Content-Range"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Range is unsupported or unsatisfiable */
+            416: {
+                headers: {
+                    "Content-Range"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Request rejected */
             "4XX": {
@@ -10018,6 +11816,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     submitCaseDelivery: {
@@ -10044,6 +11851,15 @@ export interface operations {
                     "application/json": components["schemas"]["DeliveryJob"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     getCaseDelivery: {
@@ -10064,6 +11880,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeliveryJob"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10094,6 +11919,15 @@ export interface operations {
                     "application/json": components["schemas"]["DeliveryJob"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     retryCaseDelivery: {
@@ -10122,6 +11956,15 @@ export interface operations {
                     "application/json": components["schemas"]["DeliveryJob"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     getOutputBundle: {
@@ -10144,6 +11987,15 @@ export interface operations {
                     "application/zip": string;
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     getOutputAttestation: {
@@ -10164,6 +12016,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CaseReviewEvent"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10192,6 +12053,15 @@ export interface operations {
                     "application/json": components["schemas"]["CaseReviewEvent"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     CompositeOutputInput: {
@@ -10218,6 +12088,15 @@ export interface operations {
                     "application/json": components["schemas"]["CompositeOutput"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     historyCaseWorkflow: {
@@ -10240,6 +12119,15 @@ export interface operations {
                     "application/json": {
                         items: components["schemas"]["InvestigationRevision"][];
                     };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10266,6 +12154,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     reviewinboxCaseWorkflow: {
@@ -10286,6 +12183,15 @@ export interface operations {
                     "application/json": {
                         items: components["schemas"]["CaseReviewEvent"][];
                     };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10310,6 +12216,15 @@ export interface operations {
                     "application/json": components["schemas"]["CompositeOutput"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     downloadCompositeOutput: {
@@ -10332,6 +12247,15 @@ export interface operations {
                 };
                 content: {
                     "application/octet-stream": string;
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10360,6 +12284,15 @@ export interface operations {
                     "application/json": components["schemas"]["CompositeOutput"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     expireCompositeOutput: {
@@ -10382,6 +12315,15 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10408,6 +12350,15 @@ export interface operations {
                     "application/json": components["schemas"]["CatalogPage"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     captureProposalInput: {
@@ -10432,6 +12383,15 @@ export interface operations {
                     "application/json": components["schemas"]["CaptureProposal"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     pairInput: {
@@ -10454,6 +12414,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PairCheck"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10483,6 +12452,15 @@ export interface operations {
                     "application/json": components["schemas"]["RecordPage"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     listAcquisitions: {
@@ -10503,6 +12481,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcquisitionList"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10529,6 +12516,15 @@ export interface operations {
                     "application/json": components["schemas"]["AcquisitionRequest"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     getAcquisition: {
@@ -10551,6 +12547,15 @@ export interface operations {
                     "application/json": components["schemas"]["AcquisitionRequest"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     cancelAcquisition: {
@@ -10571,6 +12576,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AcquisitionRequest"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10597,6 +12611,15 @@ export interface operations {
                     "application/json": components["schemas"]["CoverageResult"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     coverageAdapters: {
@@ -10618,6 +12641,15 @@ export interface operations {
                         items: components["schemas"]["AdapterCapability"][];
                         meaning: string;
                     };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10644,6 +12676,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     acquisitionMetrics: {
@@ -10666,6 +12707,15 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10691,6 +12741,15 @@ export interface operations {
                     "application/json": components["schemas"]["GeographicAvailability"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     listGeographicDepthRequests: {
@@ -10712,6 +12771,15 @@ export interface operations {
                         items: components["schemas"]["ReferenceDepthRequest"][];
                         limit: number;
                     };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10736,6 +12804,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReferenceDepthRequest"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10768,6 +12845,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     listRetrievalProfiles: {
@@ -10791,6 +12877,15 @@ export interface operations {
                         items: components["schemas"]["RetrievalProfile"][];
                         limit: number;
                     };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10818,6 +12913,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SourceAdmission"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10848,6 +12952,15 @@ export interface operations {
                         profileRevisionId: string;
                         enabled: boolean;
                     };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10884,6 +12997,15 @@ export interface operations {
                     };
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     listInvestigations: {
@@ -10904,6 +13026,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InvestigationList"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -10930,6 +13061,15 @@ export interface operations {
                     "application/json": components["schemas"]["Investigation"];
                 };
             };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     getInvestigation: {
@@ -10952,6 +13092,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Investigation"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -11011,6 +13160,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Investigation"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -11298,6 +13456,15 @@ export interface operations {
                             releaseId: string;
                         }[];
                     };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -16399,6 +18566,55 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    readExternalTrackHistory: {
+        parameters: {
+            query: {
+                areaRevisionId: string;
+                from: string;
+                to: string;
+                cutoff?: string;
+            };
+            header?: {
+                /** @description Select an existing authorized workspace; defaults to the credential resource. */
+                "X-EMAD-Workspace-ID"?: components["parameters"]["WorkspaceHeader"];
+                /** @description Select an existing authorized environment within the workspace. */
+                "X-EMAD-Environment-ID"?: components["parameters"]["EnvironmentHeader"];
+                /** @description Select a granted partition. Truth requires sim.truth.read in addition to domain permissions. */
+                "X-EMAD-Partition"?: components["parameters"]["PartitionHeader"];
+                /** @description Select a granted run. Scenario run routes select their path run; headers cannot widen grants. */
+                "X-EMAD-Run-ID"?: components["parameters"]["RunHeader"];
+            };
+            path: {
+                id: components["parameters"]["Id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exact admitted report revisions and gaps in the retained read */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrozenMoving"] & {
+                        /** Format: date-time */
+                        from: string;
+                        /** Format: date-time */
+                        to: string;
+                        /** Format: date-time */
+                        cutoff?: string;
+                        truncated: boolean;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     listReportAssessments: {
         parameters: {
             query?: {
@@ -17234,6 +19450,7 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

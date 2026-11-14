@@ -122,7 +122,14 @@ func Capability(family string, t Evaluated) Support {
 	switch family {
 	case "events", "earthquakes", "thermal":
 		return Support{"supported", clock, ""}
-	case "weather", "bulletins", "aircraft", "vessels":
+	case "bulletins":
+		if t.RevisionView == "effective_at" {
+			return Support{"unsupported", clock, "Effective-time reconstruction is unavailable for provider reports."}
+		}
+		if t.Mode == "historical" || t.RevisionView == "known_at" || t.Interval.To.Before(t.EvaluatedAt.Add(-5*time.Minute)) {
+			return Support{"supported", clock, "Historical results include only providers with an admitted historical report adapter. Gaps are unknown."}
+		}
+	case "weather", "aircraft", "vessels":
 		if t.Mode == "historical" || t.RevisionView != "latest" || t.Interval.To.Before(t.EvaluatedAt.Add(-5*time.Minute)) {
 			return Support{"unsupported", clock, "This family retains current context rather than a complete historical reconstruction. Exact authorized retained records remain readable."}
 		}

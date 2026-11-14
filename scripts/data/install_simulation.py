@@ -31,7 +31,7 @@ def install(public,receipts,texture):
     build_fixture_models()
     licence={'id':'emad-development-assets-v1','licenseId':'LicenseRef-EMAD-DevelopmentAssets',
              'termsUrl':'https://github.com/SalehAlobaylan/c4isr-systems','attribution':'EMAD project-authored static development models',
-             'legalBasis':'Internal development and synthetic simulation; perpetual source retention; no external redistribution licence asserted. See DEVELOPMENT_ASSETS.md.',
+             'legalBasis':'Internal development and synthetic simulation; perpetual source retention; no external redistribution licence asserted. See docs/implementation/HISTORICAL_RECOVERY.md#development-assets.',
              'allowStorage':True,'allowSimulation':True,'allowRedistribution':False,'archivePermission':'perpetual'}
     generator=upload(studio,ROOT/'scripts/data/glb_geometry.py','EMAD starter geometry generator',licence,'SOURCE')
     names={'fixed-wing':('Fixed-wing aircraft',160),'uav':('Quadrotor UAV',40),'helicopter':('Helicopter',90),

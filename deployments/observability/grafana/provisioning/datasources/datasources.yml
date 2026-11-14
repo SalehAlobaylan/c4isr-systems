@@ -15,3 +15,10 @@ datasources:
     access: proxy
     url: http://loki:3100
     editable: false
+
+  - name: C4ISR Environment Prometheus
+    uid: c4isr-environment-prometheus
+    type: prometheus
+    access: proxy
+    url: http://environment-prometheus:9090
+    editable: false

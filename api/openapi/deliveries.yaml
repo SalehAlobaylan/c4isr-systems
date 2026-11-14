@@ -1,6 +1,7 @@
 paths:
   /api/v1/investigations/{id}/delivery-jobs:
     post:
+      summary: Submit an investigation delivery job
       operationId: submitCaseDelivery
       parameters:
       - &id001
@@ -10,6 +11,11 @@ paths:
         schema: &id003
           type: string
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '202':
           description: Durable case delivery operation
           content:
@@ -23,10 +29,16 @@ paths:
             schema:
               $ref: '#/components/schemas/DeliveryInput'
     get:
+      summary: List investigation delivery jobs
       operationId: listCaseDeliveries
       parameters:
       - *id001
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Durable case delivery operation
           content:
@@ -45,10 +57,16 @@ paths:
                 - limit
   /api/v1/delivery-jobs/{id}:
     get:
+      summary: Get a delivery job
       operationId: getCaseDelivery
       parameters:
       - *id001
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Durable case delivery operation
           content:
@@ -57,10 +75,16 @@ paths:
                 $ref: '#/components/schemas/DeliveryJob'
   /api/v1/delivery-jobs/{id}/cancel:
     post:
+      summary: Cancel a delivery job
       operationId: cancelCaseDelivery
       parameters:
       - *id001
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Durable case delivery operation
           content:
@@ -79,10 +103,16 @@ paths:
               - expectedAttempt
   /api/v1/delivery-jobs/{id}/retry:
     post:
+      summary: Retry a delivery job
       operationId: retryCaseDelivery
       parameters:
       - *id001
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Durable case delivery operation
           content:
@@ -101,10 +131,16 @@ paths:
               - expectedAttempt
   /api/v1/outputs/{id}/bundle:
     get:
+      summary: Download the published output bundle
       operationId: getOutputBundle
       parameters:
       - *id001
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Durable case delivery operation
           content:
@@ -114,10 +150,16 @@ paths:
                 format: binary
   /api/v1/outputs/{id}/attestation:
     get:
+      summary: Get the output attestation
       operationId: getOutputAttestation
       parameters:
       - *id001
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Durable case delivery operation
           content:

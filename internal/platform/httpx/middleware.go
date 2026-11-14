@@ -602,7 +602,7 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 				return RoutePolicy{Known: true, Permission: "sources.read"}
 			}
 		case "external-tracks":
-			if len(segments) == 1 || len(segments) == 2 || (len(segments) == 3 && segments[2] == "associations") {
+			if len(segments) == 1 || len(segments) == 2 || (len(segments) == 3 && (segments[2] == "associations" || segments[2] == "history")) {
 				return RoutePolicy{Known: true, Permission: "tracks.read"}
 			}
 		case "tracks":
@@ -613,6 +613,9 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 				return RoutePolicy{Known: true, Permission: "tracks.read"}
 			}
 		case "context-packages":
+			if method == http.MethodGet && len(segments) == 3 && segments[2] == "geographic" || method == http.MethodPost && len(segments) == 2 && segments[1] == "geographic" {
+				return RoutePolicy{Known: true, Permission: "context.export"}
+			}
 			if method == http.MethodPost && len(segments) == 2 && segments[1] == "preview" {
 				return RoutePolicy{Known: true, Permission: "context.export"}
 			}
@@ -650,6 +653,9 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 		}
 		switch segments[0] {
 		case "context-packages":
+			if method == http.MethodGet && len(segments) == 3 && segments[2] == "geographic" || method == http.MethodPost && len(segments) == 2 && segments[1] == "geographic" {
+				return RoutePolicy{Known: true, Permission: "context.export"}
+			}
 			if method == http.MethodPost && len(segments) == 2 && segments[1] == "preview" {
 				return RoutePolicy{Known: true, Permission: "context.export"}
 			}
@@ -992,7 +998,8 @@ func CORS(allowedOrigins []string) func(http.Handler) http.Handler {
 					w.Header().Set("Access-Control-Allow-Origin", origin)
 					w.Header().Set("Vary", "Origin")
 					w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-					w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, "+RequestIDHeader+", "+OperatorHeader+", "+TraceHeader)
+					w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, Range, If-Range, X-EMAD-Workspace-ID, X-EMAD-Environment-ID, X-EMAD-Partition, X-EMAD-Run-ID, "+RequestIDHeader+", "+OperatorHeader+", "+TraceHeader)
+					w.Header().Set("Access-Control-Expose-Headers", "ETag, Content-Range, Accept-Ranges")
 					w.Header().Set("Access-Control-Max-Age", "300")
 				}
 			}

@@ -120,6 +120,18 @@ func TestWorkspaceBrowserCompatibilityGate(t *testing.T) {
 	}
 	web := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/__fixture/reset-retained-reads":
+			// Keep the real per-principal limit inside each scenario. The runner
+			// reuses identities when browser contexts close between scenarios.
+			if r.Header.Get("Authorization") != "Bearer "+integrationToken {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			if _, err := h.pool.Exec(r.Context(), `DELETE FROM analyst_read_snapshots`); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
 		case r.URL.Path == "/__fixture/revoke-viewer":
 			if r.Method != http.MethodPost {
 				w.WriteHeader(405)

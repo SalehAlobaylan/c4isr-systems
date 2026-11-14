@@ -13,6 +13,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/capacity"
 	db "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/httpx"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/observability"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/queryscope"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/reference"
@@ -81,6 +82,7 @@ type Result struct {
 	RecoveryOwner  string                `json:"recoveryOwner"`
 }
 type Service struct {
+	Metrics   *observability.Metrics
 	Pool      *pgxpool.Pool
 	Ingestion *publicingest.Service
 }
@@ -282,6 +284,13 @@ func (s Service) Query(ctx context.Context, in Input) (Result, error) {
 							v.LatestEvidenceAt = &at
 						}
 					}
+					var age *time.Duration
+					if v.LatestEvidenceAt != nil {
+						elapsed := out.EvaluatedAt.Sub(*v.LatestEvidenceAt)
+						age = &elapsed
+					}
+					failed := len(v.Receipts) > 0 && v.Receipts[0].FailureCode != ""
+					s.Metrics.ObserveContextCoverage(failed, collection.Truncated || collection.State == "aggregated", age)
 					if count > 0 {
 						v.DataResult = "usable_retained_records"
 					} else if v.Retrieval == "complete_query_footprint" {

@@ -44,6 +44,22 @@ tasks:
       vars: [OUTPUT]
     cmds:
       - '"{{.RECOVERY_PYTHON}}" scripts/ops/qualify_map_first.py sample --output "{{.OUTPUT}}" --seconds {{.SECONDS | default "5"}}'
+  map:qualify:recovery:
+    desc: Rehearse the declared required-recovery faults in isolation (never promotes a gate)
+    requires:
+      vars: [OUTPUT]
+    cmds:
+      - '"{{.RECOVERY_PYTHON}}" scripts/ops/qualify_recovery.py --output "{{.OUTPUT}}"'
+  map:qualify:recovery:list:
+    desc: List the declared required-recovery rehearsals and the check behind each
+    cmds:
+      - '"{{.RECOVERY_PYTHON}}" scripts/ops/qualify_recovery.py --list'
+  map:qualify:rollback:
+    desc: Rehearse a nominated rollback binary; records NOT_RUN when none is nominated
+    requires:
+      vars: [OUTPUT]
+    cmds:
+      - '"{{.RECOVERY_PYTHON}}" scripts/ops/qualify_rollback.py --output "{{.OUTPUT}}"{{if .BINARY}} --binary "{{.BINARY}}" --manifest "{{.MANIFEST}}"{{end}}'
   local:restore:test:
     desc: Restore the latest paired backup into isolated containers and verify referenced content
     cmds:

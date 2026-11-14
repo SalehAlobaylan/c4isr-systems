@@ -39,12 +39,14 @@ func (b Bounds) Validate() error {
 }
 
 type OutputPermissions struct {
-	InternalAnalysis      *bool `json:"internalAnalysis,omitempty"`
-	Citation              *bool `json:"citation,omitempty"`
-	IncludedImagery       *bool `json:"includedImagery,omitempty"`
-	RawDistribution       *bool `json:"rawDistribution,omitempty"`
-	GeographicEnvironment *bool `json:"geographicEnvironment,omitempty"`
-	MetadataRetention     *bool `json:"metadataRetention,omitempty"`
+	InternalAnalysis        *bool `json:"internalAnalysis,omitempty"`
+	Citation                *bool `json:"citation,omitempty"`
+	IncludedImagery         *bool `json:"includedImagery,omitempty"`
+	RawDistribution         *bool `json:"rawDistribution,omitempty"`
+	GeographicEnvironment   *bool `json:"geographicEnvironment,omitempty"`
+	GeographicViewerExport  *bool `json:"geographicViewerExport,omitempty"`
+	GeographicContextExport *bool `json:"geographicContextExport,omitempty"`
+	MetadataRetention       *bool `json:"metadataRetention,omitempty"`
 }
 type Rights struct {
 	OutputPermissions     *OutputPermissions `json:"outputPermissions,omitempty"`

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"slices"
 	"sort"
 	"strconv"
 	"time"
@@ -37,6 +38,7 @@ type ReadInput struct {
 	Filters       QueryFilters `json:"filters"`
 	Zoom          int          `json:"zoom"`
 	IncludeEvents bool         `json:"includeEvents"`
+	Purpose       string       `json:"purpose,omitempty"`
 }
 type LayerError struct {
 	Code          string `json:"code"`
@@ -98,7 +100,10 @@ func (s Service) Read(ctx context.Context, in ReadInput) (ReadSnapshot, error) {
 	if e := areas.Require(ctx); e != nil {
 		return out, e
 	}
-	if len(in.Families) > 10 || len(in.Families) == 0 && !in.IncludeEvents || in.Zoom < 0 || in.Zoom > 24 {
+	if len(in.Families) > 10 || len(in.Families) == 0 && !in.IncludeEvents || in.Zoom < 0 || in.Zoom > 24 ||
+		in.Purpose != "" && in.Purpose != "geographic_preview" && in.Purpose != "geographic_handoff" ||
+		(in.Purpose == "geographic_preview" && (in.IncludeEvents || len(in.Families) != 1 ||
+			!slices.Contains([]string{"earthquakes", "thermal", "weather", "bulletins"}, in.Families[0]))) {
 		return out, apperr.Validation("choose 1–10 supported families and a bounded zoom")
 	}
 	seen := map[string]bool{}
@@ -150,6 +155,9 @@ func (s Service) Read(ctx context.Context, in ReadInput) (ReadSnapshot, error) {
 			}
 		}
 		out = ReadSnapshot{Errors: map[string]LayerError{}, RecordSets: map[string][]string{}, ID: ids.New("read"), Scope: scope, ExpiresAt: now.Add(5 * time.Minute), Layers: map[string]reference.MapCollection{}, CoverageReceipts: []json.RawMessage{}, ReceiptMeaning: "Pinned connector/admission state observed in this database snapshot. These receipts do not establish complete provider coverage or factual absence.", ViewKey: ViewKey(ctx, scope, in.Families, in.Filters, in.IncludeEvents)}
+		if in.Purpose != "" {
+			out.ViewKey = areas.Hash([]byte(out.ViewKey + "\x00" + in.Purpose))
+		}
 		// Creation, cleanup and page/citation validation use the same clock,
 		// even when the application and database hosts have clock skew.
 		if e = tx.QueryRow(ctx, `SELECT clock_timestamp()+interval '5 minutes'`).Scan(&out.ExpiresAt); e != nil {
@@ -249,6 +257,11 @@ func (s Service) Read(ctx context.Context, in ReadInput) (ReadSnapshot, error) {
 		if len(raw) > 8<<20 {
 			return apperr.Conflict("read manifest exceeds 8 MiB; narrow the query")
 		}
+		if in.Purpose == "geographic_preview" {
+			// The renderer inspects only this response. It cannot page or freeze it.
+			out.ID = ""
+			return nil
+		}
 		// A refresh of the same logical view supersedes the retained read it
 		// replaces. Removing it inside this transaction frees its budget slot
 		// for the manifest stored immediately afterwards, so repeatedly
@@ -323,6 +336,7 @@ func (s Service) ReadPage(ctx context.Context, id, family string, offset, limit 
 	result["requiresNarrowerScope"] = layer.State == "aggregated"
 	return result, nil
 }
+
 // Release drops a retained read manifest so the budget slot it holds is
 // available immediately instead of at expiry. The deletion runs inside a
 // transaction bound to the caller's scope and principal, so row-level

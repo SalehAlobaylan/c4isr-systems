@@ -1,14 +1,14 @@
 # EMAD Implementation Plan v2
 
-> **Current scope correction — 25 October 2026:** This plan retains implementation history. New work must follow [EMAD_CURRENT_SCOPE.md](EMAD_CURRENT_SCOPE.md): **map/Public Context for the Middle East plus worldwide support; environment preparation only for future simulation**. Do not automatically continue S1–S4 or a parallel simulation pilot. Detailed simulation design is deferred to a later discussion with the user. See the [map-first gaps and proposed sequence](docs/implementation/MAP_FIRST_GAP_REPORT_2026_10_25.md).
+> **Current scope correction — 25 October 2026:** This plan retains implementation history. New work must follow [EMAD_CURRENT_SCOPE.md](EMAD_CURRENT_SCOPE.md): **map/Public Context for the Middle East plus worldwide support; environment preparation only for future simulation**. Do not automatically continue S1–S4 or a parallel simulation pilot. Detailed simulation design is deferred to a later discussion with the user. See the [map-first gaps and proposed sequence](docs/implementation/MAP_FIRST_PLAN.md#gap-report).
 
 **Version:** 2.0  
 **Date:** 2026-10-20  
-**Status:** Bounded recovery installed — 2026-10-23. The [recovery acceptance](docs/implementation/DELIVERY_RECOVERY_ACCEPTANCE.md) and [delivery ledger](docs/implementation/RECOVERY_STATUS.json) record both persistent product workflows and their evidence. Canonical review identity, real geography preparation, automatic runtime launch and archive/replay are installed. Restricted live providers and actual human review retain explicit gates; further S4 remains future work. Per-task reports below remain historical evidence for their own finite profiles.
+**Status:** Bounded recovery installed — 2026-10-23. The [recovery acceptance](docs/implementation/HISTORICAL_RECOVERY.md#recovery-acceptance) and [delivery ledger](docs/implementation/RECOVERY_STATUS.json) record both persistent product workflows and their evidence. Canonical review identity, real geography preparation, automatic runtime launch and archive/replay are installed. Restricted live providers and actual human review retain explicit gates; further S4 remains future work. Per-task reports below remain historical evidence for their own finite profiles.
 **Primary inputs:** [Architecture and Direction v2](EMAD_ARCHITECTURE_AND_DIRECTION_v2.md) and [Final Data Strategy v2](EMAD_FINAL_DATA_STRATEGY_v2.md).  
 **Historical baseline:** [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), which reports Phases 0–21 complete.
 
-**Usability follow-up, 2026-10-23:** The task statuses above describe bounded implementation/acceptance profiles. They do not mean that the default development account has public/authoring access, that sources/assets/workers are configured, or that the advanced simulation vision is finished. The normal-startup review exposed navigation and activation gaps; see [local startup and workspace access](docs/implementation/LOCAL_STARTUP.md). A configured, visible end-to-end installation is a separate delivery requirement.
+**Usability follow-up, 2026-10-23:** The task statuses above describe bounded implementation/acceptance profiles. They do not mean that the default development account has public/authoring access, that sources/assets/workers are configured, or that the advanced simulation vision is finished. The normal-startup review exposed navigation and activation gaps; see [local startup and workspace access](docs/implementation/MAP_FIRST_OPERATIONS.md#historical-startup). A configured, visible end-to-end installation is a separate delivery requirement.
 
 ## 1. Purpose and precedence
 
@@ -47,7 +47,7 @@ The following observations come from targeted static inspection on 2026-10-20. T
 
 The first baseline report must record the commit, local changes, environment, executed checks, skipped checks, and known failures. A phase can be accepted only with evidence for its own criteria; the presence of a test file is insufficient.
 
-**Execution update — 2026-10-20:** [F0.1 baseline verification and migration inventory](docs/implementation/F0_1_BASELINE.md) is complete. It records executed checks, environment limitations, all current boundary families, and a read-only local provenance audit. The original static observations above remain planning history; the report supplies subsequent verification evidence.
+**Execution update — 2026-10-20:** [F0.1 baseline verification and migration inventory](docs/implementation/HISTORICAL_DELIVERY.md#f0-1) is complete. It records executed checks, environment limitations, all current boundary families, and a read-only local provenance audit. The original static observations above remain planning history; the report supplies subsequent verification evidence.
 
 ## 3. Non-negotiable implementation rules
 
@@ -147,21 +147,21 @@ Common envelope requirements:
 
 The two proposals use illustrative permission and payload names. F0 records one canonical permission vocabulary and wire naming convention in an architecture decision. Avoid implementing several synonymous permission families.
 
-**Current delivery:** The [nine recovery stages](docs/implementation/DELIVERY_RECOVERY_ACCEPTANCE.md) address the audited software and installation gaps for the agreed bounded Saudi/Jeddah installation. Consult the [operations guide](docs/implementation/RECOVERY_OPERATIONS.md) and ledger for activation and external prerequisites. The original audit and implementation reports remain traceability history. Further S4 expansion requires its own defined increment and acceptance.
+**Current delivery:** The [nine recovery stages](docs/implementation/HISTORICAL_RECOVERY.md#recovery-acceptance) address the audited software and installation gaps for the agreed bounded Saudi/Jeddah installation. Consult the [operations guide](docs/implementation/MAP_FIRST_OPERATIONS.md#historical-recovery-operations) and ledger for activation and external prerequisites. The original audit and implementation reports remain traceability history. Further S4 expansion requires its own defined increment and acceptance.
 
-**Review closeout — 2026-10-22:** The user reports migrations 37 and 38 applied. [Recording-worker recovery, retry status, evaluation v2 correction and build/check coverage](docs/implementation/IMPLEMENTATION_REVIEW_READINESS.md) complete the concrete gaps found before review. No additional migration is required; rebuild/restart the affected executables and UI. [Closeout evidence](docs/implementation/evidence/REVIEW_READINESS_ACCEPTANCE.json) supplements the original milestone records.
+**Review closeout — 2026-10-22:** The user reports migrations 37 and 38 applied. [Recording-worker recovery, retry status, evaluation v2 correction and build/check coverage](docs/implementation/HISTORICAL_RECOVERY.md#review-readiness) complete the concrete gaps found before review. No additional migration is required; rebuild/restart the affected executables and UI. [Closeout evidence](docs/implementation/evidence/REVIEW_READINESS_ACCEPTANCE.json) supplements the original milestone records.
 
-**Full plan review — 2026-10-22:** [Task traceability, findings fixed and final evidence](docs/implementation/PLAN_REVIEW.md) cover all 32 original tasks and S4.1. Live refresh, delayed recording reads, reproducible evaluation sums, browser history and Windows staging checks were corrected without changing applied migrations. Rebuild/restart affected components; further S4 and provider activation remain separate work.
+**Full plan review — 2026-10-22:** [Task traceability, findings fixed and final evidence](docs/implementation/HISTORICAL_RECOVERY.md#plan-review) cover all 32 original tasks and S4.1. Live refresh, delayed recording reads, reproducible evaluation sums, browser history and Windows staging checks were corrected without changing applied migrations. Rebuild/restart affected components; further S4 and provider activation remain separate work.
 
 ## 6. F0 — Scope, identity, and trust boundaries
 
-**Status:** Complete — F0.1–F0.6 accepted, 2026-10-21. [Workspace behavior and F0 gate evidence](docs/implementation/F0_6_WORKSPACES.md).  
+**Status:** Complete — F0.1–F0.6 accepted, 2026-10-21. [Workspace behavior and F0 gate evidence](docs/implementation/HISTORICAL_DELIVERY.md#f0-6).
 **Goal:** Safely introduce the two product workspaces while preserving the existing exercise workflow.  
 **Entry:** No new infrastructure required.
 
 ### F0.1 — Verify the baseline and publish the migration inventory
 
-**Status:** Complete — 2026-10-20. [Verification and acceptance evidence](docs/implementation/F0_1_BASELINE.md); [source inventory](docs/implementation/F0_1_INVENTORY.json); [read-only legacy audit](docs/implementation/F0_1_LEGACY_AUDIT.sql).
+**Status:** Complete — 2026-10-20. [Verification and acceptance evidence](docs/implementation/HISTORICAL_DELIVERY.md#f0-1); [source inventory](docs/implementation/F0_1_INVENTORY.json); [read-only legacy audit](docs/implementation/F0_1_LEGACY_AUDIT.sql).
 
 - Execute the existing relevant checks; record failures separately from new work.
 - Inventory routes, background actions, tables, relationship tables, events, UI queries, artifacts, and existing scenario fixtures.
@@ -173,7 +173,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### F0.2 — Define principals, resource context, and contract vocabulary
 
-**Status:** Complete — 2026-10-20. [Implementation, rollout, and acceptance evidence](docs/implementation/F0_2_4_IMPLEMENTATION.md).
+**Status:** Complete — 2026-10-20. [Implementation, rollout, and acceptance evidence](docs/implementation/HISTORICAL_DELIVERY.md#f0-2-4).
 
 - Add distinct human and service principal types while reusing existing operator records and authentication where practical.
 - Define grants for source-bound public ingestion, scenario authoring, run publication/control, exercise operation, review, and privileged evaluation.
@@ -185,7 +185,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### F0.3 — Add ownership persistence and backfill safely
 
-**Status:** Complete — 2026-10-20. [Implementation, rollout, and acceptance evidence](docs/implementation/F0_2_4_IMPLEMENTATION.md).
+**Status:** Complete — 2026-10-20. [Implementation, rollout, and acceptance evidence](docs/implementation/HISTORICAL_DELIVERY.md#f0-2-4).
 
 - Add explicit ownership/partition/run fields or ownership relations to affected aggregates, evidence links, current projections, histories, and audit records.
 - Scope uniqueness and idempotency to the owning resource domain. A provider ID or scenario-local ID is not globally unique.
@@ -198,7 +198,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### F0.4 — Enforce boundaries in application services and queries
 
-**Status:** Complete — 2026-10-20. [Implementation, rollout, and acceptance evidence](docs/implementation/F0_2_4_IMPLEMENTATION.md).
+**Status:** Complete — 2026-10-20. [Implementation, rollout, and acceptance evidence](docs/implementation/HISTORICAL_DELIVERY.md#f0-2-4).
 
 - Carry validated context through HTTP, scenario calls, background work, and repository methods.
 - Enforce scope on list/get/search/count/history/replay queries, spatial evaluation, attachments, command recipients, and state transitions.
@@ -210,7 +210,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### F0.5 — Separate realtime delivery and protect metadata
 
-**Status:** Complete — 2026-10-20. [Realtime contract, disclosure policy, migration, and verification](docs/implementation/F0_5_REALTIME.md).
+**Status:** Complete — 2026-10-20. [Realtime contract, disclosure policy, migration, and verification](docs/implementation/HISTORICAL_DELIVERY.md#f0-5).
 
 - Add scope-aware event context and authorize subscriptions before delivery.
 - Remove the global broadcast assumption; reconnects and permission revocation must preserve the same grants.
@@ -222,7 +222,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### F0.6 — Separate workspaces and close the compatibility gate
 
-**Status:** Complete — 2026-10-21. [Implementation, compatibility, and real-backend browser acceptance](docs/implementation/F0_6_WORKSPACES.md).
+**Status:** Complete — 2026-10-21. [Implementation, compatibility, and real-backend browser acceptance](docs/implementation/HISTORICAL_DELIVERY.md#f0-6).
 
 - Add explicit Public Context and Exercise COP navigation within the existing React application.
 - Keep workspace, environment, run, source mode, and time basis visible.
@@ -237,13 +237,13 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ## 7. P1 — Public reference data, events, and provenance
 
-**Status:** Complete — P1.1–P1.6 and M1 accepted, 2026-10-21. [FIRMS, public history, acceptance and activation](docs/implementation/S0_4_P1_5_6_ADAPTER_AND_PUBLIC_HISTORY.md). Native USGS live acceptance is retained from P1.4; FIRMS fixtures and the same-AOI M1 gate pass. FIRMS live retrieval requires a map key. No permanent provider schedule is enabled by default.  
+**Status:** Complete — P1.1–P1.6 and M1 accepted, 2026-10-21. [FIRMS, public history, acceptance and activation](docs/implementation/HISTORICAL_DELIVERY.md#s0-4-p1-5-6). Native USGS live acceptance is retained from P1.4; FIRMS fixtures and the same-AOI M1 gate pass. FIRMS live retrieval requires a map key. No permanent provider schedule is enabled by default.
 **Goal:** Deliver a useful Public Context workspace for one bounded region.  
 **Entry:** F0 accepted; select a small AOI and approved provider/dataset configurations.
 
 ### P1.1 — Source admission, provenance, and connector execution
 
-**Status:** Complete — 2026-10-21. [Implementation, operating contract, migration, and verification](docs/implementation/P1_1_PUBLIC_INGESTION.md). Includes source-bound service retrieval, immutable rights/provenance, revision deduplication, persistent quotas/backoff/checkpoints, recoverable publication, and visible coverage. Five focused API/PostGIS tests and the full compatibility regressions passed. Provider-specific native adapters remain P1.4/P1.5; semantic routing remains P1.2.
+**Status:** Complete — 2026-10-21. [Implementation, operating contract, migration, and verification](docs/implementation/HISTORICAL_DELIVERY.md#p1-1). Includes source-bound service retrieval, immutable rights/provenance, revision deduplication, persistent quotas/backoff/checkpoints, recoverable publication, and visible coverage. Five focused API/PostGIS tests and the full compatibility regressions passed. Provider-specific native adapters remain P1.4/P1.5; semantic routing remains P1.2.
 
 - Extend the source catalogue with original producer, upstream provider, connector identity, dataset/product version, rights record, coverage, freshness expectations, and AOI/quota policy.
 - Distinguish connector execution history from evidence identity and from an analysis that consumes the evidence.
@@ -256,7 +256,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P1.2 — Separate point events, areas, and moving observations
 
-**Status:** Complete — 2026-10-21. [Implementation and acceptance evidence](docs/implementation/P1_2_4_PUBLIC_CONTEXT.md). Explicit semantics/geometry roles, immutable provider revision history, current reported-event projections, atomic publication recovery, PostGIS point/footprint rules, and correction/withdrawal alert provenance. Earthquake/thermal fixtures create zero tracks; existing moving/scenario regressions pass.
+**Status:** Complete — 2026-10-21. [Implementation and acceptance evidence](docs/implementation/HISTORICAL_DELIVERY.md#p1-2-4). Explicit semantics/geometry roles, immutable provider revision history, current reported-event projections, atomic publication recovery, PostGIS point/footprint rules, and correction/withdrawal alert provenance. Earthquake/thermal fixtures create zero tracks; existing moving/scenario regressions pass.
 
 - Introduce explicit semantic routing independent of geometry: a point can be an earthquake event, a thermal detection, or a moving observation.
 - Preserve existing track behavior for compatible moving/scenario observations.
@@ -269,7 +269,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P1.3 — Reference GIS and terrain catalogue
 
-**Status:** Complete — 2026-10-21. [Reference artifacts, limits, import procedure, and verification](docs/implementation/P1_2_4_PUBLIC_CONTEXT.md). Retained Natural Earth Jeddah/Makkah features and NOAA ETOPO elevation samples have versioned rights/attribution, coordinates/datum, quality, transformations and checked hashes. Scoped import/catalog/artifact APIs, MapLibre reference views, and eligible immutable versions are available to S0.
+**Status:** Complete — 2026-10-21. [Reference artifacts, limits, import procedure, and verification](docs/implementation/HISTORICAL_DELIVERY.md#p1-2-4). Retained Natural Earth Jeddah/Makkah features and NOAA ETOPO elevation samples have versioned rights/attribution, coordinates/datum, quality, transformations and checked hashes. Scoped import/catalog/artifact APIs, MapLibre reference views, and eligible immutable versions are available to S0.
 
 - Import a compact, permitted selection of reference features from the proposed reference sources, plus one suitable elevation dataset.
 - Record source/version, AOI, CRS, vertical datum, resolution, validity, quality, rights, attribution, and artifact checksums.
@@ -281,7 +281,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P1.4 — USGS event integration
 
-**Status:** Complete — 2026-10-21. [Adapter contract, recorded fixtures, live smoke, and UI evidence](docs/implementation/P1_2_4_PUBLIC_CONTEXT.md). The bounded native query preserves reported origin/depth/revision/quality and raw provenance, handles explicit withdrawals, publishes event/spatial projections, and supports source revision/original inspection. An authorized live service invocation retained five reports and produced zero tracks. Persistent source activation remains an explicit deployment operation.
+**Status:** Complete — 2026-10-21. [Adapter contract, recorded fixtures, live smoke, and UI evidence](docs/implementation/HISTORICAL_DELIVERY.md#p1-2-4). The bounded native query preserves reported origin/depth/revision/quality and raw provenance, handles explicit withdrawals, publishes event/spatial projections, and supports source revision/original inspection. An authorized live service invocation retained five reports and produced zero tracks. Persistent source activation remains an explicit deployment operation.
 
 - Implement one bounded earthquake feed/query adapter using the admitted source contract.
 - Preserve provider event identity, reported origin time, location/depth semantics, revision time, quality, and raw provenance.
@@ -292,7 +292,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P1.5 — FIRMS thermal detection integration
 
-**Status:** Complete — 2026-10-21. [Implementation, contracts, rollout and verification](docs/implementation/S0_4_P1_5_6_ADAPTER_AND_PUBLIC_HISTORY.md). Reviewed NOAA-20 VIIRS NRT adapter, bounded resumable UTC-day retrieval, exact CSV provenance, categorical confidence and honest point/resolution representation; fixture and same-AOI integration gates pass. Live activation remains an explicit keyed deployment operation.
+**Status:** Complete — 2026-10-21. [Implementation, contracts, rollout and verification](docs/implementation/HISTORICAL_DELIVERY.md#s0-4-p1-5-6). Reviewed NOAA-20 VIIRS NRT adapter, bounded resumable UTC-day retrieval, exact CSV provenance, categorical confidence and honest point/resolution representation; fixture and same-AOI integration gates pass. Live activation remains an explicit keyed deployment operation.
 
 - Select one VIIRS product after checking coverage, access conditions, quality fields, and usage rights.
 - Preserve acquisition time, instrument/product, reported quality, source identity, and footprint/resolution information when available.
@@ -303,7 +303,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P1.6 — Public evidence drill-down and historical view
 
-**Status:** Complete — 2026-10-21. [Implementation, contracts, rollout and verification](docs/implementation/S0_4_P1_5_6_ADAPTER_AND_PUBLIC_HISTORY.md). Source/phenomenon/AOI/observed-time/quality/revision filters, exact originals and lineage, labeled known/publication-time versus retrospective effective-time views, validated bookmarks, safe historical map presentation, and M1 acceptance pass.
+**Status:** Complete — 2026-10-21. [Implementation, contracts, rollout and verification](docs/implementation/HISTORICAL_DELIVERY.md#s0-4-p1-5-6). Source/phenomenon/AOI/observed-time/quality/revision filters, exact originals and lineage, labeled known/publication-time versus retrospective effective-time views, validated bookmarks, safe historical map presentation, and M1 acceptance pass.
 
 - Add filters for source, phenomenon, AOI, observed interval, quality, and revision.
 - Show original producer/provider, observed/received times, original record, correction lineage, rights, and source health.
@@ -316,12 +316,12 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ## 8. S0 — Simulation contracts and frozen inputs
 
-**Status:** Complete — S0.1–S0.4 and M2 accepted, 2026-10-21. [Frozen versions, time, coordinates and packages](docs/implementation/S0_1_3_SIMULATION_FOUNDATIONS.md); [scoped headless adapter, protected mappings and M2 verification](docs/implementation/S0_4_P1_5_6_ADAPTER_AND_PUBLIC_HISTORY.md).  
+**Status:** Complete — S0.1–S0.4 and M2 accepted, 2026-10-21. [Frozen versions, time, coordinates and packages](docs/implementation/HISTORICAL_DELIVERY.md#s0-1-3); [scoped headless adapter, protected mappings and M2 verification](docs/implementation/HISTORICAL_DELIVERY.md#s0-4-p1-5-6).
 **Goal:** Make the existing runner a safe, reproducible integration foundation without choosing a 3D engine.
 
 ### S0.1 — Scenario versions, runs, and explicit time
 
-**Status:** Complete — 2026-10-21. [Implementation, contracts, limits, and verification](docs/implementation/S0_1_3_SIMULATION_FOUNDATIONS.md).
+**Status:** Complete — 2026-10-21. [Implementation, contracts, limits, and verification](docs/implementation/HISTORICAL_DELIVERY.md#s0-1-3).
 
 - Separate mutable scenario authoring from immutable scenario versions and run instances.
 - Freeze scenario definition, actor templates, context references, seed, adapter/runtime build, and clock configuration at run creation.
@@ -334,7 +334,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### S0.2 — Coordinate and fidelity contracts
 
-**Status:** Complete — 2026-10-21. [Implementation, contracts, limits, and verification](docs/implementation/S0_1_3_SIMULATION_FOUNDATIONS.md).
+**Status:** Complete — 2026-10-21. [Implementation, contracts, limits, and verification](docs/implementation/HISTORICAL_DELIVERY.md#s0-1-3).
 
 - Define WGS84 input, longitude/latitude order, scene origin, local axes, units, orientation convention, and transform version.
 - Implement/test the chosen Earth-fixed/local-frame conversion independently of the future renderer.
@@ -345,7 +345,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### S0.3 — Context package manifest and integrity
 
-**Status:** Complete — 2026-10-21. [Implementation, contracts, limits, and verification](docs/implementation/S0_1_3_SIMULATION_FOUNDATIONS.md).
+**Status:** Complete — 2026-10-21. [Implementation, contracts, limits, and verification](docs/implementation/HISTORICAL_DELIVERY.md#s0-1-3).
 
 - Define one versioned manifest covering AOI, selected time window, source references, dataset versions, retrieval times, asset hashes, CRS/datum, transform/processing versions, quality, rights, attribution, creator, approval, and reproduction status.
 - Implement a minimal package builder/validator and content integrity check.
@@ -357,7 +357,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### S0.4 — Existing runner adapter and minimal synthetic ingress
 
-**Status:** Complete — 2026-10-21. [Implementation, contracts, rollout and verification](docs/implementation/S0_4_P1_5_6_ADAPTER_AND_PUBLIC_HISTORY.md). Authorized typed synthetic observation/telemetry boundary, opaque contact/message identities, protected immutable evaluator mappings, frozen-context headless consumer, seeded failure and operational compatibility, and M2 acceptance pass.
+**Status:** Complete — 2026-10-21. [Implementation, contracts, rollout and verification](docs/implementation/HISTORICAL_DELIVERY.md#s0-4-p1-5-6). Authorized typed synthetic observation/telemetry boundary, opaque contact/message identities, protected immutable evaluator mappings, frozen-context headless consumer, seeded failure and operational compatibility, and M2 acceptance pass.
 
 - Adapt existing YAML scenarios and seeded failure actions to the new version/run/time contracts.
 - Route synthetic observations and controlled telemetry through the authorized exercise application boundary.
@@ -376,7 +376,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P2.1 — Artifact storage and imagery catalogue
 
-**Status:** Complete — 2026-10-21. [Delivered behavior, acceptance evidence and operating limits](docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md).
+**Status:** Complete — 2026-10-21. [Delivered behavior, acceptance evidence and operating limits](docs/implementation/HISTORICAL_DELIVERY.md#p2-1-3).
 
 - Extend the artifact abstraction introduced as needed in P1/S0 to S3-compatible storage for imagery and derived outputs.
 - Enforce partition-aware object keys/access, hashes, sizes, retention, rights, download authorization, and deletion policy.
@@ -387,7 +387,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P2.2 — Reproducible environmental analysis
 
-**Status:** Complete — 2026-10-21. [Delivered behavior, acceptance evidence and operating limits](docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md).
+**Status:** Complete — 2026-10-21. [Delivered behavior, acceptance evidence and operating limits](docs/implementation/HISTORICAL_DELIVERY.md#p2-1-3).
 
 - Choose one limited environmental change use case, such as vegetation or flood-related change, with a documented deterministic baseline.
 - Validate scene comparability, spatial alignment, resolution, masks, cloud/no-data conditions, and method limitations before comparison.
@@ -399,7 +399,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P2.3 — Reviewable assessments and intelligence workspace
 
-**Status:** Complete — 2026-10-21. [Delivered behavior, acceptance evidence and operating limits](docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md).
+**Status:** Complete — 2026-10-21. [Delivered behavior, acceptance evidence and operating limits](docs/implementation/HISTORICAL_DELIVERY.md#p2-1-3).
 
 - Extend existing assessments with revisions, evidence versions, proposal/review/publish/reject states, reviewer identity, and rationale.
 - Preserve source claims, algorithm/AI proposals, and analyst conclusions as distinct records or explicit types.
@@ -411,7 +411,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P2.4 — Approved public-to-simulation export
 
-**Status:** Complete - 2026-10-21. M3 preview/approval/offline validation and headless integration passed. [Acceptance and operating limits](docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md).
+**Status:** Complete - 2026-10-21. M3 preview/approval/offline validation and headless integration passed. [Acceptance and operating limits](docs/implementation/HISTORICAL_DELIVERY.md#p2-4-p3-1-2).
 
 - Add AOI/time/layer selection and preview of the package contents, rights, quality, transforms, and omissions.
 - Use S0's existing manifest/validator; add imagery references/assets without changing its trust model.
@@ -430,7 +430,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P3.1 — External moving track projection
 
-**Status:** Complete - 2026-10-21. [Implementation, native protocol/budget/isolation acceptance and operating limits](docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md).
+**Status:** Complete - 2026-10-21. [Implementation, native protocol/budget/isolation acceptance and operating limits](docs/implementation/HISTORICAL_DELIVERY.md#p2-4-p3-1-2).
 
 - Extend scoped observation normalization for moving entities, with evidence links, source time, identity hypotheses, uncertainty, and staleness.
 - Keep classification, claimed identity, affiliation claim, and confidence separate.
@@ -439,7 +439,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P3.2 — One ADS-B provider and AISStream
 
-**Status:** Complete - 2026-10-21. [Implementation, native protocol/budget/isolation acceptance and operating limits](docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md). Live feeds are not enabled: OpenSky requires its written operational agreement; AISStream requires its server key and reviewed use/retention rights.
+**Status:** Complete - 2026-10-21. [Implementation, native protocol/budget/isolation acceptance and operating limits](docs/implementation/HISTORICAL_DELIVERY.md#p2-4-p3-1-2). Live feeds are not enabled: OpenSky requires its written operational agreement; AISStream requires its server key and reviewed use/retention rights.
 
 - Evaluate and choose one of the proposed ADS-B providers for the bounded AOI; implement AISStream as the maritime source.
 - Check current access, coverage, rights, retention, and quotas before activation.
@@ -448,7 +448,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### P3.3 — Weather context and selected reports
 
-**Status:** Complete - bounded NOAA METAR station samples and GDACS EQ bulletins, evidence history, common-source lineage and independent report assessment review. [Acceptance and rollout](docs/implementation/P3_3_WEATHER_AND_REPORTS.md). Migration 33 is required. Disabled source templates do not claim live activation.
+**Status:** Complete - bounded NOAA METAR station samples and GDACS EQ bulletins, evidence history, common-source lineage and independent report assessment review. [Acceptance and rollout](docs/implementation/HISTORICAL_DELIVERY.md#p3-3). Migration 33 is required. Disabled source templates do not claim live activation.
 
 - Add METAR or one suitable official weather feed where the use case requires it; retain station/area coverage and uncertainty.
 - Pilot selected GDELT/UCDP/official reports only against an explicit analyst question and admission decision.
@@ -461,12 +461,12 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ## 11. S1 — Asset pipeline and georeferenced 3D proof
 
-**Status:** Complete — S1.1-S1.3 and M4 accepted on 2026-10-22 within the declared visual-only reference/synthetic-terrain profile. [Engine decision](docs/implementation/S1_2_ENGINE_DECISION.md); [scene proof and rollout](docs/implementation/S1_3_S2_1_STUDIO_AND_NATIVE_RUNTIME.md).  
+**Status:** Complete — S1.1-S1.3 and M4 accepted on 2026-10-22 within the declared visual-only reference/synthetic-terrain profile. [Engine decision](docs/implementation/HISTORICAL_DELIVERY.md#s1-2); [scene proof and rollout](docs/implementation/HISTORICAL_DELIVERY.md#s1-3-s2-1).
 **Goal:** Prove scene interoperability and choose an engine from measured evidence.
 
 ### S1.1 — Model and environment asset registry
 
-**Status:** Complete - immutable scoped visual models, separate actor templates/environment frames, retained source/native artifacts and a bounded standalone validation worker. [Acceptance and rollout](docs/implementation/S1_1_MODEL_ASSET_REGISTRY.md). Migration 34 is required. This task does not instantiate runtime actors or select an engine.
+**Status:** Complete - immutable scoped visual models, separate actor templates/environment frames, retained source/native artifacts and a bounded standalone validation worker. [Acceptance and rollout](docs/implementation/HISTORICAL_DELIVERY.md#s1-1). Migration 34 is required. This task does not instantiate runtime actors or select an engine.
 
 - Separate visual `ModelAsset`, behavioral `ActorTemplate`, and runtime `SimulationActor`.
 - Support a small set of licensed GLB/glTF assets, source files/references, checksums, import versions, units, axes, materials, bounds, and fidelity declarations.
@@ -475,7 +475,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### S1.2 — Engine evaluation
 
-**Status:** Complete — shared-scene Three.js/Babylon hardware, software and no-GPU comparisons; requirements, budgets and scoped renderer selection recorded in [the decision and raw evidence](docs/implementation/S1_2_ENGINE_DECISION.md). Native physics/GPU engines remain future workload-specific decisions.
+**Status:** Complete — shared-scene Three.js/Babylon hardware, software and no-GPU comparisons; requirements, budgets and scoped renderer selection recorded in [the decision and raw evidence](docs/implementation/HISTORICAL_DELIVERY.md#s1-2). Native physics/GPU engines remain future workload-specific decisions.
 
 - Record requirements for geospatial precision, headless execution, scripting, native/web embedding, Windows/Linux support, licensing/distribution, maintenance, and performance.
 - Shortlist candidates and run the same small scene, asset set, coordinate fixtures, and headless behavior test.
@@ -484,7 +484,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### S1.3 — First georeferenced scene and Studio shell
 
-**Status:** Complete — immutable scoped scenes, explicit S0 terrain/actor coordinates, 3D/2D views, authoring properties, rights/fidelity and input-only Studio shell. [Acceptance and rollout](docs/implementation/S1_3_S2_1_STUDIO_AND_NATIVE_RUNTIME.md). Migration 35 required.
+**Status:** Complete — immutable scoped scenes, explicit S0 terrain/actor coordinates, 3D/2D views, authoring properties, rights/fidelity and input-only Studio shell. [Acceptance and rollout](docs/implementation/HISTORICAL_DELIVERY.md#s1-3-s2-1). Migration 35 required.
 
 - Load the accepted terrain/reference package and a few abstract actors using S0 transforms.
 - Add a scene viewport, asset selection, actor placement/properties, attribution, and 2D geographic overview where useful.
@@ -497,12 +497,12 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ## 12. S2 — Native runtime, synthetic perception, and Exercise COP
 
-**Status:** Complete — S2.1-S2.3 accepted, 2026-10-22. M5 passes within the declared abstract native perception profile. [Delivery and verification](docs/implementation/S2_2_S2_3_S3_1_PERCEPTION_AND_TASKING.md).  
+**Status:** Complete — S2.1-S2.3 accepted, 2026-10-22. M5 passes within the declared abstract native perception profile. [Delivery and verification](docs/implementation/HISTORICAL_DELIVERY.md#s2-2-s2-3-s3-1).
 **Goal:** Run the native simulation as a separate executable while the Go core administers the exercise.
 
 ### S2.1 — Runtime lifecycle and actor behavior
 
-**Status:** Complete — independent compiled Windows/Linux headless runtime, version/build negotiation, exclusive service lease, virtual clock, static/waypoint actors, stop/cancellation/failure, idempotent bounded snapshots and separately authorized truth. [Acceptance, limits and rollout](docs/implementation/S1_3_S2_1_STUDIO_AND_NATIVE_RUNTIME.md). No native sensor/COP projection is claimed by this task.
+**Status:** Complete — independent compiled Windows/Linux headless runtime, version/build negotiation, exclusive service lease, virtual clock, static/waypoint actors, stop/cancellation/failure, idempotent bounded snapshots and separately authorized truth. [Acceptance, limits and rollout](docs/implementation/HISTORICAL_DELIVERY.md#s1-3-s2-1). No native sensor/COP projection is claimed by this task.
 
 - Implement authenticated run start/attach/pause/resume/stop, runtime version negotiation, heartbeat, cancellation, and failure reporting.
 - Own virtual clocks, actor lifecycle, private world state, and simple declared behaviors in the runtime.
@@ -511,7 +511,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### S2.2 — Synthetic sensor adapters
 
-**Delivered:** 2026-10-22. [Implementation and acceptance](docs/implementation/S2_2_S2_3_S3_1_PERCEPTION_AND_TASKING.md).
+**Delivered:** 2026-10-22. [Implementation and acceptance](docs/implementation/HISTORICAL_DELIVERY.md#s2-2-s2-3-s3-1).
 
 - Convert private truth into explicit synthetic observations with configurable sample rate, missing samples, delay, noise, and quality.
 - Maintain observation/track identities independently of hidden actor identities.
@@ -520,7 +520,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### S2.3 — Exercise ingestion and operational picture
 
-**Delivered:** 2026-10-22. [Implementation and acceptance](docs/implementation/S2_2_S2_3_S3_1_PERCEPTION_AND_TASKING.md).
+**Delivered:** 2026-10-22. [Implementation and acceptance](docs/implementation/HISTORICAL_DELIVERY.md#s2-2-s2-3-s3-1).
 
 - Implement the cross-process gateway using the accepted contracts and required transport.
 - Enforce run status, principal binding, sequence/idempotency, bounded ingestion, duplicate/reordered events, reconnect, and cancellation.
@@ -534,12 +534,12 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ## 13. S3 — Exercise operations, recording, replay, and evaluation
 
-**Status:** Complete — S3.1–S3.3 and M6 accepted, 2026-10-22, within the declared abstract profile. [Delivery and verification](docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md).  
+**Status:** Complete — S3.1–S3.3 and M6 accepted, 2026-10-22, within the declared abstract profile. [Delivery and verification](docs/implementation/HISTORICAL_DELIVERY.md#s3-2-s3-3-s4-1).
 **Goal:** Complete Demonstration B using existing control infrastructure and durable evaluation evidence.
 
 ### S3.1 — Exercise-controlled workflows
 
-**Delivered:** 2026-10-22. [Implementation and acceptance](docs/implementation/S2_2_S2_3_S3_1_PERCEPTION_AND_TASKING.md).
+**Delivered:** 2026-10-22. [Implementation and acceptance](docs/implementation/HISTORICAL_DELIVERY.md#s2-2-s2-3-s3-1).
 
 - Reuse Assets, Missions, Commands, Telemetry, Incidents, Operators, and Audit.
 - Bind virtual recipients, issuer permissions, task/command IDs, and outcomes to one run.
@@ -549,7 +549,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### S3.2 — Recording and replay
 
-**Delivered:** 2026-10-22. Separate durable operator/truth journals, content-addressed artifacts, bounded read-only historical replay and compatible selected-state checkpoints. [Implementation and acceptance](docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md).
+**Delivered:** 2026-10-22. Separate durable operator/truth journals, content-addressed artifacts, bounded read-only historical replay and compatible selected-state checkpoints. [Implementation and acceptance](docs/implementation/HISTORICAL_DELIVERY.md#s3-2-s3-3-s4-1).
 
 - Record bounded event logs, selected state snapshots, checkpoints, runtime build, scenario version, asset/context hashes, seed, and clock configuration.
 - Store large histories as appropriate artifact files; keep queryable metadata in PostgreSQL.
@@ -561,7 +561,7 @@ The two proposals use illustrative permission and payload names. F0 records one 
 
 ### S3.3 — After-action evaluation
 
-**Delivered:** 2026-10-22. Versioned metrics over recorded perception/truth, explicit audited evaluator grants and deliberate release of numeric summaries. [Implementation and acceptance](docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md).
+**Delivered:** 2026-10-22. Versioned metrics over recorded perception/truth, explicit audited evaluator grants and deliberate release of numeric summaries. [Implementation and acceptance](docs/implementation/HISTORICAL_DELIVERY.md#s3-2-s3-3-s4-1).
 
 - Give authorized evaluators an audited comparison of recorded observations against sealed truth.
 - Start with defined perception and workflow metrics: missed/late observations, track association errors, duplicate handling, command lifecycle timing, and scenario completion.
@@ -591,7 +591,7 @@ Candidate increments:
 
 ### S4.1 — Reusable sensor-quality presets
 
-**Delivered:** 2026-10-22, selected explicitly by the user as the third task in this increment. [Implementation and acceptance](docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md).
+**Delivered:** 2026-10-22, selected explicitly by the user as the third task in this increment. [Implementation and acceptance](docs/implementation/HISTORICAL_DELIVERY.md#s3-2-s3-3-s4-1).
 
 - Save immutable, content-addressed abstract observer profiles with explicit limitations.
 - Reapply profiles across scenes; pin their documents and exact values into frozen versions.

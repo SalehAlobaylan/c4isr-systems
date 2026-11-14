@@ -332,36 +332,60 @@
       "sha256": "35fbceca935ab13811f0bb4386ec06fad9d8f9e7ac4de7ee16a3cbb86262615f"
     },
     {
-      "path": "docs/implementation/MAP_FIRST_GAP_ANALYSIS_2026_10_25.md",
-      "sha256": "dc988497ae69da661f1db8bfef4bfba8c08fabbc34a1b02656d0ae669b909207"
+      "path": "docs/implementation/MAP_FIRST_PLAN.md",
+      "sha256": "dc988497ae69da661f1db8bfef4bfba8c08fabbc34a1b02656d0ae669b909207",
+      "consolidatedFrom": "docs/implementation/MAP_FIRST_PLAN.md#gap-analysis",
+      "consolidatedSection": "#gap-analysis",
+      "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
     },
     {
-      "path": "docs/implementation/MAP_FIRST_GAP_REPORT_2026_10_25.md",
-      "sha256": "eb7fe630715511fc301b87655515275bc2c8a67808521314cdc8c02122af7c7b"
+      "path": "docs/implementation/MAP_FIRST_PLAN.md",
+      "sha256": "eb7fe630715511fc301b87655515275bc2c8a67808521314cdc8c02122af7c7b",
+      "consolidatedFrom": "docs/implementation/MAP_FIRST_PLAN.md#gap-report",
+      "consolidatedSection": "#gap-report",
+      "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
     },
     {
-      "path": "docs/implementation/MAP_FIRST_IMPLEMENTATION_PLAN_2026_10_25.md",
-      "sha256": "888ea7523ab9c943fe45d7dfc01351dc3c29e2d66a10328002b31b5cba21ad35"
+      "path": "docs/implementation/MAP_FIRST_PLAN.md",
+      "sha256": "888ea7523ab9c943fe45d7dfc01351dc3c29e2d66a10328002b31b5cba21ad35",
+      "consolidatedFrom": "docs/implementation/MAP_FIRST_PLAN.md#implementation-plan",
+      "consolidatedSection": "#implementation-plan",
+      "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
     },
     {
-      "path": "docs/implementation/MAP_FIRST_OPERATIONS.md",
-      "sha256": "a7c81f4453daca1bef80f30d49bef8478f79355ffe810de1a857331d838929ee"
+      "path": "docs/implementation/MAP_FIRST_OPERATIONS.md#map-profile",
+      "sha256": "a7c81f4453daca1bef80f30d49bef8478f79355ffe810de1a857331d838929ee",
+      "consolidatedFrom": "docs/implementation/MAP_FIRST_OPERATIONS.md#map-profile",
+      "consolidatedSection": "#map-profile",
+      "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
     },
     {
-      "path": "docs/implementation/MAP_FIRST_PLAN_AUDIT_2026_10_25.md",
-      "sha256": "42766d404e8cbfe56e32cad8fa49d1b6c3209cd6bc48f73afa425481411d2e1d"
+      "path": "docs/implementation/MAP_FIRST_PLAN.md",
+      "sha256": "42766d404e8cbfe56e32cad8fa49d1b6c3209cd6bc48f73afa425481411d2e1d",
+      "consolidatedFrom": "docs/implementation/MAP_FIRST_PLAN.md#plan-audit",
+      "consolidatedSection": "#plan-audit",
+      "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
     },
     {
-      "path": "docs/implementation/MAP_FIRST_PRODUCT_BRIEF.md",
-      "sha256": "46f2ef05c56d6485f59e74f941e85b808778194b1a86aeec02a92ca7715f66b3"
+      "path": "docs/implementation/MAP_FIRST_PRODUCT.md",
+      "sha256": "46f2ef05c56d6485f59e74f941e85b808778194b1a86aeec02a92ca7715f66b3",
+      "consolidatedFrom": "docs/implementation/MAP_FIRST_PRODUCT.md#product-brief",
+      "consolidatedSection": "#product-brief",
+      "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
     },
     {
-      "path": "docs/implementation/MAP_FIRST_T01_T03_IMPLEMENTATION_2026_10_25.md",
-      "sha256": "06fa0d9ee9ababe053de2106c52b7088d15d89dba3f7e384994818b21c59fb41"
+      "path": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md",
+      "sha256": "06fa0d9ee9ababe053de2106c52b7088d15d89dba3f7e384994818b21c59fb41",
+      "consolidatedFrom": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t01-t03",
+      "consolidatedSection": "#t01-t03",
+      "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
     },
     {
-      "path": "docs/implementation/MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md",
-      "sha256": "42d553cabb280c80b5cf09c751a23d91f3e30765d1e035271573b2679ea9ebb6"
+      "path": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md",
+      "sha256": "42d553cabb280c80b5cf09c751a23d91f3e30765d1e035271573b2679ea9ebb6",
+      "consolidatedFrom": "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t04-t06",
+      "consolidatedSection": "#t04-t06",
+      "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
     },
     {
       "path": "internal/analystscope/middleware.go",

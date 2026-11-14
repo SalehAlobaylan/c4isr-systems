@@ -7,7 +7,7 @@ import '@/styles/scope-workflows.css'
 
 export function useCoverage(scope?:ScopeSnapshot,enabled=true){
  const api=useAPI(),{prefix,session}=useWorkspace(),historical=scope?.temporal.mode==='historical'
- return useQuery({queryKey:[...prefix,'scope-coverage',scope?.scopeHash,scope?.authorizationRevision],queryFn:({signal})=>api.queryCoverage({scope:fixedScopeInput(scope!)},signal),enabled:enabled&&!!scope&&session.permissions.includes('sources.read'),retry:false,staleTime:historical?Infinity:30_000,refetchOnWindowFocus:false,refetchOnReconnect:false,refetchOnMount:!historical,refetchInterval:historical?false:60_000})
+ return useQuery({queryKey:[...prefix,'scope-coverage',scope?.scopeHash,scope?.authorizationRevision],queryFn:({signal})=>api.queryCoverage({scope:fixedScopeInput(scope!)},signal),gcTime:0,enabled:enabled&&!!scope&&session.permissions.includes('sources.read'),retry:false,staleTime:historical?Infinity:30_000,refetchOnWindowFocus:false,refetchOnReconnect:false,refetchOnMount:!historical,refetchInterval:historical?false:60_000})
 }
 export function quietMeaning(result:CoverageResult|undefined,family:string,unavailable=false){
  if(unavailable)return 'This query is unavailable. The record count is unknown; other layers remain usable.'

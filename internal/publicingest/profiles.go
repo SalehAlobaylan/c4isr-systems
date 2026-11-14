@@ -277,5 +277,5 @@ func IntersectOutputPermissions(a, b *OutputPermissions) *OutputPermissions {
 		v := *x && *y
 		return &v
 	}
-	return &OutputPermissions{InternalAnalysis: both(a.InternalAnalysis, b.InternalAnalysis), Citation: both(a.Citation, b.Citation), IncludedImagery: both(a.IncludedImagery, b.IncludedImagery), RawDistribution: both(a.RawDistribution, b.RawDistribution), GeographicEnvironment: both(a.GeographicEnvironment, b.GeographicEnvironment), MetadataRetention: both(a.MetadataRetention, b.MetadataRetention)}
+	return &OutputPermissions{InternalAnalysis: both(a.InternalAnalysis, b.InternalAnalysis), Citation: both(a.Citation, b.Citation), IncludedImagery: both(a.IncludedImagery, b.IncludedImagery), RawDistribution: both(a.RawDistribution, b.RawDistribution), GeographicEnvironment: both(a.GeographicEnvironment, b.GeographicEnvironment), GeographicViewerExport: both(a.GeographicViewerExport, b.GeographicViewerExport), GeographicContextExport: both(a.GeographicContextExport, b.GeographicContextExport), MetadataRetention: both(a.MetadataRetention, b.MetadataRetention)}
 }

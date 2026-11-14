@@ -69,6 +69,10 @@ def inventory(container, database='c4isr'):
           ON (o.id,o.scope_id)=(e.output_id,e.scope_id)
           WHERE e.document->>'action'='UPLOAD_PLANNED'""")
     if 'geographic_assets' in tables:
+        display_bindings = (
+            "UNION ALL SELECT release_id,scope_id,asset_id FROM geographic_environment_displays"
+            if 'geographic_environment_displays' in tables else ""
+        )
         families.append("""SELECT object_key key, id entity_id, document->>'sha256' sha256,
           size_bytes bytes, 'geographic' family,
           CASE WHEN restore_allowed THEN state ELSE 'EXPIRED' END state, retain_until,
@@ -89,13 +93,20 @@ def inventory(container, database='c4isr'):
               JOIN retrieval_profile_revisions h ON h.id=p.head_revision_id
               JOIN source_admissions live ON live.id=h.admission_id AND live.scope_id=h.scope_id
               JOIN sources s ON (s.id,s.scope_id)=(old.source_id,old.scope_id)
+            ), release_bindings AS (
+              SELECT id release_id,scope_id,bundle_id asset_id FROM geographic_environment_releases
+              /* display bindings */
             )
             SELECT a.*,a.state='READY' AND CASE
-              WHEN a.document#>>'{representation,format}'<>'release-zip' THEN COALESCE(policy.can_retain,false)
+              WHEN a.document#>>'{representation,format}' NOT IN ('release-zip','display-glb','display-layer-json','display-pmtiles')
+                THEN COALESCE(policy.can_retain,false)
               ELSE EXISTS(
-                SELECT 1 FROM geographic_environment_releases r
+                SELECT 1 FROM release_bindings binding
+                JOIN geographic_environment_releases r ON (r.id,r.scope_id)=(binding.release_id,binding.scope_id)
                 JOIN geographic_environment_builds b ON (b.id,b.scope_id)=(r.build_id,r.scope_id)
-                WHERE (r.bundle_id,r.scope_id)=(a.id,a.scope_id)
+                JOIN geographic_assets bundle ON (bundle.id,bundle.scope_id)=(r.bundle_id,r.scope_id)
+                WHERE (binding.asset_id,binding.scope_id)=(a.id,a.scope_id)
+                  AND bundle.state='READY' AND bundle.retain_until>clock_timestamp()
                   AND COALESCE((SELECT state FROM geographic_environment_release_events
                     WHERE (release_id,scope_id)=(r.id,r.scope_id) ORDER BY occurred_at DESC,id DESC LIMIT 1),'EXPIRED')
                       NOT IN ('EXPIRED','WITHDRAWN','SUPERSEDED')
@@ -109,7 +120,7 @@ def inventory(container, database='c4isr'):
               ) END AS restore_allowed
             FROM geographic_assets a
             LEFT JOIN admission_policy policy ON (policy.id,policy.scope_id)=(a.admission_id,a.scope_id)
-          ) resolved_geographic_objects""")
+          ) resolved_geographic_objects""".replace("/* display bindings */", display_bindings))
     if families:
         result['objects'] = json.loads(sql(container, database,
             'SELECT COALESCE(json_agg(r ORDER BY key,family),\'[]\') FROM (' +

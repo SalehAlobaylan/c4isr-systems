@@ -73,9 +73,6 @@
   },
   "qualification": "Full workload/browser budgets, 24 real hours with actual restart/recovery/growth measurements, complete geographic journeys, nominated rollback binary and observed independent users remain open.",
   "documentationHashes": {
-    "docs/implementation/MAP_FIRST_T22_T24_REVIEW_2026_10_27.md": "a337ba41dcabac0278b5aed2da9c6a45a84cfd03677af53e69ff9ab621d17e06",
-    "docs/implementation/MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md": "2a4f66cca2ecba808b73809fa27a2ea66cccda5bb4ee1008bd78fe75dea68cf4",
-    "docs/implementation/MAP_FIRST_OPERATIONS.md": "98271f9271fad3cb8140a3b052fdc481cc394aadbf7293f708d740084cfeec51",
     "docs/implementation/MAP_FIRST_T23_OBSERVED_SESSIONS.template.json": "32e4c1a702e9b23e8aa63c1632233145fd2ae92d467415d5adc394591cf17f74",
     "docs/implementation/MAP_FIRST_BACKLOG_2026_10_25.json": "8e2d7d6949460e10aecf09cc5850e34a2824b83510fdda4991f59cdeb1273349"
   },
@@ -106,5 +103,26 @@
     },
     "note": "Read-only recheck; shared deployment remains unverified."
   },
-  "finalRecheckedAt": "2026-10-27T17:12:23.874275+00:00"
+  "finalRecheckedAt": "2026-10-27T17:12:23.874275+00:00",
+  "consolidatedDocumentationHashes": {
+    "docs/implementation/MAP_FIRST_DELIVERY_LOG.md": {
+      "consolidatedFrom": [
+        "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t22-t24-review",
+        "docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t22-t24"
+      ],
+      "originalSha256": {
+        "docs/implementation/MAP_FIRST_T22_T24_REVIEW_2026_10_27.md": "a337ba41dcabac0278b5aed2da9c6a45a84cfd03677af53e69ff9ab621d17e06",
+        "docs/implementation/MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md": "2a4f66cca2ecba808b73809fa27a2ea66cccda5bb4ee1008bd78fe75dea68cf4"
+      }
+    },
+    "docs/implementation/MAP_FIRST_OPERATIONS.md": {
+      "consolidatedFrom": [
+        "docs/implementation/MAP_FIRST_OPERATIONS.md#map-profile"
+      ],
+      "originalSha256": {
+        "docs/implementation/MAP_FIRST_OPERATIONS.md": "98271f9271fad3cb8140a3b052fdc481cc394aadbf7293f708d740084cfeec51"
+      }
+    }
+  },
+  "documentationHashScope": "Hashes in this map are the values captured when this evidence bundle was recorded. A document consolidated on 11 November 2026 is listed under consolidatedDocumentationHashes with the hash of the original file; the original bytes remain recoverable from git history."
 }

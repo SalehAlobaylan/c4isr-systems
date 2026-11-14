@@ -90,6 +90,12 @@ func (s *Service) location(ctx context.Context, a Admission) (Location, error) {
 			return Location{}, apperr.Validation("context pilot requires its native product, a stated analyst question, retained analysis evidence, one bounded page, 1 MiB and provider pacing/quota")
 		}
 	}
+	if location.Adapter == EONETAdapter && (a.Dataset != EONETDataset || a.ProductVersion != "v3" || a.RevisionPolicy != "content_hash" ||
+		!a.Rights.RetainRaw || !a.Rights.AllowAnalysis || a.Policy.MaxPages != 1 || a.Policy.MaxRecordsPerPage > 100 ||
+		a.Policy.MaxResponseBytes > 1048576 || a.Policy.MinIntervalSeconds < 900 || a.Policy.MaxRequestsPerDay > 24 ||
+		len(strings.TrimSpace(a.AnalystQuestion)) < 20) {
+		return Location{}, apperr.Validation("EONET requires its bounded flood-report profile, retained evidence and a stated analyst question")
+	}
 	return location, nil
 }
 
@@ -201,8 +207,8 @@ func (s *Service) ExecuteWindow(ctx context.Context, source string, window *Wind
 	if err != nil {
 		return Run{}, err
 	}
-	if window != nil && ((location.Adapter != STACAdapter && location.Adapter != EarthSearchAdapter && location.Adapter != USGSAdapter && location.Adapter != FIRMSAdapter && location.Adapter != "emad-json-page-v1") || window.Validate(time.Now()) != nil || window.To.Sub(window.From) > time.Duration(st.Admission.Policy.LookbackSeconds)*time.Second) {
-		return Run{}, apperr.Validation("explicit historical windows require a bounded STAC query")
+	if window != nil && ((location.Adapter != STACAdapter && location.Adapter != EarthSearchAdapter && location.Adapter != USGSAdapter && location.Adapter != FIRMSAdapter && location.Adapter != EONETAdapter && location.Adapter != "emad-json-page-v1") || window.Validate(time.Now()) != nil || window.To.Sub(window.From) > time.Duration(st.Admission.Policy.LookbackSeconds)*time.Second) {
+		return Run{}, apperr.Validation("explicit historical windows require a supported bounded query")
 	}
 	work, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
@@ -306,7 +312,7 @@ func (s *Service) ExecuteWindow(ctx context.Context, source string, window *Wind
 		}
 		evidence := make([]Evidence, 0, len(page.Records))
 		for _, record := range page.Records {
-			if record.Context != nil && location.Adapter != METARAdapter && !isGDACS(location.Adapter) {
+			if record.Context != nil && location.Adapter != METARAdapter && location.Adapter != EONETAdapter && !isGDACS(location.Adapter) {
 				err = apperr.Validation("context records require a native normalizer")
 				break
 			}

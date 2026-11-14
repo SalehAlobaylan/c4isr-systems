@@ -1,0 +1,92 @@
+paths:
+  /api/v1/environment-worker/claim:
+    post:
+      operationId: claimEnvironmentBuild
+      summary: Claim a scoped geographic build
+      description: Requires a scoped service identity with environments.execute and an exact configured processor digest. Scope-wide capacity applies across source grants. A claim is returned only for a job visible to that identity.
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object","required":["toolchainSha256"],"properties":{"toolchainSha256":{"type":"string","pattern":"^[0-9a-f]{64}$"}}}}}}
+      responses:
+        '200': {"description":"Frozen recipe and time-limited lease","content":{"application/json":{"schema":{"type":"object","required":["jobId","lease","leaseUntil","inputSha256","recipe"],"properties":{"jobId":{"type":"string"},"lease":{"type":"string"},"leaseUntil":{"type":"string","format":"date-time"},"inputSha256":{"type":"string"},"recipe":{"type":"object","description":"The frozen emad.environment-recipe.v1 document","additionalProperties":true}}}}}}
+        '204': {"description":"No eligible build is available, or scope-wide worker capacity is in use"}
+        '4XX':
+          description: Worker request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-worker/reconcile:
+    post:
+      operationId: reconcileEnvironmentWorker
+      summary: Reconcile an expired geographic reservation
+      description: Requires a scoped service identity with environments.execute.
+      responses:
+        '204': {"description":"One eligible reservation reconciled or none available"}
+        '4XX':
+          description: Worker request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-worker/builds/{id}/inputs/{asset}:
+    get:
+      operationId: downloadEnvironmentWorkerInput
+      summary: Download one frozen input of the claimed build
+      description: Requires a scoped service identity with environments.execute.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+        - {"name":"asset","in":"path","required":true,"schema":{"type":"string"}}
+        - {"name":"X-Environment-Lease","in":"header","required":true,"schema":{"type":"string"}}
+      responses:
+        '200': {"description":"Exact retained input bytes","content":{"application/octet-stream":{"schema":{"type":"string","format":"binary"}}}}
+        '206': {"description":"Single byte range","content":{"application/octet-stream":{"schema":{"type":"string","format":"binary"}}}}
+        '4XX':
+          description: Worker request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-worker/builds/{id}/heartbeat:
+    post:
+      operationId: renewEnvironmentWorkerLease
+      summary: Renew an active geographic build lease
+      description: Requires a scoped service identity with environments.execute.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+        - {"name":"X-Environment-Lease","in":"header","required":true,"schema":{"type":"string"}}
+      responses:
+        '204': {"description":"Lease renewed"}
+        '4XX':
+          description: Worker request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-worker/builds/{id}/fail:
+    post:
+      operationId: failEnvironmentWorkerBuild
+      summary: Report a bounded preparation failure
+      description: Requires a scoped service identity with environments.execute.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+        - {"name":"X-Environment-Lease","in":"header","required":true,"schema":{"type":"string"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"type":"object","required":["code"],"properties":{"code":{"type":"string","enum":["transient_io","invalid_input","invalid_output","scratch_budget_exceeded"]}}}}}}
+      responses:
+        '204': {"description":"Failure recorded or scheduled for retry"}
+        '4XX':
+          description: Worker request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-worker/builds/{id}/complete:
+    post:
+      operationId: completeEnvironmentWorkerBuild
+      summary: Publish a verified prepared archive
+      description: Requires a scoped service identity with environments.execute.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+        - {"name":"X-Environment-Lease","in":"header","required":true,"schema":{"type":"string"}}
+        - {"name":"X-Artifact-SHA256","in":"header","required":true,"schema":{"type":"string","pattern":"^[0-9a-f]{64}$"}}
+      requestBody: {"required":true,"content":{"application/zip":{"schema":{"type":"string","format":"binary"}}}}
+      responses:
+        '204': {"description":"Exact archive published or exact completion already recorded"}
+        '4XX':
+          description: Worker request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}

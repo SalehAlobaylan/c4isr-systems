@@ -8,9 +8,9 @@
 
 Build a useful **map-centered Public Context and Intelligence system for the Middle East and the rest of the world**.
 
-- The Middle East is the priority operating region, not a restriction to Saudi Arabia or selected cities.
+- Riyadh is the first priority for detailed geographic environment preparation and 3D acceptance. Saudi Arabia is the first priority for national navigation and source coverage. The wider Middle East is the priority operating region.
 - Worldwide navigation, geographic selection, evidence discovery and bounded analytical work belong to the product scope. The interface must state where actual source coverage or detail is unavailable.
-- Jeddah is an existing prepared dataset and regression fixture. It must not determine product identity, silently supply unrelated area defaults or constrain the geographic architecture.
+- Jeddah is an existing prepared dataset and regression fixture. Resolve each selected area from its own geographic identity and source coverage. [Environment and 3D plans](plans/README.md)
 - A global basemap is only one layer of worldwide support. Geographic references, source coverage, acquisition, queries, time handling and user workflows must support the broader scope coherently.
 
 ## Simulation boundary
@@ -25,7 +25,7 @@ Keep existing code, records and isolation protections unless an explicit migrati
 
 ## Planning and delivery rules
 
-1. Start from this scope and the [map-first gap report](docs/implementation/MAP_FIRST_GAP_REPORT_2026_10_25.md). Its implementation actions are recommendations for review; writing the report does not execute or approve a new implementation batch.
+1. Start from this scope and the [map-first gap report](docs/implementation/MAP_FIRST_PLAN.md#gap-report). Its implementation actions are recommendations for review; writing the report does not execute or approve a new implementation batch.
 2. Do not automatically continue the earlier S1–S4 sequence or a parallel simulation pilot.
 3. Preserve functioning Go/PostGIS/MapLibre infrastructure, evidence provenance, existing access boundaries and immutable history.
 4. Keep public facts, provider reports, derived indicators and human assessments distinct. A country being selectable does not establish source coverage there.

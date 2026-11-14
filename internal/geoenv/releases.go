@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/SalehAlobaylan/c4isr-systems/internal/artifacts"
@@ -26,10 +27,11 @@ import (
 )
 
 type Member struct {
-	Name   string `json:"name"`
-	Layer  string `json:"layer"`
-	SHA256 string `json:"sha256"`
-	Bytes  int64  `json:"bytes"`
+	Name    string `json:"name"`
+	Layer   string `json:"layer"`
+	SHA256  string `json:"sha256"`
+	Bytes   int64  `json:"bytes"`
+	InputID string `json:"inputId,omitempty"`
 }
 type Manifest struct {
 	Schema         string          `json:"schema"`
@@ -42,8 +44,17 @@ type Manifest struct {
 	Members        []Member        `json:"members"`
 	Frame          Frame           `json:"frame"`
 	Quality        struct {
-		CoordinateErrorM float64 `json:"coordinateErrorM"`
-		PhysicalAccuracy string  `json:"physicalAccuracy"`
+		CoordinateErrorM float64         `json:"coordinateErrorM"`
+		PhysicalAccuracy string          `json:"physicalAccuracy"`
+		Coastal          json.RawMessage `json:"coastal"`
+		Observations     struct {
+			Radar   json.RawMessage `json:"radar"`
+			Weather json.RawMessage `json:"weather"`
+		} `json:"observations"`
+		Enrichment struct {
+			GroundComparison  json.RawMessage `json:"groundComparison"`
+			DimensionCoverage json.RawMessage `json:"dimensionCoverage"`
+		} `json:"enrichment"`
 	} `json:"quality"`
 }
 type Frame struct {
@@ -109,6 +120,7 @@ func validateManifest(raw []byte, j Job) (Manifest, error) {
 	if !validFrame(m.Frame) {
 		return m, ErrInvalidInputs
 	}
+	inputLayers := make(map[string]string, len(m.Inputs))
 	for i, a := range m.Inputs {
 		f := j.recipe.Inputs[i]
 		x, _ := json.Marshal(a)
@@ -116,23 +128,64 @@ func validateManifest(raw []byte, j Job) (Manifest, error) {
 		if !jsonEqual(x, y) {
 			return m, ErrInvalidInputs
 		}
+		inputLayers[a.ID] = a.Representation.Layer
 	}
 	seen := map[string]bool{}
 	layers := map[string]bool{}
+	enriched := m.ProfileID == enrichmentProfile
+	observation := m.ProfileID == observationProfile
 	var total int64
 	for _, part := range m.Members {
 		if !memberName.MatchString(part.Name) || part.Name == "manifest.json" || seen[part.Name] || !digestPattern.MatchString(part.SHA256) || part.Bytes < 1 || part.Bytes > artifacts.MaxGeographicBytes {
 			return m, ErrInvalidInputs
 		}
+		if (enriched || observation || m.ProfileID == coastalProfile) && (part.InputID == "" || !slices.Contains(j.recipe.Profile.Required, part.Layer) && !slices.Contains(j.recipe.Profile.Optional, part.Layer)) {
+			return m, ErrInvalidInputs
+		}
+		if part.InputID != "" {
+			if layer, ok := inputLayers[part.InputID]; !ok || layer != part.Layer {
+				return m, ErrInvalidInputs
+			}
+		}
 		seen[part.Name] = true
 		layers[part.Layer] = true
 		total += part.Bytes
+	}
+	if m.ProfileID == coastalProfile && (len(m.Members) != 1 || len(m.Quality.Coastal) == 0 || jsonEqual(m.Quality.Coastal, json.RawMessage("null"))) {
+		return m, ErrInvalidInputs
+	}
+	if observation {
+		for _, candidate := range []struct {
+			layer   string
+			quality json.RawMessage
+		}{{"radar", m.Quality.Observations.Radar}, {"weather-field", m.Quality.Observations.Weather}} {
+			input := slices.ContainsFunc(j.recipe.Inputs, func(a Asset) bool { return a.Representation.Layer == candidate.layer })
+			if input != layers[candidate.layer] || input != (len(candidate.quality) > 0 && !jsonEqual(candidate.quality, json.RawMessage("null"))) {
+				return m, ErrInvalidInputs
+			}
+		}
+		if !layers["radar"] && !layers["weather-field"] {
+			return m, ErrInvalidInputs
+		}
 	}
 	if total > 4<<30 {
 		return m, ErrInvalidInputs
 	}
 	for _, layer := range j.recipe.Profile.Required {
 		if !layers[layer] {
+			return m, ErrInvalidInputs
+		}
+	}
+	if enriched {
+		for _, layer := range j.recipe.Profile.Optional {
+			if slices.ContainsFunc(j.recipe.Inputs, func(a Asset) bool { return a.Representation.Layer == layer }) && !layers[layer] {
+				return m, ErrInvalidInputs
+			}
+		}
+		var comparisons []json.RawMessage
+		if len(m.Quality.Enrichment.DimensionCoverage) == 0 ||
+			json.Unmarshal(m.Quality.Enrichment.GroundComparison, &comparisons) != nil || comparisons == nil ||
+			layers["ground"] != (len(comparisons) > 0) {
 			return m, ErrInvalidInputs
 		}
 	}
@@ -186,15 +239,19 @@ func (s Service) stage(ctx context.Context, j Job, dir string) error {
 	if err != nil {
 		return err
 	}
-	m, err := validateManifest(raw, j)
-	if err != nil {
-		return err
-	}
 	f, err := os.Open(filepath.Join(dir, "prepared.zip"))
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+	return s.stageArchive(ctx, j, f, raw)
+}
+
+func (s Service) stageArchive(ctx context.Context, j Job, f *os.File, raw []byte) error {
+	m, err := validateManifest(raw, j)
+	if err != nil {
+		return err
+	}
 	stat, err := f.Stat()
 	if err != nil {
 		return err
@@ -203,6 +260,9 @@ func (s Service) stage(ctx context.Context, j Job, dir string) error {
 		return ErrInvalidInputs
 	}
 	if err = zipIntegrity(f, stat.Size(), raw, m); err != nil {
+		return err
+	}
+	if _, err = f.Seek(0, io.SeekStart); err != nil {
 		return err
 	}
 	h := sha256.New()
@@ -222,6 +282,9 @@ func (s Service) stage(ctx context.Context, j Job, dir string) error {
 	for _, input := range j.recipe.Inputs {
 		if input.RetainUntil.Before(a.RetainUntil) {
 			a.RetainUntil = input.RetainUntil
+		}
+		if expiry := input.Rights.ExpiresAt; expiry != nil && expiry.Before(a.RetainUntil) {
+			a.RetainUntil = *expiry
 		}
 	}
 	a.objectKey = objectKey(r.ID(), a)
@@ -285,7 +348,7 @@ func (s Service) stage(ctx context.Context, j Job, dir string) error {
 			return apperr.Conflict("prepared output reservation unavailable")
 		}
 		rel := EnvironmentRelease{ID: ids.New("georelease"), BuildID: j.ID, BundleID: a.ID, ManifestSHA256: artifacts.Hash(raw), sources: j.sources}
-		if _, err = tx.Exec(ctx, `INSERT INTO geographic_environment_releases(id,build_id,required_sources,manifest_bytes,manifest_hash,bundle_id) VALUES($1,$2,$3,$4,$5,$6)`, rel.ID, j.ID, rel.sources, raw, rel.ManifestSHA256, a.ID); err != nil {
+		if _, err = tx.Exec(ctx, `INSERT INTO geographic_environment_releases(id,build_id,required_sources,manifest_bytes,manifest_hash,bundle_id,publication_lease_sha256) VALUES($1,$2,$3,$4,$5,$6,$7)`, rel.ID, j.ID, rel.sources, raw, rel.ManifestSHA256, a.ID, leaseProof(j.worker, j.lease)); err != nil {
 			return err
 		}
 		if err = releaseEvent(ctx, tx, rel, "STAGED", "", "Worker verified the exact prepared bundle bytes."); err != nil {
@@ -354,6 +417,63 @@ type ReleaseAction struct {
 	Note           string `json:"note"`
 }
 
+type ReleaseDecision struct {
+	State          string    `json:"state"`
+	ManifestSHA256 string    `json:"manifestSha256"`
+	HumanID        string    `json:"humanId,omitempty"`
+	Note           string    `json:"note"`
+	OccurredAt     time.Time `json:"occurredAt"`
+}
+
+func (s Service) releaseDecisions(ctx context.Context, id string) ([]ReleaseDecision, error) {
+	if err := require(ctx, Read, false); err != nil {
+		return nil, err
+	}
+	if !access.Allows(ctx, Qualify) && !access.Allows(ctx, Release) {
+		return nil, apperr.Forbidden("release decision history requires review authority")
+	}
+	r, err := s.release(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.Scoped(s.Pool).Query(ctx, `SELECT state,human_id,note,occurred_at FROM geographic_environment_release_events
+		WHERE release_id=$1 ORDER BY occurred_at,id`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	decisions := []ReleaseDecision{}
+	for rows.Next() {
+		decision := ReleaseDecision{ManifestSHA256: r.ManifestSHA256}
+		if err := rows.Scan(&decision.State, &decision.HumanID, &decision.Note, &decision.OccurredAt); err != nil {
+			return nil, err
+		}
+		decisions = append(decisions, decision)
+	}
+	return decisions, rows.Err()
+}
+
+func (s Service) checkPreparedBytes(ctx context.Context, r EnvironmentRelease) error {
+	asset, err := s.asset(ctx, r.BundleID)
+	if err != nil {
+		return err
+	}
+	if s.Store == nil || asset.State != "READY" || !asset.RetainUntil.After(time.Now()) {
+		return apperr.Conflict("prepared archive is unavailable")
+	}
+	reader, err := s.Store.OpenGeographic(ctx, asset.objectKey, asset.Bytes, nil)
+	if err != nil {
+		return apperr.Conflict("prepared archive is unavailable")
+	}
+	defer reader.Close()
+	hash := sha256.New()
+	length, err := io.Copy(hash, io.LimitReader(reader, asset.Bytes+1))
+	if err != nil || length != asset.Bytes || hex.EncodeToString(hash.Sum(nil)) != asset.SHA256 {
+		return apperr.Conflict("prepared archive failed its retained SHA-256 check")
+	}
+	return nil
+}
+
 func (s Service) transition(ctx context.Context, id, action string, in ReleaseAction) (EnvironmentRelease, error) {
 	var r EnvironmentRelease
 	permission := Release
@@ -365,6 +485,33 @@ func (s Service) transition(ctx context.Context, id, action string, in ReleaseAc
 	}
 	if !digestPattern.MatchString(in.ManifestSHA256) || !boundedText(in.Note, 2000) {
 		return r, apperr.Validation("exact manifest digest and review evidence are required")
+	}
+	// Verify physical bytes before holding the decision lock. Publication stores
+	// immutable identities, and the transaction below rechecks the exact release,
+	// state and current source policy before recording a new decision.
+	if action == "verify" || action == "release" {
+		candidate, err := s.release(ctx, id)
+		if err != nil {
+			return r, err
+		}
+		if candidate.ManifestSHA256 != in.ManifestSHA256 {
+			return r, apperr.Conflict("review does not bind the exact retained manifest")
+		}
+		if candidate.State == "STAGED" || action == "release" && candidate.State == "VERIFIED" {
+			if err := s.eligibleRelease(ctx, candidate); err != nil {
+				return r, err
+			}
+			if err := s.checkPreparedBytes(ctx, candidate); err != nil {
+				return r, err
+			}
+			ctx, err = access.Refresh(ctx)
+			if err != nil {
+				return r, err
+			}
+			if err := require(ctx, permission, false); err != nil {
+				return r, err
+			}
+		}
 	}
 	p, resource, _ := access.From(ctx)
 	err := db.WithTx(ctx, s.Pool, func(tx pgx.Tx) error {
@@ -381,7 +528,18 @@ func (s Service) transition(ctx context.Context, id, action string, in ReleaseAc
 			return apperr.Conflict("review does not bind the exact retained manifest")
 		}
 		next := map[string]string{"verify": "VERIFIED", "release": "RELEASED", "withdraw": "WITHDRAWN"}[action]
+		note := strings.TrimSpace(in.Note)
 		if r.State == next {
+			var actor, recordedNote string
+			if err = tx.QueryRow(ctx, `SELECT human_id,note FROM geographic_environment_release_events WHERE release_id=$1 ORDER BY occurred_at DESC,id DESC LIMIT 1`, id).Scan(&actor, &recordedNote); err != nil {
+				return err
+			}
+			if actor != p.HumanID || strings.TrimSpace(recordedNote) != note {
+				return apperr.Conflict("a different review decision is already recorded")
+			}
+			if action != "withdraw" {
+				return s.eligibleReleaseIn(ctx, tx, r)
+			}
 			return nil
 		}
 		valid := action == "verify" && r.State == "STAGED" || action == "release" && r.State == "VERIFIED" || action == "withdraw" && slices.Contains([]string{"STAGED", "VERIFIED", "RELEASED"}, r.State)
@@ -393,7 +551,7 @@ func (s Service) transition(ctx context.Context, id, action string, in ReleaseAc
 				return err
 			}
 		}
-		if err = releaseEvent(ctx, tx, r, next, p.HumanID, in.Note); err != nil {
+		if err = releaseEvent(ctx, tx, r, next, p.HumanID, note); err != nil {
 			return err
 		}
 		r.State = next

@@ -25,10 +25,11 @@ export function usePublicContext({cartography=true,loadEvents=true,regionId,geom
   const search = useSearch({ from: '/map' })
 
   const effectiveView=search.publicView
-  const saved=useMemo(()=>{const base=readPublicFilters(effectiveView);if(scope){base.filters={...base.filters,observedFrom:scope.temporal.interval.from,observedTo:scope.temporal.interval.to,view:scope.temporal.revisionView,asOf:scope.temporal.asOf??''}};return base},[effectiveView,scope?.scopeHash])
+  const selectedTime = scope?.temporal ?? analyst?.input?.temporal
+  const saved=useMemo(()=>{const base=readPublicFilters(effectiveView);if(selectedTime?.interval){base.filters={...base.filters,observedFrom:selectedTime.interval.from,observedTo:selectedTime.interval.to,view:selectedTime.revisionView,asOf:selectedTime.asOf??''}};return base},[effectiveView,selectedTime])
   const [draft, setDraft] = useState(saved.filters)
   const [filterError, setFilterError] = useState('')
-  useEffect(() => { setDraft(saved.filters); selectEvidence(''); setFilterError('') }, [effectiveView])
+  useEffect(() => { setDraft(saved.filters); selectEvidence(''); setFilterError('') }, [effectiveView,analyst?.input])
   const params = useMemo(() => ({...queryFor(saved.filters),bbox:regionId||geometry?undefined:queryFor(saved.filters).bbox,region_id:regionId||undefined,geometry}), [saved.filters,regionId,geometry])
   const temporal = useMemo(() => ({ view: params.view, as_of: params.as_of }), [params.view, params.as_of])
   const save = (filters: typeof draft) => {

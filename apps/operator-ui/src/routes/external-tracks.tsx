@@ -3,6 +3,7 @@ import { WorkbenchLink as Link, useWorkbenchRoute } from '@/features/workspace/W
 import { useQuery } from '@/lib/scopedQueries'
 import { useAPI } from '@/lib/api'
 import { useWorkspace } from '@/lib/workspaceContext'
+import {MovingHistoryLookup} from '@/features/workspace/MovingHistory'
 const control = 'min-h-10 rounded border border-edge bg-panel px-3 py-1'
 const coverageLabel = (state: string) => ({
   admitted_bounded_capture: 'Bounded capture completed',
@@ -40,6 +41,8 @@ export function ExternalTracksPage() {
     <div className="record-detail">{!value&&<div className="studio-panel"><h2 className="font-semibold">Select a record</h2><p className="ux-muted mt-3">Choose a reported track to inspect source identity, age and association history. An empty result does not establish absence.</p></div>}
     {value && <article aria-label="Selected external hypothesis" className="space-y-3 rounded border border-edge p-3">
       <h2 className="text-lg font-semibold">{value.kind} · claimed {value.identityClaim}</h2><p>{value.status} · observed {value.lastSeenAt} · age {Math.round(value.ageSeconds)} seconds</p><p>{value.meaning}</p><p>Source capture: {coverageLabel(value.coverageState)} · last attempt {value.sourceLastAttemptAt ?? 'Unavailable'} · last completed {value.sourceLastSuccessAt ?? 'None'}{value.sourceFailureCode ? ` · ${value.sourceFailureCode}` : ''}</p><p>{value.originalProducer} via {value.upstreamProvider} · {value.attribution}</p>
+      <p className="break-all">Track ID: {value.id}</p>
+      {scope.area.persistent && session.permissions.includes('observations.read') && <MovingHistoryLookup key={`${value.id}:${scope.scopeHash}`} trackId={value.id} areaRevisionId={scope.area.revisionId} from={scope.temporal.interval.from} to={scope.temporal.interval.to} cutoff={scope.temporal.asOf} />}
       <p>Reported position (WGS84): {value.reported.position.lat}, {value.reported.position.lng}. Reported speed: {value.reported.speedMps ?? 'Unavailable'} m/s; course: {value.reported.course ?? 'Unavailable'}°.</p>
       <Link to="/map" search={{ selected: `track:${value.id}` }} className="underline">Inspect position on the Public Context map</Link>
       <details><summary className="min-h-10 cursor-pointer">Provider claims & quality fields</summary><div className="grid grid-cols-1 gap-3 md:grid-cols-2"><section><h3 className="font-semibold">Provider identity and classification claims</h3><pre className="max-h-60 overflow-auto whitespace-pre-wrap">{JSON.stringify(value.reported.claims, null, 2)}</pre></section><section><h3 className="font-semibold">Reported quality and lineage</h3><pre className="max-h-60 overflow-auto whitespace-pre-wrap">{JSON.stringify(value.reported.quality, null, 2)}</pre></section></div></details>

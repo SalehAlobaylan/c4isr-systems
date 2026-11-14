@@ -1,5 +1,7 @@
 # Environment foundation implementation plan
 
+The current delivery priorities are Riyadh for detailed preparation, Saudi Arabia for national coverage and the wider Middle East for regional coverage. The three areas described below record the original installation and its regression cases. [Current geographic priorities](../../plans/README.md#geographic-priorities)
+
 **Date:** 11 November 2026. **Status:** the three reference packages are staged on Windows and Linux. Paired restore passed. Human release review and the 24-hour staging observation are open. [Installation evidence](ENVIRONMENT_FOUNDATION_EVIDENCE_2026_11_12.md) [Operating instructions](ENVIRONMENT_LIBRARY_OPERATIONS.md) **Baseline:** `aa298d3` plus the inventory and scope work documented in the [foundation analysis](ENVIRONMENT_FOUNDATION_PLAN_2026_11_11.md).
 
 ## 1. Outcome, scope and fixed defaults

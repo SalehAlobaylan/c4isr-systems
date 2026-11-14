@@ -5,6 +5,10 @@ package readiness
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"regexp"
+	"time"
+
 	"github.com/SalehAlobaylan/c4isr-systems/internal/artifacts"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/apperr"
@@ -13,16 +17,25 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"net/http"
-	"time"
 )
 
 type Worker struct {
-	Feature      string    `json:"feature"`
-	LastSeenAt   time.Time `json:"lastSeenAt"`
-	State        string    `json:"state"`
-	RuntimeBuild string    `json:"runtimeBuild,omitempty"`
+	Feature         string    `json:"feature"`
+	LastSeenAt      time.Time `json:"lastSeenAt"`
+	State           string    `json:"state"`
+	RuntimeBuild    string    `json:"runtimeBuild,omitempty"`
+	ToolchainSHA256 *string   `json:"toolchainSha256,omitempty"`
 }
+
+type WorkerHeartbeat struct {
+	Feature         string  `json:"feature"`
+	RuntimeBuild    string  `json:"runtimeBuild,omitempty"`
+	ToolchainSHA256 *string `json:"toolchainSha256,omitempty"`
+	ScratchBytes    *int64  `json:"scratchBytes,omitempty"`
+}
+
+var toolchainDigest = regexp.MustCompile(`^[0-9a-f]{64}$`)
+
 type Feature struct {
 	CountMeaning      string `json:"countMeaning,omitempty"`
 	UnclassifiedCount int    `json:"unclassifiedCount,omitempty"`
@@ -56,23 +69,21 @@ func (s Service) Mount(r chi.Router) {
 		httpx.JSON(w, 200, v)
 	})
 	r.Post("/platform/worker-heartbeats", func(w http.ResponseWriter, r *http.Request) {
-		var in struct {
-			Feature      string `json:"feature"`
-			RuntimeBuild string `json:"runtimeBuild"`
-		}
+		var in WorkerHeartbeat
 		if e := httpx.DecodeJSON(r, &in); e != nil {
 			httpx.Error(w, e)
 			return
 		}
-		if e := s.Beat(r.Context(), in.Feature, in.RuntimeBuild); e != nil {
+		if e := s.Beat(r.Context(), in); e != nil {
 			httpx.Error(w, e)
 			return
 		}
 		httpx.JSON(w, 200, map[string]string{"state": "READY"})
 	})
 }
-func (s Service) Beat(ctx context.Context, feature, build string) error {
+func (s Service) Beat(ctx context.Context, heartbeat WorkerHeartbeat) error {
 	p, r, _ := access.From(ctx)
+	feature, build := heartbeat.Feature, heartbeat.RuntimeBuild
 	if p.Kind != "service" {
 		return apperr.Forbidden("worker service identity required")
 	}
@@ -86,6 +97,13 @@ func (s Service) Beat(ctx context.Context, feature, build string) error {
 	}
 	if feature == "environment-library" && (!s.EnvironmentLibrary || r.Partition != access.PublicEvidence) {
 		return apperr.Forbidden("environment worker feature is unavailable")
+	}
+	if heartbeat.ToolchainSHA256 != nil || heartbeat.ScratchBytes != nil {
+		if feature != "environment-library" ||
+			heartbeat.ToolchainSHA256 != nil && !toolchainDigest.MatchString(*heartbeat.ToolchainSHA256) ||
+			heartbeat.ScratchBytes != nil && (*heartbeat.ScratchBytes < 0 || *heartbeat.ScratchBytes > 1<<40) {
+			return apperr.Validation("invalid environment worker telemetry")
+		}
 	}
 	if feature == "runtime" {
 		admitted := false
@@ -101,7 +119,10 @@ func (s Service) Beat(ctx context.Context, feature, build string) error {
 		build = ""
 	}
 	return db.WithTx(ctx, s.Pool, func(tx pgx.Tx) error {
-		_, e := tx.Exec(ctx, `INSERT INTO platform_worker_status(scope_id,principal_id,feature,runtime_build)VALUES($1,$2,$3,$4) ON CONFLICT(scope_id,principal_id,feature)DO UPDATE SET last_seen_at=now(),runtime_build=excluded.runtime_build`, r.ID(), p.ID, feature, build)
+		_, e := tx.Exec(ctx, `INSERT INTO platform_worker_status(scope_id,principal_id,feature,runtime_build,toolchain_sha256,scratch_bytes)
+		 VALUES($1,$2,$3,$4,$5,$6) ON CONFLICT(scope_id,principal_id,feature) DO UPDATE SET last_seen_at=now(),
+		 runtime_build=excluded.runtime_build,toolchain_sha256=excluded.toolchain_sha256,scratch_bytes=excluded.scratch_bytes`,
+			r.ID(), p.ID, feature, build, heartbeat.ToolchainSHA256, heartbeat.ScratchBytes)
 		return e
 	})
 }
@@ -181,14 +202,14 @@ func (s Service) Report(ctx context.Context) (Report, error) {
 		f.NextAction = ""
 	}
 	out.Features = append(out.Features, f)
-	rows, e := db.Scoped(s.Pool).Query(ctx, `SELECT feature,last_seen_at,runtime_build FROM platform_worker_status ORDER BY feature,principal_id`)
+	rows, e := db.Scoped(s.Pool).Query(ctx, `SELECT feature,last_seen_at,runtime_build,toolchain_sha256 FROM platform_worker_status ORDER BY feature,principal_id`)
 	if e != nil {
 		return out, e
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var v Worker
-		if e = rows.Scan(&v.Feature, &v.LastSeenAt, &v.RuntimeBuild); e != nil {
+		if e = rows.Scan(&v.Feature, &v.LastSeenAt, &v.RuntimeBuild, &v.ToolchainSHA256); e != nil {
 			return out, e
 		}
 		v.State = "STALE"

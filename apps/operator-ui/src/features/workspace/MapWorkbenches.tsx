@@ -11,7 +11,7 @@ import {EnvironmentLibrary} from './EnvironmentLibrary'
 
 const groupFor=(tool?:MapTool)=>tool==='review'||tool==='context'?'imagery':tool
 type Entry={host:WorkbenchHost;routeKey?:string;tool:MapTool;pinned:boolean}
-const cleared=(search:WorkbenchSearch,bbox?:string)=>({...search,bbox,before:undefined,after:undefined,job:undefined,assessment:undefined,id:undefined})
+const cleared=(search:WorkbenchSearch,bbox?:string)=>({...search,bbox,before:undefined,after:undefined,job:undefined,assessment:undefined,id:undefined,display:undefined,manifest:undefined,feature:undefined,layers:undefined,basemap:undefined,atlasArea:undefined,terrainPoint:undefined})
 export function MapWorkbenches({tool,host,routeKey,geography}:{tool?:MapTool;host:WorkbenchHost;routeKey?:string;geography:ReactNode}){
  const {session}=useWorkspace()
  const entries=useRef(new Map<string,Entry>()),active=groupFor(tool),current=useRef(active),[,refresh]=useReducer(v=>v+1,0)
@@ -41,7 +41,7 @@ export function MapWorkbenches({tool,host,routeKey,geography}:{tool?:MapTool;hos
     {visible&&entry.pinned&&differs&&<div><p>Adopting the map scope replaces area and period, clears scene/pair choices and export previews, and clears the selected result. Completed records retain their original inputs.</p><button className="ux-button" onClick={()=>{const next=adopt(entry);entries.current.set(key,{...entry,host:next});host.update(next.search);refresh()}}>Use current map scope</button></div>}
    </div>
    {entry.host.areaError&&<p role="alert">{entry.host.areaError}</p>}
-   {toolPermissions[entry.tool]&&!session.permissions.includes(toolPermissions[entry.tool]!)?<p role="status" className="ux-notice">This capability requires {toolPermissions[entry.tool]}. Other permitted map tools remain available.</p>:key==='systems'?<PublicSystemsWorkspace/>:key==='investigations'?<PublicSystemsWorkspace initialTab="investigations"/>:key==='coverage'?<PublicSystemsWorkspace initialTab="coverage"/>:key==='sources'?<PublicSystemsWorkspace initialTab="sources"/>:key==='jobs'?<PublicSystemsWorkspace initialTab="jobs"/>:key==='imagery'?<IntelligencePage/>:key==='weather'?<WeatherReportsPage/>:key==='tracks'?<ExternalTracksPage/>:key==='simulation'?<SimulationGateway/>:key==='environments'?<EnvironmentLibrary/>:geography}
+   {toolPermissions[entry.tool]&&!session.permissions.includes(toolPermissions[entry.tool]!)?<p role="status" className="ux-notice">This capability requires {toolPermissions[entry.tool]}. Other permitted map tools remain available.</p>:key==='systems'?<PublicSystemsWorkspace/>:key==='investigations'?<PublicSystemsWorkspace initialTab="investigations"/>:key==='coverage'?<PublicSystemsWorkspace initialTab="coverage"/>:key==='sources'?<PublicSystemsWorkspace initialTab="sources"/>:key==='jobs'?<PublicSystemsWorkspace initialTab="jobs"/>:key==='imagery'?<IntelligencePage/>:key==='weather'?<WeatherReportsPage/>:key==='tracks'?<ExternalTracksPage/>:key==='simulation'?<SimulationGateway/>:key==='environments'?(visible?<EnvironmentLibrary/>:null):geography}
   </WorkbenchContext.Provider></div>
  })}</>
 }

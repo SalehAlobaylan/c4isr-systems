@@ -49,13 +49,12 @@ jobs:
         run: |
           python -m pip install -r scripts/data/requirements-recovery.txt
           python -m unittest discover -s scripts/data -p 'test_*environment*.py' -v
-          python -m unittest discover -s scripts/ops -p test_qualify_environment_library.py -v
+          python -m unittest discover -s scripts/ops -p 'test_*environment*.py' -v
           go test -race ./internal/geoenv ./internal/artifacts
       - run: test -z "$(gofmt -l apps internal)"
       - run: go test -race ./internal/realtime ./internal/platform/presentation ./internal/platform/access ./internal/platform/httpx ./internal/platform/observability ./internal/scenarios ./internal/telemetry ./internal/tracks ./internal/geospatial ./internal/alerts ./internal/incidents ./internal/missions ./internal/commands ./internal/publicingest ./internal/publicevents ./internal/eventrules ./internal/reference ./internal/simulation ./internal/contextpackage ./internal/exerciseingest ./internal/observations ./internal/sources ./internal/artifacts ./internal/imagery ./internal/imageryanalysis ./internal/assessments ./internal/externaltracks ./internal/publiccontext ./internal/modelassets ./internal/simscene ./internal/simruntime ./internal/nativeexercise ./internal/recordings ./apps/emad-recordings
       - run: pnpm --dir apps/operator-ui build
-      - run: pnpm --dir apps/operator-ui contracts:generate
-      - run: git diff --exit-code -- apps/operator-ui/src/lib/openapi.generated.ts
+      - run: node scripts/ops/verify_generated_contracts.mjs
       - run: pnpm --package=@redocly/cli dlx redocly lint api/openapi/openapi.yaml
       - run: buf lint api/proto
       - name: Check protobuf compatibility

@@ -39,16 +39,17 @@ type StationWeather struct {
 	AltimeterHPa           *float64 `json:"altimeterHPa"`
 }
 type SourceReport struct {
-	Claim                string   `json:"claim"`
-	Country              string   `json:"country"`
-	ProviderAlertLevel   string   `json:"providerAlertLevel"`
-	CitedSource          string   `json:"citedSource"`
-	CitedSourceID        string   `json:"citedSourceId"`
-	CitedFrom            string   `json:"citedFrom"`
-	CitedTo              string   `json:"citedTo"`
-	DocumentURL          string   `json:"documentUrl"`
-	LineageKeys          []string `json:"lineageKeys"`
-	CorroborationMeaning string   `json:"corroborationMeaning"`
+	EventHistory         *EventHistory `json:"eventHistory,omitempty"`
+	Claim                string        `json:"claim"`
+	Country              string        `json:"country"`
+	ProviderAlertLevel   string        `json:"providerAlertLevel"`
+	CitedSource          string        `json:"citedSource"`
+	CitedSourceID        string        `json:"citedSourceId"`
+	CitedFrom            string        `json:"citedFrom"`
+	CitedTo              string        `json:"citedTo"`
+	DocumentURL          string        `json:"documentUrl"`
+	LineageKeys          []string      `json:"lineageKeys"`
+	CorroborationMeaning string        `json:"corroborationMeaning"`
 }
 
 func (v ContextRecord) Validate(now time.Time) error {

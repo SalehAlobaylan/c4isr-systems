@@ -13,11 +13,16 @@ import (
 
 // Config is the runtime configuration of the C4ISR server.
 type Config struct {
-	ProductProfile            string
-	EnvironmentLibraryEnabled bool
-	EnvironmentToolchain      string
-	EnvironmentSpool          string
-	EnvironmentParallel       int
+	ProductProfile                  string
+	EnvironmentLibraryEnabled       bool
+	EnvironmentToolchain            string
+	EnvironmentEnrichmentToolchain  string
+	EnvironmentObservationToolchain string
+	EnvironmentCoastalToolchain     string
+	EnvironmentDisplayToolchain     string
+	EnvironmentLayerToolchain       string
+	EnvironmentSpool                string
+	EnvironmentParallel             int
 
 	ArtifactS3Endpoint  string
 	ArtifactS3Bucket    string
@@ -188,6 +193,11 @@ func Load() (Config, error) {
 		}
 	}
 	cfg.EnvironmentToolchain = strings.TrimSpace(os.Getenv("C4ISR_ENVIRONMENT_TOOLCHAIN"))
+	cfg.EnvironmentEnrichmentToolchain = strings.TrimSpace(os.Getenv("C4ISR_ENVIRONMENT_ENRICHMENT_TOOLCHAIN"))
+	cfg.EnvironmentObservationToolchain = strings.TrimSpace(os.Getenv("C4ISR_ENVIRONMENT_OBSERVATION_TOOLCHAIN"))
+	cfg.EnvironmentCoastalToolchain = strings.TrimSpace(os.Getenv("C4ISR_ENVIRONMENT_COASTAL_TOOLCHAIN"))
+	cfg.EnvironmentDisplayToolchain = strings.TrimSpace(os.Getenv("C4ISR_ENVIRONMENT_DISPLAY_TOOLCHAIN"))
+	cfg.EnvironmentLayerToolchain = strings.TrimSpace(os.Getenv("C4ISR_ENVIRONMENT_LAYER_TOOLCHAIN"))
 	cfg.EnvironmentSpool = strings.TrimSpace(os.Getenv("C4ISR_ENVIRONMENT_SPOOL"))
 	cfg.EnvironmentParallel = 1
 	if environment == EnvironmentStaging {
@@ -231,6 +241,42 @@ func (cfg Config) Profile() string {
 func (cfg Config) MapOnly() bool { return cfg.Profile() == ProfileMap }
 
 func (cfg Config) Validate() error {
+	if d := cfg.EnvironmentLayerToolchain; d != "" {
+		raw, err := hex.DecodeString(d)
+		if err != nil || len(raw) != 32 || d != strings.ToLower(d) || d == cfg.EnvironmentDisplayToolchain ||
+			d == cfg.EnvironmentToolchain || d == cfg.EnvironmentEnrichmentToolchain ||
+			d == cfg.EnvironmentObservationToolchain || d == cfg.EnvironmentCoastalToolchain {
+			return fmt.Errorf("geographic layer generation requires its own pinned toolchain digest")
+		}
+	}
+	if d := cfg.EnvironmentCoastalToolchain; d != "" {
+		raw, err := hex.DecodeString(d)
+		if err != nil || len(raw) != 32 || d != strings.ToLower(d) || d == cfg.EnvironmentToolchain || d == cfg.EnvironmentDisplayToolchain ||
+			d == cfg.EnvironmentEnrichmentToolchain || d == cfg.EnvironmentObservationToolchain {
+			return fmt.Errorf("coastal preparation requires its own pinned toolchain digest")
+		}
+	}
+	if d := cfg.EnvironmentObservationToolchain; d != "" {
+		raw, err := hex.DecodeString(d)
+		if err != nil || len(raw) != 32 || d != strings.ToLower(d) ||
+			d == cfg.EnvironmentToolchain || d == cfg.EnvironmentDisplayToolchain || d == cfg.EnvironmentEnrichmentToolchain {
+			return fmt.Errorf("geographic observations require their own pinned toolchain digest")
+		}
+	}
+	if cfg.EnvironmentEnrichmentToolchain != "" {
+		raw, err := hex.DecodeString(cfg.EnvironmentEnrichmentToolchain)
+		if err != nil || len(raw) != 32 || cfg.EnvironmentEnrichmentToolchain != strings.ToLower(cfg.EnvironmentEnrichmentToolchain) ||
+			cfg.EnvironmentEnrichmentToolchain == cfg.EnvironmentToolchain || cfg.EnvironmentEnrichmentToolchain == cfg.EnvironmentDisplayToolchain {
+			return fmt.Errorf("geographic enrichment requires its own pinned toolchain digest")
+		}
+	}
+	if cfg.EnvironmentDisplayToolchain != "" {
+		raw, err := hex.DecodeString(cfg.EnvironmentDisplayToolchain)
+		if err != nil || len(raw) != 32 || cfg.EnvironmentDisplayToolchain != strings.ToLower(cfg.EnvironmentDisplayToolchain) ||
+			cfg.EnvironmentDisplayToolchain == cfg.EnvironmentToolchain {
+			return fmt.Errorf("geographic display generation requires its own pinned toolchain digest")
+		}
+	}
 	if cfg.EnvironmentLibraryEnabled {
 		raw, err := hex.DecodeString(cfg.EnvironmentToolchain)
 		if err != nil || len(raw) != 32 || cfg.EnvironmentToolchain != strings.ToLower(cfg.EnvironmentToolchain) || cfg.ArtifactS3Endpoint == "" {

@@ -1,6 +1,6 @@
 # EMAD product evaluation
 
-> **User scope correction, 25 October 2026:** The current phase is map/Public Context for the **Middle East and the rest of the world**, with **environment preparation only** for future simulation. The earlier recommendations below to center a pilot on Jeddah or continue a simulation pilot in parallel are superseded by the [map-first gap report](../implementation/MAP_FIRST_GAP_REPORT_2026_10_25.md) and [current scope](../../EMAD_CURRENT_SCOPE.md). Observed evidence remains a historical record; simulation design is a later discussion.
+> **User scope correction, 25 October 2026:** The current phase is map/Public Context for the **Middle East and the rest of the world**, with **environment preparation only** for future simulation. The earlier recommendations below to center a pilot on Jeddah or continue a simulation pilot in parallel are superseded by the [map-first gap report](../implementation/MAP_FIRST_PLAN.md#gap-report) and [current scope](../../EMAD_CURRENT_SCOPE.md). Observed evidence remains a historical record; simulation design is a later discussion.
 
 25 October 2026. Expert product review of the running installation, current UI/code and retained acceptance evidence. This is an assessment, not a new approved implementation plan. No application behavior or installed evidence was changed for this review.
 
@@ -17,7 +17,7 @@ The answer to “is it confusing?” is **yes**. Recent navigation work improves
 - [Installation snapshot](product-evaluation/installation-snapshot.json): read-only authenticated API inspection on 25 October, including scoped Saudi queries and ordinary navigation state.
 - [Browser walkthrough](product-evaluation/walkthrough.json): normal Home, default Map, geographic selection and context-export handoff. [Home](product-evaluation/home.png), [Map](product-evaluation/default-map.png), [scope mismatch](product-evaluation/export-context.png).
 - Current implementations of Home, Public Atlas, workbench navigation, imagery analysis, context export, Studio and scoped authorization.
-- [Recovery acceptance](../implementation/DELIVERY_RECOVERY_ACCEPTANCE.md), [one virtual-hour measurement](../implementation/evidence/recovery/one-hour-accepted-run.json) and [graphics measurement](../implementation/evidence/recovery/graphics-acceptance.json).
+- [Recovery acceptance](../implementation/HISTORICAL_RECOVERY.md#recovery-acceptance), [one virtual-hour measurement](../implementation/evidence/recovery/one-hour-accepted-run.json) and [graphics measurement](../implementation/evidence/recovery/graphics-acceptance.json).
 
 The recent implementation runs passed 84 frontend checks, all 34 relevant live checks after targeted timing/locator corrections, and 16 production real-backend browser scenarios. Those demonstrate specified behavior and important isolation properties. They do not establish that independent users understand the product, need its output or can complete valuable work unaided. I found no recorded independent usability study or pilot-outcome evidence in the inspected materials. Research outside the repository may exist.
 

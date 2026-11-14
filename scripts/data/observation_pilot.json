@@ -1,0 +1,44 @@
+{
+  "schema": "emad.observation-pilot.v1",
+  "priority": ["Riyadh detailed reference", "Saudi Arabia national coverage", "Middle East regional coverage"],
+  "radar": {
+    "use": "Inspect a dated radar backscatter layer beside the separately dated optical layer.",
+    "bounds": [46.732, 24.684, 46.792, 24.744],
+    "interval": ["2025-10-01T00:00:00Z", "2025-10-31T23:59:59Z"],
+    "collection": "sentinel-1-rtc",
+    "mode": "IW",
+    "polarization": "VV",
+    "product": "S1A_IW_GRDH_1SDV_20251024T145759_20251024T145824_061569_07B08A_rtc",
+    "etag": "\"0x8DE134151022FA6\"",
+    "quality": "Check native CRS, grid, scale, nodata and polygon coverage against STAC. No separately published layover/shadow raster.",
+    "rights": "CC BY 4.0; contains modified Copernicus Sentinel data processed by Catalyst for Microsoft Planetary Computer."
+  },
+  "hazards": {
+    "use": "Inspect flood reports missing from the installed earthquake-only GDACS adapter.",
+    "bounds": [34, 16, 56, 33],
+    "interval": ["2025-01-01T00:00:00Z", "2025-12-31T23:59:59Z"],
+    "category": "floods",
+    "quality": "Preserve provider time and geometry, group only exact referenced GDACS IDs, and label query absence as absence of reports."
+  },
+  "weather": {
+    "use": "Inspect representative temperature and horizontal wind on historical pressure levels around Riyadh.",
+    "bounds": [46, 24, 47.5, 25.5],
+    "time": "2022-10-23T12:00:00Z",
+    "pressureHPa": [850, 700],
+    "variables": ["temperature", "u_component_of_wind", "v_component_of_wind"],
+    "maxSourceBytes": 350000000,
+    "sourceSha256": {
+      ".zmetadata": "390ad861a75e0ef85788fa2963fba434e02b672d7cccabb06e95be543c04f833",
+      "latitude/0": "ad2559188f8603a7a136eb4b81c1e96a4a78549a184b6e09def2a60a78631c25",
+      "longitude/0": "7942ebac63ba4e69e05575019aaebe2b2ebb927b316590cac1dcfc7eb08f09ee",
+      "level/0": "ac9e88edcb0fc6731acc62a7227d148972902796e519a0496381b5c599f686e8",
+      "time/7": "7732d1fa00732a32a26a5984b7369084fc0e4ef424a0ffaab5930cdb2d9a54aa",
+      "surface_pressure/559356.0.0": "6b472814092dbb299619503a605327a8cd655c5b1452178bc2b314e04bb12497",
+      "temperature/559356.0.0.0": "5fdaf0ce3433f1fd1ae503e0e9a38b75ebcee2a1825b149a28ffb641d6253183",
+      "u_component_of_wind/559356.0.0.0": "086e56b7967a05cf8c7bc69f1ad1a531c9fcacc09e1f9d79692fd147e01b0d14",
+      "v_component_of_wind/559356.0.0.0": "3032ce8f3cceca688e135ed241f5ea7f2c758049e1e2117e3abae255c8ac5c16"
+    },
+    "quality": "Native 0.25-degree samples compared directly against the retained source chunks, with below-ground samples masked.",
+    "rights": "Copernicus Climate Change Service ERA5. Contains modified Copernicus Climate Change Service information (2022)."
+  }
+}

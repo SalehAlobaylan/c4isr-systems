@@ -22,6 +22,7 @@ type RetainedAdmission struct {
 	Rights              publicingest.Rights `json:"rights"`
 	Enabled             bool                `json:"enabled"`
 	ExpectedRevisionID  string              `json:"expectedRevisionId,omitempty"`
+	IntendedUse         string              `json:"intendedUse,omitempty"`
 }
 
 func (s Service) admitRetained(ctx context.Context, sourceID string, in RetainedAdmission) (publicingest.Admission, error) {
@@ -43,6 +44,7 @@ func (s Service) admitRetained(ctx context.Context, sourceID string, in Retained
 	}
 	now := time.Now().UTC()
 	input := publicingest.AdmissionInput{
+		AnalystQuestion:  in.IntendedUse,
 		OriginalProducer: in.OriginalProducer, UpstreamProvider: in.UpstreamProvider, Dataset: in.Dataset, ProductVersion: in.ProductVersion,
 		CoverageDescription: in.CoverageDescription, Rights: in.Rights, Enabled: in.Enabled, RevisionPolicy: "content_hash",
 		ConnectorID: "geographic-offline-intake", ConnectorPrincipalID: "geographic-offline-intake",

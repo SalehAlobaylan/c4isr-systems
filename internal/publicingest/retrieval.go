@@ -88,7 +88,7 @@ func NewRegistry(entries []Location) (Registry, error) {
 		if u.Port() != "" && u.Port() != "443" {
 			return nil, errors.New("connector locations require HTTPS port 443")
 		}
-		if (entry.Adapter != "emad-json-page-v1" && entry.Adapter != USGSAdapter && entry.Adapter != FIRMSAdapter && entry.Adapter != STACAdapter && entry.Adapter != EarthSearchAdapter && entry.Adapter != OpenSkyAdapter && entry.Adapter != AISAdapter && entry.Adapter != METARAdapter && !isGDACS(entry.Adapter)) || entry.MaxRequestsPerDay < 1 || entry.MaxRequestsPerDay > 10000 {
+		if (entry.Adapter != "emad-json-page-v1" && entry.Adapter != USGSAdapter && entry.Adapter != FIRMSAdapter && entry.Adapter != STACAdapter && entry.Adapter != EarthSearchAdapter && entry.Adapter != OpenSkyAdapter && entry.Adapter != AISAdapter && entry.Adapter != METARAdapter && entry.Adapter != EONETAdapter && !isGDACS(entry.Adapter)) || entry.MaxRequestsPerDay < 1 || entry.MaxRequestsPerDay > 10000 {
 			return nil, errors.New("unsupported connector adapter or quota")
 		}
 		if (entry.Adapter == METARAdapter && entry.URL != METARURL) || (entry.Adapter == GDACSAdapter && entry.URL != GDACSURL) || ((entry.Adapter == METARAdapter || entry.Adapter == GDACSAdapter) && entry.AuthTokenEnv != "") {
@@ -96,6 +96,9 @@ func NewRegistry(entries []Location) (Registry, error) {
 		}
 		if entry.Adapter == GDACSRSSAdapter && (entry.URL != GDACSRSSURL || entry.AuthTokenEnv != "") {
 			return nil, errors.New("GDACS RSS requires its fixed credential-free endpoint")
+		}
+		if entry.Adapter == EONETAdapter && (entry.URL != EONETURL || entry.AuthTokenEnv != "" || entry.MaxRequestsPerDay > 24) {
+			return nil, errors.New("EONET requires its fixed public endpoint and bounded quota")
 		}
 		if entry.Adapter == OpenSkyAdapter && (entry.URL != OpenSkyURL || entry.AuthTokenEnv != "") {
 			return nil, errors.New("OpenSky requires its fixed bounded endpoint and native OAuth or anonymous access")
@@ -312,6 +315,9 @@ func (f *HTTPFetcher) Fetch(ctx context.Context, location Location, in FetchRequ
 	if location.Adapter == GDACSRSSAdapter {
 		requestURL = GDACSRSSURL
 	}
+	if location.Adapter == EONETAdapter {
+		requestURL = eonetURL(in)
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, requestURL, nil)
 	if err != nil {
 		return page, meta, &RetrievalError{Code: "invalid_location"}
@@ -400,6 +406,13 @@ func (f *HTTPFetcher) Fetch(ctx context.Context, location Location, in FetchRequ
 		return page, meta, &RetrievalError{Code: "provider_auth"}
 	}
 	meta.ResponseHash = firmsHash(raw)
+	if location.Adapter == EONETAdapter {
+		meta.Discontinuous = true
+		meta.CoverageMeaning = "Returned EONET flood reports only; empty results do not establish absence of hazards."
+		page, err = DecodeEONET(raw, in)
+		meta.SelectionExcluded = page.ExcludedRecords
+		return page, meta, err
+	}
 	if location.Adapter == METARAdapter || isGDACS(location.Adapter) {
 		meta.Discontinuous = true
 		meta.CoverageMeaning = "Bounded returned station samples or provider bulletins; selection window is not guaranteed spatial/temporal reception or hazard coverage."

@@ -4,7 +4,7 @@
 
 > **Historical implementation baseline:** This file retains the original phase plan and its reported completion status. For future work under EMAD's two-pillar direction, use [EMAD Implementation Plan v2](EMAD_IMPLEMENTATION_PLAN_v2.md), derived from the v2 architecture and data strategy. The former Phases 22–26 do not define the current roadmap; live hardware integration is outside its scope.
 
-> **Current implementation:** The v2 plan has delivered F0–S3 and the selected S4.1 increment within documented acceptance scopes. See the [implementation review and fixes](docs/implementation/PLAN_REVIEW.md) for current coverage, evidence and remaining deployment/S4 limits.
+> **Current implementation:** The v2 plan has delivered F0–S3 and the selected S4.1 increment within documented acceptance scopes. See the [implementation review and fixes](docs/implementation/HISTORICAL_RECOVERY.md#plan-review) for current coverage, evidence and remaining deployment/S4 limits.
 
 # C4ISR-Oriented Platform Implementation Plan
 
@@ -1448,9 +1448,9 @@ It is a credible C4ISR-oriented software foundation.
 
 ## P3.3 delivery update
 
-P3.3 is complete within its documented fixture/protocol acceptance scope. Apply migration 33 after 32. The next active v2 task is S1.1 (model and environment asset registry); live moving-provider activation gates remain open. See [implementation, acceptance and rollout](docs/implementation/P3_3_WEATHER_AND_REPORTS.md).
+P3.3 is complete within its documented fixture/protocol acceptance scope. Apply migration 33 after 32. The next active v2 task is S1.1 (model and environment asset registry); live moving-provider activation gates remain open. See [implementation, acceptance and rollout](docs/implementation/HISTORICAL_DELIVERY.md#p3-3).
 
 
 ## S1.1 delivery update
 
-Historical S1.1 checkpoint: that delivery accepted the model/environment asset registry and introduced migration 34. Engine selection and M4 were pending then; the current v2 plan and review linked above record their subsequent completion. See [implementation, acceptance and rollout](docs/implementation/S1_1_MODEL_ASSET_REGISTRY.md).
+Historical S1.1 checkpoint: that delivery accepted the model/environment asset registry and introduced migration 34. Engine selection and M4 were pending then; the current v2 plan and review linked above record their subsequent completion. See [implementation, acceptance and rollout](docs/implementation/HISTORICAL_DELIVERY.md#s1-1).

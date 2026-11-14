@@ -184,7 +184,7 @@ func (s *Service) Load(ctx context.Context, id string) (Bundle, error) {
 	}
 	var raw []byte
 	var b Bundle
-	err := platformdb.Scoped(s.pool).QueryRow(ctx, `SELECT bundle FROM context_packages WHERE id=$1`, id).Scan(&raw)
+	err := platformdb.Scoped(s.pool).QueryRow(ctx, `SELECT bundle FROM context_packages WHERE id=$1 AND document->>'schema' IS DISTINCT FROM $2`, id, geographicSchema).Scan(&raw)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return b, apperr.NotFound("context package", "unavailable")
 	}
@@ -203,7 +203,7 @@ func (s *Service) List(ctx context.Context) ([]map[string]any, error) {
 	if err := require(ctx); err != nil {
 		return nil, err
 	}
-	rows, err := platformdb.Scoped(s.pool).Query(ctx, `SELECT id,document FROM context_packages WHERE emad_content_visible('package',id) ORDER BY id LIMIT 64`)
+	rows, err := platformdb.Scoped(s.pool).Query(ctx, `SELECT id,document FROM context_packages WHERE document->>'schema' IS DISTINCT FROM $1 AND emad_content_visible('package',id) ORDER BY id LIMIT 64`, geographicSchema)
 	if err != nil {
 		return nil, err
 	}

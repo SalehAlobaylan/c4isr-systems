@@ -1,0 +1,111 @@
+paths:
+  /api/v1/context-packages/geographic:
+    post:
+      operationId: freezeGeographicContext
+      summary: Freeze an exact geographic release and selected reported observations
+      description: Requires a human with context.export, observations.read, environments.read and all dependency source grants. The scoped read must contain available event membership and use the exact release area. Original and current policies must permit geographic context export.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/GeographicContextInput'}
+      responses:
+        '201':
+          description: Immutable handoff manifest and its canonical location
+          headers:
+            Location: {schema: {type: string}}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/GeographicContextHandoff'}
+        '4XX': {description: Handoff denied or a dependency is unavailable, content: {application/json: {schema: {$ref: './openapi.yaml#/components/schemas/Error'}}}}
+  /api/v1/context-packages/{id}/geographic:
+    get:
+      operationId: getGeographicContext
+      summary: Reopen the same geographic handoff while dependencies remain permitted
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Original frozen manifest, content: {application/json: {schema: {$ref: '#/components/schemas/GeographicContextHandoff'}}}}
+        '4XX': {description: A dependency is unavailable or access changed, content: {application/json: {schema: {$ref: './openapi.yaml#/components/schemas/Error'}}}}
+components:
+  schemas:
+    GeographicContextDependency:
+      type: object
+      required: [releaseId, manifestSha256, displays]
+      properties:
+        releaseId: {type: string}
+        manifestSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        displays:
+          type: array
+          maxItems: 6
+          items:
+            type: object
+            required: [id, sha256]
+            properties:
+              id: {type: string}
+              sha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+    GeographicContextInput:
+      type: object
+      required: [requestKey, geography, readId, evidenceIds, missingData]
+      properties:
+        requestKey: {type: string, maxLength: 128}
+        geography: {$ref: '#/components/schemas/GeographicContextDependency'}
+        readId: {type: string}
+        evidenceIds: {type: array, maxItems: 200, uniqueItems: true, items: {type: string}}
+        movingTrackId: {type: string, maxLength: 128, description: Required only when selecting exact moving reports.}
+        movingEvidenceIds: {type: array, maxItems: 200, uniqueItems: true, items: {type: string}}
+        missingData: {type: string, const: explicit_unavailable}
+    GeographicContextHandoff:
+      type: object
+      required: [schema, id, intentSha256, geography, scope, readId, queryFingerprint, missingData, selectionMeaning, observedWindow, createdAt, expiresAt, observations, terms]
+      properties:
+        schema: {type: string, const: emad.geographic-context.v1}
+        id: {type: string}
+        intentSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        geography: {$ref: '#/components/schemas/GeographicContextDependency'}
+        scope: {$ref: './analyst-scope.yaml#/components/schemas/ScopeSnapshot'}
+        readId: {type: string}
+        queryFingerprint: {type: string}
+        missingData: {type: string, const: explicit_unavailable}
+        selectionMeaning: {type: string}
+        observedWindow:
+          type: object
+          required: [from, to]
+          properties:
+            from: {type: string, format: date-time}
+            to: {type: string, format: date-time}
+        availabilityCutoff: {type: string, format: date-time}
+        createdAt: {type: string, format: date-time}
+        expiresAt: {type: string, format: date-time}
+        moving: {$ref: './moving-history.yaml#/components/schemas/FrozenMoving'}
+        observations:
+          type: array
+          items:
+            type: object
+            required: [evidenceId, sourceId, admissionId, providerRecordId, providerRevision, contentSha256, retrievedAt, availableAt, reported]
+            properties:
+              evidenceId: {type: string}
+              sourceId: {type: string}
+              admissionId: {type: string}
+              providerRecordId: {type: string}
+              providerRevision: {type: string}
+              contentSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+              retrievedAt: {type: string, format: date-time}
+              availableAt: {type: string, format: date-time}
+              providerUpdatedAt: {type: string, format: date-time}
+              reported: {type: object, additionalProperties: true}
+              providerReport: {$ref: './openapi.yaml#/components/schemas/ContextRecord'}
+        terms:
+          type: array
+          items:
+            type: object
+            required: [sourceId, admissionId, currentAdmissionId, rightsId, attribution, termsUrl, legalBasis]
+            properties:
+              sourceId: {type: string}
+              admissionId: {type: string}
+              currentAdmissionId: {type: string}
+              rightsId: {type: string}
+              attribution: {type: string}
+              termsUrl: {type: string}
+              legalBasis: {type: string}
+              expiresAt: {type: string, format: date-time}

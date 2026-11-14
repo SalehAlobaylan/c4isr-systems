@@ -1,0 +1,13 @@
+groups:
+  - name: c4isr-environment-scraper
+    rules:
+      - alert: C4ISREnvironmentScrapeUnavailable
+        expr: up{job="c4isr-environment"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          component: environment-monitoring
+          owner: platform-operations
+          runbook: docs/implementation/ENVIRONMENT_LIBRARY_OPERATIONS.md#inspect-queue-and-storage-health
+        annotations:
+          summary: The scoped environment metrics endpoint is unavailable

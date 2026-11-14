@@ -528,9 +528,12 @@
       "bytes": 2277
     },
     {
-      "path": "docs/implementation/PLAN_REVIEW.md",
+      "path": "docs/implementation/HISTORICAL_RECOVERY.md",
       "sha256": "136a2d80553d919a6cee6d45ff11797a79dd476fbe1396a8bd0b2caf5b066277",
-      "bytes": 13183
+      "bytes": 13183,
+      "consolidatedFrom": "docs/implementation/HISTORICAL_RECOVERY.md#plan-review",
+      "consolidatedSection": "#plan-review",
+      "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
     },
     {
       "path": "README.md",

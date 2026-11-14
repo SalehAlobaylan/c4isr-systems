@@ -1,9 +1,11 @@
-"""Prepare private real-data candidates from the three retained acceptance areas."""
+"""Prepare a private reference candidate from retained geographic inputs."""
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
+import re
 import shutil
 import zipfile
 
@@ -18,6 +20,7 @@ ACCEPTANCE_AREAS = {
     "avignon": [4.82, 43.95, 4.84, 43.97],
 }
 DEM_REFERENCE = "https://dataspace.copernicus.eu/explore-data/data-collections/copernicus-contributing-missions/collections-description/COP-DEM"
+BOUND_KEYS = ("west", "south", "east", "north")
 
 
 def document(path):
@@ -28,25 +31,51 @@ def original(path):
     return document(path.with_suffix(path.suffix + ".receipt.json"))
 
 
-def stage(name, output, retained):
+def candidate_area(name, profile):
+    if profile is None:
+        if name not in ACCEPTANCE_AREAS:
+            raise ValueError("Supply an area profile for a new candidate")
+        return ACCEPTANCE_AREAS[name], name + "-candidate"
+    if profile["schema"] != "emad.environment-candidate-area.v1" or profile["key"] != name:
+        raise ValueError("The area profile must match the candidate key")
+    revision = profile["revisionId"]
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,79}", revision):
+        raise ValueError("Expected a versioned area identifier")
+    bounds = [profile["area"][key] for key in BOUND_KEYS]
+    if any(type(value) not in (int, float) or not math.isfinite(value) for value in bounds):
+        raise ValueError("Area coordinates must be finite numbers")
+    west, south, east, north = bounds
+    if not (-180 <= west < east <= 180 and -85 <= south < north <= 85 and east - west < 180):
+        raise ValueError("Expected bounded longitude-first coordinates")
+    return bounds, revision
+
+
+def stage(name, output, retained, profile=None, imagery_capture=None):
     import rasterio
     from shapely.geometry import box, mapping
 
-    area = mapping(box(*ACCEPTANCE_AREAS[name]))
+    bounds, revision = candidate_area(name, profile)
+    area = mapping(box(*bounds))
     dem = (LOCAL if name == "jeddah" else retained) / "raw" / f"{name}-copdem30.tif"
     geoid = LOCAL / "raw/us_nga_egm08_25.tif"
     osm = retained / "raw/avignon-buffered.osm" if name == "avignon" else LOCAL / "raw/gcc-states.osm.pbf"
-    source_root = LOCAL if name == "jeddah" else ISOLATED
-    captures = []
-    for p in (source_root / "imagery").glob("*/capture.json"):
-        aoi = document(p)["aoi"]
-        if [aoi[k] for k in ("west", "south", "east", "north")] == ACCEPTANCE_AREAS[name]:
-            captures.append(p.parent)
-    if not captures:
-        raise ValueError(f"No retained imagery covers {name}")
-    chosen = max(captures, key=lambda folder: document(folder / "scene.json")["acquiredAt"])
+    if imagery_capture is None:
+        source_root = LOCAL if name == "jeddah" else ISOLATED
+        captures = [p.parent for p in (source_root / "imagery").glob("*/capture.json")
+                    if [document(p)["aoi"][key] for key in BOUND_KEYS] == bounds]
+        if not captures:
+            raise ValueError(f"No retained imagery covers {name}")
+        imagery_capture = max(captures, key=lambda folder: document(folder / "scene.json")["acquiredAt"])
+    capture = document(imagery_capture / "capture.json")
+    if capture["schema"] != "emad.imagery-capture.v1" or capture["synthetic"] is not False:
+        raise ValueError("Expected a retained real-pixel capture")
+    if [capture["aoi"][key] for key in BOUND_KEYS] != bounds:
+        raise ValueError("The retained capture and study-area bounds differ")
+    chosen = imagery_capture
     scene = document(chosen / "scene.json")
     receipts = document(chosen / "receipts.json")
+    if capture["sceneId"] != scene["id"] or capture["receipts"] != receipts:
+        raise ValueError("Capture receipt and retained scene metadata disagree")
     files = []
 
     def add(path, receipt, layer, fmt, producer, edition, data_time, datum, semantics, uncertainty, evidence):
@@ -90,7 +119,7 @@ def stage(name, output, retained):
     files.sort(key=lambda item: item[1]["id"])
     profile = "reference-context-v1"
     recipe = {"schema": "emad.environment-recipe.v1", "toolchainSha256": toolchain(),
-              "profile": {"id": profile}, "area": {"revisionId": name + "-candidate", "geometry": area},
+              "profile": {"id": profile}, "area": {"revisionId": revision, "geometry": area},
               "inputs": [asset for _, asset in files]}
     recipe["inputSha256"] = hashlib.sha256(encoded(recipe)).hexdigest()
     output.mkdir(parents=True, exist_ok=False)
@@ -102,6 +131,12 @@ def stage(name, output, retained):
         except OSError:
             shutil.copyfile(path, dest)
     (output / "recipe.json").write_bytes(encoded(recipe))
+    evidence = output / "source-evidence"
+    evidence.mkdir()
+    for filename in ("capture.json", "scene.json", "receipts.json"):
+        shutil.copyfile(chosen / filename, evidence / filename)
+    for path in (dem, geoid, osm):
+        shutil.copyfile(path.with_suffix(path.suffix + ".receipt.json"), evidence / (path.name + ".receipt.json"))
     prepare(output)
     result = verify(output / "prepared.zip")
     result.update(area=name, releaseState="PRIVATE_CANDIDATE", authority="No shared source admission or release approval recorded")
@@ -129,12 +164,19 @@ def rebuild_candidate(root):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("area", choices=ACCEPTANCE_AREAS)
+    parser.add_argument("area")
+    parser.add_argument("--area-profile", type=Path, help="Versioned bounds for a new retained candidate")
+    parser.add_argument("--imagery-capture", type=Path, help="Directory with a retained capture for the exact study area")
     parser.add_argument("--retained", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--rebuild", action="store_true", help="Verify the private candidate by rebuilding from a fresh directory")
     args = parser.parse_args()
-    stage(args.area, args.output, args.retained)
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,79}", args.area):
+        parser.error("Expected a valid study-area key")
+    if args.area_profile is not None and args.imagery_capture is None:
+        parser.error("A new area profile requires an explicit retained imagery capture")
+    stage(args.area, args.output, args.retained,
+          document(args.area_profile) if args.area_profile else None, args.imagery_capture)
     if args.rebuild:
         rebuild_candidate(args.output)
 

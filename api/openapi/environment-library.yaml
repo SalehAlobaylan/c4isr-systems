@@ -1,4 +1,74 @@
 paths:
+  /api/v1/environment-sources/{id}/impact:
+    get:
+      operationId: getEnvironmentSourceImpact
+      summary: Review retained geographic source policy and dependent releases
+      description: Requires environments.manage and sources.manage. Dependencies remain available under source grants after policy disablement.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: after, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: Scoped inventory and at most 20 dependent release identities
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnvironmentSourceImpact'}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-operations/storage:
+    get:
+      operationId: getEnvironmentStorageBacklog
+      summary: Inspect pending geographic uploads and unreclaimed objects
+      description: Requires environments.manage. The report never includes private object keys.
+      parameters:
+        - {name: after, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: At most 50 visible storage reservations or tombstones
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnvironmentStorageBacklog'}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/quality-report:
+    get:
+      operationId: getStructuredEnvironmentQuality
+      summary: Read source, native sample and coordinate quality evidence
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Quality evidence for the visible immutable manifest
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnvironmentQualityReport'}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-operations/metrics:
+    get:
+      operationId: getEnvironmentOperationsMetrics
+      summary: Read scoped geographic operations metrics
+      description: Requires operational.read and an authorized environment steward or worker identity.
+      responses:
+        '200':
+          description: Prometheus gauges derived from persisted geographic state
+          content:
+            text/plain:
+              schema: {type: string}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
   /api/v1/environment-sources/{id}/admissions:
     post:
       operationId: admitRetainedGeographicSource
@@ -290,14 +360,35 @@ paths:
     get:
       operationId: downloadEnvironmentOriginal
       summary: Download environment original
+      description: Authorization is checked per request. Protected responses use no-store. An If-Range mismatch returns the full representation. Interrupted responses must be retried and verified against the strong SHA-256 ETag and length.
       parameters:
         - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+        - &geographic_range {name: Range, in: header, schema: {type: string}, description: One satisfiable byte range}
+        - &geographic_if_range {name: If-Range, in: header, schema: {type: string}, description: Exact strong ETag required to reuse a partial download}
       responses:
         '200':
           description: Authorized retained object
+          headers: &geographic_download_headers
+            ETag: {schema: {type: string}, description: Quoted SHA-256 of the full object}
+            Accept-Ranges: {schema: {type: string, enum: [bytes]}}
+            Content-Length: {schema: {type: integer, format: int64}}
+            Content-Disposition: {schema: {type: string}, description: Attachment with a generated filename}
+            Cache-Control: {schema: {type: string, enum: [no-store]}}
           content:
             application/octet-stream:
               schema: {"type":"string","format":"binary"}
+        '206': &geographic_partial
+          description: One range of the authorized retained object
+          headers:
+            <<: *geographic_download_headers
+            Content-Range: {schema: {type: string}}
+          content:
+            application/octet-stream:
+              schema: {type: string, format: binary}
+        '416': &geographic_unsatisfiable
+          description: Range is unsupported or unsatisfiable
+          headers:
+            Content-Range: {schema: {type: string}}
         '4XX':
           description: Request rejected
           content:
@@ -331,6 +422,7 @@ paths:
       parameters:
         - {"name":"after","in":"query","schema":{"type":"string"}}
         - {"name":"build","in":"query","schema":{"type":"string"}}
+        - {"name":"source","in":"query","schema":{"type":"string"},"description":"Limit to visible releases that depend on this authorized source"}
       responses:
         '200':
           description: Scoped environment library result
@@ -376,6 +468,51 @@ paths:
           content:
             application/json:
               schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/lineage:
+    get:
+      operationId: getEnvironmentLineage
+      summary: Get release lineage and effective input permissions
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200':
+          description: Frozen release lineage under current source authorization
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnvironmentLineage'}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/decisions:
+    get:
+      operationId: getEnvironmentDecisions
+      summary: Read the immutable release decision history
+      description: Requires environment read and review authority and the release's source scope. History remains available to reviewers after withdrawal.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Decisions in recorded order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [state, manifestSha256, note, occurredAt]
+                  properties:
+                    state: {type: string}
+                    manifestSha256: {type: string, pattern: '^[a-f0-9]{64}$'}
+                    humanId: {type: string}
+                    note: {type: string}
+                    occurredAt: {type: string, format: date-time}
+        '4XX':
+          description: Decision history unavailable under the current scope
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
   /api/v1/environment-releases/{id}/quality:
     get:
       operationId: getEnvironmentQuality
@@ -413,15 +550,21 @@ paths:
   /api/v1/environment-releases/{id}/prepared:
     get:
       operationId: downloadEnvironmentPrepared
+      description: Authorization is checked on each full or range request. Compare a resumed response with the original strong SHA-256 ETag and validate Content-Range, final length and digest before saving the package.
       summary: Download environment prepared
       parameters:
         - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+        - *geographic_range
+        - *geographic_if_range
       responses:
         '200':
           description: Authorized retained object
+          headers: *geographic_download_headers
           content:
             application/octet-stream:
               schema: {"type":"string","format":"binary"}
+        '206': *geographic_partial
+        '416': *geographic_unsatisfiable
         '4XX':
           description: Request rejected
           content:
@@ -512,6 +655,193 @@ paths:
               schema: {$ref: './openapi.yaml#/components/schemas/Error'}
 components:
   schemas:
+    EnvironmentSourceImpact:
+      type: object
+      required: [sourceId, sourceStatus, currentPolicy, retainedInputs, retainedBytes, pendingInputs, tombstones, releases]
+      properties:
+        sourceId: {type: string}
+        sourceStatus: {type: string}
+        currentPolicy:
+          type: object
+          required: [id, profileRevisionId, approvedAt, approvedBy, productVersion, enabled, rights, policy]
+          properties:
+            id: {type: string}
+            profileRevisionId: {type: string}
+            approvedAt: {type: string, format: date-time}
+            approvedBy: {type: string}
+            analystQuestion: {type: string}
+            productVersion: {type: string}
+            enabled: {type: boolean}
+            rights: {type: object, additionalProperties: true}
+            policy: {type: object, additionalProperties: true}
+        retainedInputs: {type: integer}
+        retainedBytes: {type: integer}
+        pendingInputs: {type: integer}
+        tombstones: {type: integer}
+        nextExpiry: {type: string, format: date-time}
+        releases:
+          type: object
+          required: [items]
+          properties:
+            next: {type: string}
+            items:
+              type: array
+              items:
+                type: object
+                required: [id, manifestSha256, state, displays]
+                properties:
+                  id: {type: string}
+                  manifestSha256: {type: string}
+                  state: {type: string}
+                  displays: {type: integer}
+    EnvironmentStorageBacklog:
+      type: object
+      required: [items]
+      properties:
+        next: {type: string}
+        items:
+          type: array
+          items:
+            type: object
+            required: [assetId, state, bytes, retainUntil, purgeAttempts]
+            properties:
+              assetId: {type: string}
+              releaseId: {type: string}
+              displayId: {type: string}
+              buildId: {type: string}
+              state: {type: string}
+              failureCode: {type: string}
+              bytes: {type: integer}
+              retainUntil: {type: string, format: date-time}
+              uploadUntil: {type: string, format: date-time}
+              purgeRetryAt: {type: string, format: date-time}
+              purgeAttempts: {type: integer}
+    EnvironmentProfileContract:
+      type: object
+      required: [schema, profileId, maxComponents, maxInputs, maxInputBytes, latitudeLimit, longitudeSpanLimit, coordinateLimitM, egm2008GridSha256, horizontalReference, rasterMask, layers]
+      properties:
+        schema: {type: string}
+        profileId: {type: string}
+        maxComponents: {type: integer}
+        maxInputs: {type: integer}
+        maxInputBytes: {type: integer}
+        latitudeLimit: {type: integer}
+        longitudeSpanLimit: {type: integer}
+        coordinateLimitM: {type: number}
+        egm2008GridSha256: {type: string}
+        horizontalReference: {type: string}
+        rasterMask: {type: string}
+        layers:
+          type: array
+          items:
+            type: object
+            required: [layer, required, formats, meaning]
+            properties:
+              layer: {type: string}
+              required: {type: boolean}
+              formats: {type: array, items: {type: string}}
+              verticalDatums: {type: array, items: {type: string}}
+              meaning: {type: string}
+    EnvironmentQualityReport:
+      type: object
+      required: [schema, manifestSha256, profileId, coordinateCheck, physicalAccuracy, frame, sources, members]
+      properties:
+        schema: {type: string}
+        manifestSha256: {type: string}
+        profileId: {type: string}
+        profileContractSha256: {type: string, description: Empty for legacy releases that did not pin a contract digest}
+        profileContract: {$ref: '#/components/schemas/EnvironmentProfileContract'}
+        coordinateCheck:
+          type: object
+          required: [maximumErrorM, limitM, statistic]
+          properties:
+            maximumErrorM: {type: number}
+            limitM: {type: number}
+            statistic: {type: string}
+        physicalAccuracy: {type: string}
+        frame: {type: object, additionalProperties: true}
+        coverage:
+          type: array
+          items:
+            type: object
+            required: [member, layer, state]
+            properties:
+              member: {type: string}
+              layer: {type: string}
+              state: {type: string, enum: [UNKNOWN, SAMPLE_MASK_RECORDED, FEATURE_COUNT_RECORDED]}
+              registration: {type: string}
+              component: {type: [integer, 'null']}
+              selectedSamples: {type: integer}
+              validSamples: {type: integer}
+              validFraction: {type: number}
+              featureCount: {type: integer}
+        sources:
+          type: array
+          items:
+            type: object
+            required: [assetId, layer, dataTime, horizontalCrs, verticalDatum, nativeResolution, providerUncertainty, semantics]
+            properties:
+              assetId: {type: string}
+              layer: {type: string}
+              dataTime: {type: string}
+              horizontalCrs: {type: string}
+              verticalDatum: {type: string}
+              nativeResolution: {type: string}
+              providerUncertainty: {type: string}
+              semantics: {type: string}
+        members:
+          type: array
+          items:
+            type: object
+            required: [name, layer, sha256, bytes]
+            properties:
+              name: {type: string}
+              layer: {type: string}
+              sha256: {type: string}
+              bytes: {type: integer}
+              inputId: {type: string}
+              component: {type: [integer, 'null']}
+              details: {type: [object, 'null'], additionalProperties: true}
+    EnvironmentLineage:
+      type: object
+      required: [releaseId, manifestSha256, inputs, members]
+      properties:
+        releaseId: {type: string}
+        manifestSha256: {type: string}
+        inputs:
+          type: array
+          items: {$ref: '#/components/schemas/EnvironmentLineageInput'}
+        members:
+          type: array
+          items:
+            type: object
+            required: [name, layer, sha256, bytes]
+            properties:
+              name: {type: string}
+              layer: {type: string}
+              sha256: {type: string}
+              bytes: {type: integer}
+              inputId: {type: string}
+    EnvironmentLineageInput:
+      type: object
+      required: [assetId, sourceId, admissionId, currentAdmissionId, sha256, bytes, representation, attribution, retainUntil, originalDownload]
+      properties:
+        assetId: {type: string}
+        sourceId: {type: string}
+        admissionId: {type: string}
+        currentAdmissionId: {type: string}
+        sha256: {type: string}
+        bytes: {type: integer}
+        referenceId: {type: string}
+        sceneId: {type: string}
+        representation: {$ref: '#/components/schemas/EnvironmentRepresentation'}
+        attribution: {type: string}
+        retainUntil: {type: string, format: date-time}
+        policyExpiresAt: {type: string, format: date-time}
+        originalDownload: {type: boolean, description: 'Source policy allows original distribution, subject to caller download permissions'}
+        viewerExport: {type: boolean}
+        contextExport: {type: boolean}
+        parentState: {type: string, enum: [RETAINED_INPUT, LINKED, UNAVAILABLE]}
     RetainedGeographicAdmission:
       type: object
       required: [originalProducer, upstreamProvider, dataset, productVersion, coverageDescription, area, rights, enabled]
@@ -532,6 +862,7 @@ components:
         rights: {type: object, additionalProperties: true}
         enabled: {type: boolean}
         expectedRevisionId: {type: string}
+        intendedUse: {type: string, maxLength: 1000}
     EnvironmentProfile:
       type: object
       required: [id, name, requiredLayers]
@@ -540,6 +871,8 @@ components:
         name: {"type":"string"}
         requiredLayers: {"type":"array","items":{"type":"string"}}
         optionalLayers: {"type":"array","items":{"type":"string"}}
+        contract: {$ref: '#/components/schemas/EnvironmentProfileContract'}
+        contractSha256: {type: string, pattern: '^[a-f0-9]{64}$'}
     EnvironmentDefinitionInput:
       type: object
       required: [name, areaRevisionId, profileId, assetIds, expectedRevision]
@@ -577,7 +910,7 @@ components:
         dataTime: {"type":"string"}
         retrievedAt: {"type":"string"}
         crs: {"type":"string"}
-        verticalDatum: {"type":"string"}
+        verticalDatum: {"type":"string","description":"Source vertical reference. Examples include EGM2008, ellipsoid, above-ground for relative heights, and not-applicable for categorical rasters."}
         nativeResolution: {"type":"string"}
         semantics: {"type":"string"}
         uncertainty: {"type":"string"}
@@ -625,6 +958,17 @@ components:
         inputs: {"type":"array","items":{"$ref":"#/components/schemas/EnvironmentAsset"}}
         inputBytes: {"type":"integer"}
         rebuildAllowed: {"type":"boolean"}
+        profileContractSha256: {type: string, pattern: '^[a-f0-9]{64}$'}
+        coverage:
+          type: array
+          description: Declared footprint coverage prior to valid-sample checks
+          items:
+            type: object
+            required: [layer, required, status]
+            properties:
+              layer: {type: string}
+              required: {type: boolean}
+              status: {type: string, enum: [NO_ELIGIBLE_INPUT, DECLARED_COVERED, DECLARED_INCOMPLETE]}
     EnvironmentBuildInput:
       type: object
       required: [requestKey, revision]
@@ -643,6 +987,7 @@ components:
         failureCode: {"type":"string"}
         createdAt: {"type":"string"}
         inputSha256: {"type":"string"}
+        displayId: {"type":"string","description":"Published display identity for a successful terrain build."}
     EnvironmentAttempt:
       type: object
       required: [attempt, state, code, at]
@@ -666,6 +1011,74 @@ components:
         meaning: {"type":"string"}
         heightMethod: {"type":"string"}
         unsupported: {"type":"array","items":{"type":"string"}}
+        coastal:
+          type: object
+          required: [grid, summary]
+          properties:
+            grid:
+              type: object
+              required: [edition, datum, spacingDegrees, window, elevation, tid]
+              properties:
+                edition: {type: string}
+                datum: {type: string}
+                spacingDegrees: {type: number}
+                window: {type: array, items: {type: integer}}
+                elevation: {type: array, items: {type: integer}}
+                tid: {type: array, items: {type: integer}}
+            summary:
+              type: object
+              required: [coastline, minimumElevationM, coastVersion, nearCoast, missingSourceType]
+              properties:
+                minimumElevationM: {type: number}
+                missingSourceType: {type: integer, minimum: 0}
+                coastVersion: {type: string}
+                nearCoast: {type: object, additionalProperties: {type: integer}}
+                coastline: {type: array, items: {type: array, items: {type: array, items: {type: number}}}}
+        observations:
+          type: object
+          properties:
+            weather:
+              $ref: '#/components/schemas/EnvironmentWeatherField'
+        enrichment:
+          type: object
+          properties:
+            modeledBuildingContext:
+              type: array
+              items:
+                type: object
+                required: [member, inputId, centroids, modeledHeights, unknown, medianM, unit, origin, physicalAccuracy, edition, meaning]
+                properties:
+                  member: {type: string}
+                  inputId: {type: string}
+                  centroids: {type: integer}
+                  modeledHeights: {type: integer}
+                  unknown: {type: integer}
+                  medianM: {type: [number, 'null']}
+                  unit: {type: string, enum: [m]}
+                  origin: {type: string, enum: [inferred]}
+                  physicalAccuracy: {type: string, enum: [UNKNOWN]}
+                  edition: {type: string}
+                  meaning: {type: string}
+    EnvironmentWeatherField:
+      type: object
+      required: [edition, verticalCoordinate, nativeSpacingDegrees, validTimes, pressureHPa, latitudes, longitudes, aboveGroundMask, variables]
+      properties:
+        edition: {type: string}
+        verticalCoordinate: {type: string, enum: [pressure-hPa]}
+        nativeSpacingDegrees: {type: number}
+        validTimes: {type: array, items: {type: string, format: date-time}}
+        pressureHPa: {type: array, items: {type: integer}}
+        latitudes: {type: array, items: {type: number}}
+        longitudes: {type: array, items: {type: number}}
+        aboveGroundMask: {type: array, items: {type: boolean}}
+        variables:
+          type: object
+          additionalProperties:
+            type: object
+            required: [units, samples]
+            properties:
+              units: {type: string}
+              samples: {type: array, items: {type: [number, 'null']}}
     EnvironmentMember:
       type: object
       required: [name, layer, sha256, bytes, inputId, details]

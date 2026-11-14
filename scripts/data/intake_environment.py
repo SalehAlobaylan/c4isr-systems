@@ -37,8 +37,18 @@ class LibraryAPI:
 
 
 def intake(api, candidate, bindings):
-    verify(candidate / "prepared.zip")
     recipe = json.loads(read_small(candidate / "recipe.json"))
+    if recipe["profile"]["id"] == "reference-enrichment-v1":
+        from environment_enrichment import verify as verify_enrichment
+        verify_enrichment(candidate / "prepared.zip")
+    elif recipe["profile"]["id"] == "reference-observation-v1":
+        from environment_observation import verify as verify_observation
+        verify_observation(candidate / "prepared.zip")
+    elif recipe["profile"]["id"] == "coastal-context-v1":
+        from environment_coastal import verify as verify_coastal
+        verify_coastal(candidate / "prepared.zip")
+    else:
+        verify(candidate / "prepared.zip")
     by_id = bindings["assets"]
     if set(by_id) != {asset["id"] for asset in recipe["inputs"]}:
         raise ValueError("Reviewed bindings must account for every exact retained input")

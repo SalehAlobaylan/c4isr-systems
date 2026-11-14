@@ -248,4 +248,29 @@ func (s Service) Mount(r chi.Router) {
 		}
 		httpx.JSON(w, 200, map[string]any{"items": v, "total": len(v), "truncated": cut})
 	})
+	r.Get("/external-tracks/{id}/history", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		from, fromErr := time.Parse(time.RFC3339Nano, q.Get("from"))
+		to, toErr := time.Parse(time.RFC3339Nano, q.Get("to"))
+		var cutoff *time.Time
+		if raw := q.Get("cutoff"); raw != "" {
+			t, err := time.Parse(time.RFC3339Nano, raw)
+			if err != nil {
+				httpx.Error(w, apperr.Validation("invalid history cutoff"))
+				return
+			}
+			cutoff = &t
+		}
+		if fromErr != nil || toErr != nil {
+			httpx.Error(w, apperr.Validation("history requires from and to timestamps with offsets"))
+			return
+		}
+		v, err := s.ReadHistory(r.Context(), chi.URLParam(r, "id"), q.Get("areaRevisionId"), from, to, cutoff)
+		if err != nil {
+			httpx.Error(w, err)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		httpx.JSON(w, 200, v)
+	})
 }

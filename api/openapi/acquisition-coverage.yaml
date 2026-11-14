@@ -5,8 +5,14 @@ info:
 paths:
   /acquisitions:
     post:
+      summary: Create an acquisition request
       operationId: createAcquisition
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '201':
           description: Authorized result
           content:
@@ -20,8 +26,14 @@ paths:
             schema:
               $ref: '#/components/schemas/AcquisitionInput'
     get:
+      summary: List acquisition requests
       operationId: listAcquisitions
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Authorized result
           content:
@@ -41,8 +53,14 @@ paths:
       required: true
       schema: *id001
     get:
+      summary: Get an acquisition request
       operationId: getAcquisition
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Authorized result
           content:
@@ -53,8 +71,14 @@ paths:
     parameters:
     - *id002
     post:
+      summary: Cancel an acquisition request
       operationId: cancelAcquisition
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Authorized result
           content:
@@ -63,8 +87,14 @@ paths:
                 $ref: '#/components/schemas/AcquisitionRequest'
   /coverage/query:
     post:
+      summary: Query source coverage
       operationId: queryCoverage
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Authorized result
           content:
@@ -79,8 +109,14 @@ paths:
               $ref: '#/components/schemas/CoverageInput'
   /coverage/adapters:
     get:
+      summary: List installed coverage adapters
       operationId: coverageAdapters
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Installed capability inventory
           content:
@@ -100,8 +136,14 @@ paths:
     parameters:
     - *id002
     post:
+      summary: Run a scheduled acquisition
       operationId: runScheduledAcquisition
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '201':
           description: One bounded scheduled run
           content:
@@ -113,8 +155,14 @@ paths:
     parameters:
     - *id002
     get:
+      summary: Get source acquisition metrics
       operationId: acquisitionMetrics
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Durable authorized source metrics
           content:

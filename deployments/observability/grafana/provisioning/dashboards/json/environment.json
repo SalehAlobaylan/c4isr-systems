@@ -1,0 +1,25 @@
+{
+  "uid": "c4isr-environment",
+  "title": "Geographic environment operations",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-6h", "to": "now"},
+  "panels": [
+    {"id": 1, "title": "Queue and lease state", "type": "timeseries", "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+     "datasource": {"type": "prometheus", "uid": "c4isr-environment-prometheus"},
+     "targets": [{"refId": "A", "expr": "c4isr_environment_due_jobs", "legendFormat": "Due jobs"}, {"refId": "B", "expr": "c4isr_environment_active_leases", "legendFormat": "Active leases"}, {"refId": "C", "expr": "c4isr_environment_expired_leases", "legendFormat": "Expired leases"}]},
+    {"id": 2, "title": "Oldest due job and latest successful attempt (seconds)", "type": "timeseries", "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8},
+     "datasource": {"type": "prometheus", "uid": "c4isr-environment-prometheus"},
+     "targets": [{"refId": "A", "expr": "c4isr_environment_oldest_due_job_seconds", "legendFormat": "Queue age"}, {"refId": "B", "expr": "c4isr_environment_last_successful_attempt_seconds", "legendFormat": "Attempt duration"}]},
+    {"id": 3, "title": "Reservations and retained storage (bytes)", "type": "timeseries", "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+     "datasource": {"type": "prometheus", "uid": "c4isr-environment-prometheus"},
+     "targets": [{"refId": "A", "expr": "c4isr_environment_pending_asset_bytes", "legendFormat": "Pending bytes"}, {"refId": "B", "expr": "c4isr_environment_retained_asset_bytes", "legendFormat": "Retained bytes"}]},
+    {"id": 4, "title": "Worker identities, source expiry and object probe", "type": "timeseries", "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+     "datasource": {"type": "prometheus", "uid": "c4isr-environment-prometheus"},
+     "targets": [{"refId": "A", "expr": "c4isr_environment_fresh_worker_identities", "legendFormat": "Worker identities"}, {"refId": "B", "expr": "c4isr_environment_source_admissions_expiring_7d", "legendFormat": "Expiring admissions"}, {"refId": "C", "expr": "c4isr_environment_object_read_ok and (c4isr_environment_object_read_sampled == 1)", "legendFormat": "Object read OK"}]},
+    {"id": 5, "title": "Largest sampled worker scratch usage (bytes)", "type": "timeseries", "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8},
+     "datasource": {"type": "prometheus", "uid": "c4isr-environment-prometheus"},
+     "targets": [{"refId": "A", "expr": "c4isr_environment_largest_worker_scratch_bytes and (c4isr_environment_fresh_worker_scratch_samples > 0)", "legendFormat": "Scratch bytes"}]}
+  ]
+}

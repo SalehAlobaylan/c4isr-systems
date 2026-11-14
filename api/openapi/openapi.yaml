@@ -48,6 +48,42 @@ tags:
   - { name: picture, description: 'Reconstruction of the operational picture at a point in time.' }
   - { name: imagery, description: 'Scoped imagery, artifacts, independent analysis and evidence review.' }
 paths:
+  /api/v1/context-packages/geographic:
+    $ref: './geographic-context.yaml#/paths/~1api~1v1~1context-packages~1geographic'
+  /api/v1/context-packages/{id}/geographic:
+    $ref: './geographic-context.yaml#/paths/~1api~1v1~1context-packages~1{id}~1geographic'
+  /api/v1/environment-releases/{id}/displays:
+    $ref: './environment-display.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1displays'
+  /api/v1/environment-releases/{id}/viewing-packages:
+    $ref: './environment-display.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1viewing-packages'
+  /api/v1/environment-releases/{id}/display-builds:
+    $ref: './environment-display.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1display-builds'
+  /api/v1/environment-display-builds/{id}/cancel:
+    $ref: './environment-display.yaml#/paths/~1api~1v1~1environment-display-builds~1{id}~1cancel'
+  /api/v1/environment-displays/{id}/manifest:
+    $ref: './environment-display.yaml#/paths/~1api~1v1~1environment-displays~1{id}~1manifest'
+  /api/v1/environment-displays/{id}/content:
+    $ref: './environment-display.yaml#/paths/~1api~1v1~1environment-displays~1{id}~1content'
+  /api/v1/environment-operations/metrics:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-operations~1metrics'
+  /api/v1/environment-operations/storage:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-operations~1storage'
+  /api/v1/environment-sources/{id}/impact:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-sources~1{id}~1impact'
+  /api/v1/environment-releases/{id}/quality-report:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1quality-report'
+  /api/v1/environment-worker/claim:
+    $ref: './environment-worker.yaml#/paths/~1api~1v1~1environment-worker~1claim'
+  /api/v1/environment-worker/reconcile:
+    $ref: './environment-worker.yaml#/paths/~1api~1v1~1environment-worker~1reconcile'
+  /api/v1/environment-worker/builds/{id}/inputs/{asset}:
+    $ref: './environment-worker.yaml#/paths/~1api~1v1~1environment-worker~1builds~1{id}~1inputs~1{asset}'
+  /api/v1/environment-worker/builds/{id}/heartbeat:
+    $ref: './environment-worker.yaml#/paths/~1api~1v1~1environment-worker~1builds~1{id}~1heartbeat'
+  /api/v1/environment-worker/builds/{id}/fail:
+    $ref: './environment-worker.yaml#/paths/~1api~1v1~1environment-worker~1builds~1{id}~1fail'
+  /api/v1/environment-worker/builds/{id}/complete:
+    $ref: './environment-worker.yaml#/paths/~1api~1v1~1environment-worker~1builds~1{id}~1complete'
   /api/v1/environment-sources/{id}/admissions:
     $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-sources~1{id}~1admissions'
   /api/v1/catalog/reads/{id}:
@@ -82,6 +118,10 @@ paths:
     $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}'
   /api/v1/environment-releases/{id}/manifest:
     $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1manifest'
+  /api/v1/environment-releases/{id}/lineage:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1lineage'
+  /api/v1/environment-releases/{id}/decisions:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1decisions'
   /api/v1/environment-releases/{id}/quality:
     $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1quality'
   /api/v1/environment-releases/{id}/stac:
@@ -198,6 +238,7 @@ paths:
     $ref: './analyst-scope.yaml#/paths/~1api~1v1~1geography~1profiles~1{id}'
   /api/v1/map/surrounding-area:
     post:
+      summary: Create a surrounding study area
       operationId: createSurroundingArea
       requestBody:
         required: true
@@ -220,6 +261,7 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
   /api/v1/map/measure:
     post:
+      summary: Measure map geometry
       operationId: measureMapGeometry
       requestBody:
         required: true
@@ -248,6 +290,7 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
   /api/v1/geography/regions:
     get:
+      summary: List geographic regions
       operationId: listGeographicRegions
       parameters:
         - {name: source_id, in: query, schema: {type: string}}
@@ -263,6 +306,7 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
   /api/v1/geography/editions:
     post:
+      summary: Admit a geographic edition
       operationId: admitGeographicEdition
       requestBody:
         required: true
@@ -286,6 +330,7 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
   /api/v1/map/features:
     get:
+      summary: Read scoped map features
       operationId: getMapFeatures
       parameters:
         - {in: query, name: geometry, schema: {type: string, maxLength: 8192}, description: Analyst WGS84 study polygon; not a jurisdiction}
@@ -304,6 +349,7 @@ paths:
         '403': {$ref: '#/components/responses/Forbidden'}
   /api/v1/map/reference/{z}/{x}/{y}.pbf:
     get:
+      summary: Read a geographic reference tile
       operationId: getReferenceTile
       parameters:
         - {in: path, name: z, required: true, schema: {type: integer, minimum: 0, maximum: 20}}
@@ -3227,6 +3273,9 @@ paths:
         '409':
           $ref: '#/components/responses/Conflict'
 
+  /api/v1/external-tracks/{id}/history:
+    $ref: './moving-history.yaml#/paths/~1api~1v1~1external-tracks~1{id}~1history'
+
   /api/v1/assessments/reports:
     parameters:
     - $ref: '#/components/parameters/WorkspaceHeader'
@@ -3972,6 +4021,8 @@ paths:
                 properties:
                   state:
                     type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -4668,6 +4719,10 @@ components:
       $ref: './environment-library.yaml#/components/schemas/EnvironmentManifest'
     EnvironmentRelease:
       $ref: './environment-library.yaml#/components/schemas/EnvironmentRelease'
+    EnvironmentDisplay:
+      $ref: './environment-display.yaml#/components/schemas/EnvironmentDisplay'
+    EnvironmentDisplayBuildInput:
+      $ref: './environment-display.yaml#/components/schemas/EnvironmentDisplayBuildInput'
     EnvironmentReleases:
       $ref: './environment-library.yaml#/components/schemas/EnvironmentReleases'
     DeliveryJob: {$ref: './deliveries.yaml#/components/schemas/DeliveryJob'}
@@ -6017,6 +6072,30 @@ components:
         citedTo: *emad_existing_5
         documentUrl: *emad_existing_5
         corroborationMeaning: *emad_existing_5
+        eventHistory:
+          type: object
+          required: [providerId, category, closedAt, geometries, citations]
+          properties:
+            providerId: {type: string}
+            category: {type: string}
+            closedAt: {type: [string, 'null'], format: date-time}
+            geometries:
+              type: array
+              items:
+                type: object
+                required: [date, type, coordinates]
+                properties:
+                  date: {type: string, format: date-time}
+                  type: {type: string, enum: [Point, Polygon, MultiPolygon]}
+                  coordinates: {}
+            citations:
+              type: array
+              items:
+                type: object
+                required: [id, url]
+                properties:
+                  id: {type: string}
+                  url: {type: string, format: uri}
         lineageKeys:
           type: array
           items: *emad_existing_5
@@ -9889,6 +9968,10 @@ components:
                 type: string
               runtimeBuild:
                 type: string
+              toolchainSha256:
+                type: string
+                pattern: '^[0-9a-f]{64}$'
+                description: Processor digest reported by the environment worker.
     WorkerHeartbeat:
       type: object
       required:
@@ -9903,8 +9986,19 @@ components:
           - runtime
           - recordings
           - preparation
+          - environment-library
         runtimeBuild:
           type: string
+        toolchainSha256:
+          type: string
+          pattern: '^[0-9a-f]{64}$'
+          description: Processor digest reported by an environment worker.
+        scratchBytes:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1099511627776
+          description: Logical bytes used by the environment worker's private scratch directory when sampled.
     RuntimeCapability:
       type: object
       required:

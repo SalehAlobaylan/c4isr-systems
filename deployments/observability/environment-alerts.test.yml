@@ -1,0 +1,25 @@
+rule_files: [alerts.yml, environment-target-alerts.yml]
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - {series: 'c4isr_environment_oldest_due_job_seconds{job="c4isr-environment"}', values: '0 61+1x5 0'}
+      - {series: 'c4isr_environment_expired_leases{job="c4isr-environment"}', values: '0 1+0x5 0'}
+      - {series: 'c4isr_environment_object_read_ok{job="c4isr-environment"}', values: '0 0+0x5 1'}
+      - {series: 'c4isr_environment_object_read_sampled{job="c4isr-environment"}', values: '0 1+0x6'}
+      - {series: 'c4isr_environment_largest_visible_owner_reservation_ratio{job="c4isr-environment"}', values: '0 0.91+0x5 0'}
+      - {series: 'c4isr_environment_source_admissions_expiring_7d{job="c4isr-environment"}', values: '0 1+0x5 0'}
+      - {series: 'up{job="c4isr-environment"}', values: '1 1 1 1 0 0 0 1'}
+    promql_expr_test:
+      - expr: 'count(ALERTS{alertstate="firing",alertname=~"C4ISREnvironment.*"}) or vector(0)'
+        eval_time: 0m
+        exp_samples: [{labels: '{}', value: 0}]
+      - expr: 'count(ALERTS{alertstate="firing",alertname=~"C4ISREnvironment.*"}) or vector(0)'
+        eval_time: 3m
+        exp_samples: [{labels: '{}', value: 2}]
+      - expr: 'count(ALERTS{alertstate="firing",alertname=~"C4ISREnvironment.*"}) or vector(0)'
+        eval_time: 6m
+        exp_samples: [{labels: '{}', value: 6}]
+      - expr: 'count(ALERTS{alertstate="firing",alertname=~"C4ISREnvironment.*"}) or vector(0)'
+        eval_time: 7m
+        exp_samples: [{labels: '{}', value: 0}]

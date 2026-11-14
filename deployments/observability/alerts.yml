@@ -1,4 +1,56 @@
 groups:
+  - name: c4isr-environment
+    rules:
+      - alert: C4ISREnvironmentQueueDelayed
+        expr: c4isr_environment_oldest_due_job_seconds{job="c4isr-environment"} > 60
+        for: 5m
+        labels:
+          severity: warning
+          component: environment-worker
+          owner: environment-operations
+          runbook: docs/implementation/ENVIRONMENT_LIBRARY_OPERATIONS.md#inspect-queue-and-storage-health
+        annotations:
+          summary: Geographic preparation is waiting for a worker
+      - alert: C4ISREnvironmentLeasesExpired
+        expr: c4isr_environment_expired_leases{job="c4isr-environment"} > 0
+        for: 2m
+        labels:
+          severity: warning
+          component: environment-worker
+          owner: environment-operations
+          runbook: docs/implementation/ENVIRONMENT_LIBRARY_OPERATIONS.md#inspect-queue-and-storage-health
+        annotations:
+          summary: Geographic preparation has an unrecovered lease
+      - alert: C4ISREnvironmentObjectReadFailed
+        expr: (c4isr_environment_object_read_ok{job="c4isr-environment"} == 0) and (c4isr_environment_object_read_sampled{job="c4isr-environment"} == 1)
+        for: 2m
+        labels:
+          severity: critical
+          component: environment-storage
+          owner: platform-operations
+          runbook: docs/implementation/ENVIRONMENT_LIBRARY_OPERATIONS.md#inspect-queue-and-storage-health
+        annotations:
+          summary: The retained geographic object probe failed
+      - alert: C4ISREnvironmentReservationNearLimit
+        expr: c4isr_environment_largest_visible_owner_reservation_ratio{job="c4isr-environment"} >= 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: environment-storage
+          owner: environment-operations
+          runbook: docs/implementation/ENVIRONMENT_LIBRARY_OPERATIONS.md#inspect-queue-and-storage-health
+        annotations:
+          summary: Geographic reservations are near the owner limit
+      - alert: C4ISREnvironmentAdmissionExpiring
+        expr: c4isr_environment_source_admissions_expiring_7d{job="c4isr-environment"} > 0
+        for: 5m
+        labels:
+          severity: warning
+          component: environment-source
+          owner: environment-data-steward
+          runbook: docs/implementation/ENVIRONMENT_LIBRARY_OPERATIONS.md#inspect-queue-and-storage-health
+        annotations:
+          summary: A retained geographic source admission expires within seven days
   - name: c4isr-availability
     rules:
       - alert: C4ISRAPIDown

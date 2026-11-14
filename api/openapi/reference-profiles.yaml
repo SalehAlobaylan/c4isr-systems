@@ -3,62 +3,116 @@ info: {title: Reference depth and retrieval profiles, version: 1.0.0}
 paths:
   /geography/releases:
     get:
+      summary: List active geographic releases
       operationId: listGeographicReleaseHeads
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200': {description: Currently activated source releases, content: {application/json: {schema: {type: object, required: [items], properties: {items: {type: array, items: {type: object, required: [sourceId, releaseId], properties: {sourceId: {type: string}, releaseId: {type: string}}}}}}}}}
   /geography/availability:
     get:
+      summary: Get available geographic detail
       operationId: getGeographicAvailability
       parameters:
         - {in: query, name: region_id, required: true, schema: {type: string}}
         - {in: query, name: release_id, schema: {type: string}}
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200': {description: Retained navigation depth, content: {application/json: {schema: {$ref: '#/components/schemas/GeographicAvailability'}}}}
   /geography/reference-requests:
     post:
+      summary: Request geographic detail
       operationId: requestGeographicDepth
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ReferenceDepthRequestInput'}}}}
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '201': {description: Durable idempotent reference request, content: {application/json: {schema: {$ref: '#/components/schemas/ReferenceDepthRequest'}}}}
     get:
+      summary: List geographic detail requests
       operationId: listGeographicDepthRequests
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200': {description: Source-authorized administrative queue, content: {application/json: {schema: {type: object, required: [items, limit], properties: {items: {type: array, items: {$ref: '#/components/schemas/ReferenceDepthRequest'}}, limit: {type: integer}}}}}}
   /geography/reference-requests/{id}/resolve:
     parameters: [{in: path, name: id, required: true, schema: {type: string}}]
     post:
+      summary: Resolve a geographic detail request
       operationId: resolveGeographicDepthRequest
       requestBody: {required: true, content: {application/json: {schema: {type: object, required: [releaseId], properties: {releaseId: {type: string}}}}}}
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200': {description: Verified installed depth, content: {application/json: {schema: {type: object, additionalProperties: true}}}}
   /sources/{id}/profiles:
     parameters: [{in: path, name: id, required: true, schema: {type: string}}]
     get:
+      summary: List current retrieval profiles
       operationId: listRetrievalProfiles
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200': {description: Exact current approved profile revisions, content: {application/json: {schema: {type: object, required: [items, limit], properties: {items: {type: array, items: {$ref: '#/components/schemas/RetrievalProfile'}}, limit: {type: integer}}}}}}
   /sources/{id}/profiles/{key}:
     parameters: [{in: path, name: id, required: true, schema: {type: string}}, {in: path, name: key, required: true, schema: {type: string}}]
     post:
+      summary: Approve a retrieval profile revision
       operationId: approveRetrievalProfile
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RetrievalProfileInput'}}}}
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '201': {description: Approved immutable admission/profile revision, content: {application/json: {schema: {$ref: './openapi.yaml#/components/schemas/SourceAdmission'}}}}
   /sources/{id}/profiles/{key}/execution:
     parameters: [{in: path, name: id, required: true, schema: {type: string}}, {in: path, name: key, required: true, schema: {type: string}}]
     post:
+      summary: Set a retrieval profile execution grant
       operationId: grantRetrievalProfileExecution
       requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RetrievalExecutionGrant'}}}}
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200': {description: Audited revision-specific grant, content: {application/json: {schema: {type: object, required: [profileRevisionId, enabled], properties: {profileRevisionId: {type: string}, enabled: {type: boolean}}}}}}
   /sources/{id}/profiles/{key}/connector-runs:
     parameters: [{in: path, name: id, required: true, schema: {type: string}}, {in: path, name: key, required: true, schema: {type: string}}]
     post:
+      summary: Execute a retrieval profile
       operationId: executeRetrievalProfile
       requestBody:
         required: false
         content: {application/json: {schema: {type: object, required: [from, to], properties: {from: {type: string, format: date-time}, to: {type: string, format: date-time}}}}}
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '201': {description: Bounded profile invocation; service grant required, content: {application/json: {schema: {type: object, additionalProperties: true}}}}
 components:
   schemas:

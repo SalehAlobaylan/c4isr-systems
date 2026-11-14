@@ -5,6 +5,7 @@ info:
 paths:
   /investigations:
     get:
+      summary: List investigations
       operationId: listInvestigations
       parameters:
       - in: query
@@ -14,6 +15,11 @@ paths:
           minimum: 0
           maximum: 10000
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Authorized current cases, including archived cases
           content:
@@ -21,6 +27,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/InvestigationList'
     post:
+      summary: Create an investigation
       operationId: createInvestigation
       requestBody:
         required: true
@@ -29,6 +36,11 @@ paths:
             schema:
               $ref: '#/components/schemas/InvestigationInput'
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '201':
           description: Saved case
           content:
@@ -43,6 +55,7 @@ paths:
       schema:
         type: string
     get:
+      summary: Get an investigation revision
       operationId: getInvestigation
       parameters:
       - in: query
@@ -50,6 +63,11 @@ paths:
         schema:
           type: string
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Exact authorized case revision
           content:
@@ -64,6 +82,7 @@ paths:
       schema:
         type: string
     post:
+      summary: Save a new investigation revision
       operationId: saveInvestigation
       requestBody:
         required: true
@@ -88,6 +107,7 @@ paths:
       schema:
         type: string
     post:
+      summary: Change investigation membership
       operationId: changeInvestigationMembers
       requestBody:
         required: true
@@ -96,6 +116,11 @@ paths:
             schema:
               $ref: '#/components/schemas/InvestigationMembership'
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Audited membership
           content:

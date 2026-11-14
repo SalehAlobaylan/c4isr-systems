@@ -3,7 +3,7 @@
 Inputs are local retained B04/B08/SCL files and exact product metadata. No
 provider credentials, remote URLs, network raster drivers or full-scene arrays
 are used here. NDVI analysis uses the resulting hash-pinned subset, not these
-mutable filesystem paths. See docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md.
+mutable filesystem paths. See docs/implementation/HISTORICAL_DELIVERY.md.
 """
 import argparse
 import hashlib

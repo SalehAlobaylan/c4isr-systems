@@ -29,6 +29,16 @@ export class ApiError extends Error {
   }
 }
 
+export function retryConcurrentRead(attempt: number, error: Error): boolean {
+  return attempt < 3 && error instanceof ApiError && error.status === 409 &&
+    (error.message === 'concurrent read capacity claim; restart this view' ||
+     error.message === 'concurrent read budget claim; retry the view')
+}
+
+export function isReadCapacityExhausted(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 409 && error.message.includes('active read capacity exhausted')
+}
+
 /* ------------------------------------------------------------------ */
 /* Contract-backed domain aliases                                      */
 /* ------------------------------------------------------------------ */
@@ -177,6 +187,8 @@ export const API_TOKEN = (sessionToken ?? runtimeConfig.apiToken ?? import.meta.
 
 const localEntryToken = (runtimeConfig.apiToken ?? import.meta.env.VITE_API_TOKEN ?? '').trim()
 export const LOCAL_AUTO_ENTRY = runtimeConfig.localAutoEntry === true || import.meta.env.VITE_LOCAL_AUTO_ENTRY === 'true'
+export const LOCAL_BASEMAP_ONLY = (runtimeConfig.localBasemapOnly || import.meta.env.VITE_LOCAL_BASEMAP_ONLY) === 'true'
+export const GEOGRAPHIC_PREVIEW_ENABLED = (runtimeConfig.geographicPreviewEnabled || import.meta.env.VITE_GEOGRAPHIC_PREVIEW_ENABLED) !== 'false'
 
 // A previous manual account can outlive the local installation that issued it.
 // Only explicitly configured local launchers may recover to their default account.
@@ -264,6 +276,8 @@ async function unwrap<T>(result: Promise<{
 
 // Each instance captures one resource and cancellation lifetime.
 export function createAPI(resource?: Resource, signal?: AbortSignal) {
+  const analystReads = new Set<string>()
+  const catalogReads = new Set<string>()
   const apiClient = createClient<paths>({
     // Generated OpenAPI paths already include /api/v1. Keep any configured
     // gateway prefix in the base URL, while avoiding a duplicated /api/v1.
@@ -280,6 +294,18 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
       ...(API_TOKEN ? { Authorization: `Bearer ${API_TOKEN}` } : {}),
     },
   })
+
+  // Release requests must survive page navigation and workspace cancellation.
+  // The same scoped headers and credentials still go through the API client.
+  const releaseFetch = (request: Request) => fetch(request)
+  async function releaseCatalog(id: string) {
+    await unwrap(apiClient.DELETE('/api/v1/catalog/reads/{id}', {params:{path:{id}}, keepalive:true, fetch:releaseFetch}))
+    catalogReads.delete(id)
+  }
+  async function releaseAnalystRead(id: string) {
+    await unwrap(apiClient.POST('/api/v1/analyst-scope/reads/{id}/release', {params:{path:{id}}, keepalive:true, fetch:releaseFetch}))
+    analystReads.delete(id)
+  }
 
   async function fetchHealth(signal?: AbortSignal): Promise<Health> {
     return unwrap(apiClient.GET('/health', signal ? { signal } : undefined))
@@ -313,9 +339,27 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
     environmentPreflight:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/geographic-environments/{id}/preflight',{params:{path:{id}},signal})),
     submitEnvironment:(id:string,body:components['schemas']['EnvironmentBuildInput'],signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/geographic-environments/{id}/builds',{params:{path:{id}},body,signal})),
     environmentBuild:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-builds/{id}',{params:{path:{id}},signal})),
+    submitEnvironmentDisplay:(id:string,body:components['schemas']['EnvironmentDisplayBuildInput'],signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/display-builds',{params:{path:{id}},body,signal})),
+    cancelEnvironmentDisplay:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/environment-display-builds/{id}/cancel',{params:{path:{id}},signal})),
     cancelEnvironment:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/environment-builds/{id}/cancel',{params:{path:{id}},signal})),
     environmentReleases:(build?:string,after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases',{params:{query:{build,after}},signal})),
     environmentRelease:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}',{params:{path:{id}},signal})),
+    environmentLineage:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}/lineage',{params:{path:{id}},signal})),
+    environmentSourceImpact:(id:string,after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-sources/{id}/impact',{params:{path:{id},query:{after}},signal})),
+    environmentQualityReport:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}/quality-report',{params:{path:{id}},signal})),
+    environmentStorageBacklog:(after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-operations/storage',{params:{query:{after}},signal})),
+    environmentDecisions:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}/decisions',{params:{path:{id}},signal})),
+    environmentDisplays:(id:string,after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}/displays',{params:{path:{id},query:{after}},signal})),
+    environmentDisplay:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-displays/{id}/manifest',{params:{path:{id}},signal})),
+    freezeGeographicContext:(body:operations['freezeGeographicContext']['requestBody']['content']['application/json'],signal?:AbortSignal)=>
+      unwrapScoped(apiClient.POST('/api/v1/context-packages/geographic',{body,signal})),
+    geographicContext:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/context-packages/{id}/geographic',{params:{path:{id}},signal})),
+    environmentDisplayContent:async(id:string,signal?:AbortSignal)=>{
+      const result=await apiClient.GET('/api/v1/environment-displays/{id}/content',{params:{path:{id}},parseAs:'stream',signal})
+      const body=await unwrapScoped(Promise.resolve(result))
+      if(!body)throw new Error('The display stream is unavailable.')
+      return {body,etag:result.response.headers.get('ETag')}
+    },
     reviewEnvironment:(id:string,action:'verify'|'release'|'withdraw',body:components['schemas']['EnvironmentReview'],signal?:AbortSignal)=> {
       const params={path:{id}}
       if(action==='verify')return unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/verify',{params,body,signal}))
@@ -350,14 +394,33 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
     stageCompositeOutput:(id:string,bytes:ArrayBuffer,media:string)=>unwrap(apiClient.PUT('/api/v1/outputs/{id}/content',{params:{path:{id}},body:'',bodySerializer:()=>bytes,headers:{'Content-Type':media}})),
     downloadCompositeOutput:(id:string,distribution=false)=>unwrap(apiClient.GET('/api/v1/outputs/{id}/content',{params:{path:{id},query:{distribution}},parseAs:'blob'})),
     expireCompositeOutput:(id:string)=>unwrap(apiClient.POST('/api/v1/outputs/{id}/expire',{params:{path:{id}}})),
-    readCatalog:(body:components['schemas']['CatalogInput'],requestSignal?:AbortSignal,scope?:ScopeSnapshot)=>unwrapScoped(apiClient.POST('/api/v1/catalog/reads',{body,signal:requestSignal}),scope),
-    releaseCatalog:(id:string)=>unwrap(apiClient.DELETE('/api/v1/catalog/reads/{id}',{params:{path:{id}}})),
+    async readCatalog(body:components['schemas']['CatalogInput'],requestSignal?:AbortSignal,scope?:ScopeSnapshot) {
+      const page = await unwrapScoped(apiClient.POST('/api/v1/catalog/reads', {body, signal:requestSignal}), scope)
+      if (body.replaceSnapshotId) catalogReads.delete(body.replaceSnapshotId)
+      if (page.snapshotId) {
+        catalogReads.add(page.snapshotId)
+        if (signal?.aborted || requestSignal?.aborted && !body.cursor) void releaseCatalog(page.snapshotId).catch(() => {})
+      }
+      return page
+    },
+    releaseCatalog,
     readIndividualRecords:(id:string,family:string,aggregate?:string,cursor?:string,requestSignal?:AbortSignal,scope?:ScopeSnapshot)=>unwrapScoped(apiClient.GET('/api/v1/analyst-scope/reads/{id}/records',{params:{path:{id},query:{family,aggregate_id:aggregate,cursor,limit:100}},signal:requestSignal}),scope),
     captureProposal:(body:components['schemas']['CaptureProposalInput'],requestSignal?:AbortSignal)=>unwrap(apiClient.POST('/api/v1/imagery/capture-proposal',{body,signal:requestSignal})),
     checkImageryPair:(body:components['schemas']['PairInput'],requestSignal?:AbortSignal)=>unwrap(apiClient.POST('/api/v1/imagery/comparison-check',{body,signal:requestSignal})),
-    readAnalystScope:(body:ScopeReadInput,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/analyst-scope/read',{body,signal:requestSignal})),
+    async readAnalystScope(body:ScopeReadInput,requestSignal?:AbortSignal) {
+      const read = await unwrapScoped(apiClient.POST('/api/v1/analyst-scope/read', {body, signal:requestSignal}))
+      if (read.id) {
+        analystReads.add(read.id)
+        if (signal?.aborted || requestSignal?.aborted) void releaseAnalystRead(read.id).catch(() => {})
+      }
+      return read
+    },
     getAnalystReadPage:(id:string,family:string,offset=0,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/analyst-scope/reads/{id}',{params:{path:{id},query:{family,offset,limit:100}},signal:requestSignal})),
-    releaseAnalystRead:(id:string,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/analyst-scope/reads/{id}/release',{params:{path:{id}},signal:requestSignal})),
+    releaseAnalystRead,
+    releaseRetainedReads() {
+      for (const id of analystReads) void releaseAnalystRead(id).catch(() => {})
+      for (const id of catalogReads) void releaseCatalog(id).catch(() => {})
+    },
     createSurroundingArea: (body:{longitude:number;latitude:number;radiusM:number},requestSignal?:AbortSignal) => unwrap(apiClient.POST('/api/v1/map/surrounding-area',{body,signal:requestSignal})),
     measureMapGeometry: (geometry:Record<string,unknown>,requestSignal?:AbortSignal) => unwrap(apiClient.POST('/api/v1/map/measure',{body:{geometry},signal:requestSignal})),
     listGeographicRegions: (query?: {q?:string;parent?:string;kind?:'country'|'region'|'governorate'|'place'|'study';id?:string;offset?:number;source_id?:string;release_id?:string;edition_id?:string},requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/geography/regions',{params:{query},signal:requestSignal})),
@@ -422,6 +485,8 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
     listExternalTracks: (bbox?: string,region_id?:string,geometry?:string,scope?:ScopeSnapshot,requestSignal?:AbortSignal) => unwrapScoped(apiClient.GET('/api/v1/external-tracks', { params: { query: scope?scopeQuery(scope):{ bbox, region_id, geometry } },signal:requestSignal }),scope),
     getExternalTrack: (id: string,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/external-tracks/{id}', { params: { path: { id } },signal:requestSignal })),
     getExternalAssociations: (id: string) => unwrap(apiClient.GET('/api/v1/external-tracks/{id}/associations', { params: { path: { id } } })),
+    readExternalHistory: (id: string, query: operations['readExternalTrackHistory']['parameters']['query'], signal?: AbortSignal) =>
+      unwrap(apiClient.GET('/api/v1/external-tracks/{id}/history', {params: {path: {id}, query}, signal})),
     previewContextPackage: (body: components['schemas']['ContextPackageSelection'],requestSignal?:AbortSignal) => unwrap(apiClient.POST('/api/v1/context-packages/preview', { body,signal:requestSignal })),
     listImageryScenes: (bbox?: string,region_id?:string,geometry?:string,scope?:ScopeSnapshot,requestSignal?:AbortSignal) => unwrapScoped(apiClient.GET('/api/v1/imagery/scenes', { params: { query: scope?scopeQuery(scope):{ bbox, region_id, geometry } },signal:requestSignal }),scope),
     getImageryScene: (id: string) => unwrap(apiClient.GET('/api/v1/imagery/scenes/{id}', { params: { path: { id } } })),

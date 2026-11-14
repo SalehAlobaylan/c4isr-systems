@@ -1,12 +1,18 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
-import { test, expect, workspaceSelection } from './test'
+import { test, expect, scopedAddress, studyArea, workspaceSelection } from './test'
 
 const fixture = JSON.parse(process.env.EMAD_BROWSER_FIXTURE ?? '{}')
+const imageryScope = {
+  area: studyArea(39.15, 21.45, 39.2, 21.5),
+  temporal: { mode: 'historical', interval: { from: '2025-02-01T00:00:00Z', to: '2025-03-01T00:00:00Z' }, revisionView: 'latest', timezone: 'UTC', backgroundImagery: false },
+}
 test('real retained imagery comparison produces a traceable independently reviewed assessment', async ({ page, browser }) => {
   await page.addInitScript((token) => { window.__C4ISR_CONFIG__ = { apiToken: token } }, fixture.token)
   await page.goto(`${fixture.url}/map`)
   await page.getByRole('button', { name: 'Public Context', exact: true }).click()
+  await expect(page.getByTestId('workspace-basis')).toContainText('Public sources')
+  await page.goto(scopedAddress(fixture.url, '/map', imageryScope))
   await page.getByRole('navigation',{name:'Workspace navigation'}).getByRole('link',{name:'Imagery',exact:true}).click()
   await page.getByRole('navigation',{name:'Intelligence workspaces'}).getByRole('link',{name:'Scene catalogue',exact:true}).click()
   await expect(page.getByRole('heading', { name: 'Imagery intelligence', exact: true })).toBeVisible()
@@ -65,7 +71,7 @@ test('real retained imagery comparison produces a traceable independently review
   reviewer.on('response', (r) => { if (r.status() >= 500 && new URL(r.url()).pathname.startsWith('/api/')) failures.push(`${r.status()} ${r.url()}`) })
   await reviewer.addInitScript((token) => { window.__C4ISR_CONFIG__ = { apiToken: token } }, fixture.imagery.reviewerToken)
   try {
-    await reviewer.goto(`${fixture.url}/intelligence?assessment=${assessmentID}`)
+    await reviewer.goto(scopedAddress(fixture.url, '/intelligence', imageryScope, { assessment: assessmentID! }))
     const review = reviewer.getByRole('article', { name: 'Selected assessment review' })
     await expect(review.getByRole('heading', { name: 'PROPOSED · revision 1' })).toBeVisible()
     await review.getByLabel('Review rationale').fill('Reproduced the exact retained subset calculation; checked masks and synthetic provenance.')
@@ -81,14 +87,11 @@ test('real retained imagery comparison produces a traceable independently review
     await review.getByRole('button', { name: 'Inspect exact supporting comparison' }).click()
     await expect(reviewer.getByRole('region', { name: 'Aligned NDVI comparison' })).toBeVisible()
     await reviewer.setViewportSize({ width: 1440, height: 1000 })
-    await reviewer.getByRole('region', { name: 'Aligned NDVI comparison' }).screenshot({ path: '../../tmp/p2/intelligence-comparison.png' })
-    await reviewer.screenshot({ path: '../../tmp/p2/intelligence-desktop.png', fullPage: true })
     await reviewer.setViewportSize({ width: 390, height: 844 })
     await expect(reviewer.getByLabel('Before prepared subset')).toBeVisible()
     expect(await reviewer.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-    await reviewer.getByRole('navigation',{name:'Intelligence workspaces'}).getByRole('link',{name:'Assessment review',exact:true}).click()
-    await review.scrollIntoViewIfNeeded()
-    await reviewer.screenshot({ path: '../../tmp/p2/intelligence-mobile.png', fullPage: true })
+    await reviewer.goto(scopedAddress(fixture.url, '/intelligence', imageryScope, { assessment: assessmentID! }))
+    await expect(review.getByRole('heading', { name: 'PUBLISHED · revision 3' })).toBeVisible()
     expect(failures).toEqual([])
   } finally { await reviewer.close() }
   await page.reload()
@@ -96,8 +99,8 @@ test('real retained imagery comparison produces a traceable independently review
   const exporter = page.getByRole('region', { name: 'Approved context export' })
   await expect(exporter.getByLabel('Include selected published assessment', { exact: false })).toBeVisible()
   await exporter.getByLabel('Export AOI (west,south,east,north)').fill('39.1601,21.4893,39.1607,21.4899')
-  await exporter.getByLabel('Export interval from (UTC)').fill('2025-02-01T00:00')
-  await exporter.getByLabel('Export interval to (UTC)').fill('2025-02-28T23:59')
+  await expect(exporter.getByLabel('Export interval from (UTC)')).toHaveValue('2025-02-01T00:00')
+  await expect(exporter.getByLabel('Export interval to (UTC)')).toHaveValue('2025-03-01T00:00')
   await exporter.getByLabel('Accepted accuracy and imagery limitations').fill('Synthetic angular subsets with masks; no assertion of observed vegetation loss.')
   await exporter.getByRole('button', { name: 'Preview selected context', exact: true }).click()
   const preview = exporter.getByRole('region', { name: 'Context export preview' })
@@ -116,24 +119,19 @@ test('real retained imagery comparison produces a traceable independently review
   expect(bundle.manifest.reproduction).toBe('retained_offline')
   expect(bundle.manifest.assets).toHaveLength(5)
   for (const asset of bundle.manifest.assets) expect(createHash('sha256').update(Buffer.from(bundle.assets[asset.sha256], 'base64')).digest('hex')).toBe(asset.sha256)
-  await exporter.getByRole('heading', { name: 'Build a reusable context package' }).scrollIntoViewIfNeeded()
-  await page.screenshot({ path: '../../tmp/p24-p32/context-export-desktop.png' })
+  await expect(exporter.getByRole('heading', { name: 'Build a reusable context package' })).toBeVisible()
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(preview.getByLabel('Human approval statement')).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-  await exporter.getByRole('heading', { name: 'Build a reusable context package' }).scrollIntoViewIfNeeded()
-  await page.screenshot({ path: '../../tmp/p24-p32/context-export-mobile.png' })
 })
 
 test('imagery distinguishes an empty AOI, invalid filter and unavailable job', async ({ page }) => {
   await page.addInitScript((token) => { window.__C4ISR_CONFIG__ = { apiToken: token } }, fixture.imagery.reviewerToken)
-  await page.goto(`${fixture.url}/intelligence?view=catalogue&bbox=0,0,0.1,0.1`)
+  await page.goto(scopedAddress(fixture.url, '/intelligence', { ...imageryScope, area: studyArea(0, 0, 0.1, 0.1) }, { view: 'catalogue' }))
   await expect(page.getByText('No scene revisions in this bounded view.', { exact: true })).toBeVisible()
-  await page.getByLabel('Scene AOI (west,south,east,north)').fill('invalid')
-  await page.getByRole('button', { name: 'Filter scenes' }).click()
-  await expect(page.getByRole('alert')).toContainText('Some authorized imagery records are unavailable')
-  await page.getByLabel('Scene AOI (west,south,east,north)').fill('39.15,21.45,39.2,21.5')
-  await page.getByRole('button', { name: 'Filter scenes' }).click()
+  await page.goto(`${fixture.url}/intelligence?view=catalogue&bbox=invalid`)
+  await expect(page.getByText('The saved rectangle is invalid.', { exact: false })).toBeVisible()
+  await page.goto(scopedAddress(fixture.url, '/intelligence', imageryScope, { view: 'catalogue' }))
   await expect(page.getByRole('region', { name: 'Scene catalogue' }).getByRole('article')).toHaveCount(2)
   await page.goto(`${fixture.url}/intelligence?job=unavailable-fixture-job`)
   await expect(page.getByText('The selected job is unavailable in this workspace.', { exact: true })).toBeVisible()

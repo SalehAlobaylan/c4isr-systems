@@ -1,0 +1,70 @@
+paths:
+  /api/v1/external-tracks/{id}/history:
+    parameters:
+      - {$ref: './openapi.yaml#/components/parameters/WorkspaceHeader'}
+      - {$ref: './openapi.yaml#/components/parameters/EnvironmentHeader'}
+      - {$ref: './openapi.yaml#/components/parameters/PartitionHeader'}
+      - {$ref: './openapi.yaml#/components/parameters/RunHeader'}
+      - {$ref: './openapi.yaml#/components/parameters/Id'}
+    get:
+      operationId: readExternalTrackHistory
+      summary: Read a bounded history of source-admitted moving reports
+      description: Requires tracks.read and observations.read. Returns up to 200 retained reports in an exact area and elapsed window of at most six hours; no interpolation. Reports are filtered by platform publication when cutoff is present.
+      parameters:
+        - {name: areaRevisionId, in: query, required: true, schema: {type: string}}
+        - {name: from, in: query, required: true, schema: {type: string, format: date-time}}
+        - {name: to, in: query, required: true, schema: {type: string, format: date-time}}
+        - {name: cutoff, in: query, schema: {type: string, format: date-time}}
+      responses:
+        '200':
+          description: Exact admitted report revisions and gaps in the retained read
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - {$ref: '#/components/schemas/FrozenMoving'}
+                  - type: object
+                    required: [from, to, truncated]
+                    properties:
+                      from: {type: string, format: date-time}
+                      to: {type: string, format: date-time}
+                      cutoff: {type: string, format: date-time}
+                      truncated: {type: boolean}
+        '400': {$ref: './openapi.yaml#/components/responses/BadRequest'}
+        '401': {$ref: './openapi.yaml#/components/responses/Unauthorized'}
+        '403': {$ref: './openapi.yaml#/components/responses/Forbidden'}
+        '404': {$ref: './openapi.yaml#/components/responses/NotFound'}
+        '409': {$ref: './openapi.yaml#/components/responses/Conflict'}
+components:
+  schemas:
+    FrozenMoving:
+      type: object
+      required: [trackId, areaRevisionId, meaning, items, gaps]
+      properties:
+        trackId: {type: string}
+        areaRevisionId: {type: string}
+        meaning: {type: string}
+        items:
+          type: array
+          maxItems: 200
+          items:
+            allOf:
+              - {$ref: './openapi.yaml#/components/schemas/ExternalAssociation'}
+              - type: object
+                required: [admissionId, providerRecordId, providerRevision, contentSha256, availableAt, retrievedAt]
+                properties:
+                  admissionId: {type: string}
+                  providerRecordId: {type: string}
+                  providerRevision: {type: string}
+                  contentSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+                  availableAt: {type: string, format: date-time}
+                  retrievedAt: {type: string, format: date-time}
+        gaps:
+          type: array
+          items:
+            type: object
+            required: [from, to, reason]
+            properties:
+              from: {type: string, format: date-time}
+              to: {type: string, format: date-time}
+              reason: {type: string, enum: [report_gap, quarantined_report, window_edge_unknown, result_cap]}

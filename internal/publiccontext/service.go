@@ -137,7 +137,11 @@ func (s Service) List(ctx context.Context, kind, bbox string, regions ...string)
 	if kind != "" && kind != "WEATHER" && kind != "REPORT" {
 		return nil, apperr.Validation("kind must be WEATHER or REPORT")
 	}
-	scopeGeometry, from, to, unsupported := queryscope.Catalog(ctx, "weather")
+	family := "weather"
+	if kind == "REPORT" {
+		family = "bulletins"
+	}
+	scopeGeometry, from, to, unsupported := queryscope.Catalog(ctx, family)
 	if unsupported {
 		return []Entry{}, nil
 	}
@@ -192,7 +196,15 @@ func (s Service) List(ctx context.Context, kind, bbox string, regions ...string)
 	}
 	// Choose current revision before spatial filtering so an older location cannot
 	// reappear after its provider correction moved outside the selected AOI.
-	sql := `WITH latest AS(SELECT DISTINCT ON(source_id,record_key) evidence_id FROM public_context_records ORDER BY source_id,record_key,revision_at DESC,known_at DESC,evidence_id DESC) ` + selectEntry + `JOIN latest l ON l.evidence_id=r.evidence_id WHERE ($1='' OR r.kind=$1)` + predicate + ` ORDER BY r.valid_from DESC,r.evidence_id LIMIT 101`
+	revisionPredicate := ""
+	if temporal, ok := queryscope.From(ctx); ok && kind == "REPORT" && (temporal.Mode == "historical" || temporal.RevisionView == "known_at" || temporal.Interval.To.Before(temporal.EvaluatedAt.Add(-5*time.Minute))) {
+		revisionPredicate = ` WHERE kind='REPORT' AND EXISTS (SELECT 1 FROM public_evidence p WHERE (p.id,p.scope_id)=(public_context_records.evidence_id,public_context_records.scope_id) AND p.document#>>'{context,extractionMethod}'='nasa-eonet-floods-v1')`
+		if temporal.AsOf != nil {
+			args = append(args, *temporal.AsOf)
+			revisionPredicate += ` AND EXISTS (SELECT 1 FROM public_evidence_catalog c WHERE (c.evidence_id,c.scope_id)=(public_context_records.evidence_id,public_context_records.scope_id) AND c.published_at<=$` + strconv.Itoa(len(args)) + `)`
+		}
+	}
+	sql := `WITH latest AS(SELECT DISTINCT ON(source_id,record_key) evidence_id FROM public_context_records` + revisionPredicate + ` ORDER BY source_id,record_key,revision_at DESC,known_at DESC,evidence_id DESC) ` + selectEntry + `JOIN latest l ON l.evidence_id=r.evidence_id WHERE ($1='' OR r.kind=$1)` + predicate + ` ORDER BY r.valid_from DESC,r.evidence_id LIMIT 101`
 	rows, err := platformdb.Scoped(s.Pool).Query(ctx, sql, args...)
 	if err != nil {
 		return nil, err
@@ -227,7 +239,7 @@ func (s Service) History(ctx context.Context, id string) ([]Entry, error) {
 	}
 	return out, rows.Err()
 }
-func list(ctx context.Context, w http.ResponseWriter, items []Entry, err error) {
+func list(ctx context.Context, w http.ResponseWriter, items []Entry, err error, family string) {
 	if err != nil {
 		httpx.Error(w, err)
 		return
@@ -236,12 +248,17 @@ func list(ctx context.Context, w http.ResponseWriter, items []Entry, err error) 
 	if truncated {
 		items = items[:100]
 	}
-	httpx.JSON(w, 200, queryscope.ListMetadata(ctx, "weather", map[string]any{"items": items, "total": len(items), "truncated": truncated}))
+	httpx.JSON(w, 200, queryscope.ListMetadata(ctx, family, map[string]any{"items": items, "total": len(items), "truncated": truncated}))
 }
 func (s Service) Mount(r chi.Router) {
 	r.Get("/public-context/records", func(w http.ResponseWriter, q *http.Request) {
-		v, e := s.List(q.Context(), q.URL.Query().Get("kind"), q.URL.Query().Get("bbox"), q.URL.Query().Get("region_id"), q.URL.Query().Get("geometry"))
-		list(q.Context(), w, v, e)
+		kind := q.URL.Query().Get("kind")
+		v, e := s.List(q.Context(), kind, q.URL.Query().Get("bbox"), q.URL.Query().Get("region_id"), q.URL.Query().Get("geometry"))
+		family := "weather"
+		if kind == "REPORT" {
+			family = "bulletins"
+		}
+		list(q.Context(), w, v, e, family)
 	})
 	r.Get("/public-context/records/{id}", func(w http.ResponseWriter, q *http.Request) {
 		v, e := s.Get(q.Context(), chi.URLParam(q, "id"))
@@ -253,6 +270,6 @@ func (s Service) Mount(r chi.Router) {
 	})
 	r.Get("/public-context/records/{id}/history", func(w http.ResponseWriter, q *http.Request) {
 		v, e := s.History(q.Context(), chi.URLParam(q, "id"))
-		list(q.Context(), w, v, e)
+		list(q.Context(), w, v, e, "weather")
 	})
 }

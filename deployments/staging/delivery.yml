@@ -47,6 +47,13 @@ services:
       C4ISR_HTTP_ADDR: :8080
       C4ISR_ENVIRONMENT_LIBRARY_ENABLED: ${C4ISR_ENVIRONMENT_LIBRARY_ENABLED:-false}
       C4ISR_ENVIRONMENT_TOOLCHAIN: ${C4ISR_ENVIRONMENT_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_ENRICHMENT_TOOLCHAIN: ${C4ISR_ENVIRONMENT_ENRICHMENT_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_OBSERVATION_TOOLCHAIN: ${C4ISR_ENVIRONMENT_OBSERVATION_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_COASTAL_TOOLCHAIN: ${C4ISR_ENVIRONMENT_COASTAL_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_DISPLAY_TOOLCHAIN: ${C4ISR_ENVIRONMENT_DISPLAY_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_LAYER_TOOLCHAIN: ${C4ISR_ENVIRONMENT_LAYER_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_SPOOL: /data/environment-api
+    volumes: [emad-staging-environment-api-scratch:/data]
     secrets:
       - object_access_key
       - object_secret_key
@@ -137,6 +144,8 @@ services:
       C4ISR_PUBLIC_CONNECTORS_FILE: ''
       C4ISR_ENVIRONMENT_LIBRARY_ENABLED: ${C4ISR_ENVIRONMENT_LIBRARY_ENABLED:-false}
       C4ISR_ENVIRONMENT_TOOLCHAIN: ${C4ISR_ENVIRONMENT_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_DISPLAY_TOOLCHAIN: ${C4ISR_ENVIRONMENT_DISPLAY_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_LAYER_TOOLCHAIN: ${C4ISR_ENVIRONMENT_LAYER_TOOLCHAIN:-}
       C4ISR_ENVIRONMENT_SPOOL: /data/attempts
     mem_limit: 2304m
     volumes: [emad-staging-environment-scratch:/data]
@@ -148,6 +157,99 @@ services:
       - object_secret_key
       - source: environment_worker
         target: worker-environment.token
+  environment-enrichment:
+    <<: *worker
+    profiles: [environment-enrichment]
+    entrypoint: [/app/bin/emad-environment]
+    command: [-token-file, /run/secrets/worker-enrichment.token, -processor, /app/scripts/data/environment_enrichment.py]
+    environment:
+      <<: *worker-env
+      C4ISR_PUBLIC_CONNECTORS_FILE: ''
+      C4ISR_ENVIRONMENT_LIBRARY_ENABLED: ${C4ISR_ENVIRONMENT_LIBRARY_ENABLED:-false}
+      C4ISR_ENVIRONMENT_TOOLCHAIN: ${C4ISR_ENVIRONMENT_ENRICHMENT_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_SPOOL: /data/enrichment
+    mem_limit: 2304m
+    volumes: [emad-staging-enrichment-scratch:/data]
+    secrets:
+      - database_url
+      - object_access_key
+      - object_secret_key
+      - source: enrichment_worker
+        target: worker-enrichment.token
+  environment-observation:
+    <<: *worker
+    profiles: [environment-observation]
+    entrypoint: [/app/bin/emad-environment]
+    command: [-token-file, /run/secrets/worker-observation.token, -processor, /app/scripts/data/environment_observation.py]
+    environment:
+      <<: *worker-env
+      C4ISR_PUBLIC_CONNECTORS_FILE: ''
+      C4ISR_ENVIRONMENT_LIBRARY_ENABLED: ${C4ISR_ENVIRONMENT_LIBRARY_ENABLED:-false}
+      C4ISR_ENVIRONMENT_TOOLCHAIN: ${C4ISR_ENVIRONMENT_OBSERVATION_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_SPOOL: /data/observation
+    mem_limit: 2304m
+    volumes: [emad-staging-observation-scratch:/data]
+    secrets:
+      - database_url
+      - object_access_key
+      - object_secret_key
+      - source: observation_worker
+        target: worker-observation.token
+  environment-coastal:
+    <<: *worker
+    profiles: [environment-coastal]
+    entrypoint: [/app/bin/emad-environment]
+    command: [-token-file, /run/secrets/worker-coastal.token, -processor, /app/scripts/data/environment_coastal.py]
+    environment:
+      <<: *worker-env
+      C4ISR_PUBLIC_CONNECTORS_FILE: ''
+      C4ISR_ENVIRONMENT_LIBRARY_ENABLED: ${C4ISR_ENVIRONMENT_LIBRARY_ENABLED:-false}
+      C4ISR_ENVIRONMENT_TOOLCHAIN: ${C4ISR_ENVIRONMENT_COASTAL_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_SPOOL: /data/coastal
+    mem_limit: 1024m
+    volumes: [emad-staging-coastal-scratch:/data]
+    secrets:
+      - database_url
+      - object_access_key
+      - object_secret_key
+      - source: coastal_worker
+        target: worker-coastal.token
+  environment-http: &environment-http
+    image: emad-delivery:${C4ISR_VERSION:-staging}
+    profiles: [environment-http]
+    entrypoint: [/app/bin/emad-environment]
+    command: [-api-origin, '${C4ISR_ENVIRONMENT_WORKER_API_ORIGIN:-http://api:8080}', -token-file, /run/secrets/worker-environment-http.token, -processor, /app/scripts/data/environment_library.py]
+    environment:
+      C4ISR_ENVIRONMENT_TOOLCHAIN: ${C4ISR_ENVIRONMENT_TOOLCHAIN:-}
+      C4ISR_ENVIRONMENT_SPOOL: /data/attempts
+    secrets:
+      - source: environment_http_worker
+        target: worker-environment-http.token
+    read_only: true
+    volumes: [emad-staging-environment-http-scratch:/data]
+    tmpfs: [/tmp]
+    mem_limit: 2304m
+    restart: unless-stopped
+    depends_on:
+      api: {condition: service_healthy}
+  environment-http-secondary:
+    <<: *environment-http
+    volumes: [emad-staging-environment-http-secondary-scratch:/data]
+    secrets:
+      - source: environment_http_secondary_worker
+        target: worker-environment-http.token
+  environment-prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: [environment-observability]
+    command: [--config.file=/etc/prometheus/prometheus-environment.yml, --storage.tsdb.path=/prometheus, --storage.tsdb.retention.time=15d]
+    volumes:
+      - ../observability/prometheus-environment.yml:/etc/prometheus/prometheus-environment.yml:ro
+      - ../observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ../observability/environment-target-alerts.yml:/etc/prometheus/environment-target-alerts.yml:ro
+      - emad-staging-environment-metrics:/prometheus
+    secrets:
+      - environment_metrics_token
+    restart: unless-stopped
   connectors:
     <<: *worker
     # One exact-source identity per instance. Create separate services for each
@@ -165,6 +267,13 @@ volumes:
   emad-staging-object-meta:
   emad-staging-preparation:
   emad-staging-environment-scratch:
+  emad-staging-environment-api-scratch:
+  emad-staging-environment-http-scratch:
+  emad-staging-environment-http-secondary-scratch:
+  emad-staging-enrichment-scratch:
+  emad-staging-observation-scratch:
+  emad-staging-coastal-scratch:
+  emad-staging-environment-metrics:
 secrets:
   object_access_key: {file: '${STAGING_SECRET_DIR:-./.secrets}/object_access_key'}
   object_secret_key: {file: '${STAGING_SECRET_DIR:-./.secrets}/object_secret_key'}
@@ -178,3 +287,9 @@ secrets:
 
   delivery_author: {file: '${STAGING_SECRET_DIR:-./.secrets}/delivery-author.token'}
   environment_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-environment.token'}
+  enrichment_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-enrichment.token'}
+  observation_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-observation.token'}
+  coastal_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-coastal.token'}
+  environment_http_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-environment-http.token'}
+  environment_http_secondary_worker: {file: '${STAGING_SECRET_DIR:-./.secrets}/worker-environment-http-secondary.token'}
+  environment_metrics_token: {file: '${STAGING_SECRET_DIR:-./.secrets}/environment-metrics.token'}

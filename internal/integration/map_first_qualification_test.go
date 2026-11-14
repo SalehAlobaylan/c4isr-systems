@@ -165,6 +165,13 @@ func TestMapFirstQualificationConcurrentSample(t *testing.T) {
 	if err = f.h.pool.QueryRow(context.Background(), `SELECT count(*) FROM retrieval_profile_state WHERE last_attempt_at IS NOT NULL`).Scan(&attempted); err != nil || attempted != 10 {
 		t.Fatalf("ten distinct schedules did not run: %d %v", attempted, err)
 	}
+	// The planned worker restart uses its own isolated source and identity, so
+	// the replacement worker cannot distort the measured request distribution.
+	// A provisioning failure is recorded, not fatal.
+	restart := make(chan map[string]any, 1)
+	go func() {
+		restart <- plannedWorkerRestart(t, f)
+	}()
 	start := time.Now()
 	end := start.Add(duration)
 	var wg sync.WaitGroup
@@ -189,13 +196,21 @@ func TestMapFirstQualificationConcurrentSample(t *testing.T) {
 	go func() {
 		defer wg.Done()
 		next := start.Add(12 * time.Second)
+		retainedBaseline := int64(-1)
 		for time.Now().Before(end) {
 			var mem runtime.MemStats
 			runtime.ReadMemStats(&mem)
-			var dbBytes, queued int64
+			var dbBytes, queued, retained int64
 			var oldestQueue, freshnessAge *float64
-			e := f.h.pool.QueryRow(context.Background(), `SELECT pg_database_size(current_database()),(SELECT count(*) FROM delivery_jobs WHERE state IN('QUEUED','RUNNING')),(SELECT max(EXTRACT(EPOCH FROM clock_timestamp()-created_at))::float8 FROM delivery_jobs WHERE state IN('QUEUED','RUNNING')),(SELECT max(EXTRACT(EPOCH FROM clock_timestamp()-last_success_at))::float8 FROM retrieval_profile_state)`).Scan(&dbBytes, &queued, &oldestQueue, &freshnessAge)
-			emit(map[string]any{"kind": "telemetry", "elapsedSeconds": time.Since(start).Seconds(), "heapBytes": mem.HeapAlloc, "dbBytes": dbBytes, "deliveryQueue": queued, "oldestDeliveryQueueSeconds": oldestQueue, "oldestRetrievalSuccessAgeSeconds": freshnessAge, "goroutines": runtime.NumGoroutine(), "success": e == nil})
+			e := f.h.pool.QueryRow(context.Background(), `SELECT pg_database_size(current_database()),(SELECT count(*) FROM delivery_jobs WHERE state IN('QUEUED','RUNNING')),(SELECT max(EXTRACT(EPOCH FROM clock_timestamp()-created_at))::float8 FROM delivery_jobs WHERE state IN('QUEUED','RUNNING')),(SELECT max(EXTRACT(EPOCH FROM clock_timestamp()-last_success_at))::float8 FROM retrieval_profile_state),(SELECT (SELECT count(*) FROM public_evidence)+(SELECT count(*) FROM artifacts)+(SELECT count(*) FROM composite_outputs)+(SELECT count(*) FROM observations)+(SELECT count(*) FROM delivery_jobs))`).Scan(&dbBytes, &queued, &oldestQueue, &freshnessAge, &retained)
+			rss, rssError := processResidentBytes()
+			mu.Lock()
+			if retainedBaseline < 0 {
+				retainedBaseline = retained
+			}
+			growth := retained - retainedBaseline
+			mu.Unlock()
+			emit(map[string]any{"kind": "telemetry", "elapsedSeconds": time.Since(start).Seconds(), "heapBytes": mem.HeapAlloc, "dbBytes": dbBytes, "deliveryQueue": queued, "oldestDeliveryQueueSeconds": oldestQueue, "oldestRetrievalSuccessAgeSeconds": freshnessAge, "goroutines": runtime.NumGoroutine(), "processRssBytes": rss, "processRssBasis": "resident set size of this isolated API process; not container or cgroup memory", "processRssError": rssError != nil, "retainedObjects": retained, "retainedObjectGrowth": growth, "success": e == nil})
 			if time.Now().After(next) {
 				request(f.worker, "scheduled_retrieval", "POST", "/api/v1/sources/"+f.source+"/scheduler/run", nil, false)
 				next = next.Add(12 * time.Second)
@@ -204,7 +219,14 @@ func TestMapFirstQualificationConcurrentSample(t *testing.T) {
 		}
 	}()
 	wg.Wait()
-	emit(map[string]any{"kind": "end", "completed": true, "elapsedSeconds": time.Since(start).Seconds(), "failures": failures, "workerRestart": "NOT_RUN", "fullWorkload": "NOT_RUN", "observedHumans": "NOT_RUN"})
+	var restartOutcome map[string]any
+	select {
+	case restartOutcome = <-restart:
+	case <-time.After(180 * time.Second):
+		restartOutcome = map[string]any{"planned": 1, "performed": 0, "status": "FAIL",
+			"reason": "the planned worker restart did not finish inside the qualification window"}
+	}
+	emit(map[string]any{"kind": "end", "completed": true, "elapsedSeconds": time.Since(start).Seconds(), "failures": failures, "workerRestart": restartOutcome, "fullWorkload": "NOT_RUN", "observedHumans": "NOT_RUN"})
 	if failures != 0 {
 		t.Fatalf("workload retained %d failures (see workload.jsonl)", failures)
 	}

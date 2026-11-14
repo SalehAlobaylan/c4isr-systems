@@ -2,6 +2,8 @@
 
 Status: **NOT_RUN**. Owner: product validation / appointed observer. This is a protocol, not evidence that sessions occurred. E04 remains unconfirmed. Automated role fixtures and registered synthetic database identities are not observed people.
 
+**Extended, not replaced:** the [T23 observed analyst/reviewer session protocol](MAP_FIRST_T23_OBSERVED_SESSION_PROTOCOL.md) carries this document forward unchanged and adds the frozen-brief, geographic-package, case-handoff and offline-recipient journeys, the explicit `workflowChecks` matrix that the session validator enforces, and the per-task attempt/assistance accounting that A19's exit measurement needs. Run T23 sessions against the T23 protocol; this document remains the foundation it extends.
+
 Use separate analyst, reviewer, source-administrator and restricted-reader accounts. An independent reviewer must be a different canonical human from the analyst, not a second credential for the same person. Use a reviewed dataset and approved retrieval profiles; record any unavailable feed as unavailable.
 
 For each participant, record a consented anonymous identifier, role, locale, timezone, browser/device, viewport/text enlargement, input method and accessibility needs. Record start/end time, completion, errors, recovery, assistance and a short participant explanation of what the output establishes. Do not include credentials or personal case text in evidence.

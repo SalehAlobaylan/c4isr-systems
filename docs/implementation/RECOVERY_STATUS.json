@@ -391,7 +391,7 @@
         "D09"
       ],
       "evidence": [
-        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "HISTORICAL_RECOVERY.md#recovery-acceptance",
         "evidence/recovery/ACCEPTANCE.json"
       ],
       "externalPrerequisites": []
@@ -409,7 +409,7 @@
         "D12"
       ],
       "evidence": [
-        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "HISTORICAL_RECOVERY.md#recovery-acceptance",
         "evidence/recovery/ACCEPTANCE.json"
       ],
       "externalPrerequisites": []
@@ -426,7 +426,7 @@
         "D10"
       ],
       "evidence": [
-        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "HISTORICAL_RECOVERY.md#recovery-acceptance",
         "evidence/recovery/ACCEPTANCE.json"
       ],
       "externalPrerequisites": [
@@ -444,7 +444,7 @@
         "D05"
       ],
       "evidence": [
-        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "HISTORICAL_RECOVERY.md#recovery-acceptance",
         "evidence/recovery/ACCEPTANCE.json"
       ],
       "externalPrerequisites": []
@@ -460,7 +460,7 @@
         "D07"
       ],
       "evidence": [
-        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "HISTORICAL_RECOVERY.md#recovery-acceptance",
         "evidence/recovery/ACCEPTANCE.json"
       ],
       "externalPrerequisites": []
@@ -477,7 +477,7 @@
         "D12"
       ],
       "evidence": [
-        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "HISTORICAL_RECOVERY.md#recovery-acceptance",
         "evidence/recovery/ACCEPTANCE.json"
       ],
       "externalPrerequisites": []
@@ -494,7 +494,7 @@
         "D11"
       ],
       "evidence": [
-        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "HISTORICAL_RECOVERY.md#recovery-acceptance",
         "evidence/recovery/ACCEPTANCE.json"
       ],
       "externalPrerequisites": []
@@ -509,7 +509,7 @@
         "D12"
       ],
       "evidence": [
-        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "HISTORICAL_RECOVERY.md#recovery-acceptance",
         "evidence/recovery/ACCEPTANCE.json"
       ],
       "externalPrerequisites": []
@@ -525,26 +525,26 @@
         "D11"
       ],
       "evidence": [
-        "DELIVERY_RECOVERY_ACCEPTANCE.md",
+        "HISTORICAL_RECOVERY.md#recovery-acceptance",
         "evidence/recovery/ACCEPTANCE.json"
       ],
       "externalPrerequisites": []
     }
   ],
   "acceptedAt": "2026-10-23T12:47:56.078254+00:00",
-  "acceptance": "DELIVERY_RECOVERY_ACCEPTANCE.md",
+  "acceptance": "HISTORICAL_RECOVERY.md#recovery-acceptance",
   "followUps": [
     {
       "id": "OPENSKY_ACTIVATION",
       "acceptedAt": "2026-10-23T13:42:20.794929+00:00",
       "evidence": "evidence/opensky/ACCEPTANCE.json",
-      "report": "OPENSKY_ACTIVATION.md"
+      "report": "HISTORICAL_RECOVERY.md#opensky-activation"
     },
     {
       "id": "FIRMS_ACTIVATION",
       "acceptedAt": "2026-10-23T16:16:08.861046+00:00",
       "evidence": "evidence/firms/ACCEPTANCE.json",
-      "report": "FIRMS_ACTIVATION.md",
+      "report": "HISTORICAL_RECOVERY.md#firms-activation",
       "meaning": "Key and live adapter verified; persistent lookback backfills under unchanged pacing."
     }
   ]

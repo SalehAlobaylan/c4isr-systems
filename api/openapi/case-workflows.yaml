@@ -1,6 +1,7 @@
 paths:
   /api/v1/investigations/{id}/review:
     post:
+      summary: Review an exact investigation revision
       operationId: CaseReviewInput
       parameters:
       - name: id
@@ -15,6 +16,11 @@ paths:
             schema:
               $ref: '#/components/schemas/CaseReviewInput'
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '201':
           description: Exact saved revision operation
           content:
@@ -23,6 +29,7 @@ paths:
                 $ref: '#/components/schemas/CaseReviewEvent'
   /api/v1/investigations/{id}/outputs:
     post:
+      summary: Create a composite investigation output
       operationId: CompositeOutputInput
       parameters:
       - name: id
@@ -36,6 +43,11 @@ paths:
             schema:
               $ref: '#/components/schemas/CompositeOutputInput'
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '201':
           description: Exact saved revision operation
           content:
@@ -44,6 +56,7 @@ paths:
                 $ref: '#/components/schemas/CompositeOutput'
   /api/v1/investigations/{id}/history:
     get:
+      summary: List investigation revision history
       operationId: historyCaseWorkflow
       parameters:
       - name: id
@@ -51,6 +64,11 @@ paths:
         required: true
         schema: *id001
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Authorized immutable history
           content:
@@ -66,6 +84,7 @@ paths:
                 - items
   /api/v1/investigations/{id}/reviews:
     get:
+      summary: List investigation reviews
       operationId: reviewsCaseWorkflow
       parameters:
       - name: id
@@ -73,6 +92,11 @@ paths:
         required: true
         schema: *id001
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Authorized immutable history
           content:
@@ -88,9 +112,15 @@ paths:
                 - items
   /api/v1/investigations/review-inbox:
     get:
+      summary: List investigations awaiting review
       operationId: reviewinboxCaseWorkflow
       parameters: []
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Authorized immutable history
           content:
@@ -106,6 +136,7 @@ paths:
                 - items
   /api/v1/outputs/{id}:
     get:
+      summary: Get a composite output
       operationId: getCompositeOutput
       parameters:
       - name: id
@@ -113,6 +144,11 @@ paths:
         required: true
         schema: *id001
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Authorized output/tombstone
           content:
@@ -126,6 +162,7 @@ paths:
       required: true
       schema: *id001
     put:
+      summary: Store the composite output render
       operationId: stageCompositeOutput
       requestBody:
         required: true
@@ -135,6 +172,11 @@ paths:
               type: string
               format: binary
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Immutable render committed
           content:
@@ -142,6 +184,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CompositeOutput'
     get:
+      summary: Download the composite output
       operationId: downloadCompositeOutput
       parameters:
       - name: distribution
@@ -149,6 +192,11 @@ paths:
         schema:
           type: boolean
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Verified immutable bytes
           content:
@@ -158,6 +206,7 @@ paths:
                 format: binary
   /api/v1/outputs/{id}/expire:
     post:
+      summary: Expire a composite output
       operationId: expireCompositeOutput
       parameters:
       - name: id
@@ -165,6 +214,11 @@ paths:
         required: true
         schema: *id001
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Retained tombstone
           content:
@@ -378,6 +432,14 @@ components:
           type:
           - boolean
           - 'null'
+        geographicViewerExport:
+          description: Explicit permission for a portable geographic viewing derivative under this admission.
+          type:
+          - boolean
+          - 'null'
+        geographicContextExport:
+          description: Permission to pin admitted data in an immutable geographic context handoff.
+          type: [boolean, 'null']
         metadataRetention:
           type:
           - boolean

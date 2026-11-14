@@ -12,9 +12,12 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[2]
 BASE = ROOT / "docs/implementation"
 LEDGER = BASE / "MAP_FIRST_BACKLOG_2026_10_25.json"
-PLAN = BASE / "MAP_FIRST_IMPLEMENTATION_PLAN_2026_10_25.md"
-REPORT = BASE / "MAP_FIRST_GAP_REPORT_2026_10_25.md"
-AUDIT = BASE / "MAP_FIRST_PLAN_AUDIT_2026_10_25.md"
+# The gap report, gap analysis, implementation plan and plan audit were merged
+# into one record on 11 November 2026. Each original remains a section.
+PLAN = BASE / "MAP_FIRST_PLAN.md"
+REPORT = PLAN
+AUDIT = PLAN
+ANALYSIS = PLAN
 
 
 def ids(prefix, count):
@@ -26,6 +29,16 @@ def expand_tasks(value):
     for first, last in re.findall(r"T(\d{2})[–-]T(\d{2})", value):
         found.update(f"T{n:02}" for n in range(int(first), int(last) + 1))
     return found
+
+
+def plan_section(plan, ident):
+    """Return the body of a plan section, tolerating the merged heading depth."""
+    match = re.search(r"^#{3,4} %s — .*$" % ident, plan, re.M)
+    if not match:
+        return ""
+    rest = plan[match.end():]
+    following = re.search(r"^#{3,4} ", rest, re.M)
+    return rest[:following.start()] if following else rest
 
 
 def validate(data, plan, check_files=True):
@@ -54,15 +67,17 @@ def validate(data, plan, check_files=True):
     need(set(hardening) == ids("H", 12), "Expected H01–H12")
     need(set(requirements) == {f"R{n:02}.{k}" for n in range(1, 19) for k in range(1, 4)},
          "Expected all 54 atomic requirements")
-    headings = re.findall(r"^### (T\d{2}) — (.+)$", plan, re.M)
-    acceptance = re.findall(r"^### (A\d{2}) — (.+)$", plan, re.M)
+    # The plan was merged into a larger record, so its own headings sit one
+    # level deeper than the standalone document used to carry them.
+    headings = re.findall(r"^#{3,4} (T\d{2}) — (.+)$", plan, re.M)
+    acceptance = re.findall(r"^#{3,4} (A\d{2}) — (.+)$", plan, re.M)
     need([i for i, _ in headings] == sorted(tasks), "Plan task headings/order drift")
     need([i for i, _ in acceptance] == sorted(scenarios), "Plan scenario headings/order drift")
     for tid, title in headings:
         if tid not in tasks:
             continue
         task = tasks[tid]
-        section = plan.split(f"### {tid} — ", 1)[1].split("\n### ", 1)[0]
+        section = plan_section(plan, tid)
         fields = re.search(r"\*\*Gate:\*\* (.*?) \*\*Depends on:\*\* (.*?)\. "
                            r"\*\*Gaps:\*\* (.*?)\. \*\*Acceptance:\*\* ([^\n]+)", section)
         need(fields is not None, f"Missing task contract: {tid}")
@@ -180,11 +195,11 @@ def validate(data, plan, check_files=True):
             if path.is_file():
                 digest = hashlib.sha256(path.read_text(encoding="utf-8").encode()).hexdigest()
                 need(digest == source["sha256"], f"Planning source changed; review required: {source['path']}")
-        report_gaps = dict(re.findall(r"^### (GAP-\d{2}) .*? — (P\d)$", REPORT.read_text(encoding="utf-8"), re.M))
+        report_gaps = dict(re.findall(r"^#{3,4} (GAP-\d{2}) .*? — (P\d)$", REPORT.read_text(encoding="utf-8"), re.M))
         need(report_gaps == {gid: gap["priority"] for gid, gap in gaps.items()}, "Original report gap/priority drift")
         for key in ("plan", "governingScope", "audit"):
             need((BASE / data[key]).is_file(), f"Missing ledger document: {key}")
-        for path in (PLAN, REPORT, AUDIT, BASE / "MAP_FIRST_GAP_ANALYSIS_2026_10_25.md"):
+        for path in (PLAN, ANALYSIS):
             need(path.is_file(), f"Missing document: {path}")
             if not path.is_file():
                 continue

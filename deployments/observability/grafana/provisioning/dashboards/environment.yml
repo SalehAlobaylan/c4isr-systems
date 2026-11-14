@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: Geographic environment
+    folder: C4ISR
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards/json

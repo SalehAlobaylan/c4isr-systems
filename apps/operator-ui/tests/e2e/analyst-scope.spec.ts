@@ -32,6 +32,48 @@ async function setup(page:Page){
 }
 test.beforeEach(async({page},info)=>{test.skip(info.project.name!=='no-token','One deterministic scope matrix');await setup(page)})
 
+test('country boundaries load independently and evidence recovers from a concurrent read',async({page})=>{
+ let evidenceReads=0
+ await page.route('**/api/v1/catalog/reads',route=>route.request().postDataJSON().kind==='geography'
+   ?json(route,{error:{code:'conflict',message:'active read capacity exhausted'}},409):route.fallback())
+ await page.route('**/api/v1/analyst-scope/read',route=>{
+   if(++evidenceReads===1)return json(route,{error:{code:'conflict',message:'concurrent read capacity claim; restart this view'}},409)
+   return route.fallback()
+ })
+ const recovered=page.waitForResponse(response=>response.url().endsWith('/api/v1/analyst-scope/read')&&response.ok())
+ await page.goto('/map')
+ await expect(page.locator('.atlas-canvas')).toHaveAttribute('data-navigation-feature-count','1')
+ await recovered
+ expect(evidenceReads).toBeGreaterThan(1)
+ await expect(page.getByRole('complementary',{name:'Map data availability'})).toHaveCount(0)
+})
+
+test('leaving the page releases both map and catalog reads with keepalive',async({page})=>{
+ await page.addInitScript(()=>{
+   const original=window.fetch
+   window.fetch=(input,init)=>{
+     if(input instanceof Request&&(input.url.endsWith('/release')||input.method==='DELETE'&&input.url.includes('/catalog/reads/'))){
+       const releases=JSON.parse(sessionStorage.getItem('test-read-releases')??'[]')
+       releases.push({path:new URL(input.url).pathname,keepalive:input.keepalive})
+       sessionStorage.setItem('test-read-releases',JSON.stringify(releases))
+     }
+     return original(input,init)
+   }
+ })
+ const mapRead=page.waitForResponse(r=>r.url().endsWith('/api/v1/analyst-scope/read')&&r.ok()&&r.request().postDataJSON().families?.length>0)
+ const catalogRead=page.waitForResponse(r=>r.url().endsWith('/api/v1/catalog/reads')&&r.ok()&&r.request().postDataJSON().kind==='scenes')
+ await page.goto(scopeURL({kind:'world'},'imagery'))
+ const map=await (await mapRead).json()
+ const catalog=await (await catalogRead).json()
+ await expect(page.getByLabel('Collection 1 scene')).toContainText('fixture-jan-scene')
+ await page.reload()
+ const releases=await page.evaluate(()=>JSON.parse(sessionStorage.getItem('test-read-releases')??'[]'))
+ expect(releases).toEqual(expect.arrayContaining([
+   {path:`/api/v1/analyst-scope/reads/${map.id}/release`,keepalive:true},
+   {path:`/api/v1/catalog/reads/${catalog.snapshotId}`,keepalive:true},
+ ]))
+})
+
 const forms:[string,AreaSelection][]=[
  ['country',{kind:'administrative',regionId:country.id,sourceId:'geo-source',releaseId:'release-a'}],
  ['subdivision',{kind:'administrative',regionId:subdivision.id,sourceId:'geo-source',releaseId:'release-a'}],

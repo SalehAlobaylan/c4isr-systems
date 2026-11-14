@@ -1,0 +1,175 @@
+paths:
+  /api/v1/environment-releases/{id}/display-builds:
+    post:
+      operationId: submitEnvironmentDisplayBuild
+      summary: Queue a durable geographic display from a pinned release
+      description: Requires environments.qualify and the parent source grants. The request key is idempotent within the caller's scope. Read the shared environment build and attempt endpoints with the returned ID. The imagery recipe takes the exact retained Sentinel-2 scene JSON as a string.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EnvironmentDisplayBuildInput'}
+      responses:
+        '202': {"description":"Durable display build","headers":{"Location":{"description":"Relative build status URL","schema":{"type":"string"}}},"content":{"application/json":{"schema":{"$ref":"./environment-library.yaml#/components/schemas/EnvironmentBuild"}}}}
+        '4XX': {"description":"Display build request rejected","content":{"application/json":{"schema":{"$ref":"./openapi.yaml#/components/schemas/Error"}}}}
+  /api/v1/environment-display-builds/{id}/cancel:
+    post:
+      operationId: cancelEnvironmentDisplayBuild
+      summary: Cancel a queued or running display build
+      description: Requires the submitting reviewer and environments.qualify. Cancellation fences the active worker lease.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200': {"description":"Canceled display build","content":{"application/json":{"schema":{"$ref":"./environment-library.yaml#/components/schemas/EnvironmentBuild"}}}}
+        '4XX': {"description":"Cancellation rejected","content":{"application/json":{"schema":{"$ref":"./openapi.yaml#/components/schemas/Error"}}}}
+  /api/v1/environment-releases/{id}/displays:
+    get:
+      operationId: listEnvironmentDisplays
+      summary: List published displays for an authorized release
+      description: Requires environments.read and all parent source grants. Reviewers may inspect staged and verified releases. Other readers require a released parent.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+        - {"name":"after","in":"query","required":false,"schema":{"type":"string"}}
+      responses:
+        '200': {"description":"Scoped page of published geographic displays","content":{"application/json":{"schema":{"type":"object","required":["items"],"properties":{"items":{"type":"array","items":{"$ref":"#/components/schemas/EnvironmentDisplay"}},"next":{"type":"string"}}}}}}
+        '4XX': {"description":"Display request rejected","content":{"application/json":{"schema":{"$ref":"./openapi.yaml#/components/schemas/Error"}}}}
+    post:
+      operationId: reserveEnvironmentDisplay
+      summary: Reserve a geographic display against the exact release manifest
+      description: Requires environments.qualify. An identical retry by the same owner returns the existing reservation. Changed intent, mismatched dependencies, unavailable storage and exceeded quota return conflict. Pending reservations are private.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      requestBody: {"required":true,"content":{"application/json":{"schema":{"$ref":"#/components/schemas/EnvironmentDisplayInput"}}}}
+      responses:
+        '201': {"description":"Display manifest and current state","content":{"application/json":{"schema":{"$ref":"#/components/schemas/EnvironmentDisplay"}}}}
+        '4XX': {"description":"Display request rejected","content":{"application/json":{"schema":{"$ref":"./openapi.yaml#/components/schemas/Error"}}}}
+  /api/v1/environment-releases/{id}/viewing-packages:
+    post:
+      operationId: issueEnvironmentViewingPackage
+      summary: Issue a portable viewing manifest for released geographic displays
+      description: Requires environments.download and explicit portable viewing permission in each selected dependency's original and current admission. Expiry is bounded by the earliest applicable retention or rights date. Use the SHA-256 of the exact issuance response for offline verification.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [manifestSha256, viewerSha256, navigationSha256, displays]
+              properties:
+                manifestSha256: {"type":"string","pattern":"^[0-9a-f]{64}$"}
+                viewerSha256: {"type":"string","pattern":"^[0-9a-f]{64}$"}
+                navigationSha256: {"type":"string","pattern":"^[0-9a-f]{64}$"}
+                displays: {"type":"array","minItems":1,"maxItems":6,"uniqueItems":true,"items":{"type":"string"}}
+                expiresAt: {"type":"string","format":"date-time"}
+      responses:
+        '201':
+          description: Audited portable viewer issuance manifest
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnvironmentViewingIssuance'}
+        '4XX': {"description":"Issuance denied","content":{"application/json":{"schema":{"$ref":"./openapi.yaml#/components/schemas/Error"}}}}
+  /api/v1/environment-displays/{id}/manifest:
+    get:
+      operationId: getEnvironmentDisplay
+      summary: Get the manifest of a published display
+      description: Requires environments.read and current eligibility for the parent release and its sources.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      responses:
+        '200': {"description":"Display manifest and current state","content":{"application/json":{"schema":{"$ref":"#/components/schemas/EnvironmentDisplay"}}}}
+        '4XX': {"description":"Display request rejected","content":{"application/json":{"schema":{"$ref":"./openapi.yaml#/components/schemas/Error"}}}}
+  /api/v1/environment-displays/{id}/content:
+    get:
+      operationId: downloadEnvironmentDisplay
+      summary: Download a verified geographic display
+      description: Requires environments.download and current eligibility for the parent release and its sources. If-Range must equal the strong ETag to retain a requested range.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+        - {"name":"Range","in":"header","required":false,"schema":{"type":"string"}}
+        - {"name":"If-Range","in":"header","required":false,"schema":{"type":"string"}}
+      responses:
+        '200': {"description":"Verified display bytes","content":{"model/gltf-binary":{"schema":{"type":"string","format":"binary"}},"application/json":{"schema":{"type":"object"}},"application/vnd.pmtiles":{"schema":{"type":"string","format":"binary"}}},"headers":{"ETag":{"schema":{"type":"string"}},"Accept-Ranges":{"schema":{"const":"bytes"}},"Content-Length":{"schema":{"type":"integer"}}}}
+        '206': {"description":"One range of the verified display","content":{"model/gltf-binary":{"schema":{"type":"string","format":"binary"}},"application/json":{"schema":{"type":"object"}},"application/vnd.pmtiles":{"schema":{"type":"string","format":"binary"}}},"headers":{"ETag":{"schema":{"type":"string"}},"Content-Range":{"schema":{"type":"string"}},"Accept-Ranges":{"schema":{"const":"bytes"}},"Content-Length":{"schema":{"type":"integer"}}}}
+        '416': {"description":"Unsatisfiable or unsupported byte range","headers":{"Content-Range":{"schema":{"type":"string"}}}}
+        '4XX': {"description":"Display request rejected","content":{"application/json":{"schema":{"$ref":"./openapi.yaml#/components/schemas/Error"}}}}
+    put:
+      operationId: publishEnvironmentDisplay
+      summary: Verify and publish the reserved geographic display
+      description: Requires environments.qualify and the reservation owner. Send the exact Content-Length and binary bytes. Corrupt content returns a validation error. An identical retry after publication returns the ready record.
+      parameters:
+        - {"name":"id","in":"path","required":true,"schema":{"type":"string"}}
+      requestBody: {"required":true,"content":{"model/gltf-binary":{"schema":{"type":"string","format":"binary"}},"application/json":{"schema":{"type":"object"}},"application/vnd.pmtiles":{"schema":{"type":"string","format":"binary"}}}}
+      responses:
+        '200': {"description":"Display manifest and current state","content":{"application/json":{"schema":{"$ref":"#/components/schemas/EnvironmentDisplay"}}}}
+        '4XX': {"description":"Display request rejected","content":{"application/json":{"schema":{"$ref":"./openapi.yaml#/components/schemas/Error"}}}}
+components:
+  schemas:
+    EnvironmentDisplayBuildInput:
+      type: object
+      required: [requestKey, manifestSha256, recipe]
+      properties:
+        requestKey: {type: string, pattern: '^[A-Za-z0-9_.:-]{1,128}$'}
+        manifestSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        recipe: {type: string, enum: [terrain-glb-v1, terrain-glb-v2, imagery-display-v1, roads-display-v1, buildings-display-v1, water-display-v1]}
+        sceneMetadata: {type: string, maxLength: 49152}
+    EnvironmentViewingIssuance:
+      type: object
+      required: [schema, id, releaseId, name, manifestSha256, viewerVersion, viewerSha256, navigationSha256, issuedAt, expiresAt, displays, terms]
+      properties:
+        schema: {"type":"string","const":"emad.viewing-issuance.v1"}
+        id: {"type":"string"}
+        releaseId: {"type":"string"}
+        name: {"type":"string"}
+        manifestSha256: {"type":"string","pattern":"^[0-9a-f]{64}$"}
+        viewerVersion: {"type":"string","const":"emad-geographic-viewer-v1"}
+        viewerSha256: {"type":"string","pattern":"^[0-9a-f]{64}$"}
+        navigationSha256: {"type":"string","pattern":"^[0-9a-f]{64}$"}
+        issuedAt: {"type":"string","format":"date-time"}
+        expiresAt: {"type":"string","format":"date-time"}
+        displays: {"type":"array","items":{"$ref":"#/components/schemas/EnvironmentDisplay"}}
+        terms:
+          type: array
+          items:
+            type: object
+            required: [inputId, originalAdmissionId, currentAdmissionId, originalPolicyId, termsUrl, attribution, legalBasis]
+            properties:
+              inputId: {"type":"string"}
+              originalAdmissionId: {"type":"string"}
+              currentAdmissionId: {"type":"string"}
+              originalPolicyId: {"type":"string"}
+              termsUrl: {"type":"string"}
+              attribution: {"type":"string"}
+              legalBasis: {"type":"string"}
+    EnvironmentDisplayInput:
+      type: object
+      required: [requestKey, manifestSha256, toolchainSha256, recipe, inputs, sha256, bytes]
+      properties:
+        requestKey: {"type":"string","minLength":1,"maxLength":128}
+        manifestSha256: {"type":"string","pattern":"^[0-9a-f]{64}$"}
+        toolchainSha256: {"type":"string","pattern":"^[0-9a-f]{64}$"}
+        recipe: {"type":"string","enum":["terrain-glb-v1","terrain-glb-v2","imagery-display-v1","roads-display-v1","buildings-display-v1","water-display-v1","street-pmtiles-v1","land-cover-display-v1","ground-delta-display-v1","ground-glb-v1","radar-display-v1"]}
+        inputs: {"type":"array","minItems":1,"maxItems":128,"items":{"type":"object","required":["name","sha256"],"properties":{"name":{"type":"string"},"sha256":{"type":"string","pattern":"^[0-9a-f]{64}$"}}}}
+        sha256: {"type":"string","pattern":"^[0-9a-f]{64}$"}
+        bytes: {"type":"integer","minimum":1,"maximum":33554432}
+    EnvironmentDisplay:
+      allOf:
+        - {$ref: '#/components/schemas/EnvironmentDisplayInput'}
+        - type: object
+          required: [id, schemaVersion, releaseId, areaRevisionId, state, frame, bounds, physicalAccuracy, axisOrder, verticalDatum, mediaType, retainUntil]
+          properties:
+            id: {"type":"string"}
+            schemaVersion: {"type":"integer","const":1}
+            releaseId: {"type":"string"}
+            areaRevisionId: {"type":"string"}
+            state: {"type":"string","enum":["PENDING","READY","EXPIRED"]}
+            frame: {"type":"object","additionalProperties":true}
+            bounds: {"type":"array","items":{"type":"number"},"minItems":4,"maxItems":4}
+            physicalAccuracy: {"type":"string"}
+            axisOrder: {"type":"array","items":{"type":"string","enum":["east","up","south"]},"minItems":3,"maxItems":3,"description":"X east, Y up, Z south in metres."}
+            verticalDatum: {"type":"string","const":"WGS84 ellipsoid"}
+            mediaType: {"type":"string","enum":["model/gltf-binary","application/json","application/vnd.pmtiles"]}
+            retainUntil: {"type":"string","format":"date-time"}

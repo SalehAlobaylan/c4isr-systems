@@ -56,9 +56,11 @@ func (s Service) Mount(r chi.Router) {
 				next.ServeHTTP(w, r)
 			})
 		})
-		r.Get("/environment-profiles", func(w http.ResponseWriter, r *http.Request) {
-			respond(w, 200, profiles, require(r.Context(), Read, false))
-		})
+		r.Get("/environment-profiles", s.listProfiles)
+		s.mountWorker(r)
+		r.Get("/environment-operations/metrics", s.environmentMetrics)
+		r.Get("/environment-operations/storage", s.storageStatus)
+		r.Get("/environment-sources/{id}/impact", s.sourcePolicyImpact)
 		r.Get("/geographic-environments", s.listDefinitions)
 		r.Post("/geographic-environments", func(w http.ResponseWriter, r *http.Request) {
 			request(w, r, 201, func(ctx context.Context, in DefinitionInput) (Definition, error) {
@@ -104,7 +106,7 @@ func (s Service) Mount(r chi.Router) {
 				httpx.Error(w, err)
 				return
 			}
-			j, err := s.job(ctx, chi.URLParam(r, "id"))
+			j, err := s.visibleJob(ctx, chi.URLParam(r, "id"))
 			respond(w, 200, j, err)
 		})
 		r.Get("/environment-builds/{id}/attempts", s.attempts)
@@ -133,6 +135,10 @@ func (s Service) Mount(r chi.Router) {
 			}
 			ctx, cancel := context.WithTimeout(r.Context(), 30*time.Minute)
 			defer cancel()
+			controller := http.NewResponseController(w)
+			if deadline, ok := ctx.Deadline(); ok && controller.SetReadDeadline(deadline) == nil {
+				defer controller.SetReadDeadline(time.Time{})
+			}
 			a, err := s.upload(ctx, chi.URLParam(r, "id"), r.Body, r.ContentLength)
 			respond(w, 200, a, err)
 		})
@@ -140,10 +146,43 @@ func (s Service) Mount(r chi.Router) {
 		r.Get("/environment-releases", s.listReleases)
 		r.Get("/environment-releases/{id}", s.releaseDetail)
 		r.Get("/environment-releases/{id}/manifest", s.releaseManifest)
+		r.Get("/environment-releases/{id}/lineage", s.releaseLineage)
+		r.Get("/environment-releases/{id}/decisions", func(w http.ResponseWriter, r *http.Request) {
+			v, err := s.releaseDecisions(r.Context(), chi.URLParam(r, "id"))
+			respond(w, 200, v, err)
+		})
 		r.Get("/environment-releases/{id}/quality", s.releaseQuality)
+		r.Get("/environment-releases/{id}/quality-report", s.structuredReleaseQuality)
 		r.Get("/environment-releases/{id}/stac", s.stac)
 		r.Get("/environment-releases/{id}/prepared", s.prepared)
 		r.Get("/environment-releases/{id}/rebuild", s.rebuild)
+		r.Get("/environment-releases/{id}/displays", s.listDisplays)
+		r.Post("/environment-releases/{id}/viewing-packages", func(w http.ResponseWriter, r *http.Request) {
+			request(w, r, http.StatusCreated, func(ctx context.Context, in ViewingPackageInput) (ViewingPackage, error) {
+				return s.issueViewingPackage(ctx, chi.URLParam(r, "id"), in)
+			})
+		})
+		r.Post("/environment-releases/{id}/display-builds", func(w http.ResponseWriter, r *http.Request) {
+			request(w, r, http.StatusAccepted, func(ctx context.Context, in DisplayBuildInput) (Job, error) {
+				j, err := s.submitDisplayBuild(ctx, chi.URLParam(r, "id"), in)
+				if err == nil {
+					w.Header().Set("Location", "/api/v1/environment-builds/"+j.ID)
+				}
+				return j, err
+			})
+		})
+		r.Post("/environment-display-builds/{id}/cancel", func(w http.ResponseWriter, r *http.Request) {
+			j, err := s.changeBuild(r.Context(), chi.URLParam(r, "id"), "cancel", true)
+			respond(w, http.StatusOK, j, err)
+		})
+		r.Post("/environment-releases/{id}/displays", func(w http.ResponseWriter, r *http.Request) {
+			request(w, r, http.StatusCreated, func(ctx context.Context, in DisplayInput) (Display, error) {
+				return s.reserveDisplay(ctx, chi.URLParam(r, "id"), in)
+			})
+		})
+		r.Get("/environment-displays/{id}/manifest", s.displayManifest)
+		r.Get("/environment-displays/{id}/content", s.displayContent)
+		r.Put("/environment-displays/{id}/content", s.uploadDisplay)
 		for _, action := range []string{"verify", "release", "withdraw"} {
 			r.Post("/environment-releases/{id}/"+action, func(w http.ResponseWriter, r *http.Request) {
 				request(w, r, 200, func(ctx context.Context, in ReleaseAction) (EnvironmentRelease, error) {
@@ -197,7 +236,7 @@ func (s Service) listAssets(w http.ResponseWriter, r *http.Request) {
 	out := page[Asset]{Items: []Asset{}}
 	after, layer := r.URL.Query().Get("after"), r.URL.Query().Get("layer")
 	for len(out.Items) < 51 {
-		rows, err := db.Scoped(s.Pool).Query(ctx, assetSelect()+`WHERE id>$1 AND state='READY' AND retain_until>clock_timestamp() AND document#>>'{representation,format}'<>'release-zip' AND ($2='' OR document#>>'{representation,layer}'=$2) ORDER BY id LIMIT 100`, after, layer)
+		rows, err := db.Scoped(s.Pool).Query(ctx, assetSelect()+`WHERE id>$1 AND state='READY' AND retain_until>clock_timestamp() AND document#>>'{representation,format}' NOT IN ('release-zip','display-glb','display-layer-json','display-pmtiles') AND ($2='' OR document#>>'{representation,layer}'=$2) ORDER BY id LIMIT 100`, after, layer)
 		if err != nil {
 			httpx.Error(w, err)
 			return
@@ -251,7 +290,7 @@ func (s Service) attempts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := chi.URLParam(r, "id")
-	if _, err := s.job(ctx, id); err != nil {
+	if _, err := s.visibleJob(ctx, id); err != nil {
 		httpx.Error(w, err)
 		return
 	}
@@ -287,8 +326,15 @@ func (s Service) listReleases(w http.ResponseWriter, r *http.Request) {
 	}
 	out := page[EnvironmentRelease]{Items: []EnvironmentRelease{}}
 	after := r.URL.Query().Get("after")
+	source := r.URL.Query().Get("source")
+	if source != "" {
+		if err := access.RequireSource(ctx, source); err != nil {
+			httpx.Error(w, err)
+			return
+		}
+	}
 	for len(out.Items) < 21 {
-		rows, err := db.Scoped(s.Pool).Query(ctx, releaseSelect+`WHERE r.id>$1 AND ($2='' OR r.build_id=$2) ORDER BY r.id LIMIT 21`, after, r.URL.Query().Get("build"))
+		rows, err := db.Scoped(s.Pool).Query(ctx, releaseSelect+`WHERE r.id>$1 AND ($2='' OR r.build_id=$2) AND ($3::text='' OR r.required_sources @> jsonb_build_array($3::text)) ORDER BY r.id LIMIT 21`, after, r.URL.Query().Get("build"), source)
 		if err != nil {
 			httpx.Error(w, err)
 			return
@@ -380,17 +426,34 @@ func (s Service) stac(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, err)
 		return
 	}
-	var bounds [4]float64
-	err = db.Scoped(s.Pool).QueryRow(r.Context(), `SELECT ST_XMin(g),ST_YMin(g),ST_XMax(g),ST_YMax(g) FROM (SELECT ST_GeomFromGeoJSON($1) g) x`, string(m.Area)).Scan(&bounds[0], &bounds[1], &bounds[2], &bounds[3])
+	bounds, err := s.areaBounds(r.Context(), m.Area)
 	if err != nil {
 		httpx.Error(w, err)
 		return
 	}
 	base := "/api/v1/environment-releases/" + rel.ID
+	assets := map[string]any{"prepared": map[string]any{"href": base + "/prepared", "type": "application/zip", "roles": []string{"data"}}, "manifest": map[string]any{"href": base + "/manifest", "type": "application/json", "roles": []string{"metadata"}}}
+	displays, err := s.readyDisplays(r.Context(), rel.ID, "")
+	if err != nil {
+		httpx.Error(w, err)
+		return
+	}
+	for _, display := range displays.Items {
+		assets[display.ID] = map[string]any{
+			"href": "/api/v1/environment-displays/" + display.ID + "/content",
+			"type": display.MediaType, "roles": []string{"overview"}, "title": "Visual reference " + displayFormat(display.Recipe).layer,
+		}
+	}
 	respond(w, 200, map[string]any{"type": "Feature", "stac_version": "1.1.0", "id": rel.ID, "geometry": m.Area, "bbox": bounds,
 		"properties": map[string]any{"datetime": rel.CreatedAt, "emad:datetimeMeaning": "Package creation time; see manifest for per-source data times", "emad:profile": m.ProfileID},
 		"links":      []map[string]string{{"rel": "self", "href": base + "/stac"}},
-		"assets":     map[string]any{"prepared": map[string]any{"href": base + "/prepared", "type": "application/zip", "roles": []string{"data"}}, "manifest": map[string]any{"href": base + "/manifest", "type": "application/json", "roles": []string{"metadata"}}}}, nil)
+		"assets":     assets}, nil)
+}
+
+func (s Service) areaBounds(ctx context.Context, area json.RawMessage) ([4]float64, error) {
+	var bounds [4]float64
+	err := db.Scoped(s.Pool).QueryRow(ctx, `SELECT ST_XMin(g),ST_YMin(g),ST_XMax(g),ST_YMax(g) FROM (SELECT ST_GeomFromGeoJSON($1) g) x`, string(area)).Scan(&bounds[0], &bounds[1], &bounds[2], &bounds[3])
+	return bounds, err
 }
 
 func parseRange(value string, size int64) (*artifacts.ByteRange, error) {
@@ -434,7 +497,12 @@ func (s Service) stream(w http.ResponseWriter, r *http.Request, a Asset, filenam
 		httpx.Error(w, apperr.Conflict("geographic object unavailable"))
 		return
 	}
-	part, err := parseRange(r.Header.Get("Range"), a.Bytes)
+	tag := `"` + a.SHA256 + `"`
+	requestedRange := r.Header.Get("Range")
+	if validator := r.Header.Get("If-Range"); validator != "" && validator != tag {
+		requestedRange = ""
+	}
+	part, err := parseRange(requestedRange, a.Bytes)
 	if err != nil {
 		w.Header().Set("Content-Range", fmt.Sprintf("bytes */%d", a.Bytes))
 		w.WriteHeader(http.StatusRequestedRangeNotSatisfiable)
@@ -448,7 +516,7 @@ func (s Service) stream(w http.ResponseWriter, r *http.Request, a Asset, filenam
 	defer in.Close()
 	w.Header().Set("Content-Type", a.MediaType)
 	w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`)
-	w.Header().Set("ETag", `"`+a.SHA256+`"`)
+	w.Header().Set("ETag", tag)
 	w.Header().Set("Accept-Ranges", "bytes")
 	length, status := a.Bytes, 200
 	if part != nil {
@@ -472,7 +540,7 @@ func (s Service) assetContent(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, err)
 		return
 	}
-	if a.Representation.Format == "release-zip" {
+	if !originalFormat(a.Representation.Format) {
 		httpx.Error(w, apperr.NotFound("source object", "unavailable"))
 		return
 	}

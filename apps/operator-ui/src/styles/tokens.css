@@ -288,4 +288,5 @@
      workspace rather than punching a hole in it, and a marker at the frame
      edge still reads against it. */
   --emad-map-ground: var(--emad-mist-surface);
+  --emad-map-water: #c7dce0;
 }

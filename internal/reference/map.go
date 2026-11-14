@@ -188,7 +188,8 @@ func (s *Service) mapFeatures(ctx context.Context, family string, q url.Values, 
 		}
 		return out, nil
 	}
-	if f.View != "latest" || (family == "weather" || family == "bulletins" || family == "aircraft" || family == "vessels") && f.ObservedTo != nil && f.ObservedTo.Before(time.Now().Add(-5*time.Minute)) {
+	if f.View != "latest" && !(family == "bulletins" && scoped && f.View == "known_at") ||
+		(family == "weather" || family == "aircraft" || family == "vessels") && f.ObservedTo != nil && f.ObservedTo.Before(time.Now().Add(-5*time.Minute)) {
 		out.State = "historical_unsupported"
 		return out, nil
 	}
@@ -203,11 +204,21 @@ func (s *Service) mapFeatures(ctx context.Context, family string, q url.Values, 
 		base = `SELECT j.id,CASE WHEN j.result->'findingGeometry' IS NOT NULL AND j.result->'findingGeometry'<>'null'::jsonb THEN ST_SetSRID(ST_GeomFromGeoJSON((j.result->'findingGeometry')::text),4326) END geom,(j.input#>>'{scenes,1,acquiredAt}')::timestamptz stamp,jsonb_build_object('recordId',j.id,'jobId',j.id,'sourceId',j.source_id,'kind','findings','title','Derived NDVI change · inspect review','date',j.input#>>'{scenes,1,acquiredAt}','beforeDate',j.input#>>'{scenes,0,acquiredAt}','computedAt',j.created_at,'synthetic',j.result->'synthetic','reviewStatus',COALESCE(rv.status,'NO_PROPOSAL'),'assessmentId',rv.assessment_id,'meaning','Algorithmic geometry. Human workflow status does not establish a verified real-world fact.','count',1) props FROM imagery_jobs j LEFT JOIN LATERAL(SELECT r.status,r.assessment_id FROM assessment_review_heads h JOIN assessment_revisions r ON r.id=h.latest_id WHERE emad_content_visible('assessment',r.assessment_id) AND r.document#>>'{evidence,id}'=j.id ORDER BY r.document->>'recordedAt' DESC,r.id LIMIT 1)rv ON true WHERE emad_content_visible('job',j.id) AND j.status='SUCCEEDED' AND j.input->>'kind'='NDVI_CHANGE'`
 	case "weather", "bulletins":
 		kind := "WEATHER"
+		selection := ""
 		if family == "bulletins" {
 			kind = "REPORT"
+			if scoped && (temporal.Mode == "historical" || temporal.RevisionView == "known_at" || temporal.Interval.To.Before(temporal.EvaluatedAt.Add(-5*time.Minute))) ||
+				!scoped && f.ObservedTo != nil && f.ObservedTo.Before(time.Now().Add(-5*time.Minute)) {
+				selection = " AND EXISTS (SELECT 1 FROM public_evidence p WHERE (p.id,p.scope_id)=(public_context_records.evidence_id,public_context_records.scope_id) AND p.document#>>'{context,extractionMethod}'='nasa-eonet-floods-v1')"
+				out.CountMeaning = "Retained historical flood reports from eligible sources; gaps do not establish absence."
+			}
+			if scoped && temporal.AsOf != nil {
+				selection += " AND EXISTS (SELECT 1 FROM public_evidence_catalog c WHERE (c.evidence_id,c.scope_id)=(public_context_records.evidence_id,public_context_records.scope_id) AND c.published_at<=TIMESTAMPTZ '" + temporal.AsOf.Format(time.RFC3339Nano) + "')"
+			}
 		}
-		base = `WITH latest AS(SELECT DISTINCT ON(source_id,record_key) * FROM public_context_records WHERE kind='` + kind + `' ORDER BY source_id,record_key,revision_at DESC,known_at DESC,evidence_id DESC)
-  SELECT r.evidence_id id,r.position geom,r.valid_from stamp,jsonb_build_object('recordId',r.evidence_id,'evidenceId',r.evidence_id,'sourceId',r.source_id,'kind','` + family + `','title',e.document#>>'{context,title}','revisionId',r.evidence_id,'date',r.valid_from,'validUntil',r.valid_to,'source',e.document->>'upstreamProvider','temperature',e.document#>'{context,weather,temperatureC}','wind',e.document#>'{context,weather,windSpeedMps}','uncertainty',e.document#>>'{context,uncertainty}','ageSeconds',GREATEST(0,extract(epoch FROM now()-r.valid_to)),'status',CASE WHEN r.valid_to<now()-COALESCE((ad.document#>>'{policy,freshForSeconds}')::int,3600)*interval '1 second' THEN 'stale' ELSE 'current' END,'count',1) props FROM latest r JOIN public_evidence e ON e.id=r.evidence_id JOIN retrieval_profile_revisions original_profile ON original_profile.admission_id=e.admission_id JOIN retrieval_profile_state cs ON cs.source_id=r.source_id AND cs.profile_key=original_profile.profile_key JOIN source_admissions ad ON ad.id=cs.admission_id`
+		base = `WITH latest AS(SELECT DISTINCT ON(source_id,record_key) * FROM public_context_records WHERE kind='` + kind + `'` + selection + ` ORDER BY source_id,record_key,revision_at DESC,known_at DESC,evidence_id DESC)
+  SELECT r.evidence_id id,r.position geom,r.valid_from stamp,jsonb_build_object('recordId',r.evidence_id,'evidenceId',r.evidence_id,'sourceId',r.source_id,'kind','` + family + `','title',e.document#>>'{context,title}','revisionId',r.evidence_id,'date',r.valid_from,'validUntil',r.valid_to,'source',e.document->>'upstreamProvider','providerRevision',e.document->>'providerRevision','reportHistory',e.document#>'{context,report,eventHistory}','lineageKeys',e.document#>'{context,report,lineageKeys}','temperature',e.document#>'{context,weather,temperatureC}','wind',e.document#>'{context,weather,windSpeedMps}','uncertainty',e.document#>>'{context,uncertainty}','ageSeconds',GREATEST(0,extract(epoch FROM now()-r.valid_to)),'status',CASE WHEN r.valid_to<now()-COALESCE((ad.document#>>'{policy,freshForSeconds}')::int,3600)*interval '1 second' THEN 'stale' ELSE 'current' END,'count',1) props FROM latest r JOIN public_evidence e ON e.id=r.evidence_id JOIN retrieval_profile_revisions original_profile ON original_profile.admission_id=e.admission_id JOIN retrieval_profile_state cs ON cs.source_id=r.source_id AND cs.profile_key=original_profile.profile_key JOIN source_admissions ad ON ad.id=cs.admission_id
+  WHERE COALESCE((ad.document->>'enabled')::boolean,false) AND (ad.document#>>'{rights,expiresAt}' IS NULL OR (ad.document#>>'{rights,expiresAt}')::timestamptz>clock_timestamp())`
 	case "aircraft", "vessels":
 		kind := "aircraft"
 		if family == "vessels" {

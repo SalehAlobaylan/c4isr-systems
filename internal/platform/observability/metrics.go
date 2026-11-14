@@ -49,6 +49,24 @@ type latencyMetric struct {
 	count atomic.Uint64
 }
 
+// ObserveContextCoverage records bounded, aggregate samples. No source or area
+// identifiers are attached to platform metrics.
+func (m *Metrics) ObserveContextCoverage(failed, limited bool, age *time.Duration) {
+	if m == nil {
+		return
+	}
+	if failed {
+		inc(&m.valueCount, "context_retrieval_failure_samples_total")
+	}
+	if limited {
+		inc(&m.valueCount, "context_display_limited_samples_total")
+	}
+	if age != nil && *age >= 0 {
+		inc(&m.valueCount, "context_observation_age_samples_total")
+		add(&m.valueCount, "context_observation_age_seconds_sum", uint64(*age/time.Second))
+	}
+}
+
 const (
 	latencyObservationIngest = "observation_ingest"
 	latencyTelemetryIngest   = "telemetry_ingest"

@@ -1,5 +1,7 @@
 window.__C4ISR_CONFIG__ = {
   apiBaseUrl: "${C4ISR_UI_API_BASE_URL}",
   apiToken: "${C4ISR_API_TOKEN}",
-  mapStyleUrl: "${VITE_MAP_STYLE_URL}"
+  mapStyleUrl: "${VITE_MAP_STYLE_URL}",
+  localBasemapOnly: "${C4ISR_UI_LOCAL_BASEMAP_ONLY}",
+  geographicPreviewEnabled: "${C4ISR_UI_GEOGRAPHIC_PREVIEW_ENABLED}"
 };

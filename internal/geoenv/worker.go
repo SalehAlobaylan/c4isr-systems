@@ -23,13 +23,14 @@ import (
 type Processor func(context.Context, string) error
 
 var ErrInvalidInputs = errors.New("geographic input validation failed")
+var ErrScratchBudget = errors.New("geographic scratch budget exceeded")
 
 const (
 	attemptTimeout         = 30 * time.Minute
 	attemptDirectoryPrefix = "emad-environment-"
 )
 
-func (s Service) claim(ctx context.Context) (Job, error) {
+func (s Service) claim(ctx context.Context, displayToolchain, layerToolchain string) (Job, error) {
 	var j Job
 	p, r, _ := access.From(ctx)
 	err := db.WithTx(ctx, s.Pool, func(tx pgx.Tx) error {
@@ -40,14 +41,18 @@ func (s Service) claim(ctx context.Context) (Job, error) {
 		if err != nil {
 			return err
 		}
-		var running int
-		if err = tx.QueryRow(ctx, `SELECT count(*) FROM geographic_environment_builds WHERE state='RUNNING' AND lease_until>clock_timestamp()`).Scan(&running); err != nil {
+		var available bool
+		if err = tx.QueryRow(ctx, `SELECT emad_environment_claim_capacity($1)`, min(2, max(1, s.Parallel))).Scan(&available); err != nil {
 			return err
 		}
-		if running >= max(1, s.Parallel) {
+		if !available {
 			return nil
 		}
-		j, err = scanJob(tx.QueryRow(ctx, jobSelect+`WHERE recipe->>'toolchainSha256'=$1 AND attempt<3 AND ((state='QUEUED' AND next_attempt_at<=clock_timestamp()) OR (state='RUNNING' AND lease_until<=clock_timestamp())) ORDER BY next_attempt_at,id LIMIT 1 FOR UPDATE SKIP LOCKED`, s.Toolchain))
+		j, err = scanJob(tx.QueryRow(ctx, jobSelect+`WHERE
+			(($1<>'' AND recipe->>'toolchainSha256'=$1 AND NOT recipe ? 'display')
+			OR (recipe ? 'display' AND (recipe->>'toolchainSha256'=NULLIF($2,'') OR recipe->>'toolchainSha256'=NULLIF($3,''))))
+			AND attempt<3 AND ((state='QUEUED' AND next_attempt_at<=clock_timestamp()) OR (state='RUNNING' AND lease_until<=clock_timestamp()))
+			ORDER BY next_attempt_at,id LIMIT 1 FOR UPDATE SKIP LOCKED`, s.Toolchain, displayToolchain, layerToolchain))
 		if apperr.Is(err, apperr.CodeNotFound) {
 			return nil
 		}
@@ -60,7 +65,7 @@ func (s Service) claim(ctx context.Context) (Job, error) {
 			}
 		}
 		j.State, j.Attempt, j.worker, j.lease = "RUNNING", j.Attempt+1, p.ID, ids.New("geolease")
-		if _, err = tx.Exec(ctx, `UPDATE geographic_environment_builds SET state='RUNNING',attempt=$2,worker_id=$3,lease_id=$4,lease_until=clock_timestamp()+interval '60 seconds',failure_code='' WHERE id=$1`, j.ID, j.Attempt, j.worker, j.lease); err != nil {
+		if err = tx.QueryRow(ctx, `UPDATE geographic_environment_builds SET state='RUNNING',attempt=$2,worker_id=$3,lease_id=$4,lease_until=clock_timestamp()+interval '60 seconds',failure_code='' WHERE id=$1 RETURNING lease_until`, j.ID, j.Attempt, j.worker, j.lease).Scan(&j.leaseUntil); err != nil {
 			return err
 		}
 		return buildEvent(ctx, tx, j, "RUNNING", "")
@@ -114,7 +119,20 @@ func (s Service) WorkOne(auth context.Context, process Processor) (bool, error) 
 	if s.Store == nil || !digestPattern.MatchString(s.Toolchain) || process == nil {
 		return false, apperr.Conflict("worker storage or processor unavailable")
 	}
-	j, err := s.claim(ctx)
+	displayToolchain, layerToolchain := "", ""
+	if s.DisplayProcessor != nil {
+		displayToolchain = s.DisplayToolchain
+	}
+	if s.LayerProcessor != nil {
+		layerToolchain = s.LayerToolchain
+	}
+	if s.DisplayOnly {
+		if !digestPattern.MatchString(displayToolchain) && !digestPattern.MatchString(layerToolchain) {
+			return false, apperr.Conflict("geographic display processor unavailable")
+		}
+		s.Toolchain = ""
+	}
+	j, err := s.claim(ctx, displayToolchain, layerToolchain)
 	if err != nil || j.ID == "" {
 		return false, err
 	}
@@ -137,7 +155,12 @@ func (s Service) WorkOne(auth context.Context, process Processor) (bool, error) 
 			}
 		}
 	}()
-	code, err := s.prepare(work, auth, j, process)
+	var code string
+	if j.recipe.Display != nil {
+		code, err = s.prepareDisplay(work, auth, j)
+	} else {
+		code, err = s.prepare(work, auth, j, process)
+	}
 	cancel()
 	<-done
 	if err == nil {
@@ -198,6 +221,9 @@ func (s Service) prepare(work, auth context.Context, j Job, process Processor) (
 		return "transient_io", err
 	}
 	if err = process(work, dir); err != nil {
+		if errors.Is(err, ErrScratchBudget) {
+			return "scratch_budget_exceeded", err
+		}
 		if errors.Is(err, ErrInvalidInputs) {
 			return "invalid_input", err
 		}

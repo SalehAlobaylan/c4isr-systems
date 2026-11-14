@@ -5,6 +5,7 @@ info:
 paths:
   /api/v1/areas/resolve:
     post:
+      summary: Resolve an area selection
       operationId: resolveArea
       responses:
         '200':
@@ -32,6 +33,7 @@ paths:
               $ref: '#/components/schemas/AreaSelection'
   /api/v1/areas/revisions:
     post:
+      summary: Retain an area revision
       operationId: retainAreaRevision
       responses:
         '201':
@@ -59,6 +61,7 @@ paths:
               $ref: '#/components/schemas/AreaSelection'
   /api/v1/areas/revisions/{id}:
     get:
+      summary: Get a retained area revision
       operationId: getAreaRevision
       responses:
         '200':
@@ -87,6 +90,7 @@ paths:
           type: string
   /api/v1/analyst-scope/resolve:
     post:
+      summary: Resolve analyst scope
       operationId: resolveAnalystScope
       responses:
         '200':
@@ -114,6 +118,7 @@ paths:
               $ref: '#/components/schemas/ScopeInput'
   /api/v1/analyst-scope/freeze:
     post:
+      summary: Freeze an analyst scope snapshot
       operationId: freezeAnalystScope
       responses:
         '201':
@@ -141,6 +146,7 @@ paths:
               $ref: '#/components/schemas/ScopeInput'
   /api/v1/analyst-scope/snapshots/{id}:
     get:
+      summary: Get a frozen analyst scope
       operationId: getAnalystScope
       responses:
         '200':
@@ -164,6 +170,7 @@ paths:
       - *id001
   /api/v1/analyst-scope/read:
     post:
+      summary: Create a scoped evidence read
       operationId: readAnalystScope
       responses:
         '200':
@@ -191,6 +198,7 @@ paths:
               $ref: '#/components/schemas/ScopeReadInput'
   /api/v1/analyst-scope/reads/{id}:
     get:
+      summary: Get a scoped evidence read page
       operationId: getAnalystReadPage
       responses:
         '200':
@@ -262,6 +270,7 @@ paths:
       - *id001
   /api/v1/geography/releases:
     post:
+      summary: Create a geographic release
       operationId: createGeographicReleases
       responses:
         '201':
@@ -289,6 +298,7 @@ paths:
               $ref: '#/components/schemas/GeographicReleaseInput'
   /api/v1/geography/releases/{id}:
     get:
+      summary: Get a geographic release
       operationId: getGeographicReleases
       responses:
         '200':
@@ -312,6 +322,7 @@ paths:
       - *id001
   /api/v1/geography/profiles:
     post:
+      summary: Create a geographic profile
       operationId: createGeographicProfiles
       responses:
         '201':
@@ -339,6 +350,7 @@ paths:
               $ref: '#/components/schemas/RegionProfileInput'
   /api/v1/geography/profiles/{id}:
     get:
+      summary: Get a geographic profile
       operationId: getGeographicProfiles
       responses:
         '200':
@@ -609,6 +621,10 @@ components:
           $ref: '#/components/schemas/ScopeQueryFilters'
         zoom: *id003
         includeEvents: *id006
+        purpose:
+          type: string
+          enum: [geographic_preview, geographic_handoff]
+          description: A geographic preview returns display data without allocating a saved read handle. A geographic handoff uses an independent pageable handle.
       additionalProperties: false
       required:
       - area

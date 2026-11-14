@@ -31,7 +31,14 @@ def family(layer):
 
 
 def register_area(api, root, area, rules):
+    from shapely.geometry import box, shape
+
     recipe = read(root / f"{area['key']}-candidate" / "recipe.json")
+    bounds = area["area"]
+    if not shape(recipe["area"]["geometry"]).equals(
+        box(bounds["west"], bounds["south"], bounds["east"], bounds["north"])
+    ):
+        raise ValueError(f"Reviewed source bounds differ from the candidate area for {area['key']}")
     bindings = {}
     sources = {}
     for asset in recipe["inputs"]:
@@ -101,6 +108,7 @@ def main():
     parser.add_argument("--workspace", required=True)
     parser.add_argument("--environment", required=True)
     parser.add_argument("--worker-principal")
+    parser.add_argument("--areas-only", action="store_true", help="Stage the detailed releases using the installed navigation")
     args = parser.parse_args()
     if args.action == "stage" and not args.worker_principal:
         parser.error("The exact source-scoped worker identity is required")
@@ -132,7 +140,7 @@ def main():
                                       {"requestKey": request_key, "revision": submitted["revision"]})
             write(args.output, result)
             print(f"Queued {area['name']}: {entry['build']['id']}", flush=True)
-    if args.action == "stage":
+    if args.action == "stage" and not args.areas_only:
         result["navigation"] = install_navigation(api, read(args.candidate_root / "regional-navigation.json"))
         write(args.output, result)
     print(f"Commissioning record: {args.output}")

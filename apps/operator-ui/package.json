@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:geographic-viewer": "vite build --config vite.geographic-viewer.config.ts",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "contracts:generate": "openapi-typescript ../../api/openapi/openapi.yaml -o src/lib/openapi.generated.ts",
@@ -24,6 +25,7 @@
     "clsx": "^2.1.1",
     "maplibre-gl": "^5.24.0",
     "openapi-fetch": "0.17.0",
+    "pmtiles": "4.4.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "tailwind-merge": "^3.7.0",

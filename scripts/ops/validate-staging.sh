@@ -6,7 +6,7 @@ ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 secret_dir=$(mktemp -d "${TMPDIR:-/tmp}/c4isr-staging-secrets.XXXXXX")
 cleanup() {
     rm -f -- "$secret_dir/postgres_password" "$secret_dir/database_url" \
-        "$secret_dir/auth_tokens" "$secret_dir/ui_token" "$secret_dir/grafana_admin_password"
+        "$secret_dir/auth_tokens" "$secret_dir/ui_token" "$secret_dir/grafana_admin_password" "$secret_dir/garage.env"
     rmdir -- "$secret_dir"
 }
 trap cleanup EXIT INT TERM
@@ -28,13 +28,17 @@ printf 'postgres://c4isr:postgres-password@postgres:5432/c4isr?sslmode=disable\n
 printf 'operator-01=staging-token\n' > "$secret_dir/auth_tokens"
 printf 'staging-token\n' > "$secret_dir/ui_token"
 printf 'grafana-password\n' > "$secret_dir/grafana_admin_password"
+touch "$secret_dir/garage.env"
 chmod 600 "$secret_dir"/*
 
 STAGING_SECRET_DIR="$docker_secret_dir" \
 ALERTMANAGER_WEBHOOK_URL="http://alert-sink.invalid/alerts" \
+EMAD_CONNECTOR_SOURCE_ID="staging-validation" \
 docker compose \
     --env-file "$docker_root/deployments/staging/.env.staging.example" \
     -f "$docker_root/deployments/staging/docker-compose.yml" \
+    -f "$docker_root/deployments/staging/delivery.yml" \
+    --profile environment-http --profile environment-observability \
     config --quiet
 
 docker run --rm \
@@ -45,6 +49,15 @@ docker run --rm \
     --entrypoint /bin/promtool \
     -v "$docker_root/deployments/observability:/etc/prometheus:ro" \
     prom/prometheus:v3.5.0 check rules /etc/prometheus/alerts.yml
+docker run --rm \
+    --entrypoint /bin/promtool \
+    -v "$docker_root/deployments/observability:/etc/prometheus:ro" \
+    prom/prometheus:v3.5.0 check config --syntax-only /etc/prometheus/prometheus-environment.yml
+docker run --rm \
+    --entrypoint /bin/promtool \
+    -v "$docker_root/deployments/observability:/etc/prometheus:ro" \
+    -w /etc/prometheus \
+    prom/prometheus:v3.5.0 test rules environment-alerts.test.yml
 docker run --rm \
     -v "$docker_root/deployments/observability/alloy.alloy:/etc/alloy/config.alloy:ro" \
     grafana/alloy:v1.19.0 fmt /etc/alloy/config.alloy >/dev/null

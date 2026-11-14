@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { test, expect, workspaceSelection } from './test'
+import { test, expect, scopedAddress, studyArea, workspaceSelection } from './test'
 const fixture = JSON.parse(process.env.EMAD_BROWSER_FIXTURE ?? '{}')
 test('public moving hypothesis exposes provenance and history without control authority', async ({ page }) => {
  await page.addInitScript((token) => { window.__C4ISR_CONFIG__ = { apiToken: token } }, fixture.token)
@@ -21,17 +21,15 @@ test('public moving hypothesis exposes provenance and history without control au
  await selected.getByRole('button', { name: 'Download exact provider record' }).first().click()
  const raw=JSON.parse(await readFile((await (await download).path())!, 'utf8'))
  expect(raw[0]).toBe('abcdef')
- const aoi = page.getByLabel('Moving-track AOI (west,south,east,north)')
- const bounds = '39.15,21.45,39.3,21.6'
- await aoi.fill(bounds)
- await page.getByRole('button', {name: 'Filter moving tracks', exact: true}).click()
- await expect.poll(() => workspaceSelection(page.url(), 'bbox')).toBe(bounds)
- await page.goBack()
- await expect(aoi).toHaveValue('')
- await page.goForward()
- await expect(aoi).toHaveValue(bounds)
- await page.goBack()
- await expect(aoi).toHaveValue('')
+ await expect(page.getByLabel('Moving-track AOI (west,south,east,north)')).toHaveAttribute('readonly', '')
+ await expect(page.getByRole('button', {name: 'Choose scope on map'})).toBeVisible()
+ const scope = {
+   area: studyArea(39.15, 21.45, 39.3, 21.6),
+   temporal: { mode: 'monitoring', rollingSeconds: 86400, revisionView: 'latest', timezone: 'UTC', backgroundImagery: false },
+ }
+ await page.goto(scopedAddress(fixture.url, '/external-tracks', scope, { id: fixture.moving.id }))
+ await expect.poll(() => workspaceSelection(page.url(), 'id')).toBe(fixture.moving.id)
+ await expect(selected.getByRole('heading', { name: /aircraft.*claimed abcdef/ })).toBeVisible()
  const bookmark = page.url()
  await page.reload()
  await expect(selected.getByRole('heading', { name: /aircraft.*claimed abcdef/ })).toBeVisible()

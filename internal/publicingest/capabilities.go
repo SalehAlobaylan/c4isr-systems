@@ -47,6 +47,11 @@ func Capability(adapter string) AdapterCapability {
 	case GDACSAdapter, GDACSRSSAdapter:
 		v.Family = "bulletins"
 		v.Credentials = "public current context"
+	case EONETAdapter:
+		v.Family = "bulletins"
+		v.Historical = true
+		v.Credentials = "public flood catalogue"
+		v.LimitMeaning = "One capped report page; reaching the cap is partial and an empty result is not absence of hazards."
 	case OpenSkyAdapter:
 		v.Family = "aircraft"
 		v.Credentials = "anonymous or server OAuth; current snapshot only"
@@ -77,7 +82,7 @@ func Capability(adapter string) AdapterCapability {
 }
 func CapabilityInventory() []AdapterCapability {
 	out := []AdapterCapability{}
-	for _, a := range []string{USGSAdapter, FIRMSAdapter, EarthSearchAdapter, STACAdapter, METARAdapter, GDACSAdapter, GDACSRSSAdapter, OpenSkyAdapter, AISAdapter, "reference-import-v1", "dem-import-v1"} {
+	for _, a := range []string{USGSAdapter, FIRMSAdapter, EarthSearchAdapter, STACAdapter, METARAdapter, GDACSAdapter, GDACSRSSAdapter, EONETAdapter, OpenSkyAdapter, AISAdapter, "reference-import-v1", "dem-import-v1"} {
 		out = append(out, Capability(a))
 	}
 	return out

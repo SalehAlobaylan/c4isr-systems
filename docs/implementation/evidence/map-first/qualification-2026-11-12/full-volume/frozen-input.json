@@ -1,0 +1,411 @@
+{
+  "schema": "emad.map-first-run-input.v1",
+  "frozenAt": "2026-11-12T15:40:28.806305+00:00",
+  "profile": {
+    "schema": "emad.map-first-qualification-profile.v1",
+    "id": "map-first-proposed-v1",
+    "status": "PROPOSED_NOT_AN_AGREED_SERVICE_GUARANTEE",
+    "dataset": {
+      "reportRevisions": 100000,
+      "detailedReferenceFeatures": 50000,
+      "weatherMovingRecords": 10000,
+      "historyRows": 1000,
+      "areas": 10
+    },
+    "concurrency": {
+      "analysts": 5,
+      "scheduledProfiles": 10,
+      "maximumActiveRasterCaptures": 4
+    },
+    "budgets": {
+      "searchCoverageP95Ms": 1000,
+      "mapFamilyTileP95Ms": 2000,
+      "firstUsefulMapMs": 3000,
+      "controlResponseMs": 100,
+      "canceledServerReadMs": 5000,
+      "detailedGeoJSONBytes": 2097152,
+      "referenceTileBytes": 524288,
+      "recoverySeconds": 300
+    },
+    "soak": {
+      "wallClockSeconds": 86400,
+      "plannedWorkerRestarts": 1
+    },
+    "geography": [
+      "Saudi Arabia",
+      "UAE",
+      "Jordan",
+      "Egypt",
+      "France",
+      "Japan",
+      "Brazil",
+      "cross-border",
+      "coastal-water",
+      "date-line",
+      "high-latitude"
+    ],
+    "selectionForms": [
+      "country",
+      "subdivision",
+      "named-study",
+      "drawn-polygon",
+      "viewport",
+      "restored-case",
+      "point-requires-area"
+    ],
+    "evidenceStates": [
+      "current",
+      "historical",
+      "corrected-late",
+      "withdrawn",
+      "successful-empty",
+      "unobserved",
+      "partial",
+      "stale",
+      "missing-credentials",
+      "denied-access",
+      "processing-failure"
+    ],
+    "requiredRecovery": [
+      "api-restart",
+      "worker-loss",
+      "stale-lease",
+      "storage-loss",
+      "provider-backoff",
+      "credential-exhaustion",
+      "storage-quota",
+      "lost-response",
+      "source-revocation",
+      "deletion-expiry-interruption",
+      "paired-restore",
+      "actual-rollback-binary-forward-recovery"
+    ],
+    "sample": {
+      "synthetic": true,
+      "reportRevisions": 0,
+      "detailedReferenceFeatures": 0,
+      "weatherMovingRecords": 0,
+      "historyRows": 1000,
+      "areas": 10,
+      "analysts": 5,
+      "scheduledProfiles": 10,
+      "defaultDurationSeconds": 5,
+      "scope": "Isolated concurrent API/history/scheduler sample. Does not qualify full scale, first useful map, browser responsiveness, process RSS, unattended restart or target-user usefulness."
+    },
+    "workflowChecks": [
+      "fresh-regional-imagery",
+      "international-imagery",
+      "new-geographic-package",
+      "case-handoff",
+      "offline-brief-reading",
+      "correct-area-period",
+      "coverage-uncertainty",
+      "keyboard-only",
+      "portrait-320px",
+      "portrait-390px",
+      "short-landscape",
+      "text-200-percent"
+    ]
+  },
+  "profileSha256": "aa60757769e57a86ab09bf4522e29da09dfaaad6bcfb9212685a0f3818bd7e40",
+  "source": {
+    "baselineCommit": "b3c0962697b0d94c5b1d7b230e37535ad751c4fb",
+    "files": [
+      {
+        "path": "PRODUCT.md",
+        "sha256": "a529211a7a11b71f6e87126d91a87fc2d34f10e59bec6f0ecf7d975fc8f97336",
+        "state": "present"
+      },
+      {
+        "path": "README.md",
+        "sha256": "3d3e563ed4c8a31f75f3cc33fbcc30c13fcf1718492854af886baa003bdbc371",
+        "state": "present"
+      },
+      {
+        "path": "Taskfile.yml",
+        "sha256": "54c98c28713a7f6d701bc3d2a6069309a5ed25f33162ea9847b0d8c4e8b1d8ae",
+        "state": "present"
+      },
+      {
+        "path": "api/openapi/acquisition-coverage.yaml",
+        "sha256": "f512c5d4355e866b815e75708797f7faa0e73eb9370d9d6ace484c1d33e00d8c",
+        "state": "present"
+      },
+      {
+        "path": "api/openapi/analyst-scope.yaml",
+        "sha256": "df21e03db2b85cd336ad4b7a08b5bbf6aeeca6a2780a3ab7e57c8d92a80b18ca",
+        "state": "present"
+      },
+      {
+        "path": "api/openapi/case-workflows.yaml",
+        "sha256": "80334a1b7010c6a3d82d48a28299af9f38d50e47857f0b7fede09ad9705d3d47",
+        "state": "present"
+      },
+      {
+        "path": "api/openapi/catalog-workflows.yaml",
+        "sha256": "58504a14e6e2b604317e321b058d1d39a38999f0ed5ecddaa94cb60444b35629",
+        "state": "present"
+      },
+      {
+        "path": "api/openapi/deliveries.yaml",
+        "sha256": "c45abb8d9662b997db2c0f06e5c8770b031b2ba28b16d1947bf5331976f13c20",
+        "state": "present"
+      },
+      {
+        "path": "api/openapi/environment-display.yaml",
+        "sha256": "af4e37d477d634da32462d56b02e7d7baa73ddb37e2e7f014762b5fb7fd0b64b",
+        "state": "present"
+      },
+      {
+        "path": "api/openapi/environment-library.yaml",
+        "sha256": "586d81bf9454745bec5ad379edc35dd7dc617593e2e4687ce725a9f9f0089740",
+        "state": "present"
+      },
+      {
+        "path": "api/openapi/environment-worker.yaml",
+        "sha256": "c8f7bb14dd9c20134af2a5f2dd0d30941e9c3405610bebcaa05a9839abb0ec0a",
+        "state": "present"
+      },
+      {
+        "path": "api/openapi/investigations.yaml",
+        "sha256": "0b2d3c8a73bc1a8a7c2c4f9ec6317067a0bdfb9b0c5f163594c0b4393f903789",
+        "state": "present"
+      },
+      {
+        "path": "api/openapi/openapi.yaml",
+        "sha256": "c4cf8c2f7f576bf5fa9ef4332a4d5b90a9a83ceb83e64ae9192922e690906b35",
+        "state": "present"
+      },
+      {
+        "path": "api/openapi/reference-profiles.yaml",
+        "sha256": "60766517d3e3b476bd459d8293a3140129af2b9f25eff7e46b0666e7841cc574",
+        "state": "present"
+      },
+      {
+        "path": "apps/emad-environment/main.go",
+        "sha256": "69e186c4d7e4bc56a4d7016116cfdda704a7eff3020471d87fb2c4f0d77dc8ec",
+        "state": "present"
+      },
+      {
+        "path": "apps/operator-ui/src/features/workspace/EnvironmentLibrary.tsx",
+        "sha256": "fed2e45012662b6ff376fed57d17750e04696e559fa25515e8f6a0cd7046959f",
+        "state": "present"
+      },
+      {
+        "path": "apps/operator-ui/src/features/workspace/TerrainPreview.tsx",
+        "sha256": "1270a72655029deed44e9bcb4926cc67205f4d710e9299857f1ab4c63da0b806",
+        "state": "present"
+      },
+      {
+        "path": "apps/operator-ui/src/lib/api.ts",
+        "sha256": "34d764c0e2cc5e664acb03d244feb565ed3729efd01e3a5915d058b13ab970d7",
+        "state": "present"
+      },
+      {
+        "path": "apps/operator-ui/src/lib/openapi.generated.ts",
+        "sha256": "b2533bd081c3b121fc7f91b494512bcf9e832224fcf6add08fecc4c6e029de2a",
+        "state": "present"
+      },
+      {
+        "path": "apps/operator-ui/tests/e2e/environment-library.spec.ts",
+        "sha256": "81d6cdad45d4264fa2c992e3232fc66f70c7a86dfc418c9782893975951233e4",
+        "state": "present"
+      },
+      {
+        "path": "db/migrations/00055_geographic_worker_completion.sql",
+        "sha256": "e23b213cecd2eeff67db59cbebcb2f2cb031d0e12abdd50b382a80a08ab71317",
+        "state": "present"
+      },
+      {
+        "path": "db/migrations/00056_geographic_displays.sql",
+        "sha256": "8f5795c1e0fd232744313eb9d1d0f2889e5ecc11b9880d25fdfb46e5254bc343",
+        "state": "present"
+      },
+      {
+        "path": "deployments/observability/alerts.yml",
+        "sha256": "25bdcd45fcb0dea161ef14a2671585628f497a0f26c9bb4c2766ebaac7897869",
+        "state": "present"
+      },
+      {
+        "path": "internal/geoenv/build.go",
+        "sha256": "d5b6251030f387a0acb9375d14b9a2cf18623d1d0eb708d38f0dba99623f9377",
+        "state": "present"
+      },
+      {
+        "path": "internal/geoenv/catalog.go",
+        "sha256": "b51e1bbc300158ef76fdf10aeae619c66a32002cea80c3e7a91539ca83e89009",
+        "state": "present"
+      },
+      {
+        "path": "internal/geoenv/display.go",
+        "sha256": "39024f2fda5031542080ec95ab37fc9ef34c8da3f666d989367581f62c480d33",
+        "state": "present"
+      },
+      {
+        "path": "internal/geoenv/display_glb.go",
+        "sha256": "af5cc694ed779c7e0dc00ea7052b1016536a0ca3716cafc174b7aec82a18b07b",
+        "state": "present"
+      },
+      {
+        "path": "internal/geoenv/http.go",
+        "sha256": "f471f15e4176563106ccdf124adef44eea10cfeafec0b6a1263add1307b8094c",
+        "state": "present"
+      },
+      {
+        "path": "internal/geoenv/lineage.go",
+        "sha256": "440cf6dcd6de60b1b05f83c8d4159f51e1fbfb224749be55bec82249ccc852cf",
+        "state": "present"
+      },
+      {
+        "path": "internal/geoenv/metrics.go",
+        "sha256": "7f6b8341db509e65a66e254bebfdba9d936c20871640a76ffa9d7f0c62e4ca71",
+        "state": "present"
+      },
+      {
+        "path": "internal/geoenv/releases.go",
+        "sha256": "b60ca0a7ce8d841cb7f947b83c21db4d6aa28e72129a27a99654e1140acab0ac",
+        "state": "present"
+      },
+      {
+        "path": "internal/geoenv/remote_worker.go",
+        "sha256": "6a5c228706493ad4f7c743aab6891c1eefdfbb0dff8f45b7db5703f2c55045a6",
+        "state": "present"
+      },
+      {
+        "path": "internal/geoenv/worker.go",
+        "sha256": "7475707ed052dcccd255b2adca691b49045f45d7feaf7a2d288c128be1730f92",
+        "state": "present"
+      },
+      {
+        "path": "internal/geoenv/worker_http.go",
+        "sha256": "b1df5033e8d6dbe9f4bfaf1363b6ab7812ad73b2041951e920516af948ebdb0b",
+        "state": "present"
+      },
+      {
+        "path": "internal/integration/geographic_environment_test.go",
+        "sha256": "968d0df55a73c5aeae7447fb5499c4df70074079defbfbacda0ca340565307e2",
+        "state": "present"
+      },
+      {
+        "path": "internal/integration/map_first_qualification_test.go",
+        "sha256": "05e2bae62de8b95b86cc880c2233a9ba0211cb111b260a9ca52cb7791ea7ab6e",
+        "state": "present"
+      },
+      {
+        "path": "internal/integration/qualification_volume_test.go",
+        "sha256": "77a3cb718a1ea030f82dc91171c77c6c467dea06d07f87004b3d522e27bb3b65",
+        "state": "present"
+      },
+      {
+        "path": "internal/integration/qualification_worker_test.go",
+        "sha256": "7f040490ef8355fda5dd3576fed55cec7692ea51d70a53c7dae0d56818ed188c",
+        "state": "present"
+      },
+      {
+        "path": "internal/integration/security_test.go",
+        "sha256": "9b69a8ec8d7f96df50672793291e94febbe62110144e361559fa4422b203dba0",
+        "state": "present"
+      },
+      {
+        "path": "internal/platform/httpx/environment_routes.go",
+        "sha256": "8dcd4a7ddeabd26d61714d434d531884c66ba1e44cf00331d63ad19edceae3aa",
+        "state": "present"
+      },
+      {
+        "path": "internal/platform/httpx/middleware.go",
+        "sha256": "4b336dd590cb4549bbfc77e2e6e5690f420deab3f6ef887f94d6a7eb2ed0b1cd",
+        "state": "present"
+      },
+      {
+        "path": "scripts/data/install_simulation.py",
+        "sha256": "c7fc8e0abb442397c1d9abb77694cd38ef332a331495b972fd91a81a3399c6b9",
+        "state": "present"
+      },
+      {
+        "path": "scripts/data/prepare_display_terrain.py",
+        "sha256": "85739e6ced163625057348dd800548957d141bfc8b11b7d081e933035a856a94",
+        "state": "present"
+      },
+      {
+        "path": "scripts/data/prepare_environment_candidates.py",
+        "sha256": "cf28e9e5762b9387bf075af216f872b485ce7798954a565fbce6457d8075cce1",
+        "state": "present"
+      },
+      {
+        "path": "scripts/data/prepare_imagery_subset.py",
+        "sha256": "266ea29d775548b51b9b44c5898459a3e6737933766016f5290b9d63746ee1dd",
+        "state": "present"
+      },
+      {
+        "path": "scripts/data/region_profiles/riyadh-reference-v1.json",
+        "sha256": "ed0a1605a3cec133bf0d4c53c616109393983172c6fbe690a10a0ca12a832ae1",
+        "state": "present"
+      },
+      {
+        "path": "scripts/ops/check_map_first_plan.py",
+        "sha256": "eb6b090b02c8f5f5b75e11a26e6787e035aba45be346701cad680f914d7653d2",
+        "state": "present"
+      },
+      {
+        "path": "scripts/ops/collect_recovery_evidence.py",
+        "sha256": "5905ca36364e3af1879d32d78e8c1edc8cab1abb52b98ac0d9b88215fe61bfa3",
+        "state": "present"
+      },
+      {
+        "path": "scripts/ops/qualify_environment_library.py",
+        "sha256": "37f84b09016332c188c929fa5cfe342123c7c7a80257a22823b679f734ec2495",
+        "state": "present"
+      },
+      {
+        "path": "scripts/ops/qualify_map_first.py",
+        "sha256": "4031e511db6268ea38dcffae8185b85298da811b0df995f96e805d2b48ca2014",
+        "state": "present"
+      },
+      {
+        "path": "scripts/ops/qualify_recovery.py",
+        "sha256": "6963ce1891915b613ad0c9d6d09e3f8e53dc493eb0d9434efc846d0cb2bad0d4",
+        "state": "present"
+      },
+      {
+        "path": "scripts/ops/qualify_rollback.py",
+        "sha256": "3cb1b2a3c341675ee5afafabbc8a747f6d2b0778e60de50c980c4027523c9b31",
+        "state": "present"
+      },
+      {
+        "path": "scripts/ops/recovery_inventory.py",
+        "sha256": "f208aaf34e8230fc252cefa6f044dc3f6f2f57e6d95aae119517b2d21bbb73cc",
+        "state": "present"
+      },
+      {
+        "path": "scripts/ops/test_map_first_qualification.py",
+        "sha256": "7d8d746e185c6f2de2f8be04c637381881a9311fda09c4b7eba89e5463fdc43c",
+        "state": "present"
+      },
+      {
+        "path": "scripts/ops/test_qualify_environment_library.py",
+        "sha256": "377b334cd7240a926ed4e3027ac577384f2d27d145886b16b78e548da72fc27f",
+        "state": "present"
+      },
+      {
+        "path": "scripts/ops/test_qualify_recovery.py",
+        "sha256": "748e6367a31cc2529174a8947418539186e1ab1f3978e9e22930d8186f926e6a",
+        "state": "present"
+      },
+      {
+        "path": "scripts/ops/verify_environment_rebuild.py",
+        "sha256": "ec02e5e7157b8a0b2312f24b1f9be477b5ab482dabe98062ebef3676cb065c99",
+        "state": "present"
+      }
+    ],
+    "fingerprint": "13caadc3d2a8ea82043dc6587a137b7ca7a8b9bcb2c906c9ef0da69dc6e14eb7"
+  },
+  "durationSeconds": 60,
+  "fullDataset": true,
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+    "logicalCPUs": 24
+  },
+  "isolation": "Go Testcontainers only; no shared installation",
+  "sharedMigrationPerformed": false
+}

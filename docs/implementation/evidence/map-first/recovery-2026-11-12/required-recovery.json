@@ -1,0 +1,131 @@
+{
+  "schema": "emad.map-first-recovery-result.v1",
+  "recordedAt": "2026-11-12T15:35:29.278225+00:00",
+  "qualification": "NOT_QUALIFIED",
+  "scope": "Isolated rehearsals only. No shared installation, credential or database was touched.",
+  "hardware": {
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 25 Model 97 Stepping 2, AuthenticAMD",
+    "logicalCPUs": 24
+  },
+  "declared": [
+    "api-restart",
+    "worker-loss",
+    "stale-lease",
+    "storage-loss",
+    "provider-backoff",
+    "credential-exhaustion",
+    "storage-quota",
+    "lost-response",
+    "source-revocation",
+    "deletion-expiry-interruption",
+    "paired-restore",
+    "actual-rollback-binary-forward-recovery"
+  ],
+  "executed": 12,
+  "counts": {
+    "PASS": 9,
+    "FAIL": 0,
+    "NOT_RUN": 3
+  },
+  "status": "PARTIAL",
+  "meaning": "A rehearsal that did not run is not evidence that the fault is handled. This file records what was exercised, not what was hoped.",
+  "items": [
+    {
+      "id": "api-restart",
+      "kind": "process-restart",
+      "establishes": "The API process stops and starts again with retained cases, releases and private bytes intact.",
+      "status": "NOT_RUN",
+      "observed": null,
+      "reason": "No process-level restart harness exists. The workload harness restarts a worker, not the API server, and restarting a shared API is out of scope for an isolated rehearsal."
+    },
+    {
+      "id": "worker-loss",
+      "kind": "process-restart",
+      "establishes": "A worker disappears mid-job and its work is recovered by another worker without double publication.",
+      "status": "NOT_RUN",
+      "observed": null,
+      "reason": "No worker-kill harness exists. Expired-lease recovery is covered by stale-lease; killing a live worker is a different fault and is not exercised."
+    },
+    {
+      "id": "stale-lease",
+      "kind": "integration-test",
+      "establishes": "An expired delivery lease is recovered and a cancelled job cannot publish.",
+      "status": "PASS",
+      "observed": "test TestMapFirstDeliveryCancellationDuringIOAndExpiredLeaseRecovery",
+      "reason": "isolated integration test passed"
+    },
+    {
+      "id": "storage-loss",
+      "kind": "integration-test",
+      "establishes": "Private object bytes survive a paired database+object restore with matching hashes.",
+      "status": "PASS",
+      "observed": "test TestMapFirstPairedRecoveryRetainsCasesApprovalJobsAndPrivateBytes",
+      "reason": "isolated integration test passed"
+    },
+    {
+      "id": "provider-backoff",
+      "kind": "integration-test",
+      "establishes": "A provider outage produces durable backoff and a resumable checkpoint rather than a lost request.",
+      "status": "PASS",
+      "observed": "test TestPublicInitialOutageAndDurableQuota",
+      "reason": "isolated integration test passed"
+    },
+    {
+      "id": "credential-exhaustion",
+      "kind": "integration-test",
+      "establishes": "An exhausted shared quota refuses new billable work and records the uncertain charge conservatively.",
+      "status": "PASS",
+      "observed": "test TestMapFirstSharedAccountQuotaUncertainChargeAndStorageGuards",
+      "reason": "isolated integration test passed"
+    },
+    {
+      "id": "storage-quota",
+      "kind": "integration-test",
+      "establishes": "A storage reservation refuses work beyond the declared budget instead of failing after publication.",
+      "status": "PASS",
+      "observed": "test TestMapFirstSharedAccountQuotaUncertainChargeAndStorageGuards",
+      "reason": "isolated integration test passed"
+    },
+    {
+      "id": "lost-response",
+      "kind": "integration-test",
+      "establishes": "A lost provider response retains the original request identity instead of creating a duplicate.",
+      "status": "PASS",
+      "observed": "test TestMapFirstDurableAcquisitionLostResponseCoverageAndCancellation",
+      "reason": "isolated integration test passed"
+    },
+    {
+      "id": "source-revocation",
+      "kind": "integration-test",
+      "establishes": "A revoked source stops retrieval and its retained evidence stops being served under the old grant.",
+      "status": "PASS",
+      "observed": "test TestPublicConnectorLeasesRevocationAndIsolation",
+      "reason": "isolated integration test passed"
+    },
+    {
+      "id": "deletion-expiry-interruption",
+      "kind": "integration-test",
+      "establishes": "An interrupted expiry deletion retries and leaves an authorized tombstone rather than a resurrection.",
+      "status": "PASS",
+      "observed": "test TestMapFirstCompositeExpiryDeletionRetryAndTombstone",
+      "reason": "isolated integration test passed"
+    },
+    {
+      "id": "paired-restore",
+      "kind": "integration-test",
+      "establishes": "A paired database+object restore retains cases, approval, jobs and private bytes.",
+      "status": "PASS",
+      "observed": "test TestMapFirstPairedRecoveryRetainsCasesApprovalJobsAndPrivateBytes",
+      "reason": "isolated integration test passed"
+    },
+    {
+      "id": "actual-rollback-binary-forward-recovery",
+      "kind": "external-command",
+      "establishes": "A nominated rollback binary is provisioned, migrated forward and recovered without losing cases or dependencies.",
+      "status": "NOT_RUN",
+      "observed": null,
+      "reason": "Run scripts/ops/qualify_rollback.py with a nominated --binary and --manifest. A source archive is not an installed rollback binary."
+    }
+  ]
+}

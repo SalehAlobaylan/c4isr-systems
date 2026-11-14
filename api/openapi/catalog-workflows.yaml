@@ -1,6 +1,7 @@
 paths:
   /api/v1/catalog/reads:
     post:
+      summary: Create a scoped catalog read
       operationId: catalogInput
       requestBody:
         required: true
@@ -9,6 +10,11 @@ paths:
             schema:
               $ref: '#/components/schemas/CatalogInput'
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Bounded current-authority read
           content:
@@ -17,6 +23,7 @@ paths:
                 $ref: '#/components/schemas/CatalogPage'
   /api/v1/imagery/capture-proposal:
     post:
+      summary: Propose an imagery capture
       operationId: captureProposalInput
       requestBody:
         required: true
@@ -25,6 +32,11 @@ paths:
             schema:
               $ref: '#/components/schemas/CaptureProposalInput'
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Bounded current-authority read
           content:
@@ -33,6 +45,7 @@ paths:
                 $ref: '#/components/schemas/CaptureProposal'
   /api/v1/imagery/comparison-check:
     post:
+      summary: Check an imagery comparison pair
       operationId: pairInput
       requestBody:
         required: true
@@ -41,6 +54,11 @@ paths:
             schema:
               $ref: '#/components/schemas/PairInput'
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Bounded current-authority read
           content:
@@ -49,6 +67,7 @@ paths:
                 $ref: '#/components/schemas/PairCheck'
   /api/v1/analyst-scope/reads/{id}/records:
     get:
+      summary: List retained individual records
       operationId: readIndividualRecords
       parameters:
       - name: id
@@ -74,6 +93,11 @@ paths:
         schema: &id002
           type: integer
       responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
         '200':
           description: Original individual revisions
           content:

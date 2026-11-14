@@ -278,7 +278,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, options ..
 		reference:       reference.NewHandler(reference.NewService(pool)),
 		contextPackages: contextpackage.NewHandler(contextpackage.NewService(pool, artifactSvc)),
 		acquisition:     acquisition.Service{Pool: pool, Ingestion: ingestionSvc},
-		coverage:        coverage.Service{Pool: pool, Ingestion: ingestionSvc},
+		coverage:        coverage.Service{Pool: pool, Ingestion: ingestionSvc, Metrics: metrics},
 		publicingest:    publicingest.NewHandler(ingestionSvc),
 		observations:    observations.NewHandler(observationSvc),
 		assets:          assets.NewHandler(assetSvc),
@@ -467,7 +467,7 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 		catalog.Service{Pool: pool}.Mount(r)
 		if cfg.EnvironmentLibraryEnabled || cfg.EnvironmentToolchain != "" {
 			objects, _ := h.blobStore.(artifacts.GeographicStore)
-			geoenv.Service{Pool: pool, Store: objects, Toolchain: cfg.EnvironmentToolchain, Spool: cfg.EnvironmentSpool, Parallel: cfg.EnvironmentParallel, ReadOnly: !cfg.EnvironmentLibraryEnabled, UploadSlots: make(chan struct{}, 2)}.Mount(r)
+			geoenv.Service{Pool: pool, Store: objects, Toolchain: cfg.EnvironmentToolchain, EnrichmentToolchain: cfg.EnvironmentEnrichmentToolchain, ObservationToolchain: cfg.EnvironmentObservationToolchain, CoastalToolchain: cfg.EnvironmentCoastalToolchain, DisplayToolchain: cfg.EnvironmentDisplayToolchain, LayerToolchain: cfg.EnvironmentLayerToolchain, Spool: cfg.EnvironmentSpool, Parallel: cfg.EnvironmentParallel, ReadOnly: !cfg.EnvironmentLibraryEnabled, UploadSlots: make(chan struct{}, 2)}.Mount(r)
 		}
 		investigations.Service{Pool: pool, Store: h.blobStore}.Mount(r)
 		blobStore := h.blobStore

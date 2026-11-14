@@ -35,6 +35,7 @@ func TestComposedPublicEndpointsAndAuthenticationBoundary(t *testing.T) {
 	}
 	preflight.Header.Set("Origin", "http://operator.test")
 	preflight.Header.Set("Access-Control-Request-Method", http.MethodGet)
+	preflight.Header.Set("Access-Control-Request-Headers", "x-emad-workspace-id, if-range")
 	response, err := client.Do(preflight)
 	if err != nil {
 		t.Fatalf("CORS preflight: %v", err)
@@ -42,6 +43,11 @@ func TestComposedPublicEndpointsAndAuthenticationBoundary(t *testing.T) {
 	response.Body.Close()
 	if response.StatusCode != http.StatusNoContent || response.Header.Get("Access-Control-Allow-Origin") != "http://operator.test" {
 		t.Fatalf("CORS preflight status=%d allow-origin=%q", response.StatusCode, response.Header.Get("Access-Control-Allow-Origin"))
+	}
+	allowed := response.Header.Get("Access-Control-Allow-Headers")
+	exposed := response.Header.Get("Access-Control-Expose-Headers")
+	if !strings.Contains(allowed, "X-EMAD-Workspace-ID") || !strings.Contains(allowed, "If-Range") || !strings.Contains(exposed, "ETag") {
+		t.Fatalf("CORS must support scoped and conditional asset reads: allow=%q expose=%q", allowed, exposed)
 	}
 
 	unauthenticated, err := client.Get(h.server.URL + "/api/v1/tracks")

@@ -80,32 +80,50 @@
         "sha256": "ad37da7beae964a10fab9bdeee046bf2b9209d2b76de3ca568e8da90484bb438"
       },
       {
-        "path": "docs/implementation/F0_1_BASELINE.md",
-        "sha256": "67b080e1bbc7fc9bc87a1ce8a8285b8fe30e35fbbfb9b1570c43b1ae9eb3dc6b"
+        "path": "docs/implementation/HISTORICAL_DELIVERY.md",
+        "sha256": "67b080e1bbc7fc9bc87a1ce8a8285b8fe30e35fbbfb9b1570c43b1ae9eb3dc6b",
+        "consolidatedFrom": "docs/implementation/HISTORICAL_DELIVERY.md#f0-1",
+        "consolidatedSection": "#f0-1",
+        "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
       },
       {
         "path": "docs/implementation/F0_1_INVENTORY.json",
         "sha256": "d9e639a91880012090e01bdb810f87e4638b403189aa41455ea9c59df29c68c3"
       },
       {
-        "path": "docs/implementation/LOCAL_STARTUP.md",
-        "sha256": "e439bbb3f21b9f1e1cfdb80622c1244a0bbed7882589cca81a31be68d85ce771"
+        "path": "docs/implementation/MAP_FIRST_OPERATIONS.md#map-profile",
+        "sha256": "e439bbb3f21b9f1e1cfdb80622c1244a0bbed7882589cca81a31be68d85ce771",
+        "consolidatedFrom": "docs/implementation/MAP_FIRST_OPERATIONS.md#historical-startup",
+        "consolidatedSection": "#historical-startup",
+        "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
       },
       {
-        "path": "docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md",
-        "sha256": "499c557336073bd1d2dfbb6c2a04791b516544a700b0d3ef29b494c2efd2098e"
+        "path": "docs/implementation/HISTORICAL_DELIVERY.md",
+        "sha256": "499c557336073bd1d2dfbb6c2a04791b516544a700b0d3ef29b494c2efd2098e",
+        "consolidatedFrom": "docs/implementation/HISTORICAL_DELIVERY.md#p2-1-3",
+        "consolidatedSection": "#p2-1-3",
+        "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
       },
       {
-        "path": "docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md",
-        "sha256": "a000693f89b7e72731016138ab6075a504149ed628ed865d7ba4217d87a1f75c"
+        "path": "docs/implementation/HISTORICAL_DELIVERY.md",
+        "sha256": "a000693f89b7e72731016138ab6075a504149ed628ed865d7ba4217d87a1f75c",
+        "consolidatedFrom": "docs/implementation/HISTORICAL_DELIVERY.md#p2-4-p3-1-2",
+        "consolidatedSection": "#p2-4-p3-1-2",
+        "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
       },
       {
-        "path": "docs/implementation/S1_2_ENGINE_DECISION.md",
-        "sha256": "a6dad27fee784e4cc2e5115308fe4158db11e8694d3ccb58f70ef3f28eaf4f2c"
+        "path": "docs/implementation/HISTORICAL_DELIVERY.md",
+        "sha256": "a6dad27fee784e4cc2e5115308fe4158db11e8694d3ccb58f70ef3f28eaf4f2c",
+        "consolidatedFrom": "docs/implementation/HISTORICAL_DELIVERY.md#s1-2",
+        "consolidatedSection": "#s1-2",
+        "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
       },
       {
-        "path": "docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md",
-        "sha256": "b6620f1f7a8156a87eab58019565ecc8c1d81f9db96c289e4481286fc72936d7"
+        "path": "docs/implementation/HISTORICAL_DELIVERY.md",
+        "sha256": "b6620f1f7a8156a87eab58019565ecc8c1d81f9db96c289e4481286fc72936d7",
+        "consolidatedFrom": "docs/implementation/HISTORICAL_DELIVERY.md#s3-2-s3-3-s4-1",
+        "consolidatedSection": "#s3-2-s3-3-s4-1",
+        "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
       },
       {
         "path": "internal/app/app.go",
@@ -338,12 +356,18 @@
         "sha256": "7e60e5c98613daf662d2ce83342a1ce604dfffdd374755d58c712d38a3410241"
       },
       {
-        "path": "docs/implementation/PLAN_REVIEW.md",
-        "sha256": "90f208968673e9cb0b6c3df80786d2cb635750caef3d232a2a67c8787511bb84"
+        "path": "docs/implementation/HISTORICAL_RECOVERY.md",
+        "sha256": "90f208968673e9cb0b6c3df80786d2cb635750caef3d232a2a67c8787511bb84",
+        "consolidatedFrom": "docs/implementation/HISTORICAL_RECOVERY.md#plan-review",
+        "consolidatedSection": "#plan-review",
+        "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
       },
       {
-        "path": "docs/implementation/PRECOMMIT_READINESS.md",
-        "sha256": "b4cd8e9829a400327c4d8615bfcc668a9f80a434746da86253861b9b5f30d971"
+        "path": "docs/implementation/HISTORICAL_RECOVERY.md",
+        "sha256": "b4cd8e9829a400327c4d8615bfcc668a9f80a434746da86253861b9b5f30d971",
+        "consolidatedFrom": "docs/implementation/HISTORICAL_RECOVERY.md#precommit-readiness",
+        "consolidatedSection": "#precommit-readiness",
+        "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
       }
     ],
     "queryTarget": "Local default development container c4isr-postgres, database c4isr; PGOPTIONS default_transaction_read_only=on",
@@ -483,7 +507,7 @@
         "Classify legacy records from recorded provenance. Do not assume that every existing row is synthetic or public.",
         "Reconcile old product positioning in documentation while preserving historical phase records."
       ],
-      "code": "docs/implementation/F0_1_BASELINE.md",
+      "code": "docs/implementation/HISTORICAL_DELIVERY.md#f0-1",
       "verification": "docs/implementation/F0_1_INVENTORY.json",
       "implemented": "Baseline inventory, migration audit and executed verification records.",
       "gap": "Historical checks did not establish a populated two-pillar installation.",
@@ -923,7 +947,7 @@
         "Bound stream subscriptions, reconnect, buffering, out-of-order handling, and retention."
       ],
       "code": "internal/publicingest/opensky.go",
-      "verification": "docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md",
+      "verification": "docs/implementation/HISTORICAL_DELIVERY.md#p2-4-p3-1-2",
       "implemented": "OpenSky/AISStream adapters with protocol/fixture/budget tests.",
       "gap": "No live integration is installed; documented agreement/key/rights prerequisites remain unresolved.",
       "deliveryExit": "Close provider prerequisites and conduct bounded persistent live acceptance; label blocked integrations explicitly.",
@@ -982,7 +1006,7 @@
         "Measure load time, memory, CPU/GPU use, positional error, and integration complexity on a declared machine.",
         "Record the selection and tradeoffs in an architecture decision. The original plan did not preselect an engine; the completed evaluation now selects the initial viewport adapter."
       ],
-      "code": "docs/implementation/S1_2_ENGINE_DECISION.md",
+      "code": "docs/implementation/HISTORICAL_DELIVERY.md#s1-2",
       "verification": "apps/operator-ui/scripts/evaluate-engines.mjs",
       "implemented": "Measured Three.js/Babylon comparison and scoped initial renderer decision.",
       "gap": "Benchmark contains 13 triangles/four draws with synthetic terrain; it cannot establish advanced terrain/physics scale.",
@@ -1148,7 +1172,7 @@
         "Bound preset count and observer settings, retain author audit and environment isolation, and compare sampled behavior with the prior custom-settings baseline."
       ],
       "code": "internal/simscene/presets.go",
-      "verification": "docs/implementation/S3_2_S3_3_S4_1_RECORDING_EVALUATION_PRESETS.md",
+      "verification": "docs/implementation/HISTORICAL_DELIVERY.md#s3-2-s3-3-s4-1",
       "implemented": "Immutable reusable sensor-quality presets pinned into frozen scenes.",
       "gap": "No installed preset. This one selected increment does not complete the open-ended S4 roadmap.",
       "deliveryExit": "Create/reuse presets in installed scenes while keeping future S4 expansion explicitly open.",
@@ -1516,10 +1540,13 @@
           "text": "// credential, production HTTPS adapter and disposable database. No developer"
         },
         {
-          "path": "docs/implementation/P2_4_P3_1_2_CONTEXT_AND_MOVING.md",
+          "path": "docs/implementation/HISTORICAL_DELIVERY.md",
           "pattern": "OpenSky",
           "line": 40,
-          "text": "**OpenSky is the selected ADS-B provider.** Its native bounded `/api/states/all` endpoint is implemented; no generic intermediary response is assumed. ADS-B.lol's current public API documentation marks that API deprecated and directs use toward feeder-restricted access, so it was not selected for this increment."
+          "text": "**OpenSky is the selected ADS-B provider.** Its native bounded `/api/states/all` endpoint is implemented; no generic intermediary response is assumed. ADS-B.lol's current public API documentation marks that API deprecated and directs use toward feeder-restricted access, so it was not selected for this increment.",
+          "consolidatedFrom": "docs/implementation/HISTORICAL_DELIVERY.md#p2-4-p3-1-2",
+          "consolidatedSection": "#p2-4-p3-1-2",
+          "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
         }
       ],
       "impact": "Disabled coverage is a delivery limitation, but no external key/permission should be invented or synthetic evidence represented as live data.",
@@ -1552,10 +1579,13 @@
           "text": "command -v pg_dump >/dev/null 2>&1 || {"
         },
         {
-          "path": "docs/implementation/P2_1_3_IMAGERY_INTELLIGENCE.md",
+          "path": "docs/implementation/HISTORICAL_DELIVERY.md",
           "pattern": "PostgreSQL-only backups do not include new S3 content",
           "line": 25,
-          "text": "Retention is explicit, immutable, no more than 365 days and no later than admitted rights expiry. The UI chooses up to seven days. Metadata and hashes remain after authorized deletion; content reads fail after expiry. `DELETE /artifacts/{id}` is denied before retention ends, and thereafter performs retryable DELETING → DELETED cleanup. No automatic janitor is added; operators invoke authorized cleanup. Source suspension blocks use, while expired-content cleanup remains possible. Configure private bucket access and preserve blobs together with database backups; existing PostgreSQL-only backups do not include new S3 content. Use storage versioning/backups when required by deployment policy. Existing small reference/context artifacts remain compatible in PostgreSQL."
+          "text": "Retention is explicit, immutable, no more than 365 days and no later than admitted rights expiry. The UI chooses up to seven days. Metadata and hashes remain after authorized deletion; content reads fail after expiry. `DELETE /artifacts/{id}` is denied before retention ends, and thereafter performs retryable DELETING → DELETED cleanup. No automatic janitor is added; operators invoke authorized cleanup. Source suspension blocks use, while expired-content cleanup remains possible. Configure private bucket access and preserve blobs together with database backups; existing PostgreSQL-only backups do not include new S3 content. Use storage versioning/backups when required by deployment policy. Existing small reference/context artifacts remain compatible in PostgreSQL.",
+          "consolidatedFrom": "docs/implementation/HISTORICAL_DELIVERY.md#p2-1-3",
+          "consolidatedSection": "#p2-1-3",
+          "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
         }
       ],
       "impact": "A green connection can coexist with unusable pillars; database-only restore cannot recover missing dependent blobs.",
@@ -1578,10 +1608,13 @@
       "finding": "The old default launch hid major new routes. Recent Home/navigation and a single optional analyst setup guide repair discovery, but full setup still spans admissions, service credentials, storage, imports, runtime build hashes/attachment and separate reviewer/evaluator identities. No integrated persistent setup/acceptance path was verified.",
       "evidence": [
         {
-          "path": "docs/implementation/LOCAL_STARTUP.md",
+          "path": "docs/implementation/MAP_FIRST_OPERATIONS.md#map-profile",
           "pattern": "These commands are an",
           "line": 31,
-          "text": "These commands are an **optional, trusted administrator action against your local development database**. They create a separate human credential with Public Context access, authoring access and exercise access in `default / local`. They do not alter the existing operator's grants, grant simulator-truth access, or enable external retrieval. Change the names/environment for your installation. Run provisioning once; if the identity already exists, use the administrator's `issue`/`rotate` actions rather than recreating it."
+          "text": "These commands are an **optional, trusted administrator action against your local development database**. They create a separate human credential with Public Context access, authoring access and exercise access in `default / local`. They do not alter the existing operator's grants, grant simulator-truth access, or enable external retrieval. Change the names/environment for your installation. Run provisioning once; if the identity already exists, use the administrator's `issue`/`rotate` actions rather than recreating it.",
+          "consolidatedFrom": "docs/implementation/MAP_FIRST_OPERATIONS.md#historical-startup",
+          "consolidatedSection": "#historical-startup",
+          "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
         },
         {
           "path": "apps/operator-ui/src/routes/simulation-studio.tsx",

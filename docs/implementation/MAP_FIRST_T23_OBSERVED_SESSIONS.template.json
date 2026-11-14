@@ -4,13 +4,46 @@
   "synthetic": false,
   "releaseFingerprint": null,
   "caseContributorHumanIds": [],
-  "assistiveTechnologyEvidence": null,
+  "observer": {
+    "observerId": null,
+    "appointedBy": null,
+    "attestedAt": null
+  },
+  "reviewerIndependence": {
+    "asserted": false,
+    "reviewerCanonicalHumanIds": [],
+    "attestedBy": null,
+    "attestedAt": null,
+    "basis": "The independent reviewer is a different canonical human from every case contributor, from every observed analyst and from every service identity. An alias of the same person is the same human."
+  },
+  "assistiveTechnologyEvidence": {
+    "path": null,
+    "sha256": null,
+    "participantId": null,
+    "technology": null,
+    "observedAt": null,
+    "observerId": null
+  },
   "sessions": [],
+  "documentFieldGuidance": {
+    "releaseFingerprint": "Exact 64-hex candidate source fingerprint from the regenerated release ledger; a new candidate invalidates this record",
+    "caseContributorHumanIds": "Canonical human identities that authored case content in the observed cases",
+    "observer": "The appointed observer who ran the sessions and attests the observations",
+    "reviewerIndependence": "The independent-reviewer assertion required by A19; every observed reviewer must be named here",
+    "assistiveTechnologyEvidence": "One real assistive-technology pass with an appropriate user or specialist; a simulated pass is not coverage",
+    "status": "OBSERVED only when real sessions were recorded; NOT_RUN otherwise",
+    "synthetic": "False only for records from real human observation"
+  },
   "sessionRecordFields": {
     "participantId": "Consented anonymous identifier; omit personal names",
     "canonicalHumanId": "Opaque canonical identity; aliases remain the same person",
     "observerId": "Appointed observer identifier",
     "role": "analyst | reviewer | source-administrator | restricted-reader",
+    "consent": {
+      "obtained": "true once the participant consented to this observation",
+      "obtainedAt": "ISO 8601 with timezone",
+      "scope": "What the participant agreed to be observed and recorded"
+    },
     "startedAt": "ISO 8601 with timezone",
     "endedAt": "ISO 8601 with timezone",
     "locale": "Observed locale",
@@ -23,18 +56,45 @@
     "assistance": "Observed interventions, including none",
     "usefulness": "Participant assessment with limitations",
     "explanation": "Participant explanation of exact area/period, coverage and uncertainty",
-    "outcome": "PASS | FAIL | BLOCKED",
+    "outcome": "PASS | FAIL | BLOCKED; a failed or blocked journey is recorded and reported, never rejected",
     "geography": [],
     "selectionForms": [],
     "evidenceStates": [],
-    "corrections": [],
-    "retestEvidence": [],
+    "corrections": [
+      {
+        "task": "Task id of the failed journey",
+        "defect": "What went wrong as observed",
+        "repair": "What changed",
+        "retestOutcome": "PASS | FAIL of the retest"
+      }
+    ],
+    "retestEvidence": [
+      {
+        "path": "Repository-local redacted retest observation record",
+        "sha256": "Exact file hash"
+      }
+    ],
     "evidence": [
       {
         "path": "Repository-local redacted observation record",
         "sha256": "Exact file hash"
       }
     ],
-    "workflowChecks": []
+    "workflowChecks": [],
+    "tasks": [
+      {
+        "task": "Workflow check id from the qualification profile, or an additional journey id",
+        "outcome": "PASS | FAIL | BLOCKED",
+        "attempts": "Assigned attempts for this participant and task",
+        "completedUnassisted": "Attempts that completed with no developer assistance",
+        "assistedCompletions": "Attempts that completed only with developer assistance",
+        "assistanceCount": "Observed developer-assistance interventions",
+        "wrongAreaOrWrongPeriod": "true when any attempt concluded with the wrong area or period",
+        "coverageVersusAbsenceExplained": "true when the participant correctly explained coverage versus absence",
+        "resultAndReviewStateExplained": "true when the participant correctly explained the result state and review state",
+        "critical": "true for a critical journey under A19",
+        "retested": "true when the failed journey was repaired and retested"
+      }
+    ]
   }
 }

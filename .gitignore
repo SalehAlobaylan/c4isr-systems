@@ -19,6 +19,7 @@ vendor/
 # Node
 node_modules/
 dist/
+apps/operator-ui/dist-geographic-viewer/
 .vite/
 apps/operator-ui/playwright-report/
 apps/operator-ui/test-results/

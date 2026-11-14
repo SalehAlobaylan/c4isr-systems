@@ -121,7 +121,7 @@ def main():
     save(OUT / 'ACCEPTANCE.json', evidence)
     ledger_path = ROOT / 'docs/implementation/RECOVERY_STATUS.json'
     ledger = load(ledger_path)
-    ledger.update(status='ACCEPTED_WITH_DECLARED_EXTERNAL_GATES', acceptedAt=evidence['acceptedAt'], acceptance='DELIVERY_RECOVERY_ACCEPTANCE.md')
+    ledger.update(status='ACCEPTED_WITH_DECLARED_EXTERNAL_GATES', acceptedAt=evidence['acceptedAt'], acceptance='HISTORICAL_RECOVERY.md#recovery-acceptance')
     for task in ledger['tasks']:
         task.update(implementation='IMPLEMENTED_BOUNDED_SCOPE', verification='ACCEPTED', installation='INSTALLED_OR_APPLIED', evidence=['evidence/recovery/ACCEPTANCE.json'])
         task['externalPrerequisites'] = []
@@ -143,7 +143,7 @@ def main():
             task['installation'] = 'INSTALLED_SENSOR_PRESETS_ONLY_FURTHER_S4_DEFERRED'
     mappings = [['D01', 'D09'], ['D02', 'D04', 'D11', 'D12'], ['D03', 'D07', 'D10'], ['D03', 'D05'], ['D06', 'D07'], ['D03', 'D08', 'D12'], ['D03', 'D08', 'D11'], ['D12'], ['D01', 'D11']]
     for item, gaps in zip(ledger['recovery'], mappings):
-        item.update(implementation='IMPLEMENTED', verification='ACCEPTED', installation='PERSISTENT_LOCAL_ACCEPTED', auditItems=gaps, evidence=['DELIVERY_RECOVERY_ACCEPTANCE.md', 'evidence/recovery/ACCEPTANCE.json'])
+        item.update(implementation='IMPLEMENTED', verification='ACCEPTED', installation='PERSISTENT_LOCAL_ACCEPTED', auditItems=gaps, evidence=['HISTORICAL_RECOVERY.md#recovery-acceptance', 'evidence/recovery/ACCEPTANCE.json'])
         item['externalPrerequisites'] = []
         if item['id']=='R3':
             gated=[name for key,name in [('firms','FIRMS'),('opensky','OpenSky'),('ais','AIS')] if activations[key]['state']!='CONFIGURED']

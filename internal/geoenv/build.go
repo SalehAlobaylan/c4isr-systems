@@ -32,19 +32,31 @@ type Definition struct {
 	Revision int    `json:"revision"`
 }
 type Recipe struct {
-	Schema     string         `json:"schema"`
-	Toolchain  string         `json:"toolchainSha256"`
-	Definition Definition     `json:"definition"`
-	Area       areas.Revision `json:"area"`
-	Profile    Profile        `json:"profile"`
-	Inputs     []Asset        `json:"inputs"`
+	Schema                string              `json:"schema"`
+	Toolchain             string              `json:"toolchainSha256"`
+	Definition            Definition          `json:"definition"`
+	Area                  areas.Revision      `json:"area"`
+	Profile               Profile             `json:"profile"`
+	Inputs                []Asset             `json:"inputs"`
+	Display               *DisplayBuildRecipe `json:"display,omitempty"`
+	ProfileContract       *profileContract    `json:"profileContract,omitempty"`
+	ProfileContractSHA256 string              `json:"profileContractSha256,omitempty"`
 }
 type Preflight struct {
-	Eligible       bool     `json:"eligible"`
-	Diagnostics    []string `json:"diagnostics"`
-	Inputs         []Asset  `json:"inputs"`
-	InputBytes     int64    `json:"inputBytes"`
-	RebuildAllowed bool     `json:"rebuildAllowed"`
+	Eligible              bool            `json:"eligible"`
+	Diagnostics           []string        `json:"diagnostics"`
+	Inputs                []Asset         `json:"inputs"`
+	InputBytes            int64           `json:"inputBytes"`
+	RebuildAllowed        bool            `json:"rebuildAllowed"`
+	Coverage              []LayerCoverage `json:"coverage"`
+	ProfileContractSHA256 string          `json:"profileContractSha256"`
+}
+
+// LayerCoverage describes catalog footprints before the worker reads samples.
+type LayerCoverage struct {
+	Layer    string `json:"layer"`
+	Required bool   `json:"required"`
+	Status   string `json:"status"`
 }
 
 func (s Service) definition(ctx context.Context, id string, revision int) (Definition, error) {
@@ -65,7 +77,8 @@ func (s Service) saveDefinition(ctx context.Context, id string, in DefinitionInp
 	if err := require(ctx, Manage, false); err != nil {
 		return d, err
 	}
-	if _, ok := profile(in.ProfileID); !ok || !boundedText(in.Name, 160) || len(in.AssetIDs) > 64 || in.ExpectedRevision < 0 {
+	p, ok := profile(in.ProfileID)
+	if !ok || !boundedText(in.Name, 160) || len(in.AssetIDs) > 64 || in.ExpectedRevision < 0 {
 		return d, apperr.Validation("valid name, profile, revision and bounded layer bindings required")
 	}
 	if id == "" && in.ExpectedRevision != 0 || id != "" && in.ExpectedRevision < 1 {
@@ -78,13 +91,8 @@ func (s Service) saveDefinition(ctx context.Context, id string, in DefinitionInp
 	if len(area.Geometry) == 0 || len(area.Components) < 1 || len(area.Components) > 16 || area.AreaM2 > 2.5e9 || area.AreaM2 <= 0 {
 		return d, apperr.Validation("choose a saved area of at most 2,500 km² and 16 components")
 	}
-	var boundsOK bool
-	err = db.Scoped(s.Pool).QueryRow(ctx, `SELECT ST_XMax(geometry)-ST_XMin(geometry)<180 AND ST_YMin(geometry)>=-85 AND ST_YMax(geometry)<=85 FROM area_revisions WHERE id=$1`, in.AreaRevisionID).Scan(&boundsOK)
-	if err != nil {
-		return d, err
-	}
-	if !boundsOK {
-		return d, apperr.Validation("date-line and polar preparation are unsupported")
+	if diagnostic := areaDiagnostic(area, capabilities(p)); diagnostic != "" {
+		return d, apperr.Validation(diagnostic)
 	}
 	in.Name = strings.TrimSpace(in.Name)
 	in.AssetIDs = append([]string{}, in.AssetIDs...)
@@ -98,7 +106,7 @@ func (s Service) saveDefinition(ctx context.Context, id string, in DefinitionInp
 		if err != nil {
 			return d, err
 		}
-		if a.Representation.Format == "release-zip" {
+		if !originalFormat(a.Representation.Format) {
 			return d, apperr.Validation("release bundles are not source inputs")
 		}
 		if _, err = s.policy(ctx, a, false, false); err != nil {
@@ -135,7 +143,7 @@ func (s Service) saveDefinition(ctx context.Context, id string, in DefinitionInp
 
 func (s Service) preflight(ctx context.Context, d Definition) (Recipe, Preflight, error) {
 	r := Recipe{Schema: "emad.environment-recipe.v1", Toolchain: s.Toolchain, Definition: d, Inputs: []Asset{}}
-	pf := Preflight{Diagnostics: []string{}, Inputs: []Asset{}, RebuildAllowed: true}
+	pf := Preflight{Diagnostics: []string{}, Inputs: []Asset{}, RebuildAllowed: true, Coverage: []LayerCoverage{}}
 	var err error
 	r.Area, err = (areas.Service{Pool: s.Pool}).Get(ctx, d.AreaRevisionID)
 	if err != nil {
@@ -146,7 +154,23 @@ func (s Service) preflight(ctx context.Context, d Definition) (Recipe, Preflight
 	if !known {
 		return r, pf, apperr.Conflict("profile version unavailable")
 	}
-	if !digestPattern.MatchString(s.Toolchain) || s.Store == nil {
+	contract := capabilities(r.Profile)
+	r.ProfileContract = &contract
+	r.ProfileContractSHA256 = profileDigest(contract)
+	pf.ProfileContractSHA256 = r.ProfileContractSHA256
+	if diagnostic := areaDiagnostic(r.Area, contract); diagnostic != "" {
+		pf.Diagnostics = append(pf.Diagnostics, diagnostic)
+	}
+	if r.Profile.ID == enrichmentProfile {
+		r.Toolchain = s.EnrichmentToolchain
+	}
+	if r.Profile.ID == observationProfile {
+		r.Toolchain = s.ObservationToolchain
+	}
+	if r.Profile.ID == coastalProfile {
+		r.Toolchain = s.CoastalToolchain
+	}
+	if !digestPattern.MatchString(r.Toolchain) || s.Store == nil {
 		pf.Diagnostics = append(pf.Diagnostics, "Preparation storage or toolchain has not been configured.")
 	}
 	layers := map[string][]string{}
@@ -158,6 +182,7 @@ func (s Service) preflight(ctx context.Context, d Definition) (Recipe, Preflight
 		}
 		p, e := s.policy(ctx, a, true, false)
 		if e != nil || a.State != "READY" {
+			pf.RebuildAllowed = false
 			pf.Diagnostics = append(pf.Diagnostics, a.Representation.Layer+": retained bytes or source permission unavailable.")
 			continue
 		}
@@ -169,6 +194,18 @@ func (s Service) preflight(ctx context.Context, d Definition) (Recipe, Preflight
 			pf.RebuildAllowed = false
 		}
 		kind := a.Representation.Layer
+		for _, supported := range contract.Layers {
+			if supported.Layer == kind && !slices.Contains(supported.Formats, a.Representation.Format) {
+				pf.Diagnostics = append(pf.Diagnostics, kind+": retained format is unsupported by the selected profile.")
+				break
+			}
+		}
+		if a.Representation.Format == "geotiff" && !horizontalEPSG.MatchString(a.Representation.CRS) {
+			pf.Diagnostics = append(pf.Diagnostics, kind+": declare a supported horizontal EPSG reference for the raster.")
+		}
+		if kind == "geoid" && (a.SHA256 != egm2008Grid || a.Representation.VerticalDatum != "EGM2008") {
+			pf.Diagnostics = append(pf.Diagnostics, "Geoid requires the pinned NGA EGM2008 grid and the EGM2008 datum.")
+		}
 		if !slices.Contains(r.Profile.Required, kind) && !slices.Contains(r.Profile.Optional, kind) {
 			pf.Diagnostics = append(pf.Diagnostics, kind+": unsupported layer for this profile.")
 		}
@@ -181,21 +218,83 @@ func (s Service) preflight(ctx context.Context, d Definition) (Recipe, Preflight
 		if kind == "imagery" && (a.Representation.Format != "geotiff" || strings.EqualFold(a.Representation.DataTime, "unknown")) {
 			pf.Diagnostics = append(pf.Diagnostics, "Imagery requires dated retained GeoTIFF pixels.")
 		}
+		rep := a.Representation
+		if kind == "bathymetry" && (rep.Format != "gebco-pair-zip" || rep.ProductEdition != "GEBCO_2026" || rep.CRS != "EPSG:4326" ||
+			rep.VerticalDatum != "GEBCO mixed sources; nominal mean sea level" || rep.Semantics != "signed-elevation-and-source-type" || a.Bytes > 8<<20) {
+			pf.Diagnostics = append(pf.Diagnostics, "Bathymetry requires a retained GEBCO 2026 elevation/TID pair with separate coastline.")
+		}
+		if kind == "radar" && (rep.Format != "radar-capture-zip" || !radarProduct.MatchString(rep.ProductEdition) ||
+			!radarCRS.MatchString(rep.CRS) || rep.VerticalDatum != "not-applicable" || rep.Semantics != "gamma0-linear-power" || a.Bytes > 16<<20) {
+			pf.Diagnostics = append(pf.Diagnostics, "Radar requires a pinned Sentinel-1 IW VV RTC capture with native linear-power samples.")
+		}
+		if kind == "weather-field" && (rep.Format != "era5-pressure-json" || rep.ProductEdition != weatherEdition || rep.CRS != "EPSG:4326" ||
+			rep.VerticalDatum != "pressure-hPa" || rep.Semantics != "reanalysis-pressure-field" || a.Bytes > 128<<10) {
+			pf.Diagnostics = append(pf.Diagnostics, "Weather fields require a bounded native ERA5 pressure subset.")
+		}
+		if kind == "land-cover" && (rep.Format != "geotiff" || rep.CRS != "EPSG:4326" || rep.VerticalDatum != "not-applicable" ||
+			rep.ProductEdition != "ESA WorldCover 2021 v200" || rep.DataTime != "2021" || rep.Semantics != "categorical-land-cover") {
+			pf.Diagnostics = append(pf.Diagnostics, "Land cover requires the supported WorldCover categorical representation.")
+		}
+		if kind == "ground" && (rep.Format != "geotiff" || rep.CRS != "EPSG:4326" || rep.VerticalDatum != "EGM2008" ||
+			rep.ProductEdition != "GEDTM30 filtered v20250619" || rep.DataTime != "2006/2015" || rep.Semantics != "modeled-bare-earth") {
+			pf.Diagnostics = append(pf.Diagnostics, "Ground requires the supported modeled GEDTM30 EGM2008 representation.")
+		}
+		if kind == "modeled-building-context" && (rep.Format != "geojson" || rep.CRS != "EPSG:4326" || rep.VerticalDatum != "above-ground" ||
+			rep.ProductEdition != "GHS-OBAT R2024A V1.0" || rep.DataTime != "2020" || rep.Semantics != "modeled-building-height-context") {
+			pf.Diagnostics = append(pf.Diagnostics, "Building context requires the supported modeled GHS-OBAT point representation.")
+		}
 		layers[kind] = append(layers[kind], string(a.Representation.Footprint))
 		r.Inputs = append(r.Inputs, a)
 		pf.Inputs = append(pf.Inputs, a)
 		pf.InputBytes += a.Bytes
 	}
-	if pf.InputBytes > 4<<30 {
+	if pf.InputBytes > contract.MaxInputBytes {
 		pf.Diagnostics = append(pf.Diagnostics, "Input bytes exceed the preparation scratch budget.")
 	}
+	if len(layers["geoid"]) > 1 {
+		pf.Diagnostics = append(pf.Diagnostics, "Select exactly one retained EGM2008 grid for the preparation.")
+	}
 	required := slices.Clone(r.Profile.Required)
-	if needsGeoid {
+	if r.Profile.ID == coastalProfile && len(layers["bathymetry"]) != 1 {
+		pf.Diagnostics = append(pf.Diagnostics, "Select one exact paired bathymetry capture.")
+	}
+	if r.Profile.ID == observationProfile {
+		if len(layers["radar"])+len(layers["weather-field"]) == 0 {
+			pf.Diagnostics = append(pf.Diagnostics, "Select at least one observation layer.")
+		}
+		for _, kind := range []string{"radar", "weather-field"} {
+			if len(layers[kind]) > 1 {
+				pf.Diagnostics = append(pf.Diagnostics, kind+": select only one exact input.")
+			}
+			if len(layers[kind]) > 0 {
+				required = append(required, kind)
+			}
+		}
+	}
+	if needsGeoid && !slices.Contains(required, "geoid") {
 		required = append(required, "geoid")
 	}
-	for _, kind := range required {
+	if r.Profile.ID == enrichmentProfile && len(layers["ground"]) > 0 {
+		required = append(required, "ground")
+		if slices.ContainsFunc(r.Inputs, func(a Asset) bool {
+			return a.Representation.Layer == "surface" && a.Representation.VerticalDatum != "EGM2008"
+		}) {
+			pf.Diagnostics = append(pf.Diagnostics, "The ground comparison requires surface and ground elevations in EGM2008.")
+		}
+	}
+	profileLayers := slices.Clone(required)
+	for _, kind := range r.Profile.Optional {
+		if !slices.Contains(required, kind) {
+			profileLayers = append(profileLayers, kind)
+		}
+	}
+	for _, kind := range profileLayers {
+		isRequired := slices.Contains(required, kind)
 		if len(layers[kind]) == 0 {
-			pf.Diagnostics = append(pf.Diagnostics, kind+": no eligible retained input.")
+			pf.Coverage = append(pf.Coverage, LayerCoverage{kind, isRequired, "NO_ELIGIBLE_INPUT"})
+			if isRequired {
+				pf.Diagnostics = append(pf.Diagnostics, kind+": no eligible retained input.")
+			}
 			continue
 		}
 		var covered bool
@@ -203,9 +302,14 @@ func (s Service) preflight(ctx context.Context, d Definition) (Recipe, Preflight
 		if err != nil {
 			return r, pf, err
 		}
+		status := "DECLARED_COVERED"
 		if !covered {
-			pf.Diagnostics = append(pf.Diagnostics, kind+": declared source footprints do not cover the selected area.")
+			status = "DECLARED_INCOMPLETE"
+			if isRequired {
+				pf.Diagnostics = append(pf.Diagnostics, kind+": declared source footprints do not cover the selected area.")
+			}
 		}
+		pf.Coverage = append(pf.Coverage, LayerCoverage{kind, isRequired, status})
 	}
 	pf.Eligible = len(pf.Diagnostics) == 0
 	return r, pf, nil
@@ -224,7 +328,9 @@ type Job struct {
 	FailureCode                      string    `json:"failureCode,omitempty"`
 	CreatedAt                        time.Time `json:"createdAt"`
 	InputSHA256                      string    `json:"inputSha256"`
+	DisplayID                        string    `json:"displayId,omitempty"`
 	owner, credential, worker, lease string
+	leaseUntil                       time.Time
 	sources                          []string
 	recipe                           Recipe
 }
@@ -264,7 +370,7 @@ func (s Service) submit(ctx context.Context, id string, in BuildInput) (Job, err
 		var err error
 		j, err = scanJob(tx.QueryRow(ctx, jobSelect+`WHERE owner_id=$1 AND request_key=$2`, p.ID, in.RequestKey))
 		if err == nil {
-			if j.DefinitionID != id || j.DefinitionRevision != in.Revision {
+			if j.recipe.Display != nil || j.DefinitionID != id || j.DefinitionRevision != in.Revision {
 				return apperr.Conflict("request key already binds different inputs")
 			}
 			return s.checkInputs(ctx, j.recipe, false)
@@ -291,13 +397,17 @@ func (s Service) submit(ctx context.Context, id string, in BuildInput) (Job, err
 			return apperr.Validation("frozen recipe exceeds metadata budget")
 		}
 		j = Job{ID: ids.New("geobuild"), DefinitionID: id, DefinitionRevision: in.Revision, State: "QUEUED", CreatedAt: time.Now().UTC(), InputSHA256: artifacts.Hash(raw), owner: p.ID, credential: p.CredentialID, sources: sourcesOf(recipe.Area.RequiredSources, recipe.Inputs), recipe: recipe}
-		_, err = tx.Exec(ctx, `INSERT INTO geographic_environment_builds(id,definition_id,definition_revision,owner_id,credential_id,request_key,input_hash,recipe,required_sources,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, j.ID, id, in.Revision, p.ID, p.CredentialID, in.RequestKey, j.InputSHA256, raw, j.sources, j.CreatedAt)
-		if err != nil {
-			return err
-		}
-		return buildEvent(ctx, tx, j, "QUEUED", "")
+		return insertBuild(ctx, tx, j, in.RequestKey, raw)
 	})
 	return j, err
+}
+
+func insertBuild(ctx context.Context, tx pgx.Tx, j Job, key string, raw []byte) error {
+	_, err := tx.Exec(ctx, `INSERT INTO geographic_environment_builds(id,definition_id,definition_revision,owner_id,credential_id,request_key,input_hash,recipe,required_sources,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`, j.ID, j.DefinitionID, j.DefinitionRevision, j.owner, j.credential, key, j.InputSHA256, raw, j.sources, j.CreatedAt)
+	if err != nil {
+		return err
+	}
+	return buildEvent(ctx, tx, j, "QUEUED", "")
 }
 
 func buildEvent(ctx context.Context, tx pgx.Tx, j Job, state, code string) error {
@@ -348,15 +458,27 @@ func (s Service) actor(ctx context.Context, j Job) (context.Context, error) {
 	if err != nil {
 		return ctx, err
 	}
-	if err = require(human, Build, false); err != nil {
+	permission := Build
+	if j.recipe.Display != nil {
+		permission = Qualify
+	}
+	if err = require(human, permission, false); err != nil {
 		return ctx, err
 	}
 	return human, nil
 }
 
 func (s Service) changeJob(ctx context.Context, id, action string) (Job, error) {
+	return s.changeBuild(ctx, id, action, false)
+}
+
+func (s Service) changeBuild(ctx context.Context, id, action string, display bool) (Job, error) {
 	var j Job
-	if err := require(ctx, Build, false); err != nil {
+	permission := Build
+	if display {
+		permission = Qualify
+	}
+	if err := require(ctx, permission, false); err != nil {
 		return j, err
 	}
 	p, _, _ := access.From(ctx)
@@ -365,6 +487,9 @@ func (s Service) changeJob(ctx context.Context, id, action string) (Job, error) 
 		j, err = scanJob(tx.QueryRow(ctx, jobSelect+`WHERE id=$1 AND owner_id=$2 FOR UPDATE`, id, p.ID))
 		if err != nil {
 			return err
+		}
+		if (j.recipe.Display != nil) != display {
+			return apperr.NotFound("environment build", "unavailable")
 		}
 		switch action {
 		case "cancel":

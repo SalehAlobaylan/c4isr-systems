@@ -5,6 +5,8 @@ interface ImportMetaEnv {
   readonly VITE_LOCAL_AUTO_ENTRY?: string
   readonly VITE_API_BASE_URL?: string
   readonly VITE_MAP_STYLE_URL?: string
+  readonly VITE_LOCAL_BASEMAP_ONLY?: string
+  readonly VITE_GEOGRAPHIC_PREVIEW_ENABLED?: string
 }
 
 interface ImportMeta {
@@ -17,5 +19,7 @@ interface Window {
     apiToken?: string
     localAutoEntry?: boolean
     mapStyleUrl?: string
+    localBasemapOnly?: string
+    geographicPreviewEnabled?: string
   }
 }

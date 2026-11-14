@@ -27,6 +27,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     current.current = null
     previous?.controller.abort()
     if (previous) {
+      previous.value.api.releaseRetainedReads()
       void previous.client.cancelQueries()
       previous.client.clear()
     }
@@ -118,6 +119,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     window.addEventListener('focus', focus)
     return () => { window.clearInterval(timer); window.removeEventListener('focus', focus);window.removeEventListener('emad:access-denied',denied) }
   }, [active])
+
+  useEffect(() => {
+    const leave = (event: PageTransitionEvent) => {
+      if (!event.persisted) current.current?.value.api.releaseRetainedReads()
+    }
+    window.addEventListener('pagehide', leave)
+    return () => window.removeEventListener('pagehide', leave)
+  }, [])
 
   if (!active) return <main className="aegis-main workspace-entry" aria-live="polite">
     <section className="workspace-entry-card">

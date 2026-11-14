@@ -1,4 +1,19 @@
-# Map-first operation and upgrade
+# Operations: map profile, startup, upgrade and recovery
+
+> **Status:** Active operations guide for the map profile (`C4ISR_PRODUCT_PROFILE=map`). The map-first phase is **NOT QUALIFIED**; T22–T24 remain IN_PROGRESS. See the [records index](README.md).
+
+## Contents
+
+- [Map profile: operation, upgrade, workers and profiles](#map-profile)
+- [Historical startup investigation](#historical-startup)
+- [Historical recovery operations guide](#historical-recovery-operations)
+
+---
+<a id="map-profile"></a>
+
+## Map profile: operation, upgrade, workers and profiles
+
+> **Status:** Active operations guide for the map profile (`C4ISR_PRODUCT_PROFILE=map`). The map-first phase is **NOT QUALIFIED**; T22–T24 remain IN_PROGRESS and the [29 October product evaluation](MAP_FIRST_PRODUCT.md#29-october-2026-product-evaluation) records the open failures. See the [records index](README.md).
 
 
 
@@ -6,7 +21,7 @@ The default environment-loaded server profile is `C4ISR_PRODUCT_PROFILE=map`. `h
 
 
 
-## Local operation
+### Local operation
 
 
 
@@ -24,7 +39,7 @@ task dev
 
 
 
-Setup applies forward migrations through `00051_catalog_and_imagery_workflows.sql`, builds the public executables, provisions the map identities and retains existing data. Public setup installs the existing admitted reference/provider configuration; it does not choose additional regions or grant broader retrieval authority. Optional providers remain subject to their installed credentials and rights. The supervisor uses the map analyst and starts imagery/preparation/configured public connectors, without runtime, asset or recording workers.
+Setup applies forward migrations through `00053_delivery_jobs.sql`, builds the public executables, provisions the map identities and retains existing data. Public setup installs the existing admitted reference/provider configuration; it does not choose additional regions or grant broader retrieval authority. Optional providers remain subject to their installed credentials and rights. The supervisor uses the map analyst and starts imagery/preparation/configured public connectors, without runtime, asset or recording workers.
 
 
 
@@ -50,7 +65,7 @@ An existing ordinary credential is not broadened into a simulation credential. N
 
 
 
-## Area, period and saved views
+### Area, period and saved views
 
 
 
@@ -74,11 +89,11 @@ Related map families in a batch share a materialized read. Temporary read manife
 
 
 
-Geographic administrators can admit complete release manifests and atomically activate a per-source release head using the expected previous head. Staged editions do not replace a released hierarchy; saved exact IDs keep their edition. Region profiles pin releases or named study areas. Broader regional preparation is implemented in T08; installing and qualifying additional shared regions remains an explicit administration step. See the [implementation report](MAP_FIRST_T04_T06_IMPLEMENTATION_2026_10_26.md) and [OpenAPI contract](../../api/openapi/analyst-scope.yaml).
+Geographic administrators can admit complete release manifests and atomically activate a per-source release head using the expected previous head. Staged editions do not replace a released hierarchy; saved exact IDs keep their edition. Region profiles pin releases or named study areas. Broader regional preparation is implemented in T08; installing and qualifying additional shared regions remains an explicit administration step. See the [implementation report](MAP_FIRST_DELIVERY_LOG.md#t04-t06) and [OpenAPI contract](../../api/openapi/analyst-scope.yaml).
 
 
 
-## Purpose classification
+### Purpose classification
 
 
 
@@ -110,7 +125,7 @@ Catalog GET requests accept `content_view=ordinary` by default, including unclas
 
 
 
-## Staging and recovery
+### Staging and recovery
 
 
 
@@ -126,11 +141,11 @@ This change has isolated migration/startup tests and a Linux image check. Apply 
 
 
 
-## Upgrade for investigations, profiles and durable acquisition (T07–T12)
+### Upgrade for investigations, profiles and durable acquisition (T07–T12)
 
 
 
-The latest working tree requires migrations **00047–00050**, in addition to the preceding 00045–00046. The user reported applying earlier migrations; this implementation session did not change the shared database or restart its processes. The [T07–T09 report](MAP_FIRST_T07_T09_IMPLEMENTATION_2026_10_26.md) and [T10–T12 report](MAP_FIRST_T10_T12_IMPLEMENTATION_2026_10_26.md) distinguish isolated verification from installed qualification.
+The latest working tree requires migrations **00047–00050**, in addition to the preceding 00045–00046. The user reported applying earlier migrations; this implementation session did not change the shared database or restart its processes. The [T07–T09 report](MAP_FIRST_DELIVERY_LOG.md#t07-t09) and [T10–T12 report](MAP_FIRST_DELIVERY_LOG.md#t10-t12) distinguish isolated verification from installed qualification.
 
 
 
@@ -178,7 +193,7 @@ Coverage uses historical receipt footprints and windows, with publication gaps, 
 
 
 
-## T13–T15 saved catalogs and imagery
+### T13–T15 saved catalogs and imagery
 
 
 
@@ -202,11 +217,11 @@ The local live-pixel qualification runner is opt-in: `python scripts/data/qualif
 
 
 
-See [T13–T15 verification](MAP_FIRST_T13_T15_IMPLEMENTATION_2026_10_26.md) and the [observed-session protocol](MAP_FIRST_T14_OBSERVED_SESSION_PROTOCOL.md). Larger serial workload results do not qualify interactive p95, five-user concurrency or a 24-hour soak. The session's host-memory interruption required restoring the existing local PostgreSQL container; its accepting-connections/healthy state was checked, without applying a shared migration.
+See [T13–T15 verification](MAP_FIRST_DELIVERY_LOG.md#t13-t15) and the [observed-session protocol](MAP_FIRST_T14_OBSERVED_SESSION_PROTOCOL.md). Larger serial workload results do not qualify interactive p95, five-user concurrency or a 24-hour soak. The session's host-memory interruption required restoring the existing local PostgreSQL container; its accepting-connections/healthy state was checked, without applying a shared migration.
 
 
 
-## T16–T18 case review and composite foundations
+### T16–T18 case review and composite foundations
 
 
 
@@ -230,11 +245,11 @@ Composite bytes use the configured private artifact store, under a separate comp
 
 
 
-Reconcile expired outputs with `POST /api/v1/outputs/{id}/expire` or the output panel. Failed deletion leaves DELETE_PENDING and counts against capacity until a successful retry. Successful reconciliation retains only a minimal tombstone plus hashes/audit identities. Do not extend the frozen retention or restore expired bytes; a new output needs currently eligible evidence and a new independent review. Audit pending reservations/orphaned private objects after interrupted staging before production rollout; no unattended reaper is claimed by this foundation. See [T16–T18 implementation](MAP_FIRST_T16_T18_IMPLEMENTATION_2026_10_27.md).
+Reconcile expired outputs with `POST /api/v1/outputs/{id}/expire` or the output panel. Failed deletion leaves DELETE_PENDING and counts against capacity until a successful retry. Successful reconciliation retains only a minimal tombstone plus hashes/audit identities. Do not extend the frozen retention or restore expired bytes; a new output needs currently eligible evidence and a new independent review. Audit pending reservations/orphaned private objects after interrupted staging before production rollout; no unattended reaper is claimed by this foundation. See [T16–T18 implementation](MAP_FIRST_DELIVERY_LOG.md#t16-t18).
 
 
 
-## T19–T21 durable delivery and geographic preparation
+### T19–T21 durable delivery and geographic preparation
 
 
 
@@ -270,13 +285,13 @@ Inspect the neutral package's instructions/manifest and verify independently wit
 
 
 
-See [T19–T21 implementation and boundaries](MAP_FIRST_T19_T21_IMPLEMENTATION_2026_10_27.md). Full acceptance, real qualified terrain/control data, observed independent recipients/users, mixed-load timing and long-running/recovery qualification remain open.
+See [T19–T21 implementation and boundaries](MAP_FIRST_DELIVERY_LOG.md#t19-t21). Full acceptance, real qualified terrain/control data, observed independent recipients/users, mixed-load timing and long-running/recovery qualification remain open.
 
 
 
 
 
-## T22–T24 qualification and release
+### T22–T24 qualification and release
 
 
 
@@ -296,7 +311,7 @@ Run a repeatable isolated sample with the recovery Python environment:
 
 
 
-Use a new output directory for each run. Docker/Testcontainers start only disposable services. The command freezes the profile/source/hardware and preserves failures, errors/timeouts, per-operation cold/warm percentiles and heap/database/queue/retrieval-age samples. `--seconds 86400` measures a real 24-hour **reduced** sample; it still does not close the full dataset, browser, process restart, RSS/object-growth or independent-user gates. Do not run it in the shared working database or widen provider limits to make a sample pass. See the [frozen proposed profile](../../scripts/ops/map_first_qualification_profile.json) and [implementation/remaining qualification](MAP_FIRST_T22_T24_IMPLEMENTATION_2026_10_27.md).
+Use a new output directory for each run. Docker/Testcontainers start only disposable services. The command freezes the profile/source/hardware and preserves failures, errors/timeouts, per-operation cold/warm percentiles and heap/database/queue/retrieval-age samples. `--seconds 86400` measures a real 24-hour **reduced** sample; it still does not close the full dataset, browser, process restart, RSS/object-growth or independent-user gates. Do not run it in the shared working database or widen provider limits to make a sample pass. See the [frozen proposed profile](../../scripts/ops/map_first_qualification_profile.json) and [implementation/remaining qualification](MAP_FIRST_DELIVERY_LOG.md#t22-t24).
 
 
 
@@ -318,12 +333,201 @@ The v2 inventory checks all public table contents and security definitions, incl
 
 
 
-An appointed observer records real sessions in a copy of the [T23 template](MAP_FIRST_T23_OBSERVED_SESSIONS.template.json), pinned to the exact [candidate ledger](evidence/map-first/t22-t24/release-ledger.json) source fingerprint. Validate records with `qualify_map_first.py sessions <record.json> --release-fingerprint <hash> --output <assessment.json>`. Keep credentials and personal case text out of retained evidence. Record completeness cannot establish that a session really occurred. A reviewer must be a distinct canonical human from every case contributor. Actual target-user and assistive-technology observations remain NOT_RUN.
+An appointed observer records real sessions in a copy of the [T23 template](MAP_FIRST_T23_OBSERVED_SESSIONS.template.json), pinned to the exact [candidate ledger](evidence/map-first/t22-t24-review/release-ledger.json) source fingerprint, following the [T23 observed-session protocol](MAP_FIRST_T23_OBSERVED_SESSION_PROTOCOL.md). Validate records with `qualify_map_first.py sessions <record.json> --release-fingerprint <hash> --output <assessment.json>`. Keep credentials and personal case text out of retained evidence. Record completeness cannot establish that a session really occurred. A reviewer must be a distinct canonical human from every case contributor. Actual target-user and assistive-technology observations remain NOT_RUN.
+
+The [T23 observed-session protocol](MAP_FIRST_T23_OBSERVED_SESSION_PROTOCOL.md) is published and extends the [T14 protocol](MAP_FIRST_T14_OBSERVED_SESSION_PROTOCOL.md) with the frozen-brief, geographic-package, case-handoff and offline-recipient journeys, the `workflowChecks` matrix that `qualify_map_first.py sessions` enforces and the per-task attempt/assistance accounting that A19's exit measurement needs. A recorded FAIL or BLOCKED journey is evidence: the assessment reports it and measures the unassisted rate against A19's 80% threshold; it never awards qualification and A19/T23 stay NOT_RUN. The retained ledger fingerprint is pinned to an older source revision; regenerate the ledger against the candidate being observed and pin the session record to that fingerprint.
 
 
 
 Regenerate traceability with `qualify_map_first.py ledger --output <new-ledger.json>`. This command assembles all task/gap/evidence states and hashes, and never awards release qualification. T22–T24 remain IN_PROGRESS; all mandatory full acceptance, P0, operational, real-geography and user-validation gates must be closed explicitly before calling the phase delivered.
 
+Exercise the declared recovery faults with `qualify_recovery.py --output <result.json>` (or `task map:qualify:recovery OUTPUT=<path>`). It runs each of the profile's twelve `requiredRecovery` rehearsals in isolation and records `PASS`, `FAIL` or `NOT_RUN` per item. A rehearsal that could not run is `NOT_RUN` with the missing instrument named — never a pass. `--list` prints what each rehearsal does and which check backs it. Feed the result to the workload run with `qualify_map_first.py sample --recovery <result.json>` so the recovery gates carry the measured outcome instead of `NOT_RUN`.
+
+Rehearse rollback compatibility with `qualify_rollback.py --output <result.json> --binary <installed-binary> --manifest <manifest.json>`. It refuses to substitute the retained source archive under `private/qualification/` for an installed binary, and records `NOT_RUN` with the reason when nothing has been nominated. It verifies that cases, geographic releases, profile mappings, canonical review identity, briefs and environment dependencies survive with matching object hashes.
+
+A measured budget outside its target fails the run. An unmeasured budget is reported as `NOT_MEASURED` with the reason and is never assumed to pass; the same applies to the soak, concurrency and recovery gates.
 
 
-Before starting qualification, use the candidate in the [pre-qualification review](MAP_FIRST_T22_T24_REVIEW_2026_10_27.md). Its fixes supersede the earlier tool/evidence fingerprint. Keep `workload.jsonl` beside its original `frozen-input.json` when running the standalone summarizer; current budgets must not replace frozen run targets. Even legacy backups now derive current expiry/tombstone policy from the isolated restored database. Fill the session template's `workflowChecks` entries from actual observations, with a full candidate fingerprint and consistent canonical participant identity.
+
+Before starting qualification, use the candidate in the [pre-qualification review](MAP_FIRST_DELIVERY_LOG.md#t22-t24-review). Its fixes supersede the earlier tool/evidence fingerprint. Keep `workload.jsonl` beside its original `frozen-input.json` when running the standalone summarizer; current budgets must not replace frozen run targets. Even legacy backups now derive current expiry/tombstone policy from the isolated restored database. Fill the session template's `workflowChecks` entries from actual observations, with a full candidate fingerprint and consistent canonical participant identity.
+
+<a id="historical-startup"></a>
+
+## Historical startup investigation
+
+> **Historical record — startup investigation.** This is the historical manual provisioning investigation for the pre-map-first installation. The supported current startup is `task local:setup` then `task dev`, documented in [MAP_FIRST_OPERATIONS.md](#map-profile). Its account set and migration level below are superseded. See the [records index](README.md).
+
+Run `task local:setup`, then `task dev` and open **http://127.0.0.1:5173/**. Use `task local:doctor` and `task local:stop`. This installs and starts persistent content and scoped workers. The [current operations guide](#historical-recovery-operations) supersedes the manual provisioning instructions below. [Recovery acceptance](HISTORICAL_RECOVERY.md#recovery-acceptance) records the installed workflows and limits.
+
+### Historical startup investigation
+
+2026-10-23. The normal entry is now **Home** at `http://localhost:5173/`. The module bar links directly to the features available in the selected workspace. The existing map is still at `/map`.
+
+### Why the old launch looked unchanged
+
+The development token authenticates `human:operator-01`, which initially has only legacy exercise access. Database migrations do not grant Public Context or protected scene-authoring access, admit sources, import assets, or start workers. Previously `/` redirected straight to the old map, several new routes had no main-navigation link, and the empty legacy run gave no useful introduction to the new product areas.
+
+Home now explains missing Public Context and Studio access. It checks Studio authorization against the real API rather than inferring it from exercise permissions. These UI changes do not grant access or fabricate observations/scenes.
+
+### Resolve a conflicting API port
+
+If another service uses port 8080, stop your EMAD development commands with Ctrl+C, then use a free port in both terminals:
+
+```powershell
+# Terminal A
+task dev:api C4ISR_DEV_PORT=8081
+
+# Terminal B
+task dev:web C4ISR_DEV_PORT=8081
+```
+
+The UI remains on port 5173. `C4ISR_DEV_PORT` coordinates the API listener and the HTTP/WebSocket proxy. An explicit `C4ISR_HTTP_ADDR` overrides the listener; if you set it, also set the matching `C4ISR_API_PROXY_TARGET` on `dev:web`. Direct `pnpm dev` launches can set `VITE_API_PROXY_TARGET` to the API's HTTP origin.
+
+Do not stop an unrelated server to free the port. During the reported local launch, Apache answered on IPv4 port 8080 while EMAD answered on IPv6 port 8080. That can produce different behavior depending on which loopback address resolves first.
+
+React StrictMode also cancelled the first in-flight WebSocket upgrade during development effect setup/cleanup. Startup now defers opening the connection until that cleanup has run. Authorization checks, reconnects and actual proxy error reporting remain enabled.
+
+### Explicit local analyst and author access
+
+These commands are an **optional, trusted administrator action against your local development database**. They create a separate human credential with Public Context access, authoring access and exercise access in `default / local`. They do not alter the existing operator's grants, grant simulator-truth access, or enable external retrieval. Change the names/environment for your installation. Run provisioning once; if the identity already exists, use the administrator's `issue`/`rotate` actions rather than recreating it.
+
+```powershell
+$env:C4ISR_DATABASE_URL = 'postgres://c4isr:c4isr@localhost:5433/c4isr?sslmode=disable'
+New-Item -ItemType Directory -Force private | Out-Null
+
+# Create the named human principal and write its secret only to an ignored file.
+go run ./apps/emad-admin -action provision -spec scripts/data/local-analyst.example.json -out private/local-analyst.token
+
+# Assign authoring in the same environment.
+$studioGrant = Get-Content scripts/data/simulation-studio-author-grant.example.json -Raw | ConvertFrom-Json
+$studioGrant.id = 'local-analyst'
+[IO.File]::WriteAllText((Join-Path (Get-Location) 'private/local-studio-grant.json'), ($studioGrant | ConvertTo-Json -Depth 10))
+go run ./apps/emad-admin -action grant -spec private/local-studio-grant.json
+
+# Explicitly allow exercise operations across this local environment's runs.
+$exerciseGrant = Get-Content scripts/data/native-exercise-operator-grant.example.json -Raw | ConvertFrom-Json
+$exerciseGrant.id = 'local-analyst'
+$exerciseGrant.resource.runId = '*'
+$exerciseGrant.permissions += 'scenarios.control'
+[IO.File]::WriteAllText((Join-Path (Get-Location) 'private/local-exercise-grant.json'), ($exerciseGrant | ConvertTo-Json -Depth 10))
+go run ./apps/emad-admin -action grant -spec private/local-exercise-grant.json
+
+# Restart the UI using the new credential. Do not paste or print the token.
+$env:C4ISR_API_TOKEN = (Get-Content private/local-analyst.token -Raw).Trim()
+task dev:web C4ISR_DEV_PORT=8081
+```
+
+Keep the API running in terminal A. Restart only terminal B after changing its token. The issued credential defaults to a 24-hour lifetime; expiry requires a new credential. Example credentials/permissions are for explicit local development setup, not a production deployment policy.
+
+### Where the delivered capabilities appear
+
+- **Public Context → Map**: event/reference layers, filters, historical views and evidence drill-down. Configure reviewed source admissions and trusted provider bindings first; see [public ingestion](HISTORICAL_DELIVERY.md#p1-1) and [USGS/FIRMS acceptance and activation](HISTORICAL_DELIVERY.md#s0-4-p1-5-6).
+- **Imagery & assessments**: imagery comparison, analysis jobs and analyst review. Private artifact storage, admitted imagery and the analysis worker are separate setup requirements; see [imagery and analysis/review](HISTORICAL_DELIVERY.md#p2-1-3).
+- **Weather & reports / Moving tracks**: bounded connector records and provenance. Provider credentials/agreements remain required where documented; see [moving feeds](HISTORICAL_DELIVERY.md#p2-4-p3-1-2) and [weather and hazard reports](HISTORICAL_DELIVERY.md#p3-3).
+- **Simulation Studio / 3D assets**: model admission, environment/template registration, scene authoring and a georeferenced 3D viewport. A grant opens the module; it does not create a scene. Follow [asset admission](HISTORICAL_DELIVERY.md#s1-1) and [Studio/runtime rollout](HISTORICAL_DELIVERY.md#s1-3-s2-1).
+- **Exercise COP / Recording & replay**: native sensor output, exercise operations, recorded output and released after-action reports. These need an authored run and the independent runtime/recording workers; see [perception and tasking](HISTORICAL_DELIVERY.md#s2-2-s2-3-s3-1) and [recording/evaluation](HISTORICAL_DELIVERY.md#s3-2-s3-3-s4-1).
+
+The shipped simulation is an incremental, bounded profile with abstract movement, visual context and synthetic sensor behavior. It is not yet the long-term high-fidelity aircraft/terrain/physics environment. Passing those profiles' tests demonstrated those profiles; it did not demonstrate a fully populated operational installation or the completion of future S4 work.
+
+### Verification of this follow-up
+
+- Production UI build passed. All 80 browser regression checks passed, with 54 intentional project skips (including the four new cases' duplicate token-project runs).
+- All 16 real-backend production browser checks passed against disposable PostGIS/S3. The first run exposed a test race reading an old document's response after navigation; the test now separates document lifetimes and reads the new response body immediately.
+- The local API/Vite path was exercised without HTTP/WebSocket mocks. Before the fix, development startup opened and cancelled one COP upgrade before establishing the next. After the fix, one COP stream reached `realtime.ready`, remained healthy through the 30-second heartbeat, and reported no browser socket errors. Killing an earlier inspection process produced a separate expected connection-reset log; real proxy errors remain visible.
+- Desktop and 390px mobile views were inspected; the new page had no document-level horizontal overflow. Local screenshots and raw logs remain ignored under `tmp/runtime-review/`.
+- Port-override Task definitions pass dry-run parsing. Documentation links resolve. All migrations, the migration script and the line-ending policy retain their previously protected hashes.
+
+No local access grants or source configuration were changed by this review. The optional provisioning instructions above still require an explicit administrator action. No commit was created.
+
+<a id="historical-recovery-operations"></a>
+
+## Historical recovery operations guide
+
+> **Historical record — bounded delivery recovery, 23–24 October 2026.** Retained as traceability history. It describes the **pre-map-first** installation profile: its migration level, worker set and account list are superseded by the map profile. The current map profile is documented in [MAP_FIRST_OPERATIONS.md](#map-profile). See the [records index](README.md).
+
+Use the persistent local profile from the repository root in PowerShell:
+
+```powershell
+task local:setup
+task dev
+```
+
+Open **http://127.0.0.1:5173/**. Setup uses the existing PostgreSQL database on port 5433, applies forward migrations through **00053**, provisions exact development profiles, installs retained real content and configures private Garage storage. It preserves the database, volumes, credentials and existing grants. Repeating setup verifies and reconciles its resources. It stops on conflicting identifiers, changed grants or an occupied application port. Never use `db:reset` for this installation.
+
+Go, Task, pnpm, Python 3.12 and a running Docker Desktop are prerequisites. Setup creates `.venv-recovery` with pinned raster dependencies. The first content installation downloads roughly half a gigabyte of geographic sources and bounded satellite windows; retained sources and receipts allow subsequent runs to resume. An external download failure leaves the checkpoint available for retry and does not replace real inputs with fixtures.
+
+`task dev` starts the API, Vite and the workers for the **active profile**. Under the default `map` profile that is the API, Vite, imagery preparation, imagery analysis and the configured public connectors, plus the delivery worker — the admitted native runtime, raster asset validation and recording workers start only under the explicit `historical-full` profile. Application traffic uses explicit IPv4 addresses: API `127.0.0.1:8081`, browser `127.0.0.1:5173`. Change the two ports in ignored `private/local/config.json` only while stopped. It contains secrets: do not publish its contents. The older separate `dev:api` / `dev:web` commands remain available for low-level development; they do not assemble this installation.
+
+```powershell
+task local:doctor
+task local:stop
+```
+
+Doctor checks scoped credentials, storage, installed features and worker readiness. Stop shuts down the supervisor's own application processes while leaving PostgreSQL, Garage and content intact. Logs are in `private/local/logs`. Worker failures restart with bounded backoff; a lost native execution lease closes that exercise as failed and archives its received output. It does not silently recreate its private world.
+
+### Accounts and the two workflows
+
+The default local session depends on the active profile. Under the default `map` profile it is `local-map-analyst`, a Public Context analyst; `local-source-admin` separately administers source installation and content purpose. The `historical-full` profile instead opens `local-analyst`, a development analyst and scene author, with Home showing the two pillars, Public Context opening the Saudi map and Simulation Studio opening the frozen Jeddah environment with an automatic Start.
+
+Other account credentials are in ignored `private/local/credentials/<account>.token`. Open **Account**, paste the credential into **Account credential**, then **Open account**. Switching reloads the application, closing sockets and removing the previous account's in-memory caches. Never paste credentials into a URL or a checked-in file.
+
+Under the `map` profile the installed identities are:
+
+- `local-map-analyst`: the ordinary map analyst (Public Context read, investigation and delivery grants).
+- `local-map-reviewer`: the map review account. It requires an independent human; a second credential for the same person is not independent review.
+- `local-source-admin`: source installation and content-purpose administration.
+
+Under the `historical-full` profile the following additional development identities are installed:
+
+- `local-reviewer`: independently registered development reviewer for review/export testing.
+- `local-operator`: exercise observations, controlled virtual tasking and ordinary replay; no authoring or simulator truth.
+- `local-evaluator`: explicit authoring and truth/evaluation access for this development environment's runs.
+- `local-author-alias`: same registered human as the analyst; used to prove review/publication/rejection denial.
+- `worker-*`: separate source or partition-bound service identities; never human reviewers.
+
+These profiles are clearly labeled development identities. A workflow executed by two accounts does not establish review by two actual people. The real retained imagery assessment remains proposed for human review. The separately published **DEVELOPMENT WORKFLOW TEST** record must not be treated as an intelligence conclusion.
+
+Credentials expire after 30 days. Setup never overwrites an existing credential. Doctor reports expiry. Use the trusted `emad-admin` issue/rotate workflow to create a new credential in a new private file, then deliberately replace the affected local profile file; restart its process. Production identity provisioning and grants require the deployment's own policy.
+
+### Restricted source activation
+
+**Current local provider status:** The user-supplied [OpenSky OAuth client](HISTORICAL_RECOVERY.md#opensky-activation) and [FIRMS map key](HISTORICAL_RECOVERY.md#firms-activation) are installed and their bounded live checks passed. FIRMS is completing its initial lookback through paced day pages. AIS remains separately gated. The instructions below remain available for a fresh installation.
+
+Public map source cards distinguish retained geography, configured retrieval, last successful retrieval, stale coverage and missing prerequisites. A successful retrieval with zero Saudi records differs from an unavailable provider. Historical USGS and March 2025 imagery remain labeled by their actual dates.
+
+FIRMS, OpenSky and AISStream are gated until the applicable key or use permission is supplied. Create ignored `private/local/providers.json` with only the bindings you have approved. Paths below are examples of private files, not supplied keys:
+
+```json
+{
+  "firms": {"keyFile": "private/local/firms.key"},
+  "opensky": {
+    "permissionConfirmed": true,
+    "authenticatedRequired": true,
+    "oauthCredentialsFile": "private/local/opensky-client.json"
+  },
+  "ais": {"permissionConfirmed": true, "keyFile": "private/local/aisstream.key"}
+}
+```
+
+The OpenSky file accepts the provider's `clientId` / `clientSecret` (or `client_id` / `client_secret`) JSON. The native adapter obtains and refreshes short-lived bearer tokens using OpenSky's fixed TLS token endpoint; tokens stay in memory. Anonymous bounded retrieval is possible only when permission is confirmed and authenticated access is not required. Use and retention permission must be resolved against the provider's terms. See the [official OpenSky REST documentation](https://openskynetwork.github.io/opensky-api/rest.html), [FIRMS API](https://firms.modaps.eosdis.nasa.gov/api/) and [AISStream documentation](https://aisstream.io/documentation).
+
+After editing private bindings, stop, run setup and start again. Missing/invalid optional files remain gated; they do not block unrelated workers. Setup reconciles its own admitted source status. Requests retain bounded Saudi coverage, quotas, pacing and freshness policy. A provider rejecting a syntactically valid credential appears as a provider-access failure, not an empty result. No restricted feed is represented by synthetic public observations.
+
+### Paired backup and isolated restore
+
+```powershell
+task local:stop
+task local:backup QUIESCED=true
+task local:restore:test
+task dev
+```
+
+Stop every writer, including standalone delivery/connector/capture/imagery/retention workers, before explicitly confirming `QUIESCED=true`. Backup creates a consistent database dump, permitted private objects, source/installation receipts and private configuration. The current v2 format verifies unchanged public table/security-definition inventories and required object hashes before publishing its completion manifest. Known expired/tombstoned object keys are excluded and retention is checked again during restore. See [current map qualification/recovery limits](MAP_FIRST_DELIVERY_LOG.md#t22-t24). Backups remain under ignored `private/local/backups`; they contain credentials and must remain private. Copy the complete directory to protected storage for off-machine recovery. `private/local/last-backup.json` identifies the latest accepted backup.
+
+Restore testing uses new randomly named PostgreSQL and Garage containers/volumes and ephemeral loopback ports. It validates every byte, opens restored data through a separate API, reproduces NDVI from the restored inputs and reads retained models, geography and recordings. It removes only those temporary containers/volumes, leaving the active installation unchanged. It does not replace a production disaster-recovery procedure or restore over the original database.
+
+### Staging packaging
+
+`deployments/Dockerfile.workers` builds the API and independent workers with a pinned raster toolchain and model validator. Apply `deployments/staging/delivery.yml` after the existing staging composition. It adds persistent private Garage storage and imagery, asset, raster, native-runtime and recording workers. Provide scoped credentials via its named secret files. One connector instance takes one exact-source service credential; add instances for each deliberately admitted source.
+
+The runtime build admitted by the API comes from the same image. The runtime shares the API network namespace for loopback control. Private S3 HTTP is explicitly enabled only inside the staging network; production rejects that exception and requires HTTPS. The non-root/read-only worker image and composed configuration have been exercised locally. No external staging environment or production credentials were deployed by this recovery.

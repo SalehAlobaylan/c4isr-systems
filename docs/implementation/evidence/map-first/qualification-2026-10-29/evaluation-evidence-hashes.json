@@ -33,9 +33,12 @@
       "bytes": 9001
     },
     {
-      "path": "docs/implementation/MAP_FIRST_PRODUCT_EVALUATION_2026_10_29.md",
+      "path": "docs/implementation/MAP_FIRST_PRODUCT.md",
       "sha256": "d1cbb84f2ff9e88a6b4490b3ce46f9c68f518bf7f892ef121382806b9905e4de",
-      "bytes": 6667
+      "bytes": 6667,
+      "consolidatedFrom": "docs/implementation/MAP_FIRST_PRODUCT.md#29-october-2026-product-evaluation",
+      "consolidatedSection": "#29-october-2026-product-evaluation",
+      "hashScope": "SHA-256 of the pre-consolidation document named by consolidatedFrom. The consolidated record named by path contains that document as a section; the original bytes remain recoverable from git history."
     }
   ]
 }

@@ -3,6 +3,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -12,7 +13,8 @@ import time
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "data"))
-from environment_library import MAX_OBJECT, verify
+from environment_library import MAX_OBJECT
+from verify_environment_rebuild import verify_prepared
 from intake_environment import LibraryAPI
 
 
@@ -34,30 +36,50 @@ def read_range(api, release_id):
 
 
 def download(api, release_id, output, manifest_digest, range_digest):
+    if not re.fullmatch(r"[a-f0-9]{64}", range_digest):
+        raise ValueError("A trusted prepared SHA-256 is required")
     digest = hashlib.sha256()
     total = 0
     temporary = None
+    size = None
+    url = api.origin + f"/environment-releases/{release_id}/prepared"
     try:
-        with requests.get(api.origin + f"/environment-releases/{release_id}/prepared", headers=api.headers,
-                          timeout=(10, 120), stream=True, allow_redirects=False) as response:
-            if response.status_code != 200:
-                raise RuntimeError(f"Prepared package is unavailable: HTTP {response.status_code}")
-            expected = object_digest(response)
-            size = int(response.headers.get("Content-Length", "0"))
-            if expected != range_digest or not 1 <= size <= MAX_OBJECT:
-                raise RuntimeError("Prepared package identity or length differs from its advertised bounds")
-            with NamedTemporaryFile(dir=output.parent, suffix=".partial", delete=False) as stream:
-                temporary = Path(stream.name)
-                for block in response.iter_content(256 << 10):
-                    total += len(block)
-                    if total > size:
-                        raise RuntimeError("Installed package exceeded its advertised length")
-                    digest.update(block)
-                    stream.write(block)
-        if total != size or digest.hexdigest() != expected:
+        with NamedTemporaryFile(dir=output.parent, suffix=".partial", delete=False) as stream:
+            temporary = Path(stream.name)
+            for attempt in range(3):
+                headers = {**api.headers, "Accept-Encoding": "identity"}
+                if total:
+                    headers.update(Range=f"bytes={total}-", **{"If-Range": f'"{range_digest}"'})
+                try:
+                    with requests.get(url, headers=headers, timeout=(10, 120), stream=True, allow_redirects=False) as response:
+                        if response.status_code not in ({206} if total else {200}):
+                            raise RuntimeError(f"Prepared package request failed: HTTP {response.status_code}")
+                        if object_digest(response) != range_digest or response.headers.get("Content-Encoding", "identity") != "identity":
+                            raise RuntimeError("Prepared package identity or encoding changed during transfer")
+                        length = int(response.headers.get("Content-Length", "0"))
+                        if total:
+                            if size is None or response.headers.get("Content-Range") != f"bytes {total}-{size - 1}/{size}" or length != size - total:
+                                raise RuntimeError("Prepared package range does not continue the verified representation")
+                        elif not 1 <= length <= MAX_OBJECT or size is not None and length != size:
+                            raise RuntimeError("Prepared package length differs from its advertised bounds")
+                        else:
+                            size = length
+                        for block in response.iter_content(256 << 10):
+                            total += len(block)
+                            if total > size:
+                                raise RuntimeError("Installed package exceeded its advertised length")
+                            digest.update(block)
+                            stream.write(block)
+                except (requests.ConnectionError, requests.Timeout, requests.exceptions.ChunkedEncodingError) as error:
+                    if attempt == 2:
+                        raise RuntimeError("Prepared package transfer did not recover") from error
+                if total == size:
+                    break
+        if total != size or digest.hexdigest() != range_digest:
             raise RuntimeError("Installed package did not match its advertised length and SHA-256")
-        check = verify(temporary, manifest_digest)
-        temporary.replace(output)
+        check = verify_prepared(temporary, manifest_digest, range_digest)
+        # Publish verified bytes without clobbering any existing file.
+        os.link(temporary, output)
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)

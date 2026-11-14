@@ -1,0 +1,19 @@
+import type {SceneLayer} from './GeographicSceneLayers'
+import type {components} from '@/lib/openapi.generated'
+
+type Recipe = components['schemas']['EnvironmentDisplay']['recipe']
+type PreviewLayer = {name: string; recipe: Recipe; geometry: string; time: string; explanation: string; renderer: 'three'; permission: 'environments.download'; maxBytes: number}
+const preview = {renderer: 'three', permission: 'environments.download', maxBytes: 32 << 20} as const
+export const previewLayers: Record<SceneLayer, PreviewLayer> = {
+  imagery: {...preview, name: 'Optical imagery', recipe: 'imagery-display-v1', geometry: 'surface texture', time: 'scene acquisition', explanation: 'Retained Sentinel-2 surface reflectance and clear-pixel mask.'},
+  'land-cover': {...preview, name: 'Land cover', recipe: 'land-cover-display-v1', geometry: 'categorical surface texture', time: 'product observation year', explanation: 'ESA WorldCover classes and masks for 2021.'},
+  'ground-delta': {...preview, name: 'Surface minus bare earth', recipe: 'ground-delta-display-v1', geometry: 'signed elevation comparison', time: 'separate source periods', explanation: 'Copernicus surface minus modeled ground on a common EGM2008 grid.'},
+  radar: {...preview, name: 'Radar backscatter', recipe: 'radar-display-v1', geometry: 'surface texture', time: 'radar acquisition', explanation: 'Retained Sentinel-1 VV terrain-corrected backscatter.'},
+  roads: {...preview, name: 'Roads', recipe: 'roads-display-v1', geometry: 'draped lines', time: 'source edition', explanation: 'OpenStreetMap road centerlines follow the reference surface.'},
+  buildings: {...preview, name: 'Building footprints', recipe: 'buildings-display-v1', geometry: 'draped polygon rings', time: 'source edition', explanation: 'Source rings include courtyards. Where available, tagged heights appear in the feature inspector.'},
+  water: {...preview, name: 'Water', recipe: 'water-display-v1', geometry: 'draped lines and polygon rings', time: 'source edition', explanation: 'Retained water features follow the reference surface. Water levels are unavailable.'},
+}
+
+export type AtlasLayer='earthquakes'|'thermal'|'weather'|'bulletins'|'aircraft'|'vessels'|'imagery'|'coverage'|'findings'
+export const layerInfo:Record<AtlasLayer,{name:string;glyph:string;token:string;permission:string; renderer: 'atlas'; geometry: string; time: string}>={
+ earthquakes:{name:'Earthquake reports',glyph:'◆',token:'--emad-map-severity-medium',permission:'observations.read',renderer:'atlas',geometry:'points',time:'event time'},thermal:{name:'Thermal detections',glyph:'▲',token:'--emad-map-severity-high',permission:'observations.read',renderer:'atlas',geometry:'points',time:'observation time'},weather:{name:'Weather stations',glyph:'●',token:'--emad-signal-teal',permission:'sources.read',renderer:'atlas',geometry:'points',time:'observation time'},bulletins:{name:'Official bulletins',glyph:'▣',token:'--emad-link',permission:'sources.read',renderer:'atlas',geometry:'points and areas',time:'publication time'},aircraft:{name:'Aircraft',glyph:'✈',token:'--emad-map-entity-track',permission:'tracks.read',renderer:'atlas',geometry:'points and lines',time:'observation time'},vessels:{name:'Vessels',glyph:'⛵',token:'--emad-map-entity-asset',permission:'tracks.read',renderer:'atlas',geometry:'points and lines',time:'observation time'},imagery:{name:'Retained imagery',glyph:'▧',token:'--emad-signal-teal',permission:'sources.read',renderer:'atlas',geometry:'areas',time:'acquisition time'},coverage:{name:'Source query areas',glyph:'▱',token:'--emad-text-secondary',permission:'sources.read',renderer:'atlas',geometry:'areas',time:'coverage window'},findings:{name:'Derived findings',glyph:'▨',token:'--emad-map-severity-medium',permission:'assessments.read',renderer:'atlas',geometry:'points and areas',time:'evidence time'}}

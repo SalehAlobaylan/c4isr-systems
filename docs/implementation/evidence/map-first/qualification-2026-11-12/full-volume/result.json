@@ -1,0 +1,597 @@
+{
+  "schema": "emad.map-first-workload-result.v1",
+  "sampleStatus": "FAIL",
+  "qualification": "NOT_QUALIFIED",
+  "profile": {
+    "analysts": 5,
+    "areas": 10,
+    "detailedReferenceFeatures": 50000,
+    "durationSeconds": 60,
+    "fullDataset": true,
+    "goVersion": "go1.25.0",
+    "historyRows": 1000,
+    "kind": "profile",
+    "reportRevisions": 100000,
+    "scheduledProfiles": 10,
+    "schema": "emad.workload-sample.v1",
+    "scope": "Full declared read volumes coexist; scoped cold POST and warm pinned GET maps. Does not qualify raster concurrency, browser, real-provider or 24-hour gates.",
+    "startedAt": "2026-11-12T15:41:10.1352211Z",
+    "synthetic": true,
+    "weatherMovingRecords": 10000
+  },
+  "end": {
+    "completed": true,
+    "elapsedSeconds": 62.9209016,
+    "failures": 16,
+    "kind": "end",
+    "observedHumans": "NOT_RUN",
+    "rasterConcurrency": "NOT_RUN",
+    "workerRestart": {
+      "basis": "a worker process owned by this workload was stopped and replaced; the replacement completed scheduled retrieval work",
+      "firstWorker": {
+        "actions": 1,
+        "firstSuccessAt": "2026-11-12T15:41:27.9823178Z",
+        "id": "worker-1",
+        "pid": 56084,
+        "startedAt": "2026-11-12T15:41:27.2283368Z"
+      },
+      "isolation": "the worker child process talks only to the disposable isolated server and database of this run",
+      "performed": 1,
+      "planned": 1,
+      "restartedAt": "2026-11-12T15:41:27.9880794Z",
+      "secondWorker": {
+        "firstSuccessAt": "2026-11-12T15:41:28.4525487Z",
+        "id": "worker-2",
+        "pid": 43280,
+        "restartedAt": "2026-11-12T15:41:27.9880794Z"
+      },
+      "startedAt": "2026-11-12T15:41:27.2283368Z",
+      "status": "PASS",
+      "stoppedAt": "2026-11-12T15:41:27.9823178Z"
+    }
+  },
+  "telemetrySamples": 52,
+  "telemetryErrors": 0,
+  "operations": [
+    {
+      "operation": "catalog_search",
+      "condition": "cold",
+      "requests": 5,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 154.168,
+      "p95Ms": 154.187,
+      "p99Ms": 154.187,
+      "maxResponseBytes": 30212,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "catalog_search",
+      "condition": "warm",
+      "requests": 60,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 74.139,
+      "p95Ms": 184.951,
+      "p99Ms": 220.434,
+      "maxResponseBytes": 30212,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "geography_search",
+      "condition": "cold",
+      "requests": 10,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 1132.561,
+      "p95Ms": 1346.737,
+      "p99Ms": 1346.737,
+      "maxResponseBytes": 69163,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "geography_search",
+      "condition": "warm",
+      "requests": 55,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 1007.968,
+      "p95Ms": 1266.973,
+      "p99Ms": 1555.263,
+      "maxResponseBytes": 69163,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "map_family",
+      "condition": "cold",
+      "requests": 10,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 3442.243,
+      "p95Ms": 3744.76,
+      "p99Ms": 3744.76,
+      "maxResponseBytes": 20714,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "map_family",
+      "condition": "warm",
+      "requests": 55,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 6.046,
+      "p95Ms": 7.62,
+      "p99Ms": 22.616,
+      "maxResponseBytes": 1412,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scheduled_retrieval",
+      "condition": "cold",
+      "requests": 10,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 585.214,
+      "p95Ms": 636.917,
+      "p99Ms": 636.917,
+      "maxResponseBytes": 817,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scheduled_retrieval",
+      "condition": "warm",
+      "requests": 4,
+      "errors": 1,
+      "timeouts": 1,
+      "errorRate": 0.25,
+      "timeoutRate": 0.25,
+      "p50Ms": 629.317,
+      "p95Ms": 5000.407,
+      "p99Ms": 5000.407,
+      "maxResponseBytes": 817,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scope_resolve",
+      "condition": "cold",
+      "requests": 5,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 19.302,
+      "p95Ms": 37.196,
+      "p99Ms": 37.196,
+      "maxResponseBytes": 2913,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "scope_resolve",
+      "condition": "warm",
+      "requests": 60,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 5.419,
+      "p95Ms": 18.506,
+      "p99Ms": 32.885,
+      "maxResponseBytes": 2913,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "weather_query",
+      "condition": "cold",
+      "requests": 5,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRate": 0.0,
+      "timeoutRate": 0.0,
+      "p50Ms": 1328.229,
+      "p95Ms": 1377.763,
+      "p99Ms": 1377.763,
+      "maxResponseBytes": 162630,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    },
+    {
+      "operation": "weather_query",
+      "condition": "warm",
+      "requests": 60,
+      "errors": 15,
+      "timeouts": 15,
+      "errorRate": 0.25,
+      "timeoutRate": 0.25,
+      "p50Ms": 1207.713,
+      "p95Ms": 5000.507,
+      "p99Ms": 5000.643,
+      "maxResponseBytes": 162630,
+      "quantileMethod": "nearest-rank; all completed requests including failed/timeouts"
+    }
+  ],
+  "sampleBudgetChecks": [
+    {
+      "operation": "catalog_search",
+      "condition": "cold",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 154.187,
+      "status": "PASS"
+    },
+    {
+      "operation": "catalog_search",
+      "condition": "warm",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 184.951,
+      "status": "PASS"
+    },
+    {
+      "operation": "geography_search",
+      "condition": "cold",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 1346.737,
+      "status": "FAIL"
+    },
+    {
+      "operation": "geography_search",
+      "condition": "warm",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 1266.973,
+      "status": "FAIL"
+    },
+    {
+      "operation": "map_family",
+      "condition": "cold",
+      "targetP95Ms": 2000,
+      "observedP95Ms": 3744.76,
+      "status": "FAIL"
+    },
+    {
+      "operation": "map_family",
+      "condition": "warm",
+      "targetP95Ms": 2000,
+      "observedP95Ms": 7.62,
+      "status": "PASS"
+    },
+    {
+      "operation": "weather_query",
+      "condition": "cold",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 1377.763,
+      "status": "FAIL"
+    },
+    {
+      "operation": "weather_query",
+      "condition": "warm",
+      "targetP95Ms": 1000,
+      "observedP95Ms": 5000.507,
+      "status": "FAIL"
+    }
+  ],
+  "declaredBudgetChecks": [
+    {
+      "budget": "searchCoverageP95Ms",
+      "target": 1000,
+      "observed": 154.187,
+      "basis": "nearest-rank p95 of catalog_search (cold) over all completed requests including failures and timeouts",
+      "status": "PASS",
+      "operation": "catalog_search",
+      "condition": "cold"
+    },
+    {
+      "budget": "searchCoverageP95Ms",
+      "target": 1000,
+      "observed": 184.951,
+      "basis": "nearest-rank p95 of catalog_search (warm) over all completed requests including failures and timeouts",
+      "status": "PASS",
+      "operation": "catalog_search",
+      "condition": "warm"
+    },
+    {
+      "budget": "searchCoverageP95Ms",
+      "target": 1000,
+      "observed": 1346.737,
+      "basis": "nearest-rank p95 of geography_search (cold) over all completed requests including failures and timeouts",
+      "status": "FAIL",
+      "operation": "geography_search",
+      "condition": "cold"
+    },
+    {
+      "budget": "searchCoverageP95Ms",
+      "target": 1000,
+      "observed": 1266.973,
+      "basis": "nearest-rank p95 of geography_search (warm) over all completed requests including failures and timeouts",
+      "status": "FAIL",
+      "operation": "geography_search",
+      "condition": "warm"
+    },
+    {
+      "budget": "searchCoverageP95Ms",
+      "target": 1000,
+      "observed": 1377.763,
+      "basis": "nearest-rank p95 of weather_query (cold) over all completed requests including failures and timeouts",
+      "status": "FAIL",
+      "operation": "weather_query",
+      "condition": "cold"
+    },
+    {
+      "budget": "searchCoverageP95Ms",
+      "target": 1000,
+      "observed": 5000.507,
+      "basis": "nearest-rank p95 of weather_query (warm) over all completed requests including failures and timeouts",
+      "status": "FAIL",
+      "operation": "weather_query",
+      "condition": "warm"
+    },
+    {
+      "budget": "mapFamilyTileP95Ms",
+      "target": 2000,
+      "observed": 3744.76,
+      "basis": "nearest-rank p95 of map_family (cold) over all completed requests including failures and timeouts",
+      "status": "FAIL",
+      "operation": "map_family",
+      "condition": "cold"
+    },
+    {
+      "budget": "mapFamilyTileP95Ms",
+      "target": 2000,
+      "observed": 7.62,
+      "basis": "nearest-rank p95 of map_family (warm) over all completed requests including failures and timeouts",
+      "status": "PASS",
+      "operation": "map_family",
+      "condition": "warm"
+    },
+    {
+      "budget": "firstUsefulMapMs",
+      "target": 3000,
+      "observed": null,
+      "basis": "not measured by this run",
+      "status": "NOT_MEASURED",
+      "reason": "No browser journey ran in this workload sample; first useful map time is not observable from workload API calls."
+    },
+    {
+      "budget": "controlResponseMs",
+      "target": 100,
+      "observed": null,
+      "basis": "not measured by this run",
+      "status": "NOT_MEASURED",
+      "reason": "No browser control interaction ran in this workload sample; control responsiveness is not observable from workload API calls."
+    },
+    {
+      "budget": "canceledServerReadMs",
+      "target": 5000,
+      "observed": null,
+      "basis": "not measured by this run",
+      "status": "NOT_MEASURED",
+      "reason": "This run cancelled no in-flight server read; the abandoned-read duration was never observed."
+    },
+    {
+      "budget": "detailedGeoJSONBytes",
+      "target": 2097152,
+      "observed": 69163,
+      "basis": "largest detailed geography catalog response (GeoJSON feature collection) in bytes",
+      "status": "PASS"
+    },
+    {
+      "budget": "referenceTileBytes",
+      "target": 524288,
+      "observed": 20714,
+      "basis": "largest map-family tile response in bytes",
+      "status": "PASS"
+    },
+    {
+      "budget": "recoverySeconds",
+      "target": 300,
+      "observed": null,
+      "basis": "not measured by this run",
+      "status": "NOT_MEASURED",
+      "reason": "Recovery duration is measured by the required-recovery executor, not by a workload sample."
+    }
+  ],
+  "declaredGateChecks": [
+    {
+      "gate": "soak.wallClockSeconds",
+      "target": 86400,
+      "observed": 62.9209016,
+      "status": "NOT_MEASURED",
+      "basis": "measured wall clock seconds of this run",
+      "reason": "the declared soak window was not exercised; this run is shorter than the declared soak"
+    },
+    {
+      "gate": "soak.plannedWorkerRestarts",
+      "target": 1,
+      "observed": 1,
+      "status": "PASS",
+      "basis": "a worker process owned by this workload was stopped and replaced; the replacement completed scheduled retrieval work"
+    },
+    {
+      "gate": "concurrency.maximumActiveRasterCaptures",
+      "target": 4,
+      "observed": null,
+      "status": "NOT_MEASURED",
+      "basis": "no active raster capture was observed",
+      "reason": "no native raster capture ran in this run"
+    },
+    {
+      "gate": "requiredRecovery.api-restart",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    },
+    {
+      "gate": "requiredRecovery.worker-loss",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    },
+    {
+      "gate": "requiredRecovery.stale-lease",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    },
+    {
+      "gate": "requiredRecovery.storage-loss",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    },
+    {
+      "gate": "requiredRecovery.provider-backoff",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    },
+    {
+      "gate": "requiredRecovery.credential-exhaustion",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    },
+    {
+      "gate": "requiredRecovery.storage-quota",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    },
+    {
+      "gate": "requiredRecovery.lost-response",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    },
+    {
+      "gate": "requiredRecovery.source-revocation",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    },
+    {
+      "gate": "requiredRecovery.deletion-expiry-interruption",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    },
+    {
+      "gate": "requiredRecovery.paired-restore",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    },
+    {
+      "gate": "requiredRecovery.actual-rollback-binary-forward-recovery",
+      "target": "PASS",
+      "observed": null,
+      "status": "NOT_RUN",
+      "basis": "no rehearsal result was supplied to this summary",
+      "reason": "the required-recovery executor has not recorded this rehearsal"
+    }
+  ],
+  "budgetGate": {
+    "declared": 14,
+    "measured": 10,
+    "failed": 5,
+    "notMeasured": 4,
+    "status": "FAIL",
+    "basis": "a measured budget outside its target fails the run; an unmeasured budget is reported and never assumed"
+  },
+  "datasetChecks": [
+    {
+      "field": "reportRevisions",
+      "target": 100000,
+      "observed": 100000,
+      "status": "PASS"
+    },
+    {
+      "field": "detailedReferenceFeatures",
+      "target": 50000,
+      "observed": 50000,
+      "status": "PASS"
+    },
+    {
+      "field": "weatherMovingRecords",
+      "target": 10000,
+      "observed": 10000,
+      "status": "PASS"
+    },
+    {
+      "field": "historyRows",
+      "target": 1000,
+      "observed": 1000,
+      "status": "PASS"
+    },
+    {
+      "field": "areas",
+      "target": 10,
+      "observed": 10,
+      "status": "PASS"
+    },
+    {
+      "field": "analysts",
+      "target": 5,
+      "observed": 5,
+      "status": "PASS"
+    },
+    {
+      "field": "scheduledProfiles",
+      "target": 10,
+      "observed": 10,
+      "status": "PASS"
+    }
+  ],
+  "budgetProfileContentSha256": "c41f9ba2cee362183be617bb5f5239d5424f558af95f62658fffaae4490a959e",
+  "durationComplete": true,
+  "missingOperations": [],
+  "incomplete": false,
+  "outcomeCountsConsistent": true,
+  "limitations": [
+    "Full declared read volumes with scoped cold computations and warm pinned reads; no raster concurrency or browser timing.",
+    "Process RSS is the isolated API process resident set; container or cgroup limits and browser memory are not measured.",
+    "Retained-object growth counts database rows in the disposable isolated database; it is not an installed retention audit.",
+    "Queue age and retrieval freshness are sampled inside the isolated database; they are not source observation freshness.",
+    "Unmeasured declared budgets are reported as NOT_MEASURED with the missing instrument named.",
+    "No paired restore, actual rollback binary or independent target users in this sample.",
+    "A longer sample measures actual elapsed time but does not close missing workload/recovery gates."
+  ],
+  "samplesSha256": "fd4e42ad76b84b2b0eaf05c183ed4f6b1b61f9cf810da48eef0b33e78b7fc1c6",
+  "commandExitCode": 1,
+  "runnerFailure": null,
+  "runnerElapsedSeconds": 128.51599999999962,
+  "frozenDurationMatched": true,
+  "frozenDatasetMatched": true,
+  "sourceUnchanged": false
+}
