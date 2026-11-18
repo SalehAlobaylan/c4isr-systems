@@ -40,18 +40,19 @@ type DisplayInput struct {
 
 type Display struct {
 	DisplayInput
-	ID               string     `json:"id"`
-	SchemaVersion    int        `json:"schemaVersion"`
-	ReleaseID        string     `json:"releaseId"`
-	AreaRevisionID   string     `json:"areaRevisionId"`
-	State            string     `json:"state"`
-	Frame            Frame      `json:"frame"`
-	Bounds           [4]float64 `json:"bounds"`
-	PhysicalAccuracy string     `json:"physicalAccuracy"`
-	AxisOrder        [3]string  `json:"axisOrder"`
-	VerticalDatum    string     `json:"verticalDatum"`
-	MediaType        string     `json:"mediaType"`
-	RetainUntil      time.Time  `json:"retainUntil"`
+	ID               string          `json:"id"`
+	SchemaVersion    int             `json:"schemaVersion"`
+	ReleaseID        string          `json:"releaseId"`
+	AreaRevisionID   string          `json:"areaRevisionId"`
+	State            string          `json:"state"`
+	Frame            Frame           `json:"frame"`
+	Bounds           [4]float64      `json:"bounds"`
+	PhysicalAccuracy string          `json:"physicalAccuracy"`
+	AxisOrder        [3]string       `json:"axisOrder"`
+	VerticalDatum    string          `json:"verticalDatum"`
+	MediaType        string          `json:"mediaType"`
+	RetainUntil      time.Time       `json:"retainUntil"`
+	Purpose          *DisplayPurpose `json:"purpose,omitempty"`
 	assetID, owner   string
 }
 
@@ -98,7 +99,8 @@ func (s Service) reserveDisplay(ctx context.Context, id string, in DisplayInput)
 	if strings.HasPrefix(in.RequestKey, "display-build:") {
 		return Display{}, apperr.Validation("request key is reserved for durable display builds")
 	}
-	return s.reserveDisplayOutput(ctx, id, in)
+	d, err := s.reserveDisplayOutput(ctx, id, in)
+	return withDisplayPurpose(d), err
 }
 
 func (s Service) reserveDisplayOutput(ctx context.Context, id string, in DisplayInput) (Display, error) {
@@ -224,6 +226,7 @@ func (s Service) readyDisplays(ctx context.Context, release, after string) (page
 		}
 		out.Items = append(out.Items, d)
 	}
+	attachDisplayPurpose(out.Items)
 	return out, rows.Err()
 }
 
@@ -255,7 +258,7 @@ func (s Service) getDisplay(r *http.Request, permission string) (Display, error)
 		return d, apperr.NotFound("environment display", "unavailable")
 	}
 	_, err = s.displayParent(ctx, nil, d.ReleaseID)
-	return d, err
+	return withDisplayPurpose(d), err
 }
 
 func (s Service) displayManifest(w http.ResponseWriter, r *http.Request) {
@@ -332,7 +335,7 @@ func (s Service) uploadDisplay(w http.ResponseWriter, r *http.Request) {
 		err = s.publishDisplay(ctx, d, a, raw)
 	}
 	d.State = "READY"
-	respond(w, http.StatusOK, d, err)
+	respond(w, http.StatusOK, withDisplayPurpose(d), err)
 }
 
 func (s Service) publishDisplay(ctx context.Context, d Display, a Asset, raw []byte) error {

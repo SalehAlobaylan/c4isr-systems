@@ -136,6 +136,14 @@ paths:
     $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1release'
   /api/v1/environment-releases/{id}/withdraw:
     $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1withdraw'
+  /api/v1/environment-releases/{id}/assessments:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1assessments'
+  /api/v1/environment-assessments/{id}:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-assessments~1{id}'
+  /api/v1/environment-assessments/{id}/supersede:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-assessments~1{id}~1supersede'
+  /api/v1/environment-releases/{id}/suitability:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1suitability'
   /api/v1/investigations/{id}/delivery-jobs:
     $ref: './deliveries.yaml#/paths/~1api~1v1~1investigations~1{id}~1delivery-jobs'
   /api/v1/delivery-jobs/{id}:
@@ -4723,6 +4731,22 @@ components:
       $ref: './environment-display.yaml#/components/schemas/EnvironmentDisplay'
     EnvironmentDisplayBuildInput:
       $ref: './environment-display.yaml#/components/schemas/EnvironmentDisplayBuildInput'
+    EnvironmentDisplayPurpose:
+      $ref: './environment-display.yaml#/components/schemas/EnvironmentDisplayPurpose'
+    EnvironmentAssessmentInput:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentAssessmentInput'
+    EnvironmentAssessmentCorrection:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentAssessmentCorrection'
+    EnvironmentAssessment:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentAssessment'
+    EnvironmentAssessments:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentAssessments'
+    EnvironmentSuitabilityRequest:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentSuitabilityRequest'
+    EnvironmentSuitabilityDecision:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentSuitabilityDecision'
+    EnvironmentSuitabilityResult:
+      $ref: './environment-library.yaml#/components/schemas/EnvironmentSuitabilityResult'
     EnvironmentReleases:
       $ref: './environment-library.yaml#/components/schemas/EnvironmentReleases'
     DeliveryJob: {$ref: './deliveries.yaml#/components/schemas/DeliveryJob'}

@@ -159,7 +159,7 @@ components:
       allOf:
         - {$ref: '#/components/schemas/EnvironmentDisplayInput'}
         - type: object
-          required: [id, schemaVersion, releaseId, areaRevisionId, state, frame, bounds, physicalAccuracy, axisOrder, verticalDatum, mediaType, retainUntil]
+          required: [id, schemaVersion, releaseId, areaRevisionId, state, frame, bounds, physicalAccuracy, axisOrder, verticalDatum, mediaType, retainUntil, purpose]
           properties:
             id: {"type":"string"}
             schemaVersion: {"type":"integer","const":1}
@@ -173,3 +173,40 @@ components:
             verticalDatum: {"type":"string","const":"WGS84 ellipsoid"}
             mediaType: {"type":"string","enum":["model/gltf-binary","application/json","application/vnd.pmtiles"]}
             retainUntil: {"type":"string","format":"date-time"}
+            purpose: {$ref: '#/components/schemas/EnvironmentDisplayPurpose'}
+    EnvironmentDisplayPurpose:
+      type: object
+      required: [schema, purpose, purposeMeaning, representation, recipe, toolchainSha256, units, axes, origin, localOriginEnu, boundsLonLat, parentMembers, renderingAdjustments, limitations, computationalUse]
+      properties:
+        schema: {type: string, const: emad.geographic-derivative.v1}
+        purpose: {type: string, const: visual-reference}
+        purposeMeaning: {type: string}
+        representation: {type: string, enum: [display-glb, display-layer-json, display-pmtiles]}
+        recipe: {type: string}
+        toolchainSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        units: {type: string, const: metre}
+        axes: {type: array, items: {type: string, enum: [east, up, south]}, minItems: 3, maxItems: 3}
+        origin: {type: array, items: {type: number}, minItems: 3, maxItems: 3, description: Geographic longitude, latitude and height of the local frame origin.}
+        localOriginEnu: {type: array, items: {type: number}, minItems: 3, maxItems: 3, description: Display coordinates at the frame origin, in metres.}
+        boundsLonLat: {type: array, items: {type: number}, minItems: 4, maxItems: 4}
+        parentMembers:
+          type: array
+          items:
+            type: object
+            required: [name, sha256]
+            properties:
+              name: {type: string}
+              sha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        renderingAdjustments:
+          type: array
+          items:
+            type: object
+            required: [kind, value, unit, meaning]
+            properties:
+              kind: {type: string}
+              value: {type: number}
+              unit: {type: string}
+              meaning: {type: string}
+        featureMapping: {type: string, description: How a display feature resolves to a native source identity.}
+        limitations: {type: array, items: {type: string}}
+        computationalUse: {type: boolean, const: false}

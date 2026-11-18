@@ -49,7 +49,7 @@ func (s Service) Mount(r chi.Router) {
 		r.Use(func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Cache-Control", "no-store")
-				if s.ReadOnly && r.Method != http.MethodGet && !strings.HasSuffix(r.URL.Path, "/withdraw") {
+				if s.ReadOnly && r.Method != http.MethodGet && !strings.HasSuffix(r.URL.Path, "/withdraw") && !strings.HasSuffix(r.URL.Path, "/suitability") {
 					httpx.Error(w, apperr.Conflict("new environment work is disabled"))
 					return
 				}
@@ -157,6 +157,7 @@ func (s Service) Mount(r chi.Router) {
 		r.Get("/environment-releases/{id}/prepared", s.prepared)
 		r.Get("/environment-releases/{id}/rebuild", s.rebuild)
 		r.Get("/environment-releases/{id}/displays", s.listDisplays)
+		s.assessmentRoutes(r)
 		r.Post("/environment-releases/{id}/viewing-packages", func(w http.ResponseWriter, r *http.Request) {
 			request(w, r, http.StatusCreated, func(ctx context.Context, in ViewingPackageInput) (ViewingPackage, error) {
 				return s.issueViewingPackage(ctx, chi.URLParam(r, "id"), in)

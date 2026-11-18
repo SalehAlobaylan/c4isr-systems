@@ -25,7 +25,7 @@ The default environment-loaded server profile is `C4ISR_PRODUCT_PROFILE=map`. `h
 
 
 
-With the supported application supervisor stopped, run:
+Start Docker and stop any existing development supervisor with `task local:stop`. Run `task local:setup` for a new installation or after source changes that require new migrations or Go binaries. Once setup succeeds, run `task dev` and open the [development map](http://127.0.0.1:5173/map).
 
 
 
@@ -39,11 +39,11 @@ task dev
 
 
 
-Setup applies forward migrations through `00053_delivery_jobs.sql`, builds the public executables, provisions the map identities and retains existing data. Public setup installs the existing admitted reference/provider configuration; it does not choose additional regions or grant broader retrieval authority. Optional providers remain subject to their installed credentials and rights. The supervisor uses the map analyst and starts imagery/preparation/configured public connectors, without runtime, asset or recording workers.
+Setup waits for PostgreSQL, applies forward migrations from the checkout, builds the public executables, provisions map identities and preserves existing data. The current checkout includes migration `00059_geographic_storage_lifecycle.sql`. Public setup installs the admitted reference and provider configuration under existing grants. The default supervisor uses the map analyst and starts the public imagery, preparation, delivery and configured connector workers.
 
 
 
-`task local:doctor` checks the map profile. `task local:stop` stops only the registered supervisor; unrelated processes are never killed. Setup refuses to replace binaries or migrate while the configured application ports are occupied. This implementation pass does not shut down a running installation or silently change its active profile.
+`task dev` starts the local infrastructure and waits for PostgreSQL before launching the app. `task local:doctor` checks the map profile. `task local:stop` stops the registered supervisor and preserves the database and object store. Setup requires the configured application ports to be free before migrating or replacing binaries.
 
 
 

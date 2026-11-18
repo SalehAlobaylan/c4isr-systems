@@ -189,11 +189,15 @@ def ensure_python():
         marker.write_text(fingerprint)
 
 
+def start_infrastructure():
+    run([*COMPOSE, 'up', '-d', '--wait', '--wait-timeout', '90'])
+
+
 def setup(cfg, infrastructure_only=False):
     if not port_free(cfg['apiPort']) or not port_free(cfg['webPort']):
         raise RuntimeError('Stop task dev (or run task local:stop) before setup. Binaries and migrations were not changed while the application was running.')
     env = environment(cfg)
-    run([*COMPOSE, 'up', '-d'])
+    start_infrastructure()
     run(['task', 'db:migrate'], env=env)
     (ROOT / 'bin').mkdir(exist_ok=True)
     for app in apps_for(cfg):
@@ -245,9 +249,10 @@ def develop(cfg):
     for port in [cfg['apiPort'], cfg['webPort']]:
         if not port_free(port):
             raise RuntimeError(f'Port {port} is occupied. Stop its existing development process or set a different port in private/local/config.json.')
-    env = environment(cfg)
     if not (CREDS / (analyst_for(cfg)+'.token')).exists():
         raise RuntimeError('Run task local:setup first')
+    start_infrastructure()
+    env = environment(cfg)
     # The existing Vite injection is restricted to this local development
     # process. Production builds receive no credential or private config.
     env['VITE_API_TOKEN'] = (CREDS / (analyst_for(cfg)+'.token')).read_text().strip()

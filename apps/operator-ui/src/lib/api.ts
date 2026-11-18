@@ -351,6 +351,11 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
     environmentDecisions:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}/decisions',{params:{path:{id}},signal})),
     environmentDisplays:(id:string,after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}/displays',{params:{path:{id},query:{after}},signal})),
     environmentDisplay:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-displays/{id}/manifest',{params:{path:{id}},signal})),
+    environmentAssessments:(id:string,after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}/assessments',{params:{path:{id},query:{after}},signal})),
+    environmentAssessment:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-assessments/{id}',{params:{path:{id}},signal})),
+    recordEnvironmentAssessment:(id:string,body:components['schemas']['EnvironmentAssessmentInput'],signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/assessments',{params:{path:{id}},body,signal})),
+    supersedeEnvironmentAssessment:(id:string,body:components['schemas']['EnvironmentAssessmentCorrection'],signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/environment-assessments/{id}/supersede',{params:{path:{id}},body,signal})),
+    environmentSuitability:(id:string,body:components['schemas']['EnvironmentSuitabilityRequest'],signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/suitability',{params:{path:{id}},body,signal})),
     freezeGeographicContext:(body:operations['freezeGeographicContext']['requestBody']['content']['application/json'],signal?:AbortSignal)=>
       unwrapScoped(apiClient.POST('/api/v1/context-packages/geographic',{body,signal})),
     geographicContext:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/context-packages/{id}/geographic',{params:{path:{id}},signal})),

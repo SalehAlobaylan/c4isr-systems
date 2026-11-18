@@ -290,6 +290,87 @@ func TestGeographicEnvironmentAdmissionBuildReleaseAndRevocation(t *testing.T) {
 		decisions[2].ManifestSHA256 != action.ManifestSHA256 || decisions[2].Note != action.Note || decisions[2].HumanID == "" {
 		t.Fatal(decisions)
 	}
+	detail := call(human, "GET", "/environment-releases/"+releaseID, nil, 200)
+	manifestDocument := detail["manifest"].(map[string]any)
+	manifestMember := manifestDocument["members"].([]any)[0].(map[string]any)
+	areaRaw, err := json.Marshal(manifestDocument["area"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	assessmentPath := "/environment-releases/" + releaseID + "/assessments"
+	assessment := geoenv.AssessmentInput{
+		ManifestSHA256: action.ManifestSHA256, MemberSHA256: manifestMember["sha256"].(string),
+		Layer: manifestMember["layer"].(string), Use: "fixture-independent-surface",
+		Method: "Held-out fixture controls", ControlSetSHA256: strings.Repeat("4", 64),
+		StatisticM: .2, UncertaintyM: .05, Area: areaRaw, Decision: "ACCEPTED",
+		Note: "Fixture reviewer accepted the held-out control comparison.",
+	}
+	call(consumer, "POST", assessmentPath, assessment, 403)
+	call(worker, "POST", assessmentPath, assessment, 403)
+	recorded := call(human, "POST", assessmentPath, assessment, 201)
+	assessmentID := recorded["id"].(string)
+	if recorded["sequence"] != float64(1) || recorded["releaseManifestSha256"] != action.ManifestSHA256 ||
+		recorded["supersededBy"] != nil {
+		t.Fatal("assessment must bind the exact release member and start a sequence", recorded)
+	}
+	if got := call(consumer, "GET", "/environment-assessments/"+assessmentID, nil, 200); got["evidenceSha256"] != recorded["evidenceSha256"] {
+		t.Fatal("authorized reader must see the same pinned assessment", got)
+	}
+	if list := call(human, "GET", assessmentPath, nil, 200); len(list["items"].([]any)) != 1 {
+		t.Fatal("assessment list must contain the recorded decision", list)
+	}
+	requirementFor := func(representations []any) map[string]any {
+		return map[string]any{
+			"schema": "emad.environment-requirement.v1", "requirementId": "fixture-surface",
+			"operation": "read-native",
+			"release": map[string]any{"manifestSha256": action.ManifestSHA256,
+				"areaRevisionId": manifestDocument["areaRevisionId"]},
+			"resources":       map[string]any{"maxMembers": 64, "maxBytes": 1 << 30},
+			"representations": representations,
+		}
+	}
+	accuracy := func(tolerance float64) map[string]any {
+		return map[string]any{"id": "surface", "layer": manifestMember["layer"],
+			"required": true, "units": "metre",
+			"accuracy": map[string]any{"mode": "independent-assessment",
+				"use": "fixture-independent-surface", "toleranceM": tolerance}}
+	}
+	requirement := requirementFor([]any{accuracy(.5)})
+	suitabilityPath := "/environment-releases/" + releaseID + "/suitability"
+	supported := call(human, "POST", suitabilityPath, requirement, 200)
+	if supported["overall"] != "supported" || supported["evidenceSha256"] == "" ||
+		len(supported["decisions"].([]any)) != 4 {
+		t.Fatal("a covered accepted assessment inside tolerance must support the requirement", supported)
+	}
+	evidenced := supported["decisions"].([]any)[3].(map[string]any)
+	if evidenced["reason"] != "accuracy-evidenced" || evidenced["assessment"] != assessmentID {
+		t.Fatal("the decision must pin the assessment it used", evidenced)
+	}
+	exceeded := call(human, "POST", suitabilityPath, requirementFor([]any{accuracy(.1)}), 200)
+	if exceeded["overall"] != "unsupported" {
+		t.Fatal("a statistic above the declared tolerance must be unsupported", exceeded)
+	}
+	unknown := requirementFor([]any{map[string]any{"id": "surface", "layer": manifestMember["layer"],
+		"required": true, "accuracy": map[string]any{"mode": "unknown-acceptable"}}})
+	if declared := call(human, "POST", suitabilityPath, unknown, 200); declared["overall"] != "supported" {
+		t.Fatal("a consumer accepting UNKNOWN accuracy may inspect the native surface", declared)
+	}
+	correction := geoenv.AssessmentCorrection{
+		Method: "Corrected held-out fixture controls", ControlSetSHA256: strings.Repeat("5", 64),
+		StatisticM: .9, UncertaintyM: .1, Area: areaRaw, Decision: "ACCEPTED",
+		Note: "Correction after reprocessing the held-out controls.",
+	}
+	corrected := call(human, "POST", "/environment-assessments/"+assessmentID+"/supersede", correction, 201)
+	if corrected["sequence"] != float64(2) || corrected["supersedesId"] != assessmentID {
+		t.Fatal("a correction must supersede the exact prior record", corrected)
+	}
+	call(human, "POST", "/environment-assessments/"+assessmentID+"/supersede", correction, 409)
+	correctedResult := call(human, "POST", suitabilityPath, requirement, 200)
+	correctedDecision := correctedResult["decisions"].([]any)[3].(map[string]any)
+	if correctedResult["overall"] != "unsupported" || correctedDecision["assessment"] != corrected["id"] ||
+		correctedDecision["reason"] != "accuracy-exceeded" {
+		t.Fatal("a correction must produce a new decision with the new evidence", correctedResult)
+	}
 	consumerRequest, err := http.NewRequest("GET", h.server.URL+"/api/v1/environment-releases/"+releaseID+"/prepared", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -1056,6 +1137,7 @@ func TestGeographicEnvironmentAdmissionBuildReleaseAndRevocation(t *testing.T) {
 		t.Fatal("current source revocation must prevent HTTP publication")
 	}
 	call(human, "GET", "/environment-releases/"+releaseID+"/prepared", nil, 403)
+	call(human, "POST", suitabilityPath, requirement, 403)
 	call(human, "GET", lineagePath, nil, 403)
 	call(human, "GET", displayList, nil, 403)
 	call(human, "GET", displayPath+"/manifest", nil, 403)

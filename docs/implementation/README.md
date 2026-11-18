@@ -12,16 +12,16 @@ Nothing in this directory is a release approval. Where a record states a status,
 
 ## Current status
 
-**Nothing is qualified. Two delivery phases are open.**
+Product release acceptance remains open for both phases. Bounded implementation and qualification results are recorded against their tested installations and fixtures.
 
 | Phase | Scope | State | Governing record |
 | --- | --- | --- | --- |
 | Map-first (MAP-6) | Map-centered Public Context & Intelligence for the Middle East and worldwide | **T01–T21 implemented**, **T22–T24 IN_PROGRESS**, release `NOT_QUALIFIED` | [Plan](MAP_FIRST_PLAN.md) · [Backlog](MAP_FIRST_BACKLOG_2026_10_25.json) |
-| Environment & data foundations | Reusable geographic packages for later simulation design | **Installed and staged** in Windows and Linux. Paired restore passed. Human release review and the 24-hour staging observation are open. | [Implementation plan](ENVIRONMENT_FOUNDATION_IMPLEMENTATION_PLAN_2026_11_11.md) · [Installation evidence](ENVIRONMENT_FOUNDATION_EVIDENCE_2026_11_12.md) · [Operations](ENVIRONMENT_LIBRARY_OPERATIONS.md) |
+| Environment & data foundations | Reusable geographic packages for later simulation design | **Implemented and staged.** Riyadh is the detailed reference. The paired restore and desktop/compact viewer checks passed. The 24-hour observation, human release decision and independent receiver walkthrough remain open. | [Plan index](../../plans/README.md) · [Implementation record](../../plans/IMPLEMENTATION_PROGRESS.md) · [Operations](ENVIRONMENT_LIBRARY_OPERATIONS.md) |
 
-The latest qualification attempt is the [29 October product evaluation](MAP_FIRST_PRODUCT.md#29-october-2026-product-evaluation). It recorded `NOT_QUALIFIED` with these open findings:
+The [29 October map-first product evaluation](MAP_FIRST_PRODUCT.md#29-october-2026-product-evaluation) recorded `NOT_QUALIFIED`. The following findings include follow-up measurements and fixes:
 
-- **Read lifecycle blocked ordinary work.** The UI reported *"active read capacity exhausted"* and could not refresh the investigation list. Map-family read snapshots were never released or replaced, so every refresh consumed another budget slot. **Fixed**: reads now carry a view key, a refresh supersedes the read it replaces inside the same transaction, and a closed view releases its snapshot immediately (`internal/platform/reads/storage.go`, `internal/analystscope/reads.go`). The failure message now names the real remedy instead of a quota.
+- **Read lifecycle blocked ordinary work.** Map refreshes could accumulate temporary reads. The server now supersedes a matching read in the same transaction. The browser releases map and catalog reads on normal page exit, and the map retries after capacity errors. The basemap reads country geometry independently. The installed browser check verified cleanup over 19 consecutive loads in commit `8fe5b1c`.
 - **Dense workload responsiveness failed.** Measured on 12 November 2026 against the full declared dataset, 60 s, with the run completing cleanly and the planned worker restart passing:
 
   | Operation | Cold | Warm | Budget |
@@ -49,7 +49,8 @@ The latest qualification attempt is the [29 October product evaluation](MAP_FIRS
 4. Run the v2 backup CLI against the installed profile and restore it into isolated services.
 5. Record genuine observed sessions against the published T23 protocol, with an independent reviewer.
 6. Populate the release ledger with per-gap links, per-task source revisions, installed profile and user validation; name owners and evidence reviewers.
-7. Implement E02–E10 of the environment/data foundations plan.
+
+For geographic environment acceptance, follow the [environment acceptance sequence](../../plans/README.md#next-acceptance-steps).
 
 ### What is now enforced
 
@@ -66,7 +67,7 @@ The latest qualification attempt is the [29 October product evaluation](MAP_FIRS
 | --- | --- |
 | [MAP_FIRST_PLAN.md](MAP_FIRST_PLAN.md) | The map-first governing plan: the 18-gap report and MAP-0…MAP-6 gates, the code-backed gap analysis, the 24 tasks with acceptance criteria A01–A24 and the traceability matrix, and the pre-execution plan audit. |
 | [MAP_FIRST_DELIVERY_LOG.md](MAP_FIRST_DELIVERY_LOG.md) | The implementation record for every task group: T01–T03 through T22–T24, plus the pre-qualification review and the local access fix. Each task's scope, checks and boundaries are a section. |
-| [MAP_FIRST_PRODUCT.md](MAP_FIRST_PRODUCT.md) | The current product brief and the 29 October 2026 product evaluation — the latest qualification result. |
+| [MAP_FIRST_PRODUCT.md](MAP_FIRST_PRODUCT.md) | The map-first product brief and the 29 October 2026 product evaluation. |
 | [MAP_FIRST_OPERATIONS.md](MAP_FIRST_OPERATIONS.md) | Operation and upgrade guide for the map profile, plus the historical startup investigation and the historical recovery operations guide. |
 | [HISTORICAL_DELIVERY.md](HISTORICAL_DELIVERY.md) | The pre-map-first v2 delivery sequence (F0–S4) and its acceptance. Code that is still installed behind the explicit `historical-full` profile. |
 | [HISTORICAL_RECOVERY.md](HISTORICAL_RECOVERY.md) | The bounded delivery recovery of 23–24 October 2026: the audit, its recovery acceptance, the plan review, review/commit readiness, the provider activation snapshots and the asset-licensing record. |

@@ -1,0 +1,4571 @@
+{
+  "areaRevisionId": "owned-fixture-area-v1",
+  "cases": [
+    {
+      "derivation": "Native surface inspection accepts UNKNOWN physical accuracy; weather is an optional omission.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": 1.0,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "coverage": 1.0,
+            "reason": "area-covered",
+            "requirement": "area",
+            "result": "pass"
+          },
+          {
+            "reason": "time-background-accepted",
+            "requirement": "time",
+            "result": "pass"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          },
+          {
+            "reason": "optional-representation-absent",
+            "requirement": "weather",
+            "result": "optional-omitted"
+          }
+        ],
+        "optionalReasons": [
+          "optional-representation-absent"
+        ],
+        "overall": "supported"
+      },
+      "id": "surface-native-inspection",
+      "now": null,
+      "requirement": {
+        "area": {
+          "allowPartial": false,
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  46.7,
+                  24.74
+                ],
+                [
+                  46.73,
+                  24.74
+                ],
+                [
+                  46.73,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.74
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          }
+        },
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "accuracy": {
+              "mode": "unknown-acceptable"
+            },
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          },
+          {
+            "id": "weather",
+            "layer": "weather-field",
+            "required": false
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1",
+        "time": {
+          "layers": [
+            "surface"
+          ],
+          "mode": "background"
+        }
+      }
+    },
+    {
+      "derivation": "Acceptable native imagery with a missing optional weather layer remains supported.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01T10:00:00Z",
+            "layer": "imagery",
+            "productEdition": "owned-imagery-v1",
+            "verticalDatum": "not-applicable"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 4096,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid optical samples inside the requested footprint",
+              "selectedSamples": 100,
+              "validSamples": 95,
+              "verticalDatum": "not-applicable"
+            },
+            "layer": "imagery",
+            "name": "imagery-00-00.tif",
+            "sha256": "6666666666666666666666666666666666666666666666666666666666666666"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "imagery",
+            "result": "pass"
+          },
+          {
+            "reason": "optional-representation-absent",
+            "requirement": "weather",
+            "result": "optional-omitted"
+          }
+        ],
+        "optionalReasons": [
+          "optional-representation-absent"
+        ],
+        "overall": "supported"
+      },
+      "id": "imagery-native-optional-weather",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "accuracy": {
+              "mode": "unknown-acceptable"
+            },
+            "id": "imagery",
+            "layer": "imagery",
+            "required": true,
+            "units": "metre"
+          },
+          {
+            "id": "weather",
+            "layer": "weather-field",
+            "required": false
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "A required modeled ground layer is not retained by this release.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "representation-absent",
+            "requirement": "ground",
+            "result": "unsupported"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "ground-required-absent",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "ground",
+            "layer": "ground",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "Independent ground accuracy is required but no accepted assessment exists.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2015",
+            "layer": "ground",
+            "productEdition": "owned-ground-v1",
+            "verticalDatum": "EGM2008"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 5000,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid bare-earth samples",
+              "selectedSamples": 1000,
+              "validSamples": 900,
+              "verticalDatum": "EGM2008"
+            },
+            "layer": "ground",
+            "name": "raster-10-00.tif",
+            "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "accuracy-unevidenced",
+            "requirement": "ground",
+            "result": "unqualified"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unqualified"
+      },
+      "id": "ground-unknown-accuracy",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "accuracy": {
+              "mode": "independent-assessment",
+              "toleranceM": 0.25,
+              "use": "independent-ground-elevation"
+            },
+            "id": "ground",
+            "layer": "ground",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "An accepted assessment covers the requirement area and is inside the declared tolerance.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [
+          {
+            "area": {
+              "coordinates": [
+                [
+                  [
+                    46.69,
+                    24.69
+                  ],
+                  [
+                    46.77,
+                    24.69
+                  ],
+                  [
+                    46.77,
+                    24.77
+                  ],
+                  [
+                    46.69,
+                    24.77
+                  ],
+                  [
+                    46.69,
+                    24.69
+                  ]
+                ]
+              ],
+              "type": "Polygon"
+            },
+            "controlSetSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+            "decision": "ACCEPTED",
+            "evidenceSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+            "id": "assessment-ground-2026-01",
+            "layer": "ground",
+            "memberSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "method": "GNSS campaign, held-out controls",
+            "releaseManifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "reviewedAt": "2026-01-15T00:00:00Z",
+            "sequence": 1,
+            "statisticM": 0.12,
+            "uncertaintyM": 0.05,
+            "use": "independent-ground-elevation"
+          }
+        ],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2015",
+            "layer": "ground",
+            "productEdition": "owned-ground-v1",
+            "verticalDatum": "EGM2008"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 5000,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid bare-earth samples",
+              "selectedSamples": 1000,
+              "validSamples": 900,
+              "verticalDatum": "EGM2008"
+            },
+            "layer": "ground",
+            "name": "raster-10-00.tif",
+            "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": 1.0,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "coverage": 1.0,
+            "reason": "area-covered",
+            "requirement": "area",
+            "result": "pass"
+          },
+          {
+            "assessment": "assessment-ground-2026-01",
+            "reason": "accuracy-evidenced",
+            "requirement": "ground",
+            "result": "pass",
+            "statisticM": 0.12
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "supported"
+      },
+      "id": "ground-accuracy-evidenced",
+      "now": null,
+      "requirement": {
+        "area": {
+          "allowPartial": false,
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  46.7,
+                  24.74
+                ],
+                [
+                  46.73,
+                  24.74
+                ],
+                [
+                  46.73,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.74
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          }
+        },
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "accuracy": {
+              "mode": "independent-assessment",
+              "toleranceM": 0.25,
+              "use": "independent-ground-elevation"
+            },
+            "id": "ground",
+            "layer": "ground",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "A proven statistic above the declared tolerance is a violation, not missing evidence.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [
+          {
+            "area": {
+              "coordinates": [
+                [
+                  [
+                    46.69,
+                    24.69
+                  ],
+                  [
+                    46.77,
+                    24.69
+                  ],
+                  [
+                    46.77,
+                    24.77
+                  ],
+                  [
+                    46.69,
+                    24.77
+                  ],
+                  [
+                    46.69,
+                    24.69
+                  ]
+                ]
+              ],
+              "type": "Polygon"
+            },
+            "controlSetSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+            "decision": "ACCEPTED",
+            "evidenceSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+            "id": "assessment-ground-2026-01",
+            "layer": "ground",
+            "memberSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "method": "GNSS campaign, held-out controls",
+            "releaseManifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "reviewedAt": "2026-01-15T00:00:00Z",
+            "sequence": 1,
+            "statisticM": 0.4,
+            "uncertaintyM": 0.05,
+            "use": "independent-ground-elevation"
+          }
+        ],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2015",
+            "layer": "ground",
+            "productEdition": "owned-ground-v1",
+            "verticalDatum": "EGM2008"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 5000,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid bare-earth samples",
+              "selectedSamples": 1000,
+              "validSamples": 900,
+              "verticalDatum": "EGM2008"
+            },
+            "layer": "ground",
+            "name": "raster-10-00.tif",
+            "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": 1.0,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "coverage": 1.0,
+            "reason": "area-covered",
+            "requirement": "area",
+            "result": "pass"
+          },
+          {
+            "assessment": "assessment-ground-2026-01",
+            "reason": "accuracy-exceeded",
+            "requirement": "ground",
+            "result": "unsupported",
+            "statisticM": 0.4,
+            "toleranceM": 0.25
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "ground-accuracy-exceeded",
+      "now": null,
+      "requirement": {
+        "area": {
+          "allowPartial": false,
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  46.7,
+                  24.74
+                ],
+                [
+                  46.73,
+                  24.74
+                ],
+                [
+                  46.73,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.74
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          }
+        },
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "accuracy": {
+              "mode": "independent-assessment",
+              "toleranceM": 0.25,
+              "use": "independent-ground-elevation"
+            },
+            "id": "ground",
+            "layer": "ground",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "A correction supersedes the earlier accepted assessment; the new evidence governs.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [
+          {
+            "area": {
+              "coordinates": [
+                [
+                  [
+                    46.69,
+                    24.69
+                  ],
+                  [
+                    46.77,
+                    24.69
+                  ],
+                  [
+                    46.77,
+                    24.77
+                  ],
+                  [
+                    46.69,
+                    24.77
+                  ],
+                  [
+                    46.69,
+                    24.69
+                  ]
+                ]
+              ],
+              "type": "Polygon"
+            },
+            "controlSetSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+            "decision": "ACCEPTED",
+            "evidenceSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+            "id": "assessment-ground-2026-01",
+            "layer": "ground",
+            "memberSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "method": "GNSS campaign, held-out controls",
+            "releaseManifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "reviewedAt": "2026-01-15T00:00:00Z",
+            "sequence": 1,
+            "statisticM": 0.12,
+            "supersededBy": "assessment-ground-2026-02",
+            "uncertaintyM": 0.05,
+            "use": "independent-ground-elevation"
+          },
+          {
+            "area": {
+              "coordinates": [
+                [
+                  [
+                    46.69,
+                    24.69
+                  ],
+                  [
+                    46.77,
+                    24.69
+                  ],
+                  [
+                    46.77,
+                    24.77
+                  ],
+                  [
+                    46.69,
+                    24.77
+                  ],
+                  [
+                    46.69,
+                    24.69
+                  ]
+                ]
+              ],
+              "type": "Polygon"
+            },
+            "controlSetSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+            "decision": "ACCEPTED",
+            "evidenceSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+            "id": "assessment-ground-2026-02",
+            "layer": "ground",
+            "memberSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "method": "GNSS campaign, held-out controls",
+            "releaseManifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "reviewedAt": "2026-02-15T00:00:00Z",
+            "sequence": 2,
+            "statisticM": 0.5,
+            "uncertaintyM": 0.05,
+            "use": "independent-ground-elevation"
+          }
+        ],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2015",
+            "layer": "ground",
+            "productEdition": "owned-ground-v1",
+            "verticalDatum": "EGM2008"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 5000,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid bare-earth samples",
+              "selectedSamples": 1000,
+              "validSamples": 900,
+              "verticalDatum": "EGM2008"
+            },
+            "layer": "ground",
+            "name": "raster-10-00.tif",
+            "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": 1.0,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "coverage": 1.0,
+            "reason": "area-covered",
+            "requirement": "area",
+            "result": "pass"
+          },
+          {
+            "assessment": "assessment-ground-2026-02",
+            "reason": "accuracy-exceeded",
+            "requirement": "ground",
+            "result": "unsupported",
+            "statisticM": 0.5,
+            "toleranceM": 0.25
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "assessment-superseded",
+      "now": null,
+      "requirement": {
+        "area": {
+          "allowPartial": false,
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  46.7,
+                  24.74
+                ],
+                [
+                  46.73,
+                  24.74
+                ],
+                [
+                  46.73,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.74
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          }
+        },
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "accuracy": {
+              "mode": "independent-assessment",
+              "toleranceM": 0.25,
+              "use": "independent-ground-elevation"
+            },
+            "id": "ground",
+            "layer": "ground",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "A subarea assessment cannot qualify a larger requirement area.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [
+          {
+            "area": {
+              "coordinates": [
+                [
+                  [
+                    46.7,
+                    24.74
+                  ],
+                  [
+                    46.715,
+                    24.74
+                  ],
+                  [
+                    46.715,
+                    24.76
+                  ],
+                  [
+                    46.7,
+                    24.76
+                  ],
+                  [
+                    46.7,
+                    24.74
+                  ]
+                ]
+              ],
+              "type": "Polygon"
+            },
+            "controlSetSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+            "decision": "ACCEPTED",
+            "evidenceSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+            "id": "assessment-ground-2026-01",
+            "layer": "ground",
+            "memberSha256": "2222222222222222222222222222222222222222222222222222222222222222",
+            "method": "GNSS campaign, held-out controls",
+            "releaseManifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "reviewedAt": "2026-01-15T00:00:00Z",
+            "sequence": 1,
+            "statisticM": 0.12,
+            "uncertaintyM": 0.05,
+            "use": "independent-ground-elevation"
+          }
+        ],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2015",
+            "layer": "ground",
+            "productEdition": "owned-ground-v1",
+            "verticalDatum": "EGM2008"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 5000,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid bare-earth samples",
+              "selectedSamples": 1000,
+              "validSamples": 900,
+              "verticalDatum": "EGM2008"
+            },
+            "layer": "ground",
+            "name": "raster-10-00.tif",
+            "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": 1.0,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "coverage": 1.0,
+            "reason": "area-covered",
+            "requirement": "area",
+            "result": "pass"
+          },
+          {
+            "reason": "assessment-area-insufficient",
+            "requirement": "ground",
+            "result": "unqualified"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unqualified"
+      },
+      "id": "assessment-area-insufficient",
+      "now": null,
+      "requirement": {
+        "area": {
+          "allowPartial": false,
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  46.7,
+                  24.74
+                ],
+                [
+                  46.73,
+                  24.74
+                ],
+                [
+                  46.73,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.74
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          }
+        },
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "accuracy": {
+              "mode": "independent-assessment",
+              "toleranceM": 0.25,
+              "use": "independent-ground-elevation"
+            },
+            "id": "ground",
+            "layer": "ground",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "An assessment for a different member digest cannot qualify a replacement member.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [
+          {
+            "area": {
+              "coordinates": [
+                [
+                  [
+                    46.69,
+                    24.69
+                  ],
+                  [
+                    46.77,
+                    24.69
+                  ],
+                  [
+                    46.77,
+                    24.77
+                  ],
+                  [
+                    46.69,
+                    24.77
+                  ],
+                  [
+                    46.69,
+                    24.69
+                  ]
+                ]
+              ],
+              "type": "Polygon"
+            },
+            "controlSetSha256": "4444444444444444444444444444444444444444444444444444444444444444",
+            "decision": "ACCEPTED",
+            "evidenceSha256": "5555555555555555555555555555555555555555555555555555555555555555",
+            "id": "assessment-ground-2026-01",
+            "layer": "ground",
+            "memberSha256": "9999999999999999999999999999999999999999999999999999999999999999",
+            "method": "GNSS campaign, held-out controls",
+            "releaseManifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "reviewedAt": "2026-01-15T00:00:00Z",
+            "sequence": 1,
+            "statisticM": 0.12,
+            "uncertaintyM": 0.05,
+            "use": "independent-ground-elevation"
+          }
+        ],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2015",
+            "layer": "ground",
+            "productEdition": "owned-ground-v1",
+            "verticalDatum": "EGM2008"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 5000,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid bare-earth samples",
+              "selectedSamples": 1000,
+              "validSamples": 900,
+              "verticalDatum": "EGM2008"
+            },
+            "layer": "ground",
+            "name": "raster-10-00.tif",
+            "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "assessment-member-mismatch",
+            "requirement": "ground",
+            "result": "unqualified"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unqualified"
+      },
+      "id": "assessment-member-mismatch",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "accuracy": {
+              "mode": "independent-assessment",
+              "toleranceM": 0.25,
+              "use": "independent-ground-elevation"
+            },
+            "id": "ground",
+            "layer": "ground",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "A declared background-use profile accepts mixed source years.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          },
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2023-01-09T12:00:00Z",
+            "layer": "weather-field",
+            "productEdition": "WeatherBench 2",
+            "verticalDatum": "not-applicable"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          },
+          {
+            "bytes": 4096,
+            "component": 0,
+            "details": {
+              "dataTime": "2023-01-09T12:00:00Z",
+              "verticalDatum": "not-applicable"
+            },
+            "layer": "weather-field",
+            "name": "weather-field.json",
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "time-background-accepted",
+            "requirement": "time",
+            "result": "pass"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "supported"
+      },
+      "id": "mixed-year-background",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1",
+        "time": {
+          "layers": [
+            "surface",
+            "weather-field"
+          ],
+          "mode": "background"
+        }
+      }
+    },
+    {
+      "derivation": "A strict common window rejects a required source outside the window.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          },
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2023-01-09T12:00:00Z",
+            "layer": "weather-field",
+            "productEdition": "WeatherBench 2",
+            "verticalDatum": "not-applicable"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          },
+          {
+            "bytes": 4096,
+            "component": 0,
+            "details": {
+              "dataTime": "2023-01-09T12:00:00Z",
+              "verticalDatum": "not-applicable"
+            },
+            "layer": "weather-field",
+            "name": "weather-field.json",
+            "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "time-incompatible",
+            "requirement": "time",
+            "result": "unsupported"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "mixed-year-strict",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1",
+        "time": {
+          "from": "2022-01-01T00:00:00Z",
+          "layers": [
+            "surface",
+            "weather-field"
+          ],
+          "mode": "common-window",
+          "to": "2022-12-31T23:59:59Z"
+        }
+      }
+    },
+    {
+      "derivation": "A required source without a declared time leaves the strict window unqualified.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "time-unknown",
+            "requirement": "time",
+            "result": "unqualified"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unqualified"
+      },
+      "id": "time-unknown",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1",
+        "time": {
+          "from": "2022-01-01T00:00:00Z",
+          "layers": [
+            "surface"
+          ],
+          "mode": "common-window",
+          "to": "2022-12-31T23:59:59Z"
+        }
+      }
+    },
+    {
+      "derivation": "Part of the requirement lies outside the released area; partial use was not accepted.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": 0.6666666666666666,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "coverage": 0.6666666666666666,
+            "reason": "area-partially-covered",
+            "requirement": "area",
+            "result": "unsupported"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "partial-area-rejected",
+      "now": null,
+      "requirement": {
+        "area": {
+          "allowPartial": false,
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  46.74,
+                  24.7
+                ],
+                [
+                  46.77,
+                  24.7
+                ],
+                [
+                  46.77,
+                  24.76
+                ],
+                [
+                  46.74,
+                  24.76
+                ],
+                [
+                  46.74,
+                  24.7
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          }
+        },
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "The consumer explicitly accepts the measured partial area coverage.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": 0.6666666666666666,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "coverage": 0.6666666666666666,
+            "reason": "area-partially-covered-accepted",
+            "requirement": "area",
+            "result": "pass"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "supported"
+      },
+      "id": "partial-area-accepted",
+      "now": null,
+      "requirement": {
+        "area": {
+          "allowPartial": true,
+          "geometry": {
+            "coordinates": [
+              [
+                [
+                  46.74,
+                  24.7
+                ],
+                [
+                  46.77,
+                  24.7
+                ],
+                [
+                  46.77,
+                  24.76
+                ],
+                [
+                  46.74,
+                  24.76
+                ],
+                [
+                  46.74,
+                  24.7
+                ]
+              ]
+            ],
+            "type": "Polygon"
+          }
+        },
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "A native request rejects a layer for which only a visual derivative exists.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {
+          "visual-derivative": [
+            "surface"
+          ]
+        },
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "visual-only-derivative",
+            "requirement": "surface",
+            "result": "unsupported"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "visual-only-native-request",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "allowVisualDerivative": false,
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "A different release manifest digest cannot satisfy the requirement.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-mismatch",
+            "requirement": "release",
+            "result": "unsupported"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "release-mismatch",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "Expired issued terms prevent a new authorized read.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": {
+          "expiresAt": "2021-01-01T00:00:00Z",
+          "grants": [
+            {
+              "id": "grant-1",
+              "revoked": false,
+              "scope": "read-native"
+            }
+          ],
+          "issuedAt": "2020-01-01T00:00:00Z"
+        }
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-expired",
+            "requirement": "terms",
+            "result": "unsupported"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "terms-expired",
+      "now": "2022-01-01T00:00:00Z",
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1",
+        "terms": {
+          "operation": "read-native",
+          "requireIssued": true
+        }
+      }
+    },
+    {
+      "derivation": "Without an evaluation instant an expiry assertion is unqualified.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": {
+          "expiresAt": "2021-01-01T00:00:00Z",
+          "grants": [
+            {
+              "id": "grant-1",
+              "revoked": false,
+              "scope": "read-native"
+            }
+          ],
+          "issuedAt": "2020-01-01T00:00:00Z"
+        }
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-expiry-unknown",
+            "requirement": "terms",
+            "result": "unqualified"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unqualified"
+      },
+      "id": "terms-expiry-unknown",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1",
+        "terms": {
+          "operation": "read-native",
+          "requireIssued": true
+        }
+      }
+    },
+    {
+      "derivation": "A withdrawn grant prevents a new authorized read.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": {
+          "grants": [
+            {
+              "id": "grant-1",
+              "revoked": true,
+              "scope": "read-native"
+            }
+          ],
+          "issuedAt": "2020-01-01T00:00:00Z"
+        }
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "grant-withdrawn",
+            "requirement": "terms",
+            "result": "unsupported"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "grant-withdrawn",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1",
+        "terms": {
+          "operation": "read-native",
+          "requireIssued": true
+        }
+      }
+    },
+    {
+      "derivation": "Issued terms that do not grant the requested operation cannot authorize it.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": {
+          "grants": [
+            {
+              "id": "grant-2",
+              "revoked": false,
+              "scope": "publish"
+            }
+          ],
+          "issuedAt": "2020-01-01T00:00:00Z"
+        }
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "grant-missing",
+            "requirement": "terms",
+            "result": "unsupported"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "grant-missing",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1",
+        "terms": {
+          "operation": "read-native",
+          "requireIssued": true
+        }
+      }
+    },
+    {
+      "derivation": "Measured valid-sample evidence below the required fraction is a proven violation.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "selectedSamples": 100,
+              "validSamples": 50,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "mask-evidence-below-requirement",
+            "requirement": "surface",
+            "result": "unsupported"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "mask-below-requirement",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "minValidFraction": 0.9,
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "A vertical datum that is not retained cannot be guessed.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2015",
+            "layer": "ground",
+            "productEdition": "owned-ground-v1",
+            "verticalDatum": "EGM2008"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 5000,
+            "component": 0,
+            "details": {
+              "selectedSamples": 1000,
+              "validSamples": 900,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "ground",
+            "name": "raster-10-00.tif",
+            "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "datum-mismatch",
+            "requirement": "ground",
+            "result": "unsupported"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "datum-mismatch",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "ground",
+            "layer": "ground",
+            "required": true,
+            "units": "metre",
+            "verticalDatum": "EGM2008"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "A unit without an exact conversion is refused rather than approximated.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-accepted",
+            "requirement": "resources",
+            "result": "pass"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "unit-unsupported",
+            "requirement": "surface",
+            "result": "unsupported"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "unit-unsupported",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "furlong"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1073741824,
+          "maxMembers": 64
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    },
+    {
+      "derivation": "A release beyond the declared member or byte limit is unsupported.",
+      "evidence": {
+        "area": {
+          "coordinates": [
+            [
+              [
+                [
+                  46.7,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.7
+                ],
+                [
+                  46.76,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.76
+                ],
+                [
+                  46.7,
+                  24.7
+                ]
+              ],
+              [
+                [
+                  46.72,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.73
+                ],
+                [
+                  46.73,
+                  24.72
+                ],
+                [
+                  46.72,
+                  24.72
+                ]
+              ]
+            ],
+            [
+              [
+                [
+                  46.78,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.7
+                ],
+                [
+                  46.8,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.72
+                ],
+                [
+                  46.78,
+                  24.7
+                ]
+              ]
+            ]
+          ],
+          "type": "MultiPolygon"
+        },
+        "areaRevisionId": "owned-fixture-area-v1",
+        "assessments": [],
+        "inputs": [
+          {
+            "crs": "EPSG:4326",
+            "dataTime": "2022-06-01",
+            "layer": "surface",
+            "productEdition": "owned-surface-v1",
+            "verticalDatum": "ellipsoid"
+          }
+        ],
+        "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "members": [
+          {
+            "bytes": 2093,
+            "component": 0,
+            "details": {
+              "maskMeaning": "Valid in every input band and within the requested footprint",
+              "selectedSamples": 1700,
+              "validSamples": 1699,
+              "verticalDatum": "ellipsoid"
+            },
+            "layer": "surface",
+            "name": "raster-00-00.tif",
+            "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+          }
+        ],
+        "profileId": "reference-surface-v1",
+        "representationAvailability": {},
+        "schema": "emad.environment-evidence.v1",
+        "terms": null
+      },
+      "expected": {
+        "coverage": null,
+        "decisions": [
+          {
+            "reason": "release-match",
+            "requirement": "release",
+            "result": "pass"
+          },
+          {
+            "reason": "resource-exceeded",
+            "requirement": "resources",
+            "result": "unsupported"
+          },
+          {
+            "reason": "terms-accepted",
+            "requirement": "terms",
+            "result": "pass"
+          },
+          {
+            "reason": "accuracy-unknown-declared",
+            "requirement": "surface",
+            "result": "pass"
+          }
+        ],
+        "optionalReasons": [],
+        "overall": "unsupported"
+      },
+      "id": "resource-exceeded",
+      "now": null,
+      "requirement": {
+        "operation": "read-native",
+        "release": {
+          "areaRevisionId": "owned-fixture-area-v1",
+          "manifestSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "representations": [
+          {
+            "id": "surface",
+            "layer": "surface",
+            "required": true,
+            "units": "metre"
+          }
+        ],
+        "requirementId": "case",
+        "resources": {
+          "maxBytes": 1,
+          "maxMembers": 1
+        },
+        "schema": "emad.environment-requirement.v1"
+      }
+    }
+  ],
+  "fixture": "owned-fixture-v1",
+  "schema": "emad.environment-suitability-cases.v1"
+}

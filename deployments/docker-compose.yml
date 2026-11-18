@@ -14,7 +14,7 @@ services:
     volumes:
       - c4isr-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U c4isr -d c4isr"]
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "c4isr", "-d", "c4isr"]
       interval: 5s
       timeout: 3s
       retries: 12

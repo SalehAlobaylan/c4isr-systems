@@ -8,28 +8,34 @@ After a Windows restart, open Docker Desktop, wait for it to finish starting, an
 
 **Run from source for development.** Follow the [development setup steps](#start-the-map-installation) below. The development server uses its own local data.
 
-> **Current product phase:** A map-centered Public Context and Intelligence system for the **Middle East and the rest of the world**. Simulation is deferred for a separate design discussion; current preparation is limited to reusable geographic environments. Read the [current scope](EMAD_CURRENT_SCOPE.md) and [map-first gap report](docs/implementation/MAP_FIRST_PLAN.md#gap-report). Existing simulation code and the historical instructions below do not make further simulation work part of this phase. The supported startup below uses the map profile and preserves existing data.
+## Project status
 
-EMAD's current product is map-centered **Public Context & Intelligence for the Middle East and supported worldwide workflows**. Reusable geographic environment preparation is included; future simulation design remains a separate phase.
+EMAD supports map-centered Public Context and Intelligence for the Middle East and configured worldwide workflows. Geographic preparation prioritizes detailed environments in Riyadh, national discovery in Saudi Arabia, and regional coverage across the Middle East. Simulation design is a later phase. [Current product scope](EMAD_CURRENT_SCOPE.md)
 
-The active roadmap is the [map-first implementation plan](docs/implementation/MAP_FIRST_PLAN.md#implementation-plan), with its [task/evidence backlog](docs/implementation/MAP_FIRST_BACKLOG_2026_10_25.json) and [current product brief](docs/implementation/MAP_FIRST_PRODUCT.md#product-brief). T01–T21 implement exact shared areas/time, investigations, regional/source profiles, durable acquisition, stable catalogs, imagery studies, independent review, readable briefs and portable geographic packages. The coordinated API/UI/workers require forward migrations through **00053**. [Qualification and release work](docs/implementation/MAP_FIRST_DELIVERY_LOG.md#t22-t24) adds isolated workload/recovery tooling, observed-user record checks and a [release ledger](docs/implementation/evidence/map-first/t22-t24-review/release-ledger.json). The phase remains **NOT QUALIFIED**: shared installation, full workload/24-hour operation, complete real geographic journeys and independent target users have separate open gates. The [29 October product evaluation](docs/implementation/MAP_FIRST_PRODUCT.md#29-october-2026-product-evaluation) is the latest qualification result and records the measured failures; the [implementation records index](docs/implementation/README.md) lists every record and the open gates. Earlier v2 architecture, data strategy and exercise implementation remain historical references under [current scope](EMAD_CURRENT_SCOPE.md).
+- **Environment and 3D infrastructure:** Riyadh has a staged reference release. The plans track implementation and the remaining acceptance steps for the installed workflow. [Plan index and acceptance sequence](plans/README.md)
+- **Map-first release:** T01–T21 are implemented. T22–T24 qualification and independent user acceptance remain open. [Implementation records](docs/implementation/README.md#current-status) · [Map-first backlog](docs/implementation/MAP_FIRST_BACKLOG_2026_10_25.json)
+- **Diagrams:** Architecture and workflow illustrations and reusable prompts for generating diagrams. [Illustrations](docs/diagram/README.md) · [Diagram prompts](Diagram-prompts.md)
+- **Historical delivery:** Original acceptance runs, provider activation records, and exercise, replay and evaluation workflows. [Historical delivery](docs/implementation/HISTORICAL_DELIVERY.md) · [Historical recovery](docs/implementation/HISTORICAL_RECOVERY.md)
 
-**Historical bounded delivery recovery — 2026-10-23:** Public Context contains retained real Saudi/Jeddah geography, evidence and Sentinel imagery. Studio launches the native exercise, automatic recording, 3D replay and privileged evaluation. See the [recovery acceptance](docs/implementation/HISTORICAL_RECOVERY.md#recovery-acceptance) and [delivery ledger](docs/implementation/RECOVERY_STATUS.json). [OpenSky](docs/implementation/HISTORICAL_RECOVERY.md#opensky-activation) and [FIRMS](docs/implementation/HISTORICAL_RECOVERY.md#firms-activation) are activated; FIRMS is backfilling its initial lookback. AIS remains externally gated. Real intelligence awaits human review, and advanced S4 remains future work. The original audit is preserved as history.
+## Primary data-source discovery reference
 
-[Historical implementation increment: S3.2, S3.3 and S4.1](docs/implementation/HISTORICAL_DELIVERY.md#s3-2-s3-3-s4-1) adds bounded recording/replay/evaluation and reusable sensor-quality presets. Its [acceptance evidence](docs/implementation/evidence/S3_2_S3_3_S4_1_ACCEPTANCE.json) describes the declared abstract test profile; it is not proof that those services, identities, assets or archives are installed for the user.
+[World Monitor — Data Sources](https://www.worldmonitor.app/docs/data-sources) is a **primary discovery reference for expanding EMAD's environmental and public-context data** in preparation for future simulations. Consult it when investigating weather, aviation, maritime activity, hazards, population context and infrastructure. Its [source-attribution inventory](https://www.worldmonitor.app/docs/source-attribution) helps trace providers and upstream hosts.
+
+Follow each candidate to the original provider and record the exact product, Saudi/Middle East coverage, spatial and temporal resolution, historical availability, access requirements and permitted retention/export. World Monitor supplies discovery leads; its integrations and derived scores do not establish EMAD's coverage, source permissions or physical simulation accuracy.
+
+For the first simulation data package, prioritize Riyadh municipal incident reports, connected roads, inspection evidence and civilian service demand. These inputs support a concrete exercise in which crews verify a reported obstruction and decide when access can reopen. The 18 November revision also identifies measured civilian drone flight logs, labeled aerial imagery, historical air traffic and coastal activity for follow-on exercises in eastern and southern Saudi Arabia. [Source assessment and acquisition priorities](docs/data/WORLDMONITOR_SOURCE_REVIEW_2026_11_17.md)
+
+The [simulation source and feature plans](plans/simulation-sources/README.md) give each shortlisted source a proposed use, a first deliverable and an acceptance test. Start with the Riyadh road-reopening exercise, then use the aerial inspection, Asir service-access and Jubail port-activity plans for their respective environments.
 
 ## Start the map installation
 
-From the repository root, run setup once for a new development installation. Keep `task dev` running while using the app.
+Start Docker first. This repository uses Go Task. Complete the [prerequisites](#prerequisites) for a fresh checkout, then run these commands from the repository root.
 
-```powershell
-task local:setup
-task dev
-```
+1. Run `task local:setup` for the initial installation and after pulling changes that require new migrations or Go binaries. Setup waits for PostgreSQL and preserves existing data.
+2. Once setup succeeds, run `task dev` and keep that terminal open.
+3. Open the [development map](http://127.0.0.1:5173/map). It signs in automatically with the local map analyst account.
 
-The default profile provisions a map analyst and public workers. Historical facilities are explicitly selected with `task local:setup:historical` and `task dev:historical`. See the [map operations notes](docs/implementation/MAP_FIRST_OPERATIONS.md#map-profile) for upgrades and purpose backfill.
-
-Open **http://127.0.0.1:5173/**. The local analyst opens automatically; Account switching is optional. The supervisor also provides **http://127.0.0.1:5198/map** when that port is free. For an already running standalone UI, `task local:web:entry` connects that address to `localhost:5173`. These addresses require the regular UI and API to remain running. Use `task local:doctor` for diagnostics and `task local:stop` for supported shutdown. Setup preserves the database and volumes. The [operations guide](docs/implementation/MAP_FIRST_OPERATIONS.md#historical-recovery-operations) covers accounts, private credentials, restricted providers, paired backup/restore and staging packaging. The separate API/web commands do not assemble this installation.
+For subsequent sessions, use `task dev`. Use `task local:doctor` to diagnose startup and `task local:stop` to stop the development supervisor before rerunning setup. The supervisor also serves the existing bookmark on [port 5198](http://127.0.0.1:5198/map) when that port is free. Historical facilities use the explicit `task local:setup:historical` and `task dev:historical` commands. [Map operations and recovery](docs/implementation/MAP_FIRST_OPERATIONS.md#local-operation)
 
 ## Documented baseline status
 
@@ -125,134 +131,14 @@ deployments/backup/     scheduled backup reference units and procedure
 
 ## Prerequisites
 
-- Go 1.25+
-- Node 20+ and pnpm 10+
-- Docker (Compose v2)
-- [Task](https://taskfile.dev): `go install github.com/go-task/task/v3/cmd/task@latest`
+- Go 1.25+, Python 3.12, Node 20+ and pnpm 10.
+- Docker with Compose support for `up --wait`.
+- Go Task and the Go tool bin directory on your PATH. Install Task with `go install github.com/go-task/task/v3/cmd/task@latest`.
+- Git for Windows when running the migration and maintenance tasks from PowerShell. The Taskfile uses the Git Bash executable and supports `C4ISR_SHELL_BIN` for a custom install path.
 
-Make sure Go's bin directory is on your PATH (the same directory `go install` writes to):
+After installing Task, run `task setup` once to install the Go tools and frontend dependencies. For Windows, add `$env:USERPROFILE\go\bin` to your PATH if PowerShell cannot find `task` or `goose`.
 
-```bash
-echo 'export PATH="$HOME/go/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
-```
-
-On Windows (PowerShell), add it for the current session and permanently:
-
-```powershell
-$env:PATH += ";$env:USERPROFILE\go\bin"
-[Environment]::SetEnvironmentVariable("PATH", $env:PATH, "User")
-```
-
-Alternative on macOS: `brew install go-task`.
-
-## Quick start
-
-```bash
-# 1. One-time setup: installs sqlc + goose and frontend dependencies
-task setup
-
-# 2. Start PostgreSQL/PostGIS in Docker
-task dev:db
-
-# 3. Apply migrations
-task db:migrate
-
-# 4. Run the Go server (terminal A)
-task dev:api
-
-# 5. Run the operator UI (terminal B)
-task dev:web
-
-# 6. Start the deterministic acceptance scenario (terminal C)
-task scenario:run NAME=restricted-area-intrusion SPEED=1
-```
-
-Open http://localhost:5173.
-
-Start on **Home** to see the two product pillars and your account's access. The
-default development operator initially opens only the legacy exercise workspace;
-migrations do not enable public sources or prepare a 3D scene. Follow
-[local workspace setup](docs/implementation/MAP_FIRST_OPERATIONS.md#historical-startup) to create an explicit
-analyst/author account, configure data and assets, or resolve an API port conflict.
-
-## Windows notes
-
-The commands above work as-is on macOS and Linux. Windows needs two adjustments
-because Task uses a built-in Go shell (`mvdan/sh`) rather than a real shell, and
-that shell cannot execute `.sh` scripts directly.
-
-**1. Put Git's POSIX tools on your PATH.** Task only delegates to a real `sh`
-when it finds one on PATH; otherwise it falls back to its built-in shell.
-
-```powershell
-$env:PATH = "C:\Program Files\Git\usr\bin;$env:PATH"
-```
-
-Do not use bare `bash` for this. On Windows that resolves to the WSL launcher
-(`C:\Windows\System32\bash.exe`), which reads the scripts through a Linux
-filesystem view and fails on their CRLF line endings.
-
-**2. Prefix the ops scripts with `sh`.** Even with a real `sh` on PATH, Task
-tries to `fork/exec` a bare `./scripts/ops/migrate.sh` and fails with
-`%1 is not a valid Win32 application`. Naming the interpreter explicitly works:
-
-```powershell
-$env:C4ISR_DATABASE_URL = 'postgres://c4isr:c4isr@localhost:5432/c4isr?sslmode=disable'
-sh ./scripts/ops/migrate.sh up
-```
-
-This affects every task that calls a script in `scripts/ops/` (`db:migrate`,
-`db:rollback`, `db:status`, `db:backup`, `db:restore:test`, `staging:*`,
-`ops:validate`). Tasks that invoke a binary directly — `setup`, `dev:api`,
-`dev:web`, `sqlc`, `build`, `test` — need only the PATH change.
-
-`GOOSE_BIN` is not set correctly by the Taskfile on Windows: it is built from
-`{{.HOME}}`, which Windows does not define, so it resolves to `/go/bin/goose`.
-The scripts still work as long as `goose` is on PATH. To pin it explicitly:
-
-```powershell
-$env:GOOSE_BIN = "$env:USERPROFILE\go\bin\goose.exe"
-```
-
-### Database port
-
-The Compose file publishes PostgreSQL on **5433**. If that port is already taken
-by another container, run PostGIS on a free port instead and point
-`C4ISR_DATABASE_URL` at it:
-
-```powershell
-docker run -d --name c4isr-postgres `
-  -e POSTGRES_USER=c4isr -e POSTGRES_PASSWORD=c4isr -e POSTGRES_DB=c4isr `
-  -p 5432:5432 `
-  -v c4isr_c4isr-postgres-data:/var/lib/postgresql/data `
-  --restart unless-stopped `
-  imresamu/postgis:17-3.5
-```
-
-### Using WSL instead
-
-WSL runs the POSIX toolchain natively, so `task db:migrate` and the other
-`scripts/ops/` tasks work there with no changes:
-
-```powershell
-wsl
-cd /mnt/c/Users/saleh/Desktop/c4isr-systems
-task db:migrate
-```
-
-Note that a database started inside WSL is not reachable from Windows via
-`localhost` unless the two sides share a network, so prefer the Windows-side
-container above when running the UI and API on the host. The scenario registers `simulator-01`, moves `unknown-01` toward Restricted Zone A, breaches the geofence (~23s), and raises an alert. Patrol-01 is also on the map, moving independently. Use `SPEED=10` to run the scenario ten times faster.
-
-### The first acceptance flow
-
-1. Watch the alert appear in the alert center (delivered over WebSocket).
-2. Open the track and inspect its supporting observations (source + observed times).
-3. Acknowledge the alert.
-4. Create an incident, attach the patrol asset.
-5. Create a mission, assign `patrol-01`.
-6. Issue a command from the mission/incident view; the scenario acknowledges and completes it.
-7. Inspect the timeline; every step is reconstructed from the audit log.
+For app startup, follow [Start the map installation](#start-the-map-installation). The separate API and web tasks are available for component debugging. The deterministic scenario walkthrough belongs to the [historical recovery profile](docs/implementation/MAP_FIRST_OPERATIONS.md#historical-recovery-operations).
 
 ## Testing
 
@@ -486,16 +372,7 @@ ingestion aggregates, and authentication failures in Prometheus text format.
 
 ## Local development model
 
-```text
-Host
-├── Go server      (task dev:api)
-└── Vite frontend  (task dev:web)
-
-Docker Compose
-└── PostgreSQL/PostGIS
-```
-
-The Docker Compose file uses `imresamu/postgis:17-3.5`, a community multi-arch build of the official PostGIS image, because the official image does not publish `linux/arm64` manifests yet.
+The host runs the Go API on port 8081, Vite on port 5173 and the configured workers under `task dev`. Docker Compose runs PostgreSQL/PostGIS on port 5433 and Garage object storage on port 3900. Setup and development startup wait for PostgreSQL before the API starts. See the [local operations guide](docs/implementation/MAP_FIRST_OPERATIONS.md#local-operation).
 
 ## Deferred by design
 

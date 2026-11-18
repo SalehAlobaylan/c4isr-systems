@@ -101,6 +101,7 @@ func (s Service) issueViewingPackage(ctx context.Context, releaseID string, in V
 		if !recipes["terrain-glb-v1"] && !recipes["terrain-glb-v2"] {
 			return apperr.Validation("select the terrain required by the portable viewer")
 		}
+		attachDisplayPurpose(out.Displays)
 		inputs := map[string]bool{}
 		for _, member := range manifest.Members {
 			if dependencies[member.Name] {

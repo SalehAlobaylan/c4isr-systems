@@ -1,0 +1,13 @@
+# Locked optional environment for the offline reader and preparation verifier.
+# Install into an isolated virtual environment on the receiving machine; these
+# packages are not server/runtime dependencies.
+#
+#   python -m venv .venv-reader
+#   .venv-reader/Scripts/python -m pip install -r scripts/data/reader-requirements.txt
+#
+# Verified with CPython 3.12.6 on Windows in the project recovery environment.
+numpy==2.5.4
+rasterio==1.5.2
+fiona==1.10.1
+shapely==2.2.0
+pyproj==3.8.0

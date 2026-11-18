@@ -1,0 +1,82 @@
+{
+  "budgets": {
+    "boundedFeaturesP95Ms": 300,
+    "featureP95Ms": 400,
+    "fieldP95Ms": 100,
+    "inventoryP95Ms": 300,
+    "kitVerifyP95Ms": 2500,
+    "peakRssBytes": 805306368,
+    "pointP95Ms": 150,
+    "sampleP95Ms": 150,
+    "verifyP95Ms": 500
+  },
+  "cleanup": {
+    "removedProbe": true
+  },
+  "failures": [],
+  "fixture": "reference-surface-v1",
+  "iterations": 15,
+  "kit": {
+    "displays": 0,
+    "inventorySha256": "32a0bf0dafa688f1be681f160b9180704ae8a24b40b158154013ebaf67cfd528",
+    "purpose": "native-inspection"
+  },
+  "manifestSha256": "aaf9f14b027749b5d233018606fb90c81e34808b9522e034fc67b5243c966bdc",
+  "measuredAt": "2026-11-18T00:00:00Z",
+  "memberBytes": 300761,
+  "operations": {
+    "boundedFeatures": {
+      "count": 15,
+      "maxMs": 5.231,
+      "p50Ms": 4.711,
+      "p95Ms": 5.231
+    },
+    "feature": {
+      "count": 15,
+      "maxMs": 4.98,
+      "p50Ms": 4.578,
+      "p95Ms": 4.98
+    },
+    "field": {
+      "count": 15,
+      "maxMs": 0.273,
+      "p50Ms": 0.239,
+      "p95Ms": 0.273
+    },
+    "inventory": {
+      "count": 15,
+      "maxMs": 4.217,
+      "p50Ms": 3.916,
+      "p95Ms": 4.217
+    },
+    "kitVerify": {
+      "count": 3,
+      "maxMs": 634.968,
+      "p50Ms": 629.073,
+      "p95Ms": 634.968
+    },
+    "point": {
+      "count": 15,
+      "maxMs": 4.943,
+      "p50Ms": 4.851,
+      "p95Ms": 4.943
+    },
+    "sample": {
+      "count": 15,
+      "maxMs": 2.284,
+      "p50Ms": 2.207,
+      "p95Ms": 2.284
+    },
+    "verify": {
+      "count": 3,
+      "maxMs": 110.75,
+      "p50Ms": 29.457,
+      "p95Ms": 110.75
+    }
+  },
+  "packageBytes": 308491,
+  "peakRssBytes": 96133120,
+  "schema": "emad.environment-workload.v1",
+  "status": "PASS",
+  "warmup": 2
+}

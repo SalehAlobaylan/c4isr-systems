@@ -653,6 +653,111 @@ paths:
           content:
             application/json:
               schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/assessments:
+    get:
+      operationId: listEnvironmentAssessments
+      summary: List physical-accuracy assessments for a visible release
+      description: Requires environments.read and current eligibility for the release and its sources. Superseded records remain listed so an earlier decision can be explained.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: after, in: query, schema: {type: string}}
+      responses:
+        '200':
+          description: At most 50 assessment records in identity order
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnvironmentAssessments'}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+    post:
+      operationId: recordEnvironmentAssessment
+      summary: Record an immutable physical-accuracy assessment
+      description: Requires environments.qualify and the exact release manifest digest. The member digest and layer must exist in that manifest, and the area must be a valid WGS84 polygon or multipolygon inside the release area. A correction must use the supersede endpoint.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EnvironmentAssessmentInput'}
+      responses:
+        '201':
+          description: Recorded assessment with its pinned evidence digest
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnvironmentAssessment'}
+        '4XX':
+          description: Assessment rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-assessments/{id}:
+    get:
+      operationId: getEnvironmentAssessment
+      summary: Read one assessment record
+      description: Requires environments.read and current eligibility for its parent release.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        '200':
+          description: Assessment record
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnvironmentAssessment'}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-assessments/{id}/supersede:
+    post:
+      operationId: supersedeEnvironmentAssessment
+      summary: Record a correction that supersedes an assessment
+      description: Requires environments.qualify. The new record keeps the parent release, member digest, layer and use of the superseded record, and the original stays readable. A record can be superseded once.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EnvironmentAssessmentCorrection'}
+      responses:
+        '201':
+          description: Corrected assessment with a higher sequence
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnvironmentAssessment'}
+        '4XX':
+          description: Correction rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/suitability:
+    post:
+      operationId: evaluateEnvironmentSuitability
+      summary: Decide whether a visible release meets a consumer requirement
+      description: Requires environments.read and current eligibility for the release and its sources. Rights are reevaluated at the request instant. Each decision carries a reason code and the release evidence digest; the overall result is supported only when every required item passes.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EnvironmentSuitabilityRequest'}
+      responses:
+        '200':
+          description: Per-requirement and overall suitability decision
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EnvironmentSuitabilityResult'}
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
 components:
   schemas:
     EnvironmentSourceImpact:
@@ -1121,3 +1226,145 @@ components:
       properties:
         items: {"type":"array","items":{"$ref":"#/components/schemas/EnvironmentRelease"}}
         next: {"type":"string"}
+    EnvironmentAssessmentInput:
+      type: object
+      required: [manifestSha256, memberSha256, layer, use, method, controlSetSha256, statisticM, uncertaintyM, area, decision, note]
+      properties:
+        manifestSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        memberSha256: {type: string, pattern: '^[0-9a-f]{64}$', description: Exact retained member digest this evidence qualifies.}
+        layer: {type: string, pattern: '^[a-z0-9][a-z0-9-]{0,63}$'}
+        use: {type: string, pattern: '^[A-Za-z0-9_.:-]{1,128}$', description: Declared use the assessment supports.}
+        method: {type: string, minLength: 1, maxLength: 1000}
+        controlSetSha256: {type: string, pattern: '^[0-9a-f]{64}$', description: Digest of the held-out control set, stored separately from the release.}
+        statisticM: {type: number, minimum: 0, maximum: 100000}
+        uncertaintyM: {type: number, minimum: 0, maximum: 100000}
+        area: {type: object, additionalProperties: true, description: Valid WGS84 polygon or multipolygon inside the release area that the assessment covers.}
+        decision: {type: string, enum: [ACCEPTED, REJECTED]}
+        note: {type: string, minLength: 1, maxLength: 2000}
+    EnvironmentAssessmentCorrection:
+      type: object
+      required: [method, controlSetSha256, statisticM, uncertaintyM, area, decision, note]
+      properties:
+        method: {type: string, minLength: 1, maxLength: 1000}
+        controlSetSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        statisticM: {type: number, minimum: 0, maximum: 100000}
+        uncertaintyM: {type: number, minimum: 0, maximum: 100000}
+        area: {type: object, additionalProperties: true}
+        decision: {type: string, enum: [ACCEPTED, REJECTED]}
+        note: {type: string, minLength: 1, maxLength: 2000}
+    EnvironmentAssessment:
+      type: object
+      required: [id, releaseId, manifestSha256, releaseManifestSha256, memberSha256, layer, use, method, controlSetSha256, statisticM, uncertaintyM, area, decision, sequence, reviewerHumanId, reviewedAt, evidenceSha256]
+      properties:
+        id: {type: string}
+        releaseId: {type: string}
+        manifestSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        releaseManifestSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        memberSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        layer: {type: string}
+        use: {type: string}
+        method: {type: string}
+        controlSetSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        statisticM: {type: number}
+        uncertaintyM: {type: number}
+        area: {type: object, additionalProperties: true}
+        decision: {type: string, enum: [ACCEPTED, REJECTED]}
+        sequence: {type: integer}
+        supersedesId: {type: string}
+        supersededBy: {type: string}
+        reviewerHumanId: {type: string}
+        reviewedAt: {type: string, format: date-time}
+        evidenceSha256: {type: string, pattern: '^[0-9a-f]{64}$', description: Digest of the immutable record, pinned by any decision that used it.}
+        note: {type: string}
+    EnvironmentAssessments:
+      type: object
+      required: [items]
+      properties:
+        items: {type: array, items: {$ref: '#/components/schemas/EnvironmentAssessment'}}
+        next: {type: string}
+    EnvironmentSuitabilityRequest:
+      type: object
+      additionalProperties: true
+      required: [schema, requirementId, operation, release, representations]
+      properties:
+        schema: {type: string, const: emad.environment-requirement.v1}
+        requirementId: {type: string}
+        operation: {type: string}
+        release:
+          type: object
+          required: [manifestSha256, areaRevisionId]
+          properties:
+            manifestSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+            areaRevisionId: {type: string}
+        resources:
+          type: object
+          properties:
+            maxMembers: {type: integer}
+            maxBytes: {type: integer}
+        terms:
+          type: object
+          properties:
+            requireIssued: {type: boolean}
+            operation: {type: string}
+        area:
+          type: object
+          properties:
+            geometry: {type: object, additionalProperties: true}
+            allowPartial: {type: boolean}
+        time:
+          type: object
+          additionalProperties: true
+        representations:
+          type: array
+          items:
+            type: object
+            required: [layer]
+            properties:
+              id: {type: string}
+              layer: {type: string}
+              required: {type: boolean}
+              units: {type: string}
+              verticalDatum: {type: string}
+              minValidFraction: {type: number}
+              allowVisualDerivative: {type: boolean}
+              accuracy:
+                type: object
+                properties:
+                  mode: {type: string, enum: [unknown-acceptable, independent-assessment]}
+                  use: {type: string}
+                  toleranceM: {type: number}
+    EnvironmentSuitabilityDecision:
+      type: object
+      additionalProperties: true
+      required: [requirement, kind, result, reason, detail, evidenceSha256]
+      properties:
+        requirement: {type: string}
+        kind: {type: string}
+        result: {type: string, enum: [pass, unsupported, unqualified, optional-omitted]}
+        reason: {type: string, description: Versioned reason code documented with the decision engine.}
+        detail: {type: string}
+        evidenceSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+    EnvironmentSuitabilityResult:
+      type: object
+      required: [schema, requirementId, operation, overall, release, evidenceSha256, coverage, decisions, optional]
+      properties:
+        schema: {type: string, const: emad.environment-suitability.v1}
+        requirementId: {type: string}
+        operation: {type: string}
+        overall: {type: string, enum: [supported, unsupported, unqualified]}
+        release:
+          type: object
+          required: [manifestSha256, areaRevisionId, profileId]
+          properties:
+            manifestSha256: {type: string}
+            areaRevisionId: {type: string}
+            profileId: {type: string}
+        evidenceSha256: {type: string, pattern: '^[0-9a-f]{64}$'}
+        terms: {type: [object, 'null'], additionalProperties: true}
+        coverage: {type: [number, 'null'], minimum: 0, maximum: 1}
+        decisions:
+          type: array
+          items: {$ref: '#/components/schemas/EnvironmentSuitabilityDecision'}
+        optional:
+          type: array
+          items: {$ref: '#/components/schemas/EnvironmentSuitabilityDecision'}

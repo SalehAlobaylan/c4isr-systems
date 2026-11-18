@@ -821,6 +821,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/environment-releases/{id}/assessments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List physical-accuracy assessments for a visible release
+         * @description Requires environments.read and current eligibility for the release and its sources. Superseded records remain listed so an earlier decision can be explained.
+         */
+        get: operations["listEnvironmentAssessments"];
+        put?: never;
+        /**
+         * Record an immutable physical-accuracy assessment
+         * @description Requires environments.qualify and the exact release manifest digest. The member digest and layer must exist in that manifest, and the area must be a valid WGS84 polygon or multipolygon inside the release area. A correction must use the supersede endpoint.
+         */
+        post: operations["recordEnvironmentAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-assessments/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read one assessment record
+         * @description Requires environments.read and current eligibility for its parent release.
+         */
+        get: operations["getEnvironmentAssessment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-assessments/{id}/supersede": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a correction that supersedes an assessment
+         * @description Requires environments.qualify. The new record keeps the parent release, member digest, layer and use of the superseded record, and the original stays readable. A record can be superseded once.
+         */
+        post: operations["supersedeEnvironmentAssessment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/suitability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Decide whether a visible release meets a consumer requirement
+         * @description Requires environments.read and current eligibility for the release and its sources. Rights are reevaluated at the request instant. Each decision carries a reason code and the release evidence digest; the overall result is supported only when every required item passes.
+         */
+        post: operations["evaluateEnvironmentSuitability"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/investigations/{id}/delivery-jobs": {
         parameters: {
             query?: never;
@@ -6136,6 +6220,7 @@ export interface components {
             mediaType: "model/gltf-binary" | "application/json" | "application/vnd.pmtiles";
             /** Format: date-time */
             retainUntil: string;
+            purpose: components["schemas"]["EnvironmentDisplayPurpose"];
         };
         EnvironmentDisplayBuildInput: {
             requestKey: string;
@@ -6143,6 +6228,179 @@ export interface components {
             /** @enum {string} */
             recipe: "terrain-glb-v1" | "terrain-glb-v2" | "imagery-display-v1" | "roads-display-v1" | "buildings-display-v1" | "water-display-v1";
             sceneMetadata?: string;
+        };
+        EnvironmentDisplayPurpose: {
+            /** @constant */
+            schema: "emad.geographic-derivative.v1";
+            /** @constant */
+            purpose: "visual-reference";
+            purposeMeaning: string;
+            /** @enum {string} */
+            representation: "display-glb" | "display-layer-json" | "display-pmtiles";
+            recipe: string;
+            toolchainSha256: string;
+            /** @constant */
+            units: "metre";
+            axes: ("east" | "up" | "south")[];
+            /** @description Geographic longitude */
+            origin: number[];
+            /** @description Display coordinates at the frame origin */
+            localOriginEnu: number[];
+            boundsLonLat: number[];
+            parentMembers: {
+                name: string;
+                sha256: string;
+            }[];
+            renderingAdjustments: {
+                kind: string;
+                value: number;
+                unit: string;
+                meaning: string;
+            }[];
+            /** @description How a display feature resolves to a native source identity. */
+            featureMapping?: string;
+            limitations: string[];
+            /** @constant */
+            computationalUse: false;
+        };
+        EnvironmentAssessmentInput: {
+            manifestSha256: string;
+            /** @description Exact retained member digest this evidence qualifies. */
+            memberSha256: string;
+            layer: string;
+            /** @description Declared use the assessment supports. */
+            use: string;
+            method: string;
+            /** @description Digest of the held-out control set */
+            controlSetSha256: string;
+            statisticM: number;
+            uncertaintyM: number;
+            /** @description Valid WGS84 polygon or multipolygon inside the release area that the assessment covers. */
+            area: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            decision: "ACCEPTED" | "REJECTED";
+            note: string;
+        };
+        EnvironmentAssessmentCorrection: {
+            method: string;
+            controlSetSha256: string;
+            statisticM: number;
+            uncertaintyM: number;
+            area: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            decision: "ACCEPTED" | "REJECTED";
+            note: string;
+        };
+        EnvironmentAssessment: {
+            id: string;
+            releaseId: string;
+            manifestSha256: string;
+            releaseManifestSha256: string;
+            memberSha256: string;
+            layer: string;
+            use: string;
+            method: string;
+            controlSetSha256: string;
+            statisticM: number;
+            uncertaintyM: number;
+            area: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            decision: "ACCEPTED" | "REJECTED";
+            sequence: number;
+            supersedesId?: string;
+            supersededBy?: string;
+            reviewerHumanId: string;
+            /** Format: date-time */
+            reviewedAt: string;
+            /** @description Digest of the immutable record */
+            evidenceSha256: string;
+            note?: string;
+        };
+        EnvironmentAssessments: {
+            items: components["schemas"]["EnvironmentAssessment"][];
+            next?: string;
+        };
+        EnvironmentSuitabilityRequest: {
+            /** @constant */
+            schema: "emad.environment-requirement.v1";
+            requirementId: string;
+            operation: string;
+            release: {
+                manifestSha256: string;
+                areaRevisionId: string;
+            };
+            resources?: {
+                maxMembers?: number;
+                maxBytes?: number;
+            };
+            terms?: {
+                requireIssued?: boolean;
+                operation?: string;
+            };
+            area?: {
+                geometry?: {
+                    [key: string]: unknown;
+                };
+                allowPartial?: boolean;
+            };
+            time?: {
+                [key: string]: unknown;
+            };
+            representations: {
+                id?: string;
+                layer: string;
+                required?: boolean;
+                units?: string;
+                verticalDatum?: string;
+                minValidFraction?: number;
+                allowVisualDerivative?: boolean;
+                accuracy?: {
+                    /** @enum {string} */
+                    mode?: "unknown-acceptable" | "independent-assessment";
+                    use?: string;
+                    toleranceM?: number;
+                };
+            }[];
+        } & {
+            [key: string]: unknown;
+        };
+        EnvironmentSuitabilityDecision: {
+            requirement: string;
+            kind: string;
+            /** @enum {string} */
+            result: "pass" | "unsupported" | "unqualified" | "optional-omitted";
+            /** @description Versioned reason code documented with the decision engine. */
+            reason: string;
+            detail: string;
+            evidenceSha256: string;
+        } & {
+            [key: string]: unknown;
+        };
+        EnvironmentSuitabilityResult: {
+            /** @constant */
+            schema: "emad.environment-suitability.v1";
+            requirementId: string;
+            operation: string;
+            /** @enum {string} */
+            overall: "supported" | "unsupported" | "unqualified";
+            release: {
+                manifestSha256: string;
+                areaRevisionId: string;
+                profileId: string;
+            };
+            evidenceSha256: string;
+            terms?: {
+                [key: string]: unknown;
+            } | null;
+            coverage: number | null;
+            decisions: components["schemas"]["EnvironmentSuitabilityDecision"][];
+            optional: components["schemas"]["EnvironmentSuitabilityDecision"][];
         };
         EnvironmentReleases: {
             items: components["schemas"]["EnvironmentRelease"][];
@@ -11780,6 +12038,175 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EnvironmentRelease"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listEnvironmentAssessments: {
+        parameters: {
+            query?: {
+                after?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description At most 50 assessment records in identity order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentAssessments"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    recordEnvironmentAssessment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentAssessmentInput"];
+            };
+        };
+        responses: {
+            /** @description Recorded assessment with its pinned evidence digest */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentAssessment"];
+                };
+            };
+            /** @description Assessment rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getEnvironmentAssessment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Assessment record */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentAssessment"];
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    supersedeEnvironmentAssessment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentAssessmentCorrection"];
+            };
+        };
+        responses: {
+            /** @description Corrected assessment with a higher sequence */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentAssessment"];
+                };
+            };
+            /** @description Correction rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    evaluateEnvironmentSuitability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnvironmentSuitabilityRequest"];
+            };
+        };
+        responses: {
+            /** @description Per-requirement and overall suitability decision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnvironmentSuitabilityResult"];
                 };
             };
             /** @description Request rejected */

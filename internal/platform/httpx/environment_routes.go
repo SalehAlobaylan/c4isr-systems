@@ -73,7 +73,7 @@ func geographicEnvironmentPermission(method string, parts []string) string {
 			return "environments.qualify"
 		}
 	case "environment-releases":
-		if method == http.MethodGet && (collection || detail || action == "manifest" || action == "lineage" || action == "quality" || action == "quality-report" || action == "stac" || action == "displays" || action == "decisions") {
+		if method == http.MethodGet && (collection || detail || action == "manifest" || action == "lineage" || action == "quality" || action == "quality-report" || action == "stac" || action == "displays" || action == "decisions" || action == "assessments") {
 			return "environments.read"
 		}
 		if method == http.MethodGet && (action == "prepared" || action == "rebuild") {
@@ -82,11 +82,21 @@ func geographicEnvironmentPermission(method string, parts []string) string {
 		if method == http.MethodPost && action == "viewing-packages" {
 			return "environments.download"
 		}
-		if method == http.MethodPost && (action == "verify" || action == "displays" || action == "display-builds") {
+		if method == http.MethodPost && (action == "verify" || action == "displays" || action == "display-builds" || action == "assessments") {
 			return "environments.qualify"
+		}
+		if method == http.MethodPost && action == "suitability" {
+			return "environments.read"
 		}
 		if method == http.MethodPost && (action == "release" || action == "withdraw") {
 			return "environments.release"
+		}
+	case "environment-assessments":
+		if method == http.MethodGet && detail {
+			return "environments.read"
+		}
+		if method == http.MethodPost && action == "supersede" {
+			return "environments.qualify"
 		}
 	case "environment-displays":
 		if method == http.MethodGet && action == "manifest" {

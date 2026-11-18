@@ -1,0 +1,39 @@
+# Simulation data and feature delivery plan
+
+18 November 2026. Start in the Riyadh reference area with one question: after several reports of an obstruction, can a dispatcher get the right road inspected and restore access sooner without declaring it clear prematurely? A second exercise uses civilian drone imagery to decide which roads need another inspection. Eastern coastal logistics and southern access disruptions use different regional records.
+
+| Build order | Source plans | First reviewable result | Dependency and proposed lead |
+| --- | --- | --- | --- |
+| 1 | [Municipal reports, roads, inspections and population](01-reports-roads-and-inspections.md) | Arabic report queue, two alternative road states and a traceable reopening decision | Data engineering can start the 940 and road imports together. A municipal reviewer supplies or adjudicates the inspection cases. |
+| 2 | [Aerial evidence, drone logs and civil aviation](02-aerial-inspection-and-aviation.md) | A reviewer sees what imagery actually covers and can request a second inspection. An evaluator can compare predictions with hidden labels. | Imagery engineering can start on public research benchmarks during step 1. Local performance claims require local cases. Civil aviation history has separate access requirements. |
+| 3 | [Regional response demand and maritime activity](03-regional-response-and-coast.md) | Asir workload comparison and a historical Jubail activity timeline | Regional data analyst checks reporting boundaries, periods and coverage. PortWatch can proceed independently of access to vessel reports. |
+| By exercise | [Supporting source plans and deferred leads](04-supporting-sources.md) | One extra layer changes a named decision, such as postponing an inspection or explaining a delayed report | Exercise owner specifies the place, interval and decision. Weather and warning feeds are optional. |
+
+**Delivery scope.** Each plan describes a proposed feature and how to demonstrate it. During infrastructure preparation, deliver the qualified data, offline reads, review cases and map inspection features. Dispatch comparisons, synthetic closures and AI evaluation belong to the later simulation phase. The [existing assessment](../../docs/data/WORLDMONITOR_SOURCE_REVIEW_2026_11_17.md) distinguishes catalog leads from Saudi and research extensions. The [delivery record](../../docs/implementation/SIMULATION_PREPARATION_DELIVERY.md) identifies the existing suitability checks, native reader, topology fixtures, field reads and offline kit.
+
+## From provider data to something a user can inspect
+
+1. A data steward records the source edition, geographic and temporal coverage, acquisition method, attribution, and permissions for each intended use, including retention, redistribution and model training where relevant. Start with one file, product or historical window. Keep the original digest and request parameters with the result. Use an owned fixture for software verification if provider access is pending.
+2. Data engineering extends the existing file preparation worker for static releases and the existing public-ingest adapter family for time-stamped reports. For each derived record preserve the source reference, units, geographic precision, missingness, revisions, and both effective time and first known availability. For a retrospective bulk file with unknown publication history, declare a hypothetical release schedule for the exercise. [Adapter capabilities](../../internal/publicingest/capabilities.go)
+3. The Atlas user selects a study area and date and inspects a report, feature, image or field. The view shows source, age, coverage and permitted uses alongside the value. Store reviewer judgments as separate revisions. Freeze the chosen members and observations with the existing geographic handoff. Reopen the package offline and reproduce the reference answers under its recorded rights. [Offline kit guide](../../docs/implementation/OFFLINE_ENVIRONMENT_KIT_GUIDE.md)
+4. For eastern or southern use, repeat the coverage check against the new area and date. Record which local fields were measured, imported as historical context or authored for training. The regional comparison must be readable even when a source is missing from one area.
+
+## First exercise and evaluation
+
+In the 3D viewer, selecting a report should highlight its published area. Selecting a reviewed inspection should highlight its road segment and show the evidence available at the chosen time. Scrubbing across a partial reopening should change the accessible destinations and retain the still-closed direction. In a debris-response exercise, the starting inputs are a reported obstruction and an inspection task. The reviewer can compare a ground-only workflow with one that uses an aerial image to prioritize a visit. Compare verified reopening time, unnecessary visits and premature clearances on the same cases.
+
+Use one reviewed junction, an alternative access route, one repeated report, one unrelated report with similar wording, and one closure that can disconnect part of the study area. Run twice on the same clock, changing only the availability of the alternative route. A ticket may finish before a crew verifies the road. A later inspection can reverse an earlier conclusion. A receiver should reconstruct both histories from the package.
+
+Compare manual triage, an Arabic category/time/location rule, and AI-assisted suggestions. Keep the same report arrivals, available crews, inspection durations and adjudicated outcomes in every run. Counterbalance operator order or use matched cases to reduce learning effects. Hide repeat labels, final statuses, later imagery and inspection verdicts where those facts would have been unavailable at decision time. Record operator overrides. Synthetic cases can demonstrate workflow correctness. Estimate field performance only on separately adjudicated local cases.
+
+| Measure | Definition for this exercise |
+| --- | --- |
+| Time to verified reopening | From first recordable awareness to the timestamp of verified access restoration. Report median, 90th percentile and count still unresolved at the cutoff. When comparing with an all-lanes-open benchmark, identify partial reopenings separately. |
+| Premature reopening | Count reopenings contradicted by the independent inspection verdict, and report the number of reopening decisions examined. Report missing verdicts separately. |
+| Duplicate dispatch | Count avoidable additional assignments to the same adjudicated obstruction. Exclude deliberate second inspections. Also count distinct incidents merged by mistake. |
+| Accessibility | Compare reachable destinations and reviewed road distance before closure, during closure and after reopening. Report unknowns caused by clipping and missing network data. |
+| Operator burden | Measure suggestions reviewed, manual corrections and time spent per resolved case. Report by case type and geography alongside errors. |
+
+The U.S. Federal Highway Administration measures road clearance from awareness to lanes becoming available and distinguishes this from the last responder leaving. Adopt that distinction when defining local milestones. Fix pass criteria for field performance with the exercise owner before seeing held-out results. Use exact expected events for the controlled software cases. [FHWA incident measures](https://ops.fhwa.dot.gov/tim/preparedness/tim/performance_measures.htm)
+
+**First handoff.** Deliver one manifest, a source limitations sheet, independently written expected answers and a read-only replay example. The receiver must be able to explain why two similar reports stayed separate, which edge closed, what evidence reopened it and what remained unknown. Production admission, real Saudi traffic history, a historical Balady export and Saudi inspection labels each need their own evidence.
