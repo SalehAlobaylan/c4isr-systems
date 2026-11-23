@@ -85,7 +85,9 @@ func geographicEnvironmentPermission(method string, parts []string) string {
 		if method == http.MethodPost && (action == "verify" || action == "displays" || action == "display-builds" || action == "assessments") {
 			return "environments.qualify"
 		}
-		if method == http.MethodPost && action == "suitability" {
+		if method == http.MethodPost && (action == "suitability" || action == "municipal-workload" ||
+			action == "port-activity" || action == "flood-mapping" || action == "radar-outages" ||
+			action == "civilian-access-replay" || action == "civilian-aerial-review" || action == "regional-response-review" || action == "supporting-source-review") {
 			return "environments.read"
 		}
 		if method == http.MethodPost && (action == "release" || action == "withdraw") {

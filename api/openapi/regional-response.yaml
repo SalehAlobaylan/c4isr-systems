@@ -1,0 +1,238 @@
+openapi: 3.1.0
+info:
+  title: Regional Response Review
+  version: 1.0.0
+paths:
+  /api/v1/environment-releases/{id}/regional-response-review:
+    post:
+      operationId: reviewRegionalResponse
+      summary: Replay a reviewed civilian regional service and coastal context package
+      description: Requires environments.read, the selected release manifest, and current internal-analysis rights for the regional-response-review v1 package. Staffing edits are authored assumptions for this request.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: manifestSha256, in: query, required: true, schema: {type: string}}
+        - {name: inputSha256, in: query, required: true, schema: {type: string}}
+        - {name: sourceId, in: query, required: true, schema: {type: string}}
+        - {name: admissionId, in: query, required: true, schema: {type: string}}
+        - {name: knownAt, in: query, required: true, schema: {type: string, format: date-time}}
+        - {name: staffedSlots, in: query, schema: {type: integer, minimum: 0, maximum: 128}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '200':
+          description: Source lineage, evidence available at the cutoff and comparison results
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RegionalResponseReview'}
+        '4XX':
+          description: Input, release or source policy rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+components:
+  schemas:
+    RegionalResponseReview:
+      allOf:
+        - $ref: './environment-library.yaml#/components/schemas/SimulationSourceReviewLineage'
+        - type: object
+          required: [review]
+          properties:
+            review:
+              type: object
+              required: [title, cutoff, sources, indicators, reconciliations, service, coast]
+              properties:
+                title: {type: string}
+                cutoff: {type: string, format: date-time}
+                sources:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, edition, sha256, attribution]
+                    properties:
+                      id: {type: string}
+                      edition: {type: string}
+                      sha256: {type: string}
+                      attribution: {type: string}
+                indicators:
+                  type: array
+                  items: {$ref: '#/components/schemas/RegionalIndicator'}
+                reconciliations:
+                  type: array
+                  items:
+                    type: object
+                    required: [totalId, componentIds, componentSum, unallocatedResidual]
+                    properties:
+                      totalId: {type: string}
+                      componentIds: {type: array, items: {type: string}}
+                      componentSum: {type: integer, nullable: true}
+                      unallocatedResidual: {type: integer, nullable: true}
+                service:
+                  nullable: true
+                  allOf: [{$ref: '#/components/schemas/RegionalServiceReview'}]
+                coast:
+                  nullable: true
+                  allOf: [{$ref: '#/components/schemas/RegionalCoastReview'}]
+    RegionalIndicator:
+      type: object
+      required: [id, sourceId, regionCode, region, geography, measure, nativeLabel, unit, populationScope, channel, periodFrom, periodToExclusive, availableAt, value]
+      properties:
+        id: {type: string}
+        sourceId: {type: string}
+        regionCode: {type: string}
+        region: {type: string}
+        geography: {type: string}
+        measure: {type: string}
+        nativeLabel: {type: string}
+        unit: {type: string}
+        populationScope: {type: string}
+        channel: {type: string}
+        periodFrom: {type: string, format: date}
+        periodToExclusive: {type: string, format: date}
+        availableAt: {type: string, format: date-time}
+        value: {type: integer, nullable: true}
+    RegionalServiceReview:
+      type: object
+      required: [region, referenceAt, zones, capacity, workloads]
+      properties:
+        region: {type: string}
+        referenceAt: {type: string, format: date-time, nullable: true}
+        graphEdition: {type: string}
+        zones:
+          type: array
+          items:
+            type: object
+            required: [id, label, reference, current]
+            properties:
+              id: {type: string}
+              label: {type: string}
+              reference: {$ref: './environment-library.yaml#/components/schemas/CivilianAccessPath'}
+              current: {$ref: './environment-library.yaml#/components/schemas/CivilianAccessPath'}
+        capacity:
+          type: array
+          items:
+            type: object
+            required: [id, label, sourceId, kind, availableAt, staffedSlots]
+            properties:
+              id: {type: string}
+              label: {type: string}
+              sourceId: {type: string}
+              kind: {type: string, enum: [authored, observed, unavailable, unknown]}
+              availableAt: {type: string, format: date-time}
+              staffedSlots: {type: integer, nullable: true}
+        workloads:
+          type: array
+          items:
+            type: object
+            required: [id, label, sourceId, kind, plannedArrivals, arrivals, reachable, disconnected, accessUnknown, byZone, queues]
+            properties:
+              id: {type: string}
+              label: {type: string}
+              sourceId: {type: string}
+              kind: {type: string, enum: [authored, reviewed-history]}
+              plannedArrivals: {type: integer, nullable: true}
+              arrivals: {type: integer}
+              reachable: {type: integer}
+              disconnected: {type: integer}
+              accessUnknown: {type: integer}
+              byZone: {type: object, additionalProperties: {type: integer}}
+              reference:
+                type: object
+                required: [reachable, disconnected, accessUnknown, queues]
+                properties:
+                  reachable: {type: integer}
+                  disconnected: {type: integer}
+                  accessUnknown: {type: integer}
+                  queues:
+                    type: object
+                    additionalProperties:
+                      nullable: true
+                      allOf: [{$ref: '#/components/schemas/RegionalQueue'}]
+              queues:
+                type: object
+                additionalProperties:
+                  nullable: true
+                  allOf: [{$ref: '#/components/schemas/RegionalQueue'}]
+    RegionalQueue:
+      type: object
+      required: [started, completed, awaitingService, inServiceAtCutoff, medianStartedWaitSeconds, p90StartedWaitSeconds]
+      properties:
+        started: {type: integer}
+        completed: {type: integer}
+        awaitingService: {type: integer}
+        inServiceAtCutoff: {type: integer}
+        medianStartedWaitSeconds: {type: number, nullable: true}
+        p90StartedWaitSeconds: {type: number, nullable: true}
+    RegionalCoastReview:
+      type: object
+      required: [port, portWatchId, inventory, depth, coverage, notices]
+      properties:
+        port: {type: string}
+        portWatchId: {type: string}
+        inventory:
+          type: object
+          nullable: true
+          required: [sourceId, identifier, locality, match]
+          properties:
+            sourceId: {type: string}
+            identifier: {type: string}
+            locality: {type: string}
+            match: {type: string, enum: [matched-locality, ambiguous, unmatched]}
+        depth:
+          type: object
+          nullable: true
+          required: [gridSourceId, shorelineSourceId, horizontalReference, verticalReference, samples]
+          properties:
+            gridSourceId: {type: string}
+            shorelineSourceId: {type: string}
+            horizontalReference: {type: string}
+            verticalReference: {type: string}
+            samples:
+              type: array
+              items:
+                type: object
+                required: [cell, state, elevationM, sourceType]
+                properties:
+                  cell: {type: string}
+                  state: {type: string, enum: [land, offshore, nodata]}
+                  elevationM: {type: number, nullable: true}
+                  sourceType: {type: string}
+        coverage:
+          type: array
+          items:
+            type: object
+            required: [sourceId, day, availableAt, windowMinutes, usableMinutes, uniqueReports, duplicates, portWatchCalls]
+            properties:
+              sourceId: {type: string}
+              day: {type: string, format: date}
+              availableAt: {type: string, format: date-time}
+              windowMinutes: {type: integer}
+              usableMinutes: {type: integer}
+              uniqueReports: {type: integer, nullable: true}
+              duplicates: {type: integer, nullable: true}
+              portWatchCalls: {type: integer, nullable: true}
+              portWatchSourceId: {type: string}
+              portWatchAvailableAt: {type: string, format: date-time}
+        notices:
+          type: array
+          items:
+            type: object
+            required: [id, publisher, sourceId, warningArea, revision, kind, status, issuedAt, availableAt, effectiveAt, expiresAt, summary, serviceImpact, issuerReference]
+            properties:
+              id: {type: string}
+              publisher: {type: string}
+              sourceId: {type: string}
+              warningArea: {type: string}
+              revision: {type: integer}
+              kind: {type: string, enum: [civil-service-notice, historical-debrief]}
+              status: {type: string, enum: [active, cancelled, expired]}
+              issuedAt: {type: string, format: date-time}
+              availableAt: {type: string, format: date-time}
+              effectiveAt: {type: string, format: date-time}
+              expiresAt: {type: string, format: date-time, nullable: true}
+              summary: {type: string}
+              serviceImpact: {type: string, enum: [unknown, reported, independently-verified]}
+              impactSourceId: {type: string}
+              issuerReference: {type: string}

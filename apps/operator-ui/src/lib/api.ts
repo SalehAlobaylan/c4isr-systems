@@ -331,7 +331,7 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
     resolveArea:(body:AreaSelection,requestSignal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/areas/resolve',{body,signal:requestSignal})),
     persistArea:(body:AreaSelection,signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/areas/revisions',{body,signal})),
     environmentProfiles:(signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-profiles',{signal})),
-    environmentAssets:(after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-assets',{params:{query:{after}},signal})),
+    environmentAssets:(after?:string,signal?:AbortSignal,source?:string)=>unwrapScoped(apiClient.GET('/api/v1/environment-assets',{params:{query:{after,source}},signal})),
     environmentDefinitions:(after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/geographic-environments',{params:{query:{after}},signal})),
     saveEnvironment:(body:components['schemas']['EnvironmentDefinitionInput'],id?:string,signal?:AbortSignal)=>id
       ? unwrapScoped(apiClient.PUT('/api/v1/geographic-environments/{id}',{params:{path:{id}},body,signal}))
@@ -342,8 +342,71 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
     submitEnvironmentDisplay:(id:string,body:components['schemas']['EnvironmentDisplayBuildInput'],signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/display-builds',{params:{path:{id}},body,signal})),
     cancelEnvironmentDisplay:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/environment-display-builds/{id}/cancel',{params:{path:{id}},signal})),
     cancelEnvironment:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.POST('/api/v1/environment-builds/{id}/cancel',{params:{path:{id}},signal})),
-    environmentReleases:(build?:string,after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases',{params:{query:{build,after}},signal})),
+    environmentReleases:(build?:string,after?:string,signal?:AbortSignal,source?:string)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases',{params:{query:{build,after,source}},signal})),
     environmentRelease:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}',{params:{path:{id}},signal})),
+    reviewMunicipalWorkload:(
+      id: string, query: {manifestSha256:string; sourceId:string; admissionId:string}, file: File, signal?: AbortSignal,
+    ) => unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/municipal-workload', {
+      params: {path: {id}, query},
+      body: '',
+      bodySerializer: () => file,
+      headers: {'Content-Type': 'application/octet-stream'},
+      signal,
+    })),
+    reviewCivilianAccess:(
+      id: string, query: operations['reviewCivilianAccess']['parameters']['query'], file: File, signal?: AbortSignal,
+    ) => unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/civilian-access-replay', {
+      params: {path: {id}, query},
+      body: '',
+      bodySerializer: () => file,
+      headers: {'Content-Type': 'application/octet-stream'},
+      signal,
+    })),
+    reviewCivilianAerial:(
+      id: string, query: operations['reviewCivilianAerial']['parameters']['query'], file: File, signal?: AbortSignal,
+    ) => unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/civilian-aerial-review', {
+      params: {path: {id}, query}, body: '', bodySerializer: () => file,
+      headers: {'Content-Type': 'application/octet-stream'}, signal,
+    })),
+    reviewSupportingSources:(
+      id: string, query: operations['reviewSupportingSources']['parameters']['query'], file: File, signal?: AbortSignal,
+    ) => unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/supporting-source-review', {
+      params: {path: {id}, query}, body: '', bodySerializer: () => file,
+      headers: {'Content-Type': 'application/octet-stream'}, signal,
+    })),
+    reviewRegionalResponse:(
+      id: string, query: operations['reviewRegionalResponse']['parameters']['query'], file: File, signal?: AbortSignal,
+    ) => unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/regional-response-review', {
+      params: {path: {id}, query}, body: '', bodySerializer: () => file,
+      headers: {'Content-Type': 'application/octet-stream'}, signal,
+    })),
+    reviewPortActivity:(
+      id: string, query: operations['reviewPortActivity']['parameters']['query'], file: File, signal?: AbortSignal,
+    ) => unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/port-activity', {
+      params: {path: {id}, query},
+      body: '',
+      bodySerializer: () => file,
+      headers: {'Content-Type': 'application/octet-stream'},
+      signal,
+    })),
+    reviewFloodMapping:(
+      id: string, query: operations['reviewFloodMapping']['parameters']['query'], file: File, signal?: AbortSignal,
+    ) => unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/flood-mapping', {
+      params: {path: {id}, query},
+      body: '',
+      bodySerializer: () => file,
+      headers: {'Content-Type': 'application/octet-stream'},
+      signal,
+    })),
+    reviewRadarOutages:(
+      id: string, query: operations['reviewRadarOutages']['parameters']['query'], file: File, signal?: AbortSignal,
+    ) => unwrapScoped(apiClient.POST('/api/v1/environment-releases/{id}/radar-outages', {
+      params: {path: {id}, query},
+      body: '',
+      bodySerializer: () => file,
+      headers: {'Content-Type': 'application/octet-stream'},
+      signal,
+    })),
     environmentLineage:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}/lineage',{params:{path:{id}},signal})),
     environmentSourceImpact:(id:string,after?:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-sources/{id}/impact',{params:{path:{id},query:{after}},signal})),
     environmentQualityReport:(id:string,signal?:AbortSignal)=>unwrapScoped(apiClient.GET('/api/v1/environment-releases/{id}/quality-report',{params:{path:{id}},signal})),
@@ -431,7 +494,7 @@ export function createAPI(resource?: Resource, signal?: AbortSignal) {
     listGeographicRegions: (query?: {q?:string;parent?:string;kind?:'country'|'region'|'governorate'|'place'|'study';id?:string;offset?:number;source_id?:string;release_id?:string;edition_id?:string},requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/geography/regions',{params:{query},signal:requestSignal})),
     getMapFeatures: (query: {geometry?:string;family:'events'|'earthquakes'|'thermal'|'weather'|'bulletins'|'aircraft'|'vessels'|'imagery'|'coverage'|'findings';region_id?:string;bbox?:string;view?:'latest'|'known_at'|'effective_at';as_of?:string;observed_from?:string;observed_to?:string;source_id?:string;quality?:string;zoom?:number},signal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/map/features',{params:{query},signal})),
     getReferenceTile: (z:number,x:number,y:number,datasets:string[],signal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/map/reference/{z}/{x}/{y}.pbf',{params:{path:{z,x,y},query:{datasets:datasets.join(',')}},signal,parseAs:'arrayBuffer'})),
-    getSourceActivation: (id: string) => unwrap(apiClient.GET('/api/v1/sources/{id}/activation', {params:{path:{id}}})),
+    getSourceActivation: (id: string, signal?: AbortSignal) => unwrap(apiClient.GET('/api/v1/sources/{id}/activation', {params:{path:{id}},signal})),
     getReferenceViewport: (bbox: string, datasets: string[], offset = 0,requestSignal?:AbortSignal) => unwrap(apiClient.GET('/api/v1/reference-features', {params:{query:{bbox,datasets:datasets.join(','),offset}},signal:requestSignal})),
     listRuntimeCapabilities: () => unwrap(apiClient.GET('/api/v1/simulation-runtime/capabilities')),
     listContentPurpose: (view:'all'|'unclassified'='unclassified',offset=0) => unwrap(apiClient.GET('/api/v1/content-purpose',{params:{query:{view,offset}}})),

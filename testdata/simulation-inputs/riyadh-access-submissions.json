@@ -1,0 +1,18 @@
+{
+  "schema": "emad.civilian-access-submissions.v1",
+  "exerciseSha256": "7e12521d2e243295840606201767e50da1c82ec05750a562ed62ff16fa3b6bf8",
+  "runs": [
+    {"id": "fixture-reviewed", "cases": [
+      {"caseId": "eastbound-road", "dispatchedAt": ["2026-11-21T06:04:00Z", "2026-11-21T06:25:00Z"],
+       "declaredOpenAt": ["2026-11-21T07:00:00Z"], "operatorSeconds": 40},
+      {"caseId": "westbound-road", "dispatchedAt": ["2026-11-21T06:11:00Z"], "declaredOpenAt": []},
+      {"caseId": "east-entrance", "dispatchedAt": [], "declaredOpenAt": []}
+    ]},
+    {"id": "fixture-early-clear", "cases": [
+      {"caseId": "eastbound-road", "dispatchedAt": ["2026-11-21T06:04:00Z", "2026-11-21T06:25:00Z", "2026-11-21T06:28:00Z"],
+       "declaredOpenAt": ["2026-11-21T06:30:00Z", "2026-11-21T07:05:00Z"], "operatorSeconds": 20},
+      {"caseId": "westbound-road", "dispatchedAt": ["2026-11-21T06:11:00Z"], "declaredOpenAt": []},
+      {"caseId": "east-entrance", "dispatchedAt": [], "declaredOpenAt": ["2026-11-21T07:00:00Z"]}
+    ]}
+  ]
+}

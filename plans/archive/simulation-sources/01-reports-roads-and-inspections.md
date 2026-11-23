@@ -2,23 +2,46 @@
 
 Deliver these inputs as one exercise package. Each is also useful on the map by itself. The practical dependency is the connection between a report, a possible road segment and an independently timed inspection. Some municipal reports can only be located to an area. Preserve that uncertainty throughout the exercise.
 
+The authored replay now runs through the Atlas Environment Library. See the exact verification cutoffs, source preparation commands, Riyadh technical controls and outstanding field evidence. [Riyadh access delivery](riyadh-access-delivery.md)
+
 ### Riyadh Municipality 940 — Arabic report queue and workload replay
+
+Field mapping · [riyadh-940](normalization.md#riyadh-940)
+
+The Atlas Environment Library includes authenticated review of this exact Q1 attachment. It reports aggregate workload and the unresolved location count through the selected release. [Atlas workflow](delivery.md#review-a-source-in-the-atlas-environment-library)
 
 **Use.** Show a coordinator which categories are arriving, where reports cluster at the published location precision and which might refer to an already open case. Let reviewers accept or reject a suggested association and inspect the original Arabic label. Include ordinary pothole and construction-waste demand alongside exercise-authored debris reports. [Q1 municipal publication](https://alriyadh.gov.sa/ar/data-sets/940-service-requests/940-requests-group-q1-2026)
 
 **Build.** Pin the Q1 JSON and normalize whitespace and category aliases in a separate dictionary. Preserve source spelling, raw receipt value, interpreted UTC instant, location label, status, closure field and repeat flag. Identify a row within an edition by source digest and ordinal. Track possible cross-edition matches separately. Import an identical file twice and require identical membership. Begin with counts by day and category. Before deriving hour-of-day or turnaround distributions, confirm source timezone, duration units and whether an in-progress case can carry a closure value.
 
-**Prove.** Reproduce 6,820 JSON records, 524 in the cited asphalt/pothole category and 301 in the cited construction-waste category against the pinned digest. Flag the 13,640-row CSV as a different representation. Never sum both exports. In a manually labeled sample, count false merges and missed repeats by category. Review false merges before enabling suggestions for dispatch. Generalized locations can support workload estimates even if no road can be assigned. [Recorded file checks](../../docs/data/WORLDMONITOR_SOURCE_REVIEW_2026_11_17.md#what-the-riyadh-940-files-actually-contain)
+**Prove.** Reproduce 6,820 JSON records, 524 in the cited asphalt/pothole category and 301 in the cited construction-waste category against the pinned digest. Flag the 13,640-row CSV as a different representation. Never sum both exports. In a manually labeled sample, count false merges and missed repeats by category. Review false merges before enabling suggestions for dispatch. Generalized locations can support workload estimates even if no road can be assigned. [Recorded file checks](../../../docs/data/WORLDMONITOR_SOURCE_REVIEW_2026_11_17.md#what-the-riyadh-940-files-actually-contain)
+
+The Q1 attachment has 6,819 text locations and one numeric zero. Preserve the original zero and mark its location unresolved. Keep that row in workload counts. The repeat field has 3,160 flagged rows, and 92 rows still had an in-progress status. Those published fields describe the export snapshot. Keep them hidden at earlier replay cutoffs unless there is a dated revision or explicit exercise schedule. A labeled Arabic dispatch experiment additionally needs permitted report text, reviewer links between reports, crew assignment history, and separately timed access findings. [Field mapping](normalization.md#local-reports)
+
+Use this field mapping for the proposed municipal table reader. Keep the raw row and its ordinal under the edition's retention terms.
+
+| Q1 JSON field | Consumer value | Normalization rule |
+| --- | --- | --- |
+| نوع البلاغ | Category and comparison key | Preserve the Arabic label. Trim and collapse whitespace for matching. Version any alias dictionary. |
+| الموقع | Reported place and resolution status | Keep the original type. Resolve a text label only against a dated boundary dictionary. Numeric zero has unresolved location and still contributes to the queue. |
+| حالة البلاغ | Ticket status at export | Map trimmed values to completed or in progress. Preserve unexpected codes as unknown. Keep ticket status separate from road access. |
+| زمن الإغلاق | Published closure value | Retain the integer, including zero. Deriving a duration requires confirmed units and applicability. |
+| تاريخ الاستلام | Municipal receipt instant | Interpret epoch milliseconds as UTC. A local service-day summary needs a declared calendar and timezone. EMAD records its own retrieval time. |
+| تكرار | Publisher repeat flag | Map مكرر to true and غير مكرر to false. Other or missing values stay unknown. Reviewer-confirmed incident identity has a separate field. |
 
 ### Retained OpenStreetMap and Overture — accessible routes under closures
+
+Field mapping · [osm-roads](normalization.md#osm-roads) · [overture-roads](normalization.md#overture-roads)
 
 **Use.** A planner selects a road segment and sees which destinations retain access if it closes. Show the connected alternative, disconnected destinations and paths that leave the study area. Start with path distance. Time estimates require separate evidence about travel speeds.
 
 **Build.** Use retained OSM features for the reference view. Prepare one matching Overture transportation edition with segments, connectors, direction and applicable access/turn restrictions. Include a buffer around the study area to reduce false dead ends. Preserve source IDs and uncertain matches through clipping. Validate vehicle access for the intended civilian service class. Overture includes OSM-derived content, so agreement between them alone cannot verify a junction. Pin source attribution and ODbL terms. [Overture guide](https://docs.overturemaps.org/guides/transportation/) · [Segment schema](https://docs.overturemaps.org/schema/reference/transportation/segment/)
 
-**Prove.** A reviewer supplies expected paths for a one-way link, an at-grade junction, a bridge crossing without a junction and an alternative route outside the clipped core. Close and reopen one reviewed edge. Expected reachability must change and recover without editing the source network. Preserve “outside known network” as a distinct outcome. [Existing topology fixture](../../docs/implementation/SIMULATION_PREPARATION_DELIVERY.md)
+**Prove.** A reviewer supplies expected paths for a one-way link, an at-grade junction, a bridge crossing without a junction and an alternative route outside the clipped core. Close and reopen one reviewed edge. Expected reachability must change and recover without editing the source network. Preserve “outside known network” as a distinct outcome. [Existing topology fixture](../../../docs/implementation/SIMULATION_PREPARATION_DELIVERY.md)
 
 ### Balady excavation permits — planned works calendar
+
+Field mapping · [balady-works](normalization.md#balady-works)
 
 **Use.** During a simulated closure, show whether a proposed detour already has scheduled works. Let the reviewer see the permit interval, closure description, match confidence and subsequent field observations.
 
@@ -28,6 +51,8 @@ Deliver these inputs as one exercise package. Each is also useful on the map by 
 
 ### Local civilian inspections — evidence for closing and reopening a road
 
+Field mapping · [local-inspections](normalization.md#local-inspections) · [local-reports](normalization.md#local-reports)
+
 **Use.** Give the dispatcher a history of reported obstruction, inspected condition, partial access and verified reopening. This is the missing source for judging an AI suggestion or comparing recovery procedures.
 
 **Build.** Begin with adjudicated exercise fixtures. For a local pilot, collect permitted observations on ordinary obstructions or maintenance cases. Record segment or location uncertainty, inspection time, first available time, access by direction, reviewer, optional permitted image, confidence and revision history. Include clear roads, partial obstructions, unreadable images and contradictory reports. Keep an independent reviewer for evaluation labels. Minimize identifying material in field media. Model separate times for verification, dispatch, arrival and restoration. [FHWA milestone definitions](https://ops.fhwa.dot.gov/tim/preparedness/tim/performance_measures.htm)
@@ -36,8 +61,16 @@ Deliver these inputs as one exercise package. Each is also useful on the map by 
 
 ### WorldPop — population served by an accessible area
 
+Field mapping · [worldpop](normalization.md#worldpop)
+
 **Use.** Estimate the resident population in areas whose access to a defined civilian service changes under a closure. Show before/after estimates, uncovered cells, input year and assumptions about which road access point serves each zone.
 
 **Build.** Select a Saudi counts-per-cell edition and record the exact asset's terms and year. Define disjoint service zones using the reviewed network. Aggregate on the native grid, documenting the treatment of partially intersecting cells. Where the road-to-zone association is uncertain, show the range under plausible assignments. [Saudi product and release](https://hub.worldpop.org/geodata/summary?id=75294)
 
 **Prove.** On a small known grid, conserve the population sum across disjoint zones within documented rounding, leave nodata unknown and prevent overlapping closures from double-counting residents. Compare a boundary-sensitive zone with a second aggregation rule. Describe the result as modeled residential access, with daytime occupancy and actual service use unresolved.
+
+### Building access and restoration
+
+Field mapping · [owned-building](normalization.md#owned-building)
+
+Use a fictional two-entrance building or a permitted civilian facility case. Connect each entrance to its dated inspection and restoration tasks. Verify that reopening one entrance leaves the second unresolved. Report costs with the pricing year and currency.

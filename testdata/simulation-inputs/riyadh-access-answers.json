@@ -1,0 +1,12 @@
+{
+  "schema": "emad.civilian-access-answers.v1",
+  "exerciseSha256": "7e12521d2e243295840606201767e50da1c82ec05750a562ed62ff16fa3b6bf8",
+  "cases": [
+    {"id": "eastbound-road", "awarenessAt": "2026-11-21T06:03:00Z", "cutoffAt": "2026-11-21T07:20:00Z",
+     "verifiedAvailableAt": "2026-11-21T07:00:00Z", "expectedVisits": 2, "verdictCoverageComplete": true},
+    {"id": "westbound-road", "awarenessAt": "2026-11-21T06:10:00Z", "cutoffAt": "2026-11-21T07:20:00Z",
+     "expectedVisits": 1, "verdictCoverageComplete": true},
+    {"id": "east-entrance", "awarenessAt": "2026-11-21T06:11:00Z", "cutoffAt": "2026-11-21T07:20:00Z",
+     "expectedVisits": 1, "verdictCoverageComplete": false}
+  ]
+}

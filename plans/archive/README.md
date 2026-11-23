@@ -11,3 +11,7 @@ unqualified claims are recorded in the
 
 - [Implementation plan](simulation-preparation/SIMULATION_PREPARATION_IMPLEMENTATION_PLAN.md)
 - [November 15 review](simulation-preparation/SIMULATION_PREPARATION_REVIEW_2026_11_15.md)
+
+## Simulation source plans
+
+Archived on 22 November 2026 after implementation and review. The archive covers Riyadh reports and access, civilian aerial inspection, regional response and coast, and supporting sources. [Plan index](simulation-sources/README.md) · [Delivery and remaining qualification](simulation-sources/delivery.md)

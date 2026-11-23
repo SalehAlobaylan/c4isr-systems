@@ -136,7 +136,7 @@ func (s *Service) AdmitGeography(ctx context.Context, in GeographyInput) (Geogra
 	return out, duplicate, err
 }
 
-const regionSelect = `SELECT g.id,ST_AsGeoJSON(g.geometry,17),g.properties||jsonb_build_object('regionKey',g.region_key,'parentKey',g.parent_key,'kind',g.kind,'name',g.name,'releaseId',(SELECT h.release_id FROM geographic_release_heads h WHERE h.source_id=g.source_id AND EXISTS(SELECT 1 FROM geographic_release_editions re WHERE re.release_id=h.release_id AND re.edition_id=g.edition_id)),'editionId',g.edition_id,'sourceId',g.source_id,'version',e.document->>'version','rights',e.document->'rights','sha256',e.document->>'sha256','admittedAt',e.document->>'admittedAt','admittedBy',e.document->>'admittedBy','attribution',e.document#>>'{rights,attribution}','receipt',e.document->'receipt','bounds',jsonb_build_array(ST_XMin(g.geometry),ST_YMin(g.geometry),ST_XMax(g.geometry),ST_YMax(g.geometry))),count(*)OVER() FROM geographic_regions g JOIN geographic_editions e ON e.id=g.edition_id `
+const regionSelect = `SELECT g.id,ST_AsGeoJSON(g.geometry,17),g.properties||jsonb_build_object('regionKey',g.region_key,'parentKey',g.parent_key,'kind',g.kind,'name',g.name,'releaseId',(SELECT h.release_id FROM geographic_release_heads h WHERE h.source_id=g.source_id AND EXISTS(SELECT 1 FROM geographic_release_editions re WHERE re.release_id=h.release_id AND re.edition_id=g.edition_id)),'editionId',g.edition_id,'sourceId',g.source_id,'version',e.document->>'version','rights',e.document->'rights','sha256',e.document->>'sha256','admittedAt',e.document->>'admittedAt','admittedBy',e.document->>'admittedBy','attribution',e.document#>>'{rights,attribution}','receipt',e.document->'receipt','bounds',jsonb_build_array(ST_XMin(g.geometry),ST_YMin(g.geometry),ST_XMax(g.geometry),ST_YMax(g.geometry))),emad_geographic_match_v1(g.name,g.aliases,$1),count(*)OVER() FROM geographic_regions g JOIN geographic_editions e ON e.id=g.edition_id `
 
 // GeographyDiscoveryCTE selects complete per-source release heads for display discovery.
 const GeographyDiscoveryCTE = latestRegions
@@ -174,7 +174,7 @@ func (s *Service) Geography(ctx context.Context, q, parent, kind, id string, off
 		prefix = ""
 		join = ""
 	}
-	rows, e := db.Scoped(s.pool).Query(ctx, prefix+regionSelect+join+`WHERE ($1='' OR strpos(emad_geographic_search(g.name||' '||g.aliases),emad_geographic_search($1))>0) AND ($2='' OR g.parent_key=$2) AND ($3='' OR g.kind=$3) AND ($4='' OR g.id=$4) AND ($6::text='' OR g.source_id=$6) AND ($7::text='' OR EXISTS(SELECT 1 FROM geographic_release_editions re WHERE re.release_id=$7 AND re.edition_id=g.edition_id)) AND ($8::text='' OR g.edition_id=$8) ORDER BY g.kind,g.name,g.id LIMIT 300 OFFSET $5`, q, parent, kind, id, offset, source, release, edition)
+	rows, e := db.Scoped(s.pool).Query(ctx, prefix+regionSelect+join+`WHERE ($1='' OR emad_geographic_match_v1(g.name,g.aliases,$1) IS NOT NULL) AND ($2='' OR g.parent_key=$2) AND ($3='' OR g.kind=$3) AND ($4='' OR g.id=$4) AND ($6::text='' OR g.source_id=$6) AND ($7::text='' OR EXISTS(SELECT 1 FROM geographic_release_editions re WHERE re.release_id=$7 AND re.edition_id=g.edition_id)) AND ($8::text='' OR g.edition_id=$8) ORDER BY CASE emad_geographic_match_v1(g.name,g.aliases,$1) WHEN 'exact' THEN 0 WHEN 'alias' THEN 1 ELSE 2 END,g.kind,g.name,g.id LIMIT 300 OFFSET $5`, q, parent, kind, id, offset, source, release, edition)
 	if e != nil {
 		return out, e
 	}
@@ -182,12 +182,16 @@ func (s *Service) Geography(ctx context.Context, q, parent, kind, id string, off
 	for rows.Next() {
 		f := Feature{Type: "Feature"}
 		var props, geometry []byte
-		if e = rows.Scan(&f.ID, &geometry, &props, &out.Matched); e != nil {
+		var match *string
+		if e = rows.Scan(&f.ID, &geometry, &props, &match, &out.Matched); e != nil {
 			return out, e
 		}
 		f.Geometry = geometry
 		if e = json.Unmarshal(props, &f.Properties); e != nil {
 			return out, e
+		}
+		if match != nil {
+			f.Properties["matchBasis"] = *match
 		}
 		if release != "" {
 			f.Properties["releaseId"] = release
@@ -206,6 +210,7 @@ func (s *Service) Geography(ctx context.Context, q, parent, kind, id string, off
 func (h *Handler) mountGeography(r chi.Router) {
 	h.mountAvailability(r)
 	h.mountReleases(r)
+	h.mountPlaceHandoffs(r)
 	r.Post("/geography/editions", func(w http.ResponseWriter, r *http.Request) {
 		var in GeographyInput
 		dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 12<<20))

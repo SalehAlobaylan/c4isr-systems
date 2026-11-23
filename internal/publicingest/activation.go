@@ -2,19 +2,30 @@ package publicingest
 
 import (
 	"context"
+	"time"
+
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
 	db "github.com/SalehAlobaylan/c4isr-systems/internal/platform/db"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/sources"
-	"time"
 )
 
 type Activation struct {
-	ProviderCredits *ProviderCredits         `json:"providerCredits,omitempty"`
-	SourceID        string                   `json:"sourceId"`
-	State           string                   `json:"state"`
-	Reason          string                   `json:"reason"`
-	NextAction      string                   `json:"nextAction"`
-	Health          sources.IngestionSummary `json:"health"`
+	GeographicRetention *GeographicRetention     `json:"geographicRetention,omitempty"`
+	ProviderCredits     *ProviderCredits         `json:"providerCredits,omitempty"`
+	SourceID            string                   `json:"sourceId"`
+	State               string                   `json:"state"`
+	Reason              string                   `json:"reason"`
+	NextAction          string                   `json:"nextAction"`
+	Health              sources.IngestionSummary `json:"health"`
+}
+
+type GeographicRetention struct {
+	Readable        bool `json:"readable"`
+	AssetsAvailable bool `json:"assetsAvailable"`
+}
+
+type GeographicRetentionReader interface {
+	RetainedSource(ctx context.Context, source string) (*GeographicRetention, error)
 }
 
 type ProviderCredits struct {
@@ -23,7 +34,7 @@ type ProviderCredits struct {
 	ReportedAt *time.Time `json:"reportedAt"`
 }
 
-// Activation reports actual server bindings, independently of retained evidence.
+// Activation reports server bindings and the availability of retained geographic inputs.
 // Registration metadata can explain a missing prerequisite, never enable access.
 func (s *Service) Activation(ctx context.Context, id string) (Activation, error) {
 	out := Activation{SourceID: id, State: "UNAVAILABLE", Reason: "No configured retrieval binding", NextAction: "Configure and admit a source binding on the server."}
@@ -37,6 +48,12 @@ func (s *Service) Activation(ctx context.Context, id string) (Activation, error)
 	out.Health, err = s.Health(ctx, id)
 	if err != nil {
 		return out, err
+	}
+	if s.retained != nil {
+		out.GeographicRetention, err = s.retained.RetainedSource(ctx, id)
+		if err != nil {
+			return out, err
+		}
 	}
 	if src.Metadata["category"] == "GEOGRAPHIC_REFERENCE" {
 		var count int
@@ -84,6 +101,20 @@ func (s *Service) Activation(ctx context.Context, id string) (Activation, error)
 			}
 			return out, nil
 		}
+	}
+	if retained := out.GeographicRetention; retained != nil {
+		out.NextAction = ""
+		switch {
+		case !retained.Readable:
+			out.State = "RESTRICTED"
+			out.Reason = "The retained environment library requires environment read access."
+		case retained.AssetsAvailable:
+			out.State = "RETAINED"
+			out.Reason = "Retained geographic inputs are available in the environment library."
+		default:
+			out.Reason = "No retained geographic inputs are currently available to this workspace."
+		}
+		return out, nil
 	}
 	activation, _ := src.Metadata["activation"].(map[string]any)
 	if state, ok := activation["state"].(string); ok && (state == "NEEDS_CREDENTIALS" || state == "NEEDS_PERMISSION") {

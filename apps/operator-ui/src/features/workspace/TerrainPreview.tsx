@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from 'react'
 import {Box3, BufferGeometry, DirectionalLight, HemisphereLight, Mesh, type Object3D, PerspectiveCamera, Points, PointsMaterial, Raycaster, Scene, Sphere, Vector2, Vector3, WebGLRenderer} from 'three'
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js'
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js'
+import {CSS2DObject, CSS2DRenderer} from 'three/addons/renderers/CSS2DRenderer.js'
 import {fetchDisplayBytes, type Display, type DisplaySource} from './displayBytes'
 import {useWorkspace} from '@/lib/workspaceContext'
 import {geographicSurfacePoint, localGroundCoordinates, makeBuildingVolumes, makeOpticalLayer, makeVectorLayer, pickPolygon, vectorColors, type EnrichmentDisplay, type OpticalDisplay, type RadarDisplay, type SceneFeature, type SceneLayer, type VectorDisplay} from './GeographicSceneLayers'
@@ -21,10 +22,14 @@ type Overlay = {layer: SceneLayer; display: Display}
 type Runtime = {world: Scene; terrain: Object3D; render: () => void; hits: Map<string, ReturnType<typeof makeVectorLayer>>}
 type PreviewProps = {
   display: Display; overlays?: Overlay[]; selection?: string;
+  roadFocus?: string;
   onSelect?: (value: string) => void; onLocate?: (feature: SceneFeature) => void;
   onLocateTerrain?: (point: [number, number, number]) => void;
   contextMarkers?: ContextMarker[];
   onContextDrawn?: (count: number) => void;
+  placeMarker?: ContextMarker;
+  nearbyPlaces?: ContextMarker[];
+  onPlaceDrawn?: (visible: boolean) => void;
 }
 
 export default function TerrainPreview(props: PreviewProps) {
@@ -32,7 +37,7 @@ export default function TerrainPreview(props: PreviewProps) {
   return <GeographicScene {...props} source={api.environmentDisplayContent} signal={signal} />
 }
 
-export function GeographicScene({display, overlays = [], selection, onSelect, onLocate, onLocateTerrain, contextMarkers, onContextDrawn, source, signal}: PreviewProps & {source: DisplaySource; signal: AbortSignal}) {
+export function GeographicScene({display, overlays = [], selection, roadFocus, onSelect, onLocate, onLocateTerrain, contextMarkers, onContextDrawn, placeMarker, nearbyPlaces, onPlaceDrawn, source, signal}: PreviewProps & {source: DisplaySource; signal: AbortSignal}) {
   const host = useRef<HTMLDivElement>(null)
   const reset = useRef<() => void>(undefined)
   const selectionCallback = useRef(onSelect)
@@ -49,6 +54,11 @@ export function GeographicScene({display, overlays = [], selection, onSelect, on
     const local = new AbortController()
     const loadSignal = AbortSignal.any([signal, local.signal])
     const world = new Scene()
+    const labels = new CSS2DRenderer()
+    labels.domElement.style.position = 'absolute'
+    labels.domElement.style.inset = '0'
+    labels.domElement.style.pointerEvents = 'none'
+    labels.domElement.setAttribute('aria-hidden', 'true')
     let renderer: WebGLRenderer | undefined
     let controls: OrbitControls | undefined
     let observer: ResizeObserver | undefined
@@ -63,6 +73,7 @@ export function GeographicScene({display, overlays = [], selection, onSelect, on
       if (frame) cancelAnimationFrame(frame)
       controls?.dispose()
       reset.current = undefined
+      labels.domElement.remove()
       if (renderer) {
         renderer.domElement.removeEventListener('webglcontextlost', lost)
         renderer.dispose()
@@ -115,6 +126,7 @@ export function GeographicScene({display, overlays = [], selection, onSelect, on
         canvas.setAttribute('aria-label', display.recipe === 'ground-glb-v1' ? 'Interactive modeled bare earth' : 'Interactive reference terrain')
       canvas.addEventListener('webglcontextlost', lost)
       container.appendChild(canvas)
+      container.appendChild(labels.domElement)
       world.add(scene, new HemisphereLight(0xf2f7ff, 0x6a5c43, 2))
       const sun = new DirectionalLight(0xfff5de, 2)
       sun.position.copy(extent.center).addScaledVector(new Vector3(-.7, 1, -.5), extent.radius)
@@ -129,6 +141,16 @@ export function GeographicScene({display, overlays = [], selection, onSelect, on
         frame = 0
         if (!renderer) return
         renderer.render(world, camera)
+        labels.render(world, camera)
+        const occupied: DOMRect[] = []
+        for (const label of Array.from(labels.domElement.children) as HTMLElement[]) {
+          if (label.style.display === 'none') continue
+          const box = label.getBoundingClientRect()
+          const overlaps = occupied.some(other => box.left < other.right && box.right > other.left &&
+            box.top < other.bottom && box.bottom > other.top)
+          label.style.visibility = overlaps ? 'hidden' : ''
+          if (!overlaps) occupied.push(box)
+        }
         canvas.dataset.drawCalls = String(renderer.info.render.calls)
         canvas.dataset.geometryCount = String(renderer.info.memory.geometries)
         canvas.dataset.textureCount = String(renderer.info.memory.textures)
@@ -191,6 +213,7 @@ export function GeographicScene({display, overlays = [], selection, onSelect, on
         const {clientWidth: width, clientHeight: height} = container
         if (!renderer || !width || !height) return
         renderer.setSize(width, height)
+        labels.setSize(width, height)
         camera.aspect = width / height
         camera.updateProjectionMatrix()
         render()
@@ -249,10 +272,45 @@ export function GeographicScene({display, overlays = [], selection, onSelect, on
     return () => {runtime.world.remove(markers); geometry.dispose(); material.dispose(); runtime.render()}
   }, [contextMarkers, runtime, display.frame, onContextDrawn])
 
+  useEffect(() => {
+    onPlaceDrawn?.(false)
+    const origin = display.frame?.origin
+    if (!runtime || !Array.isArray(origin) || origin.length !== 3 || !origin.every(Number.isFinite)) return
+    const candidates = [...(placeMarker ? [placeMarker] : []),
+      ...(nearbyPlaces ?? []).filter(place => place.id !== placeMarker?.id)]
+    const positions: Vector3[] = []
+    const labels: CSS2DObject[] = []
+    const ray = new Raycaster(new Vector3(), new Vector3(0, -1, 0))
+    for (const candidate of candidates) {
+      const [east, south] = localGroundCoordinates(origin, ...candidate.position)
+      ray.ray.origin.set(east, 25000, south)
+      const hit = ray.intersectObject(runtime.terrain, true)[0]
+      if (!hit) continue
+      positions.push(hit.point.add(new Vector3(0, 4, 0)))
+      const text = document.createElement('bdi')
+      text.className = 'atlas-area-name'
+      text.dir = 'auto'
+      text.textContent = candidate.title
+      const label = new CSS2DObject(text)
+      label.center.set(.5, 1.2)
+      label.position.copy(hit.point)
+      labels.push(label)
+      if (candidate.id === placeMarker?.id) onPlaceDrawn?.(true)
+    }
+    if (!positions.length) return
+    const geometry = new BufferGeometry().setFromPoints(positions)
+    const material = new PointsMaterial({color: 0x79dada, size: 10, sizeAttenuation: false})
+    const point = new Points(geometry, material)
+    point.renderOrder = 4
+    runtime.world.add(point, ...labels)
+    runtime.render()
+    return () => {runtime.world.remove(point, ...labels); geometry.dispose(); material.dispose(); runtime.render()}
+  }, [placeMarker, nearbyPlaces, runtime, display.frame, onPlaceDrawn])
+
   return <section aria-label="Reference terrain" className="space-y-2">
     {error ? <p role="alert">{error}</p> : <p role="status">{status}</p>}
     {error && <button className="ux-button" onClick={() => setRetry(value => value + 1)}>Retry terrain preview</button>}
-    <div ref={host} hidden={!!error} className="h-64 w-full overflow-hidden rounded border border-edge sm:h-80" />
+    <div ref={host} hidden={!!error} className="relative h-64 w-full overflow-hidden rounded border border-edge sm:h-80" />
     {runtime && <>
       <button className="ux-button" onClick={() => reset.current?.()}>Reset terrain view</button>
       <p>Drag to orbit, use the arrow keys to pan, and pinch or scroll to zoom. Click the surface or press Enter on the canvas to inspect a point.</p>
@@ -262,15 +320,16 @@ export function GeographicScene({display, overlays = [], selection, onSelect, on
       </div>}
       {pointMissing && <p role="status">No retained terrain at this location.</p>}
       {overlays.map(overlay => <SceneOverlay key={overlay.display.id} overlay={overlay} source={source} signal={signal}
-        runtime={runtime} selection={selection} onSelect={onSelect} onLocate={onLocate} />)}
+        runtime={runtime} selection={selection} roadFocus={overlay.layer === 'roads' ? roadFocus : undefined} onSelect={onSelect} onLocate={onLocate} />)}
     </>}
     <p>Metres · east, up, south · {display.verticalDatum} · Physical accuracy {display.physicalAccuracy.toLowerCase()}</p>
   </section>
 }
 
-function SceneOverlay({overlay, source, signal, runtime, selection, onSelect, onLocate}: {
+function SceneOverlay({overlay, source, signal, runtime, selection, roadFocus, onSelect, onLocate}: {
   overlay: Overlay; source: DisplaySource; signal: AbortSignal; runtime: Runtime;
   selection?: string; onSelect?: PreviewProps['onSelect']; onLocate?: PreviewProps['onLocate'];
+  roadFocus?: string;
 }) {
   const {layer, display} = overlay
   const [value, setValue] = useState<OpticalDisplay | EnrichmentDisplay | RadarDisplay | VectorDisplay>()
@@ -281,7 +340,7 @@ function SceneOverlay({overlay, source, signal, runtime, selection, onSelect, on
   const [volumes, setVolumes] = useState(0)
   const picked = selection?.startsWith(`${display.id}:`) ? selection.slice(display.id.length + 1) : undefined
   const features = value && 'features' in value ? value.features : undefined
-  const selected = features?.find(feature => feature.id === picked)
+  const selected = features?.find(feature => roadFocus ? feature.properties.sourceId === roadFocus : feature.id === picked)
 
   useEffect(() => {
     setValue(undefined)
@@ -336,6 +395,7 @@ function SceneOverlay({overlay, source, signal, runtime, selection, onSelect, on
 
   if (failure) return <p role="alert">{previewLayers[layer].name} could not be verified. <button className="ux-button" onClick={() => setRetry(value => value + 1)}>Retry layer</button></p>
   if (!value) return <p role="status">Verifying {previewLayers[layer].name.toLowerCase()}…</p>
+  if (roadFocus && !selected) return <p role="status">The reviewed road is absent from this retained display.</p>
   if ('radar' in value) return <details open>
     <summary>Radar backscatter · {value.radar.sourceStart.slice(0, 10)}</summary>
     <p>{value.radar.product} · {value.radar.sourceStart} to {value.radar.sourceEnd}</p>
@@ -369,7 +429,7 @@ function SceneOverlay({overlay, source, signal, runtime, selection, onSelect, on
 
   const options = value.features.filter(feature => `${feature.properties.sourceId} ${feature.properties.tags.name ?? ''}`.toLowerCase().includes(filter.trim().toLowerCase())).slice(0, 50)
   if (selected && !options.includes(selected)) options.unshift(selected)
-  return <details open={!!picked || undefined}>
+  return <details open={!!picked || !!roadFocus || undefined}>
     <summary>{previewLayers[layer].name} · {value.displayedFeatures.toLocaleString()} of {value.availableFeatures.toLocaleString()} drawn</summary>
     <p>{value.method}. {previewLayers[layer].explanation}</p>
     {layer === 'buildings' && <>

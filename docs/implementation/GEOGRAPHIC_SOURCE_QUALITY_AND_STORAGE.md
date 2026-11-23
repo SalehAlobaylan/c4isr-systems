@@ -30,7 +30,7 @@ The production frontend built as `emad-ui:environment-foundation-59` with image 
 
 ## Rollout and evidence
 
-Shared staging remains on migration 58 during F09. After the current full window is recorded, qualify the migration 59 staging cutover and recheck scoped reads, worker health and queue state. The shared release and independent receiving decisions remain open. [Current F09 record](COASTAL_MOVING_AND_READINESS.md#f09--installed-readiness) · [Operations instructions](ENVIRONMENT_LIBRARY_OPERATIONS.md)
+On 21 November the operator approved applying migration 59 before restarting F09. The cutover followed verification of a fresh paired backup. Scoped release reads passed after the cutover, and worker reconciliation succeeded. The new F09 candidate binds the migrated database and restarted API. The shared release and independent receiving decisions remain open. [Current F09 record](COASTAL_MOVING_AND_READINESS.md#f09--installed-readiness) · [Operations instructions](ENVIRONMENT_LIBRARY_OPERATIONS.md)
 
 The private qualification directory is `private/environment-foundation/implementation/coastal-moving-qualification`. It holds the commands and reports below. The image and report identities bind this rehearsal to the worktree build.
 

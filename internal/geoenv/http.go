@@ -49,7 +49,12 @@ func (s Service) Mount(r chi.Router) {
 		r.Use(func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Cache-Control", "no-store")
-				if s.ReadOnly && r.Method != http.MethodGet && !strings.HasSuffix(r.URL.Path, "/withdraw") && !strings.HasSuffix(r.URL.Path, "/suitability") {
+				if s.ReadOnly && r.Method != http.MethodGet && !strings.HasSuffix(r.URL.Path, "/withdraw") &&
+					!strings.HasSuffix(r.URL.Path, "/suitability") && !strings.HasSuffix(r.URL.Path, "/municipal-workload") &&
+					!strings.HasSuffix(r.URL.Path, "/port-activity") && !strings.HasSuffix(r.URL.Path, "/flood-mapping") &&
+					!strings.HasSuffix(r.URL.Path, "/radar-outages") && !strings.HasSuffix(r.URL.Path, "/civilian-access-replay") &&
+					!strings.HasSuffix(r.URL.Path, "/civilian-aerial-review") && !strings.HasSuffix(r.URL.Path, "/regional-response-review") &&
+					!strings.HasSuffix(r.URL.Path, "/supporting-source-review") {
 					httpx.Error(w, apperr.Conflict("new environment work is disabled"))
 					return
 				}
@@ -152,6 +157,14 @@ func (s Service) Mount(r chi.Router) {
 			respond(w, 200, v, err)
 		})
 		r.Get("/environment-releases/{id}/quality", s.releaseQuality)
+		r.Post("/environment-releases/{id}/municipal-workload", s.reviewMunicipalQ1)
+		r.Post("/environment-releases/{id}/port-activity", s.reviewPortActivity)
+		r.Post("/environment-releases/{id}/flood-mapping", s.reviewFloodProducts)
+		r.Post("/environment-releases/{id}/radar-outages", s.reviewRadarOutages)
+		r.Post("/environment-releases/{id}/civilian-access-replay", s.reviewCivilianAccess)
+		r.Post("/environment-releases/{id}/civilian-aerial-review", s.reviewCivilianAerial)
+		r.Post("/environment-releases/{id}/regional-response-review", s.reviewRegionalResponse)
+		r.Post("/environment-releases/{id}/supporting-source-review", s.reviewSupportingSources)
 		r.Get("/environment-releases/{id}/quality-report", s.structuredReleaseQuality)
 		r.Get("/environment-releases/{id}/stac", s.stac)
 		r.Get("/environment-releases/{id}/prepared", s.prepared)
@@ -234,35 +247,44 @@ func (s Service) listAssets(w http.ResponseWriter, r *http.Request) {
 		httpx.Error(w, err)
 		return
 	}
-	out := page[Asset]{Items: []Asset{}}
-	after, layer := r.URL.Query().Get("after"), r.URL.Query().Get("layer")
-	for len(out.Items) < 51 {
-		rows, err := db.Scoped(s.Pool).Query(ctx, assetSelect()+`WHERE id>$1 AND state='READY' AND retain_until>clock_timestamp() AND document#>>'{representation,format}' NOT IN ('release-zip','display-glb','display-layer-json','display-pmtiles') AND ($2='' OR document#>>'{representation,layer}'=$2) ORDER BY id LIMIT 100`, after, layer)
-		if err != nil {
+	q := r.URL.Query()
+	source := q.Get("source")
+	if source != "" {
+		if err := access.RequireSource(ctx, source); err != nil {
 			httpx.Error(w, err)
 			return
+		}
+	}
+	out, err := s.visibleAssets(ctx, q.Get("after"), q.Get("layer"), source, 50)
+	respond(w, 200, out, err)
+}
+
+func (s Service) visibleAssets(ctx context.Context, after, layer, source string, limit int) (page[Asset], error) {
+	out := page[Asset]{Items: []Asset{}}
+	for len(out.Items) <= limit {
+		rows, err := db.Scoped(s.Pool).Query(ctx, assetSelect()+`WHERE id>$1 AND state='READY' AND retain_until>clock_timestamp() AND document#>>'{representation,format}' NOT IN ('release-zip','display-glb','display-layer-json','display-pmtiles') AND ($2='' OR document#>>'{representation,layer}'=$2) AND ($3='' OR source_id=$3) ORDER BY id LIMIT 100`, after, layer, source)
+		if err != nil {
+			return out, err
 		}
 		batch := []Asset{}
 		for rows.Next() {
 			a, e := scanAsset(rows)
 			if e != nil {
 				rows.Close()
-				httpx.Error(w, e)
-				return
+				return out, e
 			}
 			batch = append(batch, a)
 		}
 		rows.Close()
 		if err = rows.Err(); err != nil {
-			httpx.Error(w, err)
-			return
+			return out, err
 		}
 		for _, a := range batch {
 			after = a.ID
 			if _, err := s.policy(ctx, a, false, false); err == nil {
 				out.Items = append(out.Items, a)
 			}
-			if len(out.Items) == 51 {
+			if len(out.Items) > limit {
 				break
 			}
 		}
@@ -270,11 +292,11 @@ func (s Service) listAssets(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	if len(out.Items) == 51 {
-		out.Items = out.Items[:50]
-		out.Next = out.Items[49].ID
+	if len(out.Items) > limit {
+		out.Items = out.Items[:limit]
+		out.Next = out.Items[limit-1].ID
 	}
-	respond(w, 200, out, nil)
+	return out, nil
 }
 
 type attemptEvent struct {

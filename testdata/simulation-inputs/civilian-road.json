@@ -1,0 +1,18 @@
+{
+  "graphEdition": "owned-road-example-v1",
+  "nodes": ["junction-a", "junction-b", "detour"],
+  "destinations": ["junction-a", "junction-b"],
+  "edges": [
+    {"id": "a-b", "from": "junction-a", "to": "junction-b", "distanceM": 120},
+    {"id": "b-a", "from": "junction-b", "to": "junction-a", "distanceM": 120},
+    {"id": "a-detour", "from": "junction-a", "to": "detour", "distanceM": 150},
+    {"id": "detour-b", "from": "detour", "to": "junction-b", "distanceM": 80}
+  ],
+  "inspections": [
+    {"edgeId": "a-b", "evidenceId": "eastbound-closed", "effectiveAt": "2026-11-21T06:00:00Z", "availableAt": "2026-11-21T06:10:00Z", "revision": 1, "access": "closed"},
+    {"edgeId": "b-a", "evidenceId": "westbound-closed", "effectiveAt": "2026-11-21T06:00:00Z", "availableAt": "2026-11-21T06:10:00Z", "revision": 1, "access": "closed"},
+    {"edgeId": "a-detour", "evidenceId": "detour-entry-checked", "effectiveAt": "2026-11-21T06:00:00Z", "availableAt": "2026-11-21T06:10:00Z", "revision": 1, "access": "open"},
+    {"edgeId": "detour-b", "evidenceId": "detour-exit-checked", "effectiveAt": "2026-11-21T06:00:00Z", "availableAt": "2026-11-21T06:10:00Z", "revision": 1, "access": "open"},
+    {"edgeId": "a-b", "evidenceId": "eastbound-reopened", "effectiveAt": "2026-11-21T06:30:00Z", "availableAt": "2026-11-21T07:00:00Z", "revision": 2, "access": "open"}
+  ]
+}

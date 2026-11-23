@@ -123,6 +123,18 @@ func TestGeographicEnvironmentAdmissionBuildReleaseAndRevocation(t *testing.T) {
 	admit := geoenv.RetainedAdmission{OriginalProducer: "Fixture producer", UpstreamProvider: "Fixture provider", Dataset: "fixture-geography", ProductVersion: "v1", CoverageDescription: "Owned input for scoped integration verification", Area: publicingest.Bounds{West: 39, South: 21, East: 40, North: 22}, Enabled: true,
 		Rights: publicingest.Rights{ID: "fixture-geographic-rights", LegalBasis: "Test-owned data", TermsURL: "https://test.example.invalid/terms", Attribution: "Fixture attribution", ExpiresAt: &rightsExpiry, RetainRaw: true, AllowAnalysis: true, OutputPermissions: &publicingest.OutputPermissions{GeographicEnvironment: &yes, GeographicViewerExport: &yes, GeographicContextExport: &yes, RawDistribution: &yes}}}
 	admission := call(human, "POST", "/environment-sources/"+source+"/admissions", admit, 201)
+	activationPath := "/sources/" + source + "/activation"
+	sourceAssets := "/environment-assets?source=" + source
+	sourceReleases := "/environment-releases?source=" + source
+	assertRetention := func(token, state string, available bool) {
+		t.Helper()
+		activation := call(token, "GET", activationPath, nil, 200)
+		retention, ok := activation["geographicRetention"].(map[string]any)
+		if !ok || retention["readable"] != true || retention["assetsAvailable"] != available || activation["state"] != state || activation["nextAction"] != "" {
+			t.Fatal("incorrect activation for retained source", activation)
+		}
+	}
+	assertRetention(human, "UNAVAILABLE", false)
 	worker := scopeToken(t, h, "geographic-fixture-worker", resource, []string{"operational.read", geoenv.Execute}, []string{source})
 	call(human, "POST", "/sources/"+source+"/profiles/geographic-retained/execution", map[string]any{
 		"profileRevisionId": admission["profileRevisionId"], "principalId": "geographic-fixture-worker", "enabled": true,
@@ -162,6 +174,13 @@ func TestGeographicEnvironmentAdmissionBuildReleaseAndRevocation(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != 200 || !bytes.Contains(responseBytes, []byte(`"state":"READY"`)) {
 		t.Fatal(resp.StatusCode, string(responseBytes))
+	}
+	assertRetention(human, "RETAINED", true)
+	if items := call(human, "GET", sourceAssets, nil, 200)["items"].([]any); len(items) != 1 || items[0].(map[string]any)["id"] != asset {
+		t.Fatal("source-filtered inputs must contain the ready original", items)
+	}
+	if items := call(human, "GET", sourceAssets+"&after="+asset, nil, 200)["items"].([]any); len(items) != 0 {
+		t.Fatal("input cursor must skip the previously returned asset", items)
 	}
 	area := call(human, "POST", "/areas/revisions", map[string]any{"kind": "drawn", "name": "Fixture area", "geometry": footprint}, 201)
 	definition := call(human, "POST", "/geographic-environments", geoenv.DefinitionInput{Name: "Fixture", AreaRevisionID: area["revisionId"].(string), ProfileID: "reference-surface-v1", AssetIDs: []string{asset}}, 201)
@@ -215,6 +234,9 @@ func TestGeographicEnvironmentAdmissionBuildReleaseAndRevocation(t *testing.T) {
 	list := call(human, "GET", "/environment-releases?build="+buildID, nil, 200)
 	staged := list["items"].([]any)[0].(map[string]any)
 	releaseID := staged["id"].(string)
+	if items := call(human, "GET", sourceReleases, nil, 200)["items"].([]any); len(items) != 1 || items[0].(map[string]any)["id"] != releaseID || items[0].(map[string]any)["state"] != "STAGED" {
+		t.Fatal("source-filtered releases must include the staged dependent release for a reviewer", items)
+	}
 	action := geoenv.ReleaseAction{ManifestSHA256: staged["manifestSha256"].(string), Note: "Explicit fixture review tied to exact bytes"}
 	quality := call(human, "GET", "/environment-releases/"+releaseID+"/quality-report", nil, 200)
 	if quality["manifestSha256"] != staged["manifestSha256"] || quality["profileContractSha256"] != preflight["profileContractSha256"] || quality["physicalAccuracy"] != "UNKNOWN" {
@@ -230,7 +252,7 @@ func TestGeographicEnvironmentAdmissionBuildReleaseAndRevocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := store.CreateHuman(admin, "geographic-receiver", "geographic-receiver", access.Grant{Resource: resource,
-		Permissions: []string{"operational.read", geoenv.Read, geoenv.Download}, SourceIDs: []string{source}}); err != nil {
+		Permissions: []string{"operational.read", "sources.read", geoenv.Read, geoenv.Download}, SourceIDs: []string{source}}); err != nil {
 		t.Fatal(err)
 	}
 	_, consumer, err := store.IssueCredential(admin, "geographic-receiver", resource, time.Now().Add(time.Hour))
@@ -238,6 +260,11 @@ func TestGeographicEnvironmentAdmissionBuildReleaseAndRevocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	call(consumer, "GET", "/environment-releases/"+releaseID, nil, 404)
+	assertRetention(consumer, "RETAINED", true)
+	call(consumer, "GET", "/environment-assets?source=out-of-scope", nil, 403)
+	if items := call(consumer, "GET", sourceReleases, nil, 200)["items"].([]any); len(items) != 0 {
+		t.Fatal("an environment reader must not see staged releases", items)
+	}
 	call(consumer, "GET", decisionPath, nil, 403)
 	call(consumer, "GET", impactPath, nil, 403)
 	call(consumer, "GET", "/environment-operations/storage", nil, 403)
@@ -267,6 +294,274 @@ func TestGeographicEnvironmentAdmissionBuildReleaseAndRevocation(t *testing.T) {
 	call(human, "POST", "/environment-releases/"+releaseID+"/release", action, 200)
 	call(human, "POST", "/environment-releases/"+releaseID+"/release", geoenv.ReleaseAction{ManifestSHA256: action.ManifestSHA256, Note: "Different evidence"}, 409)
 	call(consumer, "GET", "/environment-releases/"+releaseID, nil, 200)
+	{
+		municipalSource := call(human, "POST", "/sources", map[string]any{
+			"id": "riyadh-940", "name": "Riyadh municipal reports", "type": "external",
+		}, 201)["id"].(string)
+		municipal := admit
+		municipal.Dataset, municipal.ProductVersion = "riyadh-940", "2026-q1"
+		municipal.OriginalProducer, municipal.UpstreamProvider = "Riyadh Municipality", "Riyadh Municipality"
+		municipal.Rights.ID = "fixture-municipal-rights"
+		municipal.Rights.OutputPermissions = &publicingest.OutputPermissions{InternalAnalysis: &yes}
+		reviewAdmission := call(human, "POST", "/environment-sources/"+municipalSource+"/admissions", municipal, 201)
+		query := url.Values{"sourceId": {municipalSource}, "admissionId": {reviewAdmission["id"].(string)},
+			"manifestSha256": {action.ManifestSHA256}}
+		path := "/api/v1/environment-releases/" + releaseID + "/municipal-workload?"
+		review := func(token string, raw []byte, want int) map[string]any {
+			t.Helper()
+			r, err := http.NewRequest("POST", h.server.URL+path+query.Encode(), bytes.NewReader(raw))
+			if err != nil {
+				t.Fatal(err)
+			}
+			r.Header.Set("Authorization", "Bearer "+token)
+			r.Header.Set("Content-Type", "application/octet-stream")
+			res, err := http.DefaultClient.Do(r)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer res.Body.Close()
+			var output map[string]any
+			if err := json.NewDecoder(res.Body).Decode(&output); err != nil || res.StatusCode != want {
+				t.Fatalf("%s returned HTTP %d, want %d: %v (%v)", path, res.StatusCode, want, output, err)
+			}
+			return output
+		}
+		if inputPath := os.Getenv("EMAD_TEST_MUNICIPAL_Q1"); inputPath != "" {
+			raw, err := os.ReadFile(inputPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			out := review(human, raw, 200)
+			workload := out["workload"].(map[string]any)
+			if out["releaseId"] != releaseID || workload["rowCount"] != float64(6820) || workload["rowsWithoutPlaceLabel"] != float64(1) {
+				t.Fatalf("unexpected municipal review: %v", out)
+			}
+		}
+		review(human, []byte("[]"), 400)
+		query.Set("manifestSha256", strings.Repeat("0", 64))
+		review(human, []byte("[]"), 409)
+		query.Set("manifestSha256", action.ManifestSHA256)
+		municipal.ExpectedRevisionID = reviewAdmission["profileRevisionId"].(string)
+		municipal.Rights.ID = "fixture-municipal-rights-revoked"
+		municipal.Rights.OutputPermissions.InternalAnalysis = &no
+		call(human, "POST", "/environment-sources/"+municipalSource+"/admissions", municipal, 201)
+		review(human, []byte("[]"), 403)
+
+		portSource := call(human, "POST", "/sources", map[string]any{
+			"id": "portwatch", "name": "PortWatch daily activity", "type": "external",
+		}, 201)["id"].(string)
+		port := admit
+		port.Dataset, port.ProductVersion = "imf-portwatch", "daily-ports-v1"
+		port.OriginalProducer, port.UpstreamProvider = "IMF PortWatch", "IMF PortWatch"
+		port.Rights.ID = "fixture-portwatch-rights"
+		port.Rights.OutputPermissions = &publicingest.OutputPermissions{InternalAnalysis: &yes}
+		portAdmission := call(human, "POST", "/environment-sources/"+portSource+"/admissions", port, 201)
+		portRaw := []byte(`{"features":[{"attributes":{"portid":"port24","year":2024,"month":1,"day":15,"portcalls":4}}]}`)
+		if inputPath := os.Getenv("EMAD_TEST_PORTWATCH_JUBAIL"); inputPath != "" {
+			portRaw, err = os.ReadFile(inputPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		path = "/api/v1/environment-releases/" + releaseID + "/port-activity?"
+		query.Set("sourceId", portSource)
+		query.Set("admissionId", portAdmission["id"].(string))
+		query.Set("inputSha256", artifacts.Hash(portRaw))
+		query.Set("portId", "port24")
+		query.Set("baselineFrom", "2023-01-01")
+		query.Set("from", "2024-01-01")
+		query.Set("toExclusive", "2025-01-01")
+		out := review(human, portRaw, 200)
+		activity := out["activity"].(map[string]any)
+		daily := activity["days"].([]any)
+		if len(daily) != 366 || daily[14].(map[string]any)["portCalls"] != float64(4) {
+			t.Fatalf("unexpected PortWatch review: %v", activity)
+		}
+		review(consumer, portRaw, 403)
+		review(human, []byte("{}"), 400)
+
+		floodSource := call(human, "POST", "/sources", map[string]any{
+			"id": "cems-flood", "name": "Copernicus public flood metadata", "type": "external",
+		}, 201)["id"].(string)
+		flood := admit
+		flood.Dataset, flood.ProductVersion = "copernicus-ems-rapid-mapping", "emergency-response-v1"
+		flood.OriginalProducer, flood.UpstreamProvider = "Copernicus EMS", "Copernicus EMS"
+		flood.Rights.ID = "fixture-cems-rights"
+		flood.Rights.OutputPermissions = &publicingest.OutputPermissions{InternalAnalysis: &yes}
+		floodAdmission := call(human, "POST", "/environment-sources/"+floodSource+"/admissions", flood, 201)
+		floodRaw := []byte(`{"count":1,"next":null,"results":[{"code":"EMSR761","category":"Flood","sensitive":false,"aois":[{"number":1,"name":"Dresden","products":[
+			{"id":1061,"type":"DEL","activationCode":"EMSR761","aoiNumber":1,"version":{"uuid":"earlier","number":2,"statusCode":"F","deliveryTime":"2024-09-20T13:13:21.738919"},"images":[]},
+			{"id":1084,"type":"DEL","activationCode":"EMSR761","aoiNumber":1,"version":{"uuid":"later","number":1,"statusCode":"F","deliveryTime":"2024-09-21T05:29:29.607239"},"images":[]},
+			{"id":1092,"type":"DEL","activationCode":"EMSR761","aoiNumber":1,"version":{"uuid":"latest","number":1,"statusCode":"F","deliveryTime":"2024-09-23T00:16:49.913105"},"images":[]}
+		]}]}]}`)
+		if inputPath := os.Getenv("EMAD_TEST_CEMS_FLOOD"); inputPath != "" {
+			floodRaw, err = os.ReadFile(inputPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		path = "/api/v1/environment-releases/" + releaseID + "/flood-mapping?"
+		query = url.Values{"sourceId": {floodSource}, "admissionId": {floodAdmission["id"].(string)},
+			"manifestSha256": {action.ManifestSHA256}, "inputSha256": {artifacts.Hash(floodRaw)},
+			"activation": {"EMSR761"}, "knownAt": {"2024-09-21T10:00:00Z"}}
+		out = review(human, floodRaw, 200)
+		products := out["floodMapping"].(map[string]any)["products"].([]any)
+		if len(products) != 2 || products[0].(map[string]any)["versionNumber"] != float64(2) {
+			t.Fatalf("expected two CEMS versions visible at the cutoff: %v", out)
+		}
+		query.Set("knownAt", "2024-09-20T13:13:21Z")
+		out = review(human, floodRaw, 200)
+		if products := out["floodMapping"].(map[string]any)["products"].([]any); len(products) != 0 {
+			t.Fatalf("a later CEMS version appeared early: %v", out)
+		}
+
+		radarSource := call(human, "POST", "/sources", map[string]any{
+			"id": "radar-outages", "name": "Cloudflare Radar outage annotations", "type": "external",
+		}, 201)["id"].(string)
+		radar := admit
+		radar.Dataset, radar.ProductVersion = "cloudflare-radar-annotations", "v4"
+		radar.OriginalProducer, radar.UpstreamProvider = "Cloudflare Radar", "Cloudflare Radar"
+		radar.Rights.ID = "fixture-radar-rights"
+		radar.Rights.OutputPermissions = &publicingest.OutputPermissions{InternalAnalysis: &yes}
+		radarAdmission := call(human, "POST", "/environment-sources/"+radarSource+"/admissions", radar, 201)
+		radarRaw := []byte(`{"success":true,"result":{"annotations":[{"id":"fixture-outage","eventType":"OUTAGE",
+			"locations":["SA"],"startDate":"2024-09-20T00:00:00Z","endDate":null,"outage":{"outageType":"REGIONAL"}}]}}`)
+		path = "/api/v1/environment-releases/" + releaseID + "/radar-outages?"
+		query = url.Values{"sourceId": {radarSource}, "admissionId": {radarAdmission["id"].(string)},
+			"manifestSha256": {action.ManifestSHA256}, "inputSha256": {artifacts.Hash(radarRaw)},
+			"country": {"SA"}, "from": {"2024-09-20T00:00:00Z"}, "toExclusive": {"2024-09-21T00:00:00Z"}}
+		out = review(human, radarRaw, 200)
+		outages := out["outages"].(map[string]any)
+		rows := outages["annotations"].([]any)
+		if len(rows) != 1 || rows[0].(map[string]any)["endAt"] != nil || outages["availabilityAt"] != nil {
+			t.Fatalf("expected unknown provider end and availability: %v", out)
+		}
+		review(consumer, radarRaw, 403)
+
+		exerciseSource := call(human, "POST", "/sources", map[string]any{
+			"id": "civic-access", "name": "Owned civilian road access exercise", "type": "external",
+		}, 201)["id"].(string)
+		exercise := admit
+		exercise.Dataset, exercise.ProductVersion = "civilian-road-exercise", "v1"
+		exercise.Rights.ID = "fixture-civic-access-rights"
+		exercise.Rights.OutputPermissions = &publicingest.OutputPermissions{InternalAnalysis: &yes}
+		exerciseAdmission := call(human, "POST", "/environment-sources/"+exerciseSource+"/admissions", exercise, 201)
+		exerciseRaw, err := os.ReadFile("../../testdata/simulation-inputs/riyadh-access-exercise.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		path = "/api/v1/environment-releases/" + releaseID + "/civilian-access-replay?"
+		query = url.Values{"sourceId": {exerciseSource}, "admissionId": {exerciseAdmission["id"].(string)},
+			"manifestSha256": {action.ManifestSHA256}, "inputSha256": {artifacts.Hash(exerciseRaw)},
+			"knownAt": {"2026-11-21T06:45:00Z"}}
+		distance := func(at string, want float64) {
+			t.Helper()
+			query.Set("knownAt", at)
+			out := review(human, exerciseRaw, 200)
+			replay := out["replay"].(map[string]any)
+			first := replay["destinations"].([]any)[0].(map[string]any)
+			if replay["kind"] != "authored-exercise" || first["observed"].(map[string]any)["verifiedDistanceM"] != want {
+				t.Fatalf("expected %.0f m plan at %s: %v", want, at, out)
+			}
+		}
+		distance("2026-11-21T06:45:00Z", 230)
+		distance("2026-11-21T07:05:00Z", 120)
+		review(consumer, exerciseRaw, 403)
+		var otherManifest map[string]any
+		if err := json.Unmarshal(exerciseRaw, &otherManifest); err != nil {
+			t.Fatal(err)
+		}
+		otherManifest["retainedManifestSha256"] = strings.Repeat("f", 64)
+		unmatched, err := json.Marshal(otherManifest)
+		if err != nil {
+			t.Fatal(err)
+		}
+		query.Set("inputSha256", artifacts.Hash(unmatched))
+		review(human, unmatched, 409)
+
+		aerialSource := call(human, "POST", "/sources", map[string]any{
+			"id": "civic-aerial", "name": "Owned civilian aerial inspection exercise", "type": "external",
+		}, 201)["id"].(string)
+		aerial := admit
+		aerial.Dataset, aerial.ProductVersion = "civilian-aerial-review", "v1"
+		aerial.Rights.ID = "fixture-civic-aerial-rights"
+		aerial.Rights.OutputPermissions = &publicingest.OutputPermissions{InternalAnalysis: &yes}
+		aerialAdmission := call(human, "POST", "/environment-sources/"+aerialSource+"/admissions", aerial, 201)
+		aerialRaw, err := os.ReadFile("../../testdata/simulation-inputs/civilian-aerial-exercise.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		path = "/api/v1/environment-releases/" + releaseID + "/civilian-aerial-review?"
+		query = url.Values{"sourceId": {aerialSource}, "admissionId": {aerialAdmission["id"].(string)},
+			"manifestSha256": {action.ManifestSHA256}, "inputSha256": {artifacts.Hash(aerialRaw)},
+			"knownAt": {"2026-11-18T09:25:00Z"}}
+		early := review(human, aerialRaw, 200)["review"].(map[string]any)
+		if early["imageStatus"] != "needs-another-observation" || early["after"] != nil {
+			t.Fatalf("later aerial image appeared early: %v", early)
+		}
+		query.Set("knownAt", "2026-11-18T10:05:00Z")
+		out = review(human, aerialRaw, 200)
+		late := out["review"].(map[string]any)
+		if out["manifestSha256"] != action.ManifestSHA256 || late["imageStatus"] != "paired" || late["after"].(map[string]any)["id"] != "after" {
+			t.Fatalf("expected a pinned aerial pair: %v", out)
+		}
+		review(consumer, aerialRaw, 403)
+		query.Set("inputSha256", strings.Repeat("f", 64))
+		review(human, aerialRaw, 400)
+
+		regionalSource := call(human, "POST", "/sources", map[string]any{
+			"id": "civic-regional", "name": "Owned regional response exercise", "type": "external",
+		}, 201)["id"].(string)
+		regional := admit
+		regional.Dataset, regional.ProductVersion = "regional-response-review", "v1"
+		regional.Rights.ID = "fixture-civic-regional-rights"
+		regional.Rights.OutputPermissions = &publicingest.OutputPermissions{InternalAnalysis: &yes}
+		regionalAdmission := call(human, "POST", "/environment-sources/"+regionalSource+"/admissions", regional, 201)
+		regionalRaw, err := os.ReadFile("../../testdata/simulation-inputs/regional-response-exercise.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		path = "/api/v1/environment-releases/" + releaseID + "/regional-response-review?"
+		query = url.Values{"sourceId": {regionalSource}, "admissionId": {regionalAdmission["id"].(string)},
+			"manifestSha256": {action.ManifestSHA256}, "inputSha256": {artifacts.Hash(regionalRaw)},
+			"knownAt": {"2026-11-20T08:40:00Z"}, "staffedSlots": {"2"}}
+		out = review(human, regionalRaw, 200)
+		response := out["review"].(map[string]any)
+		service := response["service"].(map[string]any)
+		first := service["workloads"].([]any)[0].(map[string]any)
+		if first["disconnected"] != float64(2) || first["queues"].(map[string]any)["analyst-override"].(map[string]any)["completed"] != float64(3) ||
+			first["reference"].(map[string]any)["reachable"] != float64(5) ||
+			out["manifestSha256"] != action.ManifestSHA256 {
+			t.Fatalf("expected a manifest-scoped road and staffing comparison: %v", service)
+		}
+		review(consumer, regionalRaw, 403)
+		query.Set("staffedSlots", "129")
+		review(human, regionalRaw, 400)
+
+		supportSource := call(human, "POST", "/sources", map[string]any{
+			"id": "civic-support", "name": "Owned supporting evidence exercise", "type": "external",
+		}, 201)["id"].(string)
+		support := admit
+		support.Dataset, support.ProductVersion = "supporting-source-review", "v1"
+		support.Rights.ID = "fixture-civic-support-rights"
+		support.Rights.OutputPermissions = &publicingest.OutputPermissions{InternalAnalysis: &yes}
+		supportAdmission := call(human, "POST", "/environment-sources/"+supportSource+"/admissions", support, 201)
+		supportRaw, err := os.ReadFile("../../testdata/simulation-inputs/supporting-evidence-exercise.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		path = "/api/v1/environment-releases/" + releaseID + "/supporting-source-review?"
+		query = url.Values{"sourceId": {supportSource}, "admissionId": {supportAdmission["id"].(string)},
+			"manifestSha256": {action.ManifestSHA256}, "inputSha256": {artifacts.Hash(supportRaw)}, "knownAt": {"2026-11-20T08:10:00Z"}}
+		out = review(human, supportRaw, 200)
+		replay := out["review"].(map[string]any)
+		if got := replay["delivery"].([]any)[1].(map[string]any)["pending"]; got != float64(3) {
+			t.Fatalf("expected three pending authored reports: %v", got)
+		}
+		review(consumer, supportRaw, 403)
+		query.Set("inputSha256", strings.Repeat("f", 64))
+		review(human, supportRaw, 400)
+	}
 	req, err := http.NewRequest("GET", h.server.URL+"/api/v1"+decisionPath, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -1152,6 +1447,7 @@ func TestGeographicEnvironmentAdmissionBuildReleaseAndRevocation(t *testing.T) {
 	if _, err := h.pool.Exec(ctx, `UPDATE geographic_assets SET retain_until=now()-interval '1 second' WHERE id=$1`, asset); err != nil {
 		t.Fatal(err)
 	}
+	assertRetention(human, "UNAVAILABLE", false)
 	var originalKey string
 	if err := h.pool.QueryRow(ctx, `SELECT object_key FROM geographic_assets WHERE id=$1`, asset).Scan(&originalKey); err != nil {
 		t.Fatal(err)

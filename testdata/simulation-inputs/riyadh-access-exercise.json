@@ -1,0 +1,81 @@
+{
+  "schema": "emad.civilian-road-exercise.v1",
+  "title": "Riyadh road access tabletop",
+  "kind": "authored-exercise",
+  "graphEdition": "owned-road-example-v1",
+  "serviceClass": "civilian service vehicle",
+  "windowFrom": "2026-11-21T06:00:00Z",
+  "windowTo": "2026-11-21T08:00:00Z",
+  "sources": [
+    {
+      "id": "owned-topology",
+      "edition": "owned-road-example-v1",
+      "sha256": "1d07d13cc3cbe2f5bb74cc6cfe23f5dea3a834d1835ce6add2b817e5e1b073df",
+      "attribution": "EMAD owned road example and authored tabletop controls"
+    }
+  ],
+  "origin": "junction-a",
+  "nodes": ["junction-a", "junction-b", "detour", "entrance-west", "entrance-east"],
+  "boundaryNodes": [],
+  "destinations": [
+    {"id": "service-zone", "node": "junction-b", "label": "Service zone"},
+    {"id": "west-entrance", "node": "entrance-west", "label": "West entrance"},
+    {"id": "east-entrance", "node": "entrance-east", "label": "East entrance"},
+    {"id": "unmapped", "label": "Site outside the reviewed network"}
+  ],
+  "edges": [
+    {"id": "a-b", "from": "junction-a", "to": "junction-b", "distanceM": 120, "sourceId": "owned-topology", "featureId": "main-road-east"},
+    {"id": "b-a", "from": "junction-b", "to": "junction-a", "distanceM": 120, "sourceId": "owned-topology", "featureId": "main-road-west"},
+    {"id": "a-detour", "from": "junction-a", "to": "detour", "distanceM": 150, "sourceId": "owned-topology", "featureId": "detour-entry"},
+    {"id": "detour-b", "from": "detour", "to": "junction-b", "distanceM": 80, "sourceId": "owned-topology", "featureId": "detour-exit"},
+    {"id": "to-west", "from": "junction-b", "to": "entrance-west", "distanceM": 7, "sourceId": "owned-topology", "featureId": "fixture-entrance-west"},
+    {"id": "to-east", "from": "junction-b", "to": "entrance-east", "distanceM": 12, "sourceId": "owned-topology", "featureId": "fixture-entrance-east"}
+  ],
+  "turnRestrictions": [],
+  "reports": [
+    {"id": "municipal-1", "sourceId": "owned-topology", "category": "عوائق الطريق", "placeLabel": "حي التدريب", "localText": "عائق في المسار الشرقي.", "receiptAt": "2026-11-21T06:02:00Z", "availableAt": "2026-11-21T06:03:00Z", "ticketClosedAt": "2026-11-21T06:30:00Z"},
+    {"id": "municipal-2", "sourceId": "owned-topology", "category": "عوائق  الطريق", "placeLabel": "حي التدريب", "localText": "العائق عند المدخل نفسه.", "receiptAt": "2026-11-21T06:05:00Z", "availableAt": "2026-11-21T06:06:00Z"},
+    {"id": "municipal-3", "sourceId": "owned-topology", "category": "عوائق الطريق", "placeLabel": "حي التدريب", "localText": "عائق منفصل عند المبنى المجاور.", "receiptAt": "2026-11-21T06:07:00Z", "availableAt": "2026-11-21T06:08:00Z"},
+    {"id": "unlocated-1", "sourceId": "owned-topology", "category": "ملاحظات الطريق", "receiptAt": "2026-11-21T06:14:00Z", "availableAt": "2026-11-21T06:15:00Z"}
+  ],
+  "associations": [
+    {"reportId": "municipal-1", "otherId": "municipal-2", "reviewer": "reviewer-01", "decision": "linked", "availableAt": "2026-11-21T06:12:00Z"},
+    {"reportId": "municipal-1", "otherId": "municipal-3", "reviewer": "reviewer-01", "decision": "separate", "availableAt": "2026-11-21T06:12:00Z"},
+    {"reportId": "municipal-2", "otherId": "municipal-3", "reviewer": "reviewer-01", "decision": "separate", "availableAt": "2026-11-21T06:12:00Z"}
+  ],
+  "assignments": [
+    {"id": "dispatch-1", "sourceId": "owned-topology", "reportId": "municipal-1", "crewLabel": "Civilian crew 1",
+     "dispatchedAt": "2026-11-21T06:04:00Z", "availableAt": "2026-11-21T06:05:00Z",
+     "arrivedAt": "2026-11-21T06:08:00Z", "arrivalKnownAt": "2026-11-21T06:09:00Z"}
+  ],
+  "inspections": [
+    {"id": "eastbound-closed", "sourceId": "owned-topology", "reportId": "municipal-1", "edgeId": "a-b", "observedAt": "2026-11-21T06:09:00Z", "availableAt": "2026-11-21T06:10:00Z", "reviewer": "inspector-01", "access": "closed"},
+    {"id": "westbound-closed", "sourceId": "owned-topology", "edgeId": "b-a", "observedAt": "2026-11-21T06:09:00Z", "availableAt": "2026-11-21T06:10:00Z", "reviewer": "inspector-01", "access": "closed"},
+    {"id": "detour-entry-checked", "sourceId": "owned-topology", "edgeId": "a-detour", "observedAt": "2026-11-21T06:09:00Z", "availableAt": "2026-11-21T06:10:00Z", "reviewer": "inspector-02", "access": "open"},
+    {"id": "detour-exit-checked", "sourceId": "owned-topology", "edgeId": "detour-b", "observedAt": "2026-11-21T06:09:00Z", "availableAt": "2026-11-21T06:10:00Z", "reviewer": "inspector-02", "access": "open"},
+    {"id": "eastbound-reopened", "sourceId": "owned-topology", "reportId": "municipal-1", "edgeId": "a-b", "observedAt": "2026-11-21T06:30:00Z", "availableAt": "2026-11-21T07:00:00Z", "reviewer": "inspector-02", "access": "open"},
+    {"id": "west-entrance-open", "sourceId": "owned-topology", "edgeId": "to-west", "observedAt": "2026-11-21T06:59:00Z", "availableAt": "2026-11-21T07:05:00Z", "reviewer": "inspector-03", "access": "open"}
+  ],
+  "permits": [
+    {"id": "exercise-permit", "sourceId": "owned-topology", "edgeId": "detour-b", "roadLabel": "Reviewed detour exits", "revision": 1, "availableAt": "2026-11-21T06:15:00Z", "from": "2026-11-21T06:40:00Z", "toExclusive": "2026-11-21T07:20:00Z", "status": "scheduled"},
+    {"id": "exercise-permit", "sourceId": "owned-topology", "edgeId": "detour-b", "roadLabel": "Reviewed detour exits", "revision": 2, "availableAt": "2026-11-21T06:50:00Z", "from": "2026-11-21T06:40:00Z", "toExclusive": "2026-11-21T07:20:00Z", "status": "cancelled"}
+  ],
+  "restoration": [
+    {"id": "west-task", "sourceId": "owned-topology", "destinationId": "west-entrance", "label": "Clear west entrance",
+     "availableAt": "2026-11-21T06:11:00Z", "expectedCompleteAt": "2026-11-21T06:50:00Z",
+     "completedAt": "2026-11-21T06:56:00Z", "completionKnownAt": "2026-11-21T07:01:00Z",
+     "cost": 250, "currency": "SAR", "pricingYear": 2026},
+    {"id": "east-task", "sourceId": "owned-topology", "destinationId": "east-entrance", "label": "Inspect east entrance",
+     "availableAt": "2026-11-21T06:11:00Z", "cost": 0, "currency": "SAR", "pricingYear": 2026}
+  ],
+  "population": {
+    "sourceId": "owned-topology",
+    "year": 2024,
+    "cells": [
+      {"id": "split-cell", "people": 120, "zoneShares": {"service-zone": 0.75, "west-entrance": 0.25}},
+      {"id": "zero-cell", "people": 0, "zoneShares": {"east-entrance": 1}},
+      {"id": "unknown-cell", "people": null, "zoneShares": {"east-entrance": 1}},
+      {"id": "unallocated-cell", "people": 10, "zoneShares": {}}
+    ]
+  }
+}

@@ -22,6 +22,30 @@ async function setup(page:Page){
 }
 test.beforeEach(async({page},info)=>{test.skip(info.project.name!=='no-token','One deterministic map-first matrix');await setup(page)})
 
+test('Arabic reference search keeps same-name places selectable without changing the study area', async ({page}) => {
+ const places = [46.5, 47.5].map((longitude, i) => ({
+   type:'Feature', id:`owned-place-${i}`, geometry:{type:'Point',coordinates:[longitude,24.5]},
+   properties:{name:'وادي المثال', kind:'place', family:'local-name',
+     publisherRegion:i===0?'Riyadh fixture':'Eastern fixture', publisher:'Owned fixture',
+     matchBasis:'exact', allowTerrainDisplay:true},
+ }))
+ await page.route('**/api/v1/geography/regions?*', route => {
+   const query = new URL(route.request().url()).searchParams
+   return json(route, {type:'FeatureCollection',features:query.has('q')?places:[country]})
+ })
+ await page.goto('/map')
+ await page.getByRole('searchbox',{name:'Find a country, region or place'}).fill('وادي المثال')
+ const results = page.getByLabel('Geographic search results')
+ await expect(results.getByRole('button',{name:/Riyadh fixture/})).toBeVisible()
+ const eastern = results.getByRole('button',{name:/Eastern fixture/})
+ await eastern.focus()
+ await eastern.press('Enter')
+ await expect(page.getByText('owned-place-1',{exact:true})).toBeVisible()
+ await expect(page).not.toHaveURL(/region=owned-place-1/)
+ await page.getByRole('button',{name:'Clear place selection'}).click()
+ await expect(page.getByText('owned-place-1',{exact:true})).toHaveCount(0)
+})
+
 test('map entry ignores a saved exercise and never requests simulation onboarding',async({page})=>{
  await page.addInitScript(()=>localStorage.setItem('emad.resource.human:operator-01',JSON.stringify(['default','local','EXERCISE_OBSERVATION','legacy'])))
  const calls:string[]=[]

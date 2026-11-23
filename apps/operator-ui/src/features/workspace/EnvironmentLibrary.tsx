@@ -1,4 +1,4 @@
-import {lazy, Suspense, useRef, useState} from 'react'
+import {Fragment, lazy, Suspense, useEffect, useMemo, useRef, useState} from 'react'
 import {useInfiniteQuery, useQuery, useQueryClient} from '@tanstack/react-query'
 import {GEOGRAPHIC_PREVIEW_ENABLED, fixedScopeInput, useAPI} from '@/lib/api'
 import type {components} from '@/lib/openapi.generated'
@@ -11,6 +11,13 @@ import type {SceneLayer} from './GeographicSceneLayers'
 import {GeographicContext, type ContextMarker} from './GeographicContext'
 import {FrozenGeographicContext} from './FrozenGeographicContext'
 import {useWorkspacePreference} from './preferences'
+import {MunicipalWorkloadReview} from './MunicipalWorkloadReview'
+import {PortActivityReview} from './PortActivityReview'
+import {HistoricalEvidenceReview} from './HistoricalEvidenceReview'
+import {CivilianAccessReplay} from './CivilianAccessReplay'
+import {CivilianAerialReview} from './CivilianAerialReview'
+import {RegionalResponseReview} from './RegionalResponseReview'
+import {SupportingSourceReview} from './SupportingSourceReview'
 
 type Definition = components['schemas']['EnvironmentDefinition']
 type Release = components['schemas']['EnvironmentRelease']
@@ -62,6 +69,7 @@ function LibraryView({linkedRelease}: {linkedRelease: string}) {
   const [definition, setDefinition] = useState<Definition>()
   const [build, setBuild] = useState('')
   const [release, setRelease] = useState(linkedRelease)
+  const [roadFocus, setRoadFocus] = useState<{releaseId: string; featureId: string}>()
   const [lineageRelease, setLineageRelease] = useState('')
   const [qualityRelease, setQualityRelease] = useState('')
   const [impactTarget, setImpactTarget] = useState('')
@@ -379,6 +387,18 @@ function LibraryView({linkedRelease}: {linkedRelease: string}) {
             </li>)}
           </ul> : <p role="status">Loading source lineage…</p>}
         </details>
+        {selected.state !== 'WITHDRAWN' && <Fragment key={`reviews:${selected.id}:${selected.manifestSha256}`}>
+          <MunicipalWorkloadReview release={selected} />
+          <CivilianAccessReplay release={selected}
+            onLocate={GEOGRAPHIC_PREVIEW_ENABLED && can('download') && selected.manifest.members.some(member => member.layer === 'surface')
+              ? featureId => setRoadFocus({releaseId: selected.id, featureId}) : undefined} />
+          <CivilianAerialReview release={selected} />
+          <RegionalResponseReview release={selected} />
+          <SupportingSourceReview release={selected} />
+          <PortActivityReview release={selected} />
+          <HistoricalEvidenceReview release={selected} source="flood" />
+          <HistoricalEvidenceReview release={selected} source="outages" />
+        </Fragment>}
         <details><summary>Unsupported capabilities</summary><p>{selected.manifest.quality.unsupported.join(', ')}</p></details>
         {(can('qualify') || can('release')) && <details key={`decisions:${selected.id}`}
           onToggle={event => setDecisionRelease(event.currentTarget.open ? selected.id : '')}>
@@ -392,7 +412,8 @@ function LibraryView({linkedRelease}: {linkedRelease: string}) {
         </details>}
         {GEOGRAPHIC_PREVIEW_ENABLED && can('download') && (selected.state === 'RELEASED' || can('qualify') && ['STAGED', 'VERIFIED'].includes(selected.state)) &&
           selected.manifest.members.some(member => member.layer === 'surface') &&
-          <ReleaseTerrain key={selected.manifestSha256} release={selected} />}
+          <ReleaseTerrain key={`terrain:${selected.id}:${selected.manifestSha256}`} release={selected}
+            roadFocus={roadFocus?.releaseId === selected.id ? roadFocus.featureId : undefined} onClearRoadFocus={() => setRoadFocus(undefined)} />}
         {can('download') && ['RELEASED', 'STAGED', 'VERIFIED'].includes(selected.state) &&
           <button className="ux-button" disabled={busy} onClick={() => void act(() => download(selected, false))}>Download prepared data</button>}
         {can('download') && selected.state === 'RELEASED' &&
@@ -412,7 +433,7 @@ function LibraryView({linkedRelease}: {linkedRelease: string}) {
   </section>
 }
 
-function ReleaseTerrain({release}: {release: Release}) {
+function ReleaseTerrain({release, roadFocus, onClearRoadFocus}: {release: Release; roadFocus?: string; onClearRoadFocus: () => void}) {
   const host = useWorkbenchHost()
   const {prefix, api, session} = useWorkspace()
   const [open, setOpen] = useState(false)
@@ -420,8 +441,16 @@ function ReleaseTerrain({release}: {release: Release}) {
   const [handoffOpen, setHandoffOpen] = useState(false)
   const [markers, setMarkers] = useState<ContextMarker[]>([])
   const [drawn, setDrawn] = useState(0)
+  const [placeInput, setPlaceInput] = useState('')
+  const [placeID, setPlaceID] = useState('')
+  const [placeDrawn, setPlaceDrawn] = useState(false)
+  const [showNearbyPlaces, setShowNearbyPlaces] = useState(false)
   const [workOpen, setWorkOpen] = useState(false)
   const [local, setLocal] = useState<{display?: string; layers?: string; feature?: string}>({})
+  const panel = useRef<HTMLDetailsElement>(null)
+  useEffect(() => {
+    if (roadFocus) panel.current?.scrollIntoView({block: 'nearest'})
+  }, [roadFocus])
   const path = host?.search
   const matchingPath = path?.id === release.id && path.manifest === release.manifestSha256 &&
     (!path.atlasArea || path.atlasArea === host?.scope?.area.revisionId)
@@ -430,7 +459,7 @@ function ReleaseTerrain({release}: {release: Release}) {
   const enabledLayers = new Map(layerTokens.map(token => token.split(':', 2) as [string, string | undefined]))
   const feature = matchingPath ? path?.feature : local.feature
   const allowed = session.permissions.includes('environments.download')
-  const show = open || !!activeDisplay
+  const show = open || !!activeDisplay || !!roadFocus
   function update(next: {display?: string; layers?: string; feature?: string; basemap?: string; terrainPoint?: string}, view = 'environment-3d', replace = false) {
     if (host) host.update({...host.search, ...next, id: release.id, manifest: release.manifestSha256,
       atlasArea: host.scope?.area.revisionId, view, bbox: undefined, terrainPoint: next.terrainPoint}, replace)
@@ -449,20 +478,74 @@ function ReleaseTerrain({release}: {release: Release}) {
   ) ?? []
   const terrain = available.filter(item => item.recipe === 'terrain-glb-v1' || item.recipe === 'terrain-glb-v2' || item.recipe === 'ground-glb-v1')
   const street = available.find(item => item.recipe === 'street-pmtiles-v1')
-  const selected = terrain.find(item => item.id === activeDisplay)
+  const selected = roadFocus
+    ? terrain.find(item => item.id === activeDisplay && item.recipe !== 'ground-glb-v1') ?? terrain.find(item => item.recipe !== 'ground-glb-v1')
+    : terrain.find(item => item.id === activeDisplay)
   const layerOptions = (Object.entries(previewLayers) as [SceneLayer, (typeof previewLayers)[SceneLayer]][]).map(([layer, definition]) => {
     const candidates = available.filter(item => item.recipe === definition.recipe && item.bytes <= definition.maxBytes)
     const pinned = enabledLayers.get(layer)
     const display = pinned ? candidates.find(item => item.id === pinned) : candidates.find(item => feature?.startsWith(`${item.id}:`)) ?? candidates[0]
     return {layer, definition, display}
   })
+  const roadDisplay = layerOptions.find(item => item.layer === 'roads')?.display
+  const locatingRoad = !!roadFocus && !!roadDisplay
+  if (locatingRoad) enabledLayers.set('roads', roadDisplay.id)
+  const currentTokens = locatingRoad ? [...layerTokens.filter(token => !token.startsWith('roads:')), `roads:${roadDisplay.id}`] : layerTokens
   const rasterLayers = new Set(['imagery', 'land-cover', 'ground-delta', 'radar'])
   const isGround = selected?.recipe === 'ground-glb-v1'
+  const canReadPlaces = allowed && session.permissions.includes('sources.read')
+  const referencePlace = useQuery({
+    queryKey: [...prefix, 'terrain-reference-place', placeID],
+    queryFn: ({signal}) => api.listGeographicRegions({id: placeID}, signal),
+    enabled: !!selected && canReadPlaces && !!placeID, gcTime: 0, retry: false,
+    refetchInterval: selected && canReadPlaces && placeID ? 30_000 : false,
+  })
+  const place = referencePlace.isSuccess && canReadPlaces ? referencePlace.data.features[0] : undefined
+  const placeMarker = useMemo<ContextMarker | undefined>(() => {
+    if (place?.properties?.allowTerrainDisplay !== true || place.geometry?.type !== 'Point' ||
+      !Array.isArray(place.geometry.coordinates)) return undefined
+    const [longitude, latitude] = place.geometry.coordinates
+    if (typeof longitude !== 'number' || typeof latitude !== 'number') return undefined
+    return {id: placeID, title: String(place.properties.name), date: '', position: [longitude, latitude]}
+  }, [place, placeID])
+  const placeSource = place?.properties?.sourceId
+  const placeRelease = place?.properties?.releaseId
+  const areaRevision = selected?.areaRevisionId
+  const nearby = useQuery({
+    queryKey: [...prefix, 'terrain-place-group', placeSource, placeRelease, areaRevision, host?.scope?.scopeHash],
+    enabled: showNearbyPlaces && !!areaRevision && !!host?.scope && typeof placeSource === 'string' &&
+      typeof placeRelease === 'string' && !!placeRelease && canReadPlaces,
+    retry: false, gcTime: 0, refetchInterval: 30_000,
+    queryFn: async ({signal}) => {
+      const page = await api.readCatalog({
+        kind: 'geography', limit: 100,
+        scope: {area: {revisionId: areaRevision!}, temporal: fixedScopeInput(host!.scope!).temporal},
+        filters: {kind: 'place', sourceId: String(placeSource), releaseId: String(placeRelease)},
+      }, signal)
+      if (page.snapshotId) await api.releaseCatalog(page.snapshotId).catch(() => {})
+      return page
+    },
+  })
+  const nearbyPlaces = useMemo(() => {
+    if (!showNearbyPlaces || !canReadPlaces || !nearby.isSuccess) return undefined
+    const rows = nearby.data.items as unknown as Array<{
+      id?: string; geometry?: {type: string; coordinates?: unknown};
+      properties?: {allowTerrainDisplay?: boolean; name?: string};
+    }>
+    return rows.flatMap(({id, geometry, properties}) => {
+      if (!id || properties?.allowTerrainDisplay !== true || geometry?.type !== 'Point' ||
+        !Array.isArray(geometry.coordinates)) return []
+      const [lon, lat] = geometry.coordinates
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) return []
+      return [{id, title: String(properties.name ?? id), date: '', position: [lon, lat] as [number, number]}]
+    }).slice(0, 24)
+  }, [nearby.data, nearby.isSuccess, showNearbyPlaces, canReadPlaces])
   const overlays = layerOptions.flatMap(({layer, display}) =>
     display && enabledLayers.has(layer) && (!isGround || rasterLayers.has(layer)) ? [{layer, display}] : [])
-  return <details open={!!activeDisplay || undefined} onToggle={event => {
+  return <details ref={panel} open={!!activeDisplay || !!roadFocus || undefined} onToggle={event => {
     setOpen(event.currentTarget.open)
     if (!event.currentTarget.open && activeDisplay) update({}, 'environment-atlas')
+    if (!event.currentTarget.open && roadFocus) onClearRoadFocus()
   }}>
     <summary>3D terrain preview</summary>
     {show && <div className="space-y-2">
@@ -472,10 +555,12 @@ function ReleaseTerrain({release}: {release: Release}) {
         <button className="ux-button" onClick={() => void displays.refetch()}>Retry availability check</button>
       </> : <>
         {displays.isSuccess && !terrain.length && <p role="status">No terrain preview is available for this release.</p>}
+        {roadFocus && displays.isSuccess && !displays.hasNextPage && !locatingRoad &&
+          <p role="status">The retained road layer is unavailable for this release.</p>}
         {!allowed && <p role="status">Rendering requires the environment download permission.</p>}
         {activeDisplay && displays.isSuccess && !selected && !displays.hasNextPage && <p role="status">The linked terrain is unavailable in this release.</p>}
         {terrain.map(item => <button key={item.id} className="ux-button" disabled={!allowed} aria-pressed={selected?.id === item.id}
-          onClick={() => update({display: selected?.id === item.id ? undefined : item.id, layers: layerTokens.join(','), feature})}>
+          onClick={() => {onClearRoadFocus(); update({display: selected?.id === item.id ? undefined : item.id, layers: currentTokens.join(','), feature})}}>
           {selected?.id === item.id ? 'Close' : 'Open'} {item.recipe === 'ground-glb-v1' ? 'modeled bare earth' : 'terrain'} · {sizeLabel(item.bytes)} · {item.sha256.slice(0, 8)}
         </button>)}
         {displays.hasNextPage && <button className="ux-button" disabled={displays.isFetchingNextPage}
@@ -495,6 +580,7 @@ function ReleaseTerrain({release}: {release: Release}) {
               <input type="checkbox" checked={enabledLayers.has(layer) && (!isGround || rasterLayers.has(layer))}
                 disabled={isGround && !rasterLayers.has(layer) || !display && !enabledLayers.has(layer)}
                 onChange={event => {
+                  onClearRoadFocus()
                   const tokens = layerTokens.filter(token => token.split(':', 1)[0] !== layer &&
                     !(event.target.checked && rasterLayers.has(layer) && rasterLayers.has(token.split(':', 1)[0])))
                   if (event.target.checked && display) tokens.push(`${layer}:${display.id}`)
@@ -508,10 +594,11 @@ function ReleaseTerrain({release}: {release: Release}) {
             host.showAtlas?.()
           }}>Return to Atlas</button>}
           <Suspense fallback={<p role="status">Loading the 3D viewer…</p>}>
-            <TerrainPreview key={selected.id} display={selected} overlays={overlays} selection={feature}
+            <TerrainPreview key={selected.id} display={selected} overlays={overlays} selection={feature} roadFocus={roadFocus}
               contextMarkers={contextOpen ? markers : undefined}
               onContextDrawn={setDrawn}
-              onSelect={value => update({display: selected.id, layers: layerTokens.join(','), feature: value || undefined}, undefined, true)}
+              placeMarker={placeMarker} nearbyPlaces={nearbyPlaces} onPlaceDrawn={setPlaceDrawn}
+              onSelect={value => {onClearRoadFocus(); update({display: selected.id, layers: currentTokens.join(','), feature: value || undefined}, undefined, true)}}
               onLocate={host?.showAtlas ? () => {update({display: selected.id, layers: layerTokens.join(','), feature}, 'environment-atlas'); host.showAtlas?.()} : undefined}
               onLocateTerrain={host?.showAtlas ? ([longitude, latitude]) => {
                 update({display: selected.id, layers: layerTokens.join(','), feature: undefined,
@@ -519,6 +606,25 @@ function ReleaseTerrain({release}: {release: Release}) {
                 host.showAtlas?.()
               } : undefined} />
           </Suspense>
+          {canReadPlaces && <details>
+            <summary>Reference place</summary>
+            <label className="block">Place reference from the Atlas
+              <input className="atlas-field" value={placeInput} maxLength={256} onChange={event => setPlaceInput(event.target.value)} />
+            </label>
+            <button className="ux-button" disabled={!placeInput.trim()} onClick={() => setPlaceID(placeInput.trim())}>Locate place on terrain</button>
+            {placeID && <button className="ux-button" onClick={() => {setPlaceID(''); setPlaceInput('')}}>Clear place</button>}
+            {placeID && <p role="status">{referencePlace.isPending ? 'Checking the retained place…' :
+              placeMarker ? <><bdi dir="auto">{placeMarker.title}</bdi> · <bdi dir="auto">{String(place?.properties?.attribution ?? '')}</bdi> · {placeDrawn ? 'Placed on the preview surface' : 'No terrain surface at the reference point'}</> :
+              'This place is unavailable for terrain display.'}</p>}
+            {placeMarker && host?.scope && typeof placeRelease === 'string' && !!placeRelease && <label className="block">
+              <input type="checkbox" checked={showNearbyPlaces} onChange={event => setShowNearbyPlaces(event.target.checked)} />
+              {' '}Show nearby places from this edition
+            </label>}
+            {showNearbyPlaces && placeMarker && <p role="status">{nearby.isError ? 'Nearby references are unavailable.' :
+              nearby.isPending ? 'Checking nearby references…' : `${nearbyPlaces?.length ?? 0} nearby labels selected for the terrain preview.`}</p>}
+            {!!nearbyPlaces?.length && <ul aria-label="Nearby reference places">{nearbyPlaces.map(item =>
+              <li key={item.id}><bdi dir="auto">{item.title}</bdi> · <code>{item.id}</code></li>)}</ul>}
+          </details>}
           <details onToggle={event => setContextOpen(event.currentTarget.open)}>
             <summary>Retained context and coverage</summary>
             {contextOpen && <GeographicContext releaseArea={selected.areaRevisionId} atlasScope={host?.scope} onMarkers={setMarkers} drawn={drawn} />}

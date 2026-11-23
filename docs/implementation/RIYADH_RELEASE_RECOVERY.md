@@ -20,6 +20,34 @@ In the isolated copy, a receiver scoped to the exact Riyadh sources discovered t
 
 The 14 November review repeated the workflow in a disposable migration 58 copy. The receiver also verified all six pinned Riyadh displays by full SHA-256 and length. The receipt SHA-256 is `f887a154b1c8e27b59c3d3816a583074d47ed62d642370c0a76ca35b6cbd57d2`. [Display verification receipt](../../private/environment-foundation/implementation/coastal-moving-qualification/riyadh-receiver-display-review.json)
 
+On 21 November the engineering preflight verified the three staged releases from migration 59 against their restored manifests and prepared packages. The six Riyadh displays also matched the earlier independent digest and length records. The preflight contains the exact pins, quality status and input counts for the live reviewer and receiver. [Live review preflight](../../private/environment-foundation/implementation/coastal-moving-qualification/migration-59-linked-f09/live-release-review-preflight.json)
+
+### Record the independent walkthrough
+
+After Riyadh is released, the receiver opens the exact terrain in the Environment Library with their own account and writes a walkthrough JSON file. Use the release ID, manifest SHA-256 and operator ID observed in that session. Record the manifest layers that were usable and the limitations seen during inspection.
+
+```json
+{
+  "releaseId": "RELEASE_ID",
+  "manifestSha256": "MANIFEST_SHA256",
+  "receiverOperatorId": "OPERATOR_ID",
+  "terrainOpened": true,
+  "usableLayers": ["surface"],
+  "limitations": ["Record the limitations observed in the inspected release."]
+}
+```
+
+The receiver runs `receive` with their download credential, the trusted candidate and the review preflight. The command checks the authenticated account and downloads the exact package and all pinned display files before writing the evidence receipt and printing its SHA-256. The reviewer obtains that digest directly from the receiver through their authenticated review channel. The receipt is a local operator record and its authorship depends on that confirmation. The reviewer then runs `verify` with their own review credential. It checks the confirmed bytes, reads server decisions for all three releases and compares the recorded receiving operator with the canonical Riyadh decision actors.
+
+```text
+python scripts/ops/record_environment_receiving.py receive --api API --candidate CANDIDATE.json --preflight PREFLIGHT.json --token-file RECEIVER_TOKEN --walkthrough WALKTHROUGH.json --archive riyadh-prepared.zip --output RECEIPT.json
+python scripts/ops/record_environment_receiving.py verify --api API --candidate CANDIDATE.json --preflight PREFLIGHT.json --token-file REVIEWER_TOKEN --receipt RECEIPT.json --receiver-confirmed-sha256 RECEIVER_SHA256 --checks CHECKS.json --output CHECKS_WITH_RECEIVING.json
+```
+
+After the live release decisions, capture a new candidate file with the same release pins, scope and HTTP workers. Confirm the new file has the same `installationSha256` and `apiStartedAt` as the observation candidate and shows all three releases as `RELEASED`. Keep both candidate captures with the evidence. Use the new candidate and `CHECKS_WITH_RECEIVING.json` to assemble the F09 readiness ledger. The checks include the receiver's evidence and the exact server decision records. The F09 observation must still finish with all three releases observed as `RELEASED` and pass its storage checks. [Candidate capture](../../scripts/ops/capture_environment_candidate.py) · [Receiving evidence tool](../../scripts/ops/record_environment_receiving.py) · [Readiness ledger](../../scripts/ops/environment_readiness_ledger.py)
+
+The migration 59 rehearsal exercised verification and release for all three pins in a disposable copy. A separate receiver fixture discovered Riyadh, verified the prepared archive and all six displays, and supplied a receipt digest that the reviewer checked against the server decisions. After withdrawal, both the prepared download and the readiness evidence were rejected. [Migration 59 rehearsal](../../private/environment-foundation/implementation/coastal-moving-qualification/migration-59-linked-f09/f03-precommit-rehearsal.json)
+
 ## F06 portable verification and rebuild
 
 The portable reader checks the prepared archive, exact manifest, scoped input identities, member integrity, and profile-specific quality checks. It supports the original reference profiles and the enrichment, observation and coastal editions. Seven retained packages passed the compatibility check, including the exact installed Riyadh, Al Ain, and Avignon archives. Wrong manifest, missing input, corrupt input and unsafe or extra members fail before preparation starts. [Portable reader](../../scripts/ops/verify_environment_rebuild.py) · [Compatibility evidence](../../private/environment-foundation/implementation/coastal-moving-qualification/portable-reader-compatibility.json)
@@ -40,7 +68,7 @@ The rebuild verifies recipe-to-manifest agreement and hashes every original befo
 
 The 13 November paired backup captured the installed database, 59 eligible objects totaling 2,865,321,183 bytes, and the retained navigation originals. The restore used a new Compose namespace and completed in 101.7 seconds including the previous API and forward recovery checks. It compared 129 durable table fingerprints and 1,599 security definitions, revalidated source and access policy against staging, and fetched the pinned manifests, packages and published displays through scoped API routes. The data cutoff was 20:12:28 Riyadh time. The previous V05 API and the current API both served the restored objects on migration 56. That result covers read compatibility on this recovery set. [Backup manifest](../../private/environment-foundation/implementation/coastal-moving-qualification/paired-current-v2/manifest.json) · [Restore and previous-image result](../../private/environment-foundation/implementation/coastal-moving-qualification/paired-current-final.json)
 
-The capture uses a PostgreSQL snapshot, conditional reads of the object store, and a before-and-after comparison of durable database state and object listings. If a durable table, source policy or object listing changes during the capture, take a fresh snapshot during a quieter period. Worker heartbeats remain in the database dump. Their changing timestamps are excluded from the stable data comparison. The restore rejects a changed backup member and stops before serving the copied database if captured source or access policy is stale. The same procedure restored all 59 objects again after the migration 58 cutover and verified the previous API and forward recovery. [Migration 58 restore](../../private/environment-foundation/implementation/coastal-moving-qualification/paired-installed-58-restore.json)
+The capture uses a PostgreSQL snapshot, conditional reads of the object store, and a before-and-after comparison of durable database state and object listings. If a durable table, source policy or object listing changes during the capture, take a fresh snapshot during a quieter period. Worker heartbeats stay in the dump and are excluded from the row comparison. The dump preserves the schema and access controls of the temporary analyst read tables and omits their snapshots and cursors. The restore verifies those tables are empty before starting the copied API. It rejects a changed backup member and stops before serving the copied database if captured source or access policy is stale. The procedure restored all 59 objects after the migration 58 cutover and verified the previous API and forward recovery. [Migration 58 restore](../../private/environment-foundation/implementation/coastal-moving-qualification/paired-installed-58-restore.json)
 
 ```text
 python scripts/ops/staging_environment_recovery.py capture CANDIDATE_JSON PRIVATE_BACKUP_DIRECTORY

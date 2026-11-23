@@ -1,0 +1,158 @@
+openapi: 3.1.0
+info:
+  title: Civilian supporting-source review
+  version: 1.0.0
+paths:
+  /api/v1/environment-releases/{id}/supporting-source-review:
+    post:
+      operationId: reviewSupportingSources
+      summary: Replay a reviewed civilian supporting-source package
+      description: Requires environments.read and current internal-analysis rights for the supporting-source-review v1 package.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: manifestSha256, in: query, required: true, schema: {type: string}}
+        - {name: inputSha256, in: query, required: true, schema: {type: string}}
+        - {name: sourceId, in: query, required: true, schema: {type: string}}
+        - {name: admissionId, in: query, required: true, schema: {type: string}}
+        - {name: knownAt, in: query, required: true, schema: {type: string, format: date-time}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '200':
+          description: Scoped review at the selected cutoff
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SupportingSourceReview'}
+        '4XX':
+          description: Input, release or source policy rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+components:
+  schemas:
+    SupportingSourceReview:
+      allOf:
+        - $ref: './environment-library.yaml#/components/schemas/SimulationSourceReviewLineage'
+        - type: object
+          required: [review]
+          properties:
+            review: {$ref: '#/components/schemas/SupportingReplay'}
+    SupportingReplay:
+      type: object
+      required: [title, cutoff, uniqueOrigins, sources, events, fields, indicators, comparisons, delivery]
+      properties:
+        title: {type: string}
+        cutoff: {type: string, format: date-time}
+        uniqueOrigins: {type: integer}
+        sources: {type: array, items: {$ref: '#/components/schemas/SupportingSource'}}
+        events: {type: array, items: {$ref: '#/components/schemas/SupportingEvent'}}
+        fields: {type: array, items: {$ref: '#/components/schemas/SupportingField'}}
+        indicators: {type: array, items: {$ref: '#/components/schemas/SupportingIndicator'}}
+        comparisons: {type: array, items: {$ref: '#/components/schemas/SupportingComparison'}}
+        delivery: {type: array, items: {$ref: '#/components/schemas/SupportingQueue'}}
+    SupportingSource:
+      type: object
+      required: [id, edition, sha256, attribution]
+      properties:
+        id: {type: string}
+        edition: {type: string}
+        sha256: {type: string}
+        attribution: {type: string}
+    SupportingEvent:
+      type: object
+      required: [id, sourceId, origin, kind, status, label, area, revision, observedAt, availableAt]
+      properties:
+        id: {type: string}
+        sourceId: {type: string}
+        origin: {type: string}
+        kind: {type: string}
+        status: {type: string}
+        label: {type: string}
+        area: {type: string}
+        revision: {type: integer}
+        observedAt: {type: string, format: date-time}
+        availableAt: {type: string, format: date-time}
+        details: {type: string}
+        effectiveAt: {type: string, format: date-time}
+        expiresAt: {type: string, format: date-time}
+        value: {type: number, nullable: true}
+        unit: {type: string}
+        languages: {type: object, additionalProperties: {type: string}}
+    SupportingField:
+      type: object
+      required: [id, sourceId, kind, lane, variable, area, support, nativeRef, method, reference, status, units, value, samples, coverage, validFrom, availableAt]
+      properties:
+        id: {type: string}
+        sourceId: {type: string}
+        kind: {type: string}
+        lane: {type: string}
+        variable: {type: string}
+        area: {type: string}
+        support: {type: string}
+        nativeRef: {type: string}
+        method: {type: string}
+        reference: {type: string}
+        status: {type: string}
+        units: {type: string}
+        value: {type: number, nullable: true}
+        samples: {type: integer, nullable: true}
+        coverage: {type: number, nullable: true}
+        validFrom: {type: string, format: date-time}
+        availableAt: {type: string, format: date-time}
+        validTo: {type: string, format: date-time}
+        initializedAt: {type: string, format: date-time}
+    SupportingIndicator:
+      type: object
+      required: [id, sourceId, upstream, area, level, kind, definition, method, boundary, periodGrain, from, toExclusive, units, status, value, availableAt]
+      properties:
+        id: {type: string}
+        sourceId: {type: string}
+        upstream: {type: string}
+        area: {type: string}
+        level: {type: string}
+        kind: {type: string}
+        definition: {type: string}
+        method: {type: string}
+        boundary: {type: string}
+        periodGrain: {type: string}
+        from: {type: string}
+        toExclusive: {type: string}
+        units: {type: string}
+        status: {type: string}
+        value: {type: number, nullable: true}
+        availableAt: {type: string, format: date-time}
+        origin: {type: string}
+        asylum: {type: string}
+    SupportingComparison:
+      type: object
+      required: [before, after, status, difference]
+      properties:
+        before: {type: string}
+        after: {type: string}
+        status: {type: string}
+        difference: {type: number, nullable: true}
+    SupportingQueue:
+      type: object
+      required: [mode, recoveryStatus, pending, peakBacklog, received, p50LagSeconds, p90LagSeconds, recoverySeconds, receipts]
+      properties:
+        mode: {type: string}
+        recoveryStatus: {type: string}
+        pending: {type: integer}
+        peakBacklog: {type: integer}
+        received: {type: integer}
+        p50LagSeconds: {type: number, nullable: true}
+        p90LagSeconds: {type: number, nullable: true}
+        recoverySeconds: {type: number, nullable: true}
+        receipts: {type: array, items: {$ref: '#/components/schemas/SupportingReceipt'}}
+    SupportingReceipt:
+      type: object
+      required: [id, recipient, sentAt, receivedAt, acknowledgedAt]
+      properties:
+        id: {type: string}
+        recipient: {type: string}
+        sentAt: {type: string, format: date-time}
+        receivedAt: {type: string, format: date-time, nullable: true}
+        acknowledgedAt: {type: string, format: date-time, nullable: true}

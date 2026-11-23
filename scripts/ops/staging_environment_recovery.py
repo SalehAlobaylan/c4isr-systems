@@ -25,7 +25,8 @@ from recovery_inventory import inventory, sql, verify_required
 ROOT = Path(__file__).resolve().parents[2]
 HEX = re.compile(r"[0-9a-f]{64}\Z")
 SCHEMA = "emad.staging-environment-backup.v1"
-RUNTIME_TABLES = {"platform_worker_status"}
+EPHEMERAL_READ_TABLES = ("analyst_read_cursors", "analyst_read_snapshots")
+RUNTIME_TABLES = {"platform_worker_status", *EPHEMERAL_READ_TABLES}
 POLICY_TABLES = {"principals", "operators", "principal_grants", "principal_credentials", "sources", "source_admissions",
                  "retrieval_profiles", "retrieval_profile_revisions", "retrieval_execution_grants",
                  "geographic_environment_release_events"}
@@ -87,8 +88,8 @@ def receipt(path):
 
 
 def comparable(snapshot):
-    # Heartbeat rows describe the running process generation. They remain in
-    # the database dump but are outside the stable data and ACL comparison.
+    # Heartbeats and temporary read sessions change independently of durable
+    # records. Their table definitions and access rules are still compared.
     return {**snapshot, "tables": {k: v for k, v in snapshot["tables"].items() if k not in RUNTIME_TABLES}}
 
 
@@ -177,7 +178,8 @@ def capture(candidate, directory):
     omitted, _ = restore_policy(before, started)
     dump = directory / "database.dump"
     with dump.open("xb") as stream:
-        run("docker", "exec", pg, "pg_dump", "-Fc", "--no-owner", "-U", "c4isr", "-d", "c4isr", stdout=stream)
+        exclusions = [f"--exclude-table-data=public.{table}" for table in EPHEMERAL_READ_TABLES]
+        run("docker", "exec", pg, "pg_dump", "-Fc", "--no-owner", *exclusions, "-U", "c4isr", "-d", "c4isr", stdout=stream)
     objects = capture_bucket(api, directory / "objects", omitted)
     after = inventory(pg)
     if installed_services() != services:
@@ -194,6 +196,7 @@ def capture(candidate, directory):
     save(directory / "manifest.json", {"schema": SCHEMA, "startedAt": started.isoformat(), "closedAt": now().isoformat(),
          "cutoff": started.isoformat(), "database": receipt(dump), "inventory": receipt(directory / "inventory.json"),
          "candidate": receipt(directory / "candidate.json"), "runtimeTablesExcludedFromComparison": sorted(RUNTIME_TABLES),
+         "ephemeralReadTablesOmitted": list(EPHEMERAL_READ_TABLES),
          "navigationParents": nav, "objects": objects})
     return len(objects)
 
@@ -347,6 +350,10 @@ secrets:
             restored = inventory(postgres, database)
             if comparable(restored) != comparable(captured):
                 raise ValueError("Restored inventory or ACLs differ from the paired database")
+            omitted_reads = manifest.get("ephemeralReadTablesOmitted")
+            if omitted_reads is not None and (omitted_reads != list(EPHEMERAL_READ_TABLES) or
+                                              any(restored["tables"][table]["rows"] for table in EPHEMERAL_READ_TABLES)):
+                raise ValueError("Restored temporary read tables must be empty")
             if omitted & scoped_before:
                 # Stale copied authorizations must not be opened even inside an
                 # isolated API when eligible retained dependencies changed.

@@ -1,0 +1,388 @@
+{
+  "schema": "emad.civilian-aerial-review.v1",
+  "kind": "authored-exercise",
+  "title": "Civilian flood inspection and handoff tabletop",
+  "areaRevision": "exercise-road-cells",
+  "incidentAt": "2026-11-18T08:30:00Z",
+  "minUsableFraction": 0.65,
+  "reviewWidthM": 6,
+  "sources": [
+    {
+      "id": "exercise-imagery",
+      "edition": "owned-tabletop-v1",
+      "sha256": "ff6a704da780ecd4e07982411a23635f83db0b72c24553033aa5e065a1bf66b0",
+      "attribution": "Authored EMAD exercise fixture"
+    },
+    {
+      "id": "exercise-flood",
+      "edition": "owned-tabletop-v1",
+      "sha256": "a60ae0eddcecd37afd305f80dfdf1f9f9100471365e8d4cd3a49826cf4bb9ebe",
+      "attribution": "Authored EMAD exercise fixture"
+    },
+    {
+      "id": "exercise-handoff",
+      "edition": "owned-tabletop-v1",
+      "sha256": "2a8ead13887b6406e57b9f5093c99633f22f2ed9cd6b7ed4e532a7ab0f53b05f",
+      "attribution": "Authored EMAD exercise fixture"
+    },
+    {
+      "id": "exercise-traffic",
+      "edition": "owned-tabletop-v1",
+      "sha256": "838455dd680016ff4d21d345981dca1da44ba0d9deb8560a1e52d52fac787ec3",
+      "attribution": "Authored EMAD exercise fixture"
+    },
+    {
+      "id": "exercise-sans",
+      "edition": "owned-tabletop-v1",
+      "sha256": "198efa199b3898c7d54824c61fc86d14810fb8ed39592e4005a900d8d824f28d",
+      "attribution": "Authored EMAD exercise fixture"
+    },
+    {
+      "id": "exercise-icao",
+      "edition": "owned-tabletop-v1",
+      "sha256": "a6ab7e8f675264d2c222eccb1ac97d15aba18cd98524dba95fc40f9681856856",
+      "attribution": "Authored EMAD exercise fixture"
+    },
+    {
+      "id": "exercise-faa",
+      "edition": "owned-tabletop-v1",
+      "sha256": "5381326510f3211a2961b08c178a0a2d971b0204de54dab7ff9ac66f34107a92",
+      "attribution": "Authored EMAD exercise fixture"
+    },
+    {
+      "id": "exercise-flight",
+      "edition": "owned-tabletop-v1",
+      "sha256": "4b29c9205c28f144f06a3962d82afca57416a48b8032828da6b7601e517737da",
+      "attribution": "Authored EMAD exercise fixture"
+    }
+  ],
+  "scenes": [
+    {
+      "id": "before",
+      "sourceId": "exercise-imagery",
+      "sensorFamily": "Authored civil survey",
+      "acquiredAt": "2026-11-18T08:00:00Z",
+      "availableAt": "2026-11-18T08:15:00Z",
+      "timeBasis": "Authored review timeline",
+      "areaRevision": "exercise-road-cells",
+      "grid": "owned-grid-v1",
+      "pixelM": 1,
+      "usableFraction": 0.83,
+      "coveredFraction": 1,
+      "assets": [
+        {
+          "role": "visual",
+          "sha256": "f6a39b009b0c4f1e767add62b87549d88c0731c8a4a6fc00482e53466734d211",
+          "png": "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAIAAABChommAAAAG0lEQVR4nGMobk8niBiopygzOZ4gIk4RfR0OAKP/f1HL6bwiAAAAAElFTkSuQmCC"
+        },
+        {
+          "role": "quality-mask",
+          "sha256": "d96be4866e23bb649127992cddb4a7702b8b8eab15391c254b7d0ed7a2b03dec",
+          "png": "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAYAAADN5B7xAAAAGElEQVR4nGNgIBL8n2mxD4SJVT+qgSQNACZMKOGI0MR0AAAAAElFTkSuQmCC"
+        }
+      ],
+      "catalogCoverage": "supplied-catalog"
+    },
+    {
+      "id": "unavailable",
+      "sourceId": "exercise-imagery",
+      "sensorFamily": "Authored civil survey",
+      "acquiredAt": "2026-11-18T08:40:00Z",
+      "availableAt": "2026-11-18T09:00:00Z",
+      "timeBasis": "Authored review timeline",
+      "areaRevision": "exercise-road-cells",
+      "grid": "owned-grid-v1",
+      "pixelM": 1,
+      "usableFraction": null,
+      "coveredFraction": 1,
+      "assets": [],
+      "catalogCoverage": "partial-page"
+    },
+    {
+      "id": "local-cloud",
+      "sourceId": "exercise-imagery",
+      "sensorFamily": "Authored civil survey",
+      "acquiredAt": "2026-11-18T08:44:00Z",
+      "availableAt": "2026-11-18T09:10:00Z",
+      "timeBasis": "Authored review timeline",
+      "areaRevision": "exercise-road-cells",
+      "grid": "owned-grid-v1",
+      "pixelM": 1,
+      "usableFraction": 0.4,
+      "coveredFraction": 1,
+      "assets": [
+        {
+          "role": "visual",
+          "sha256": "410f0e2e945872a02c4ab96b74fe81d019eabd2587a2559d45638567318253a7",
+          "png": "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAIAAABChommAAAAKElEQVR4nGMobk8niBhIVuRXNBUZIRRlJsfDEZoiuDhxioiyjmq+AwBJVIB9efGX2gAAAABJRU5ErkJggg=="
+        },
+        {
+          "role": "quality-mask",
+          "sha256": "d96be4866e23bb649127992cddb4a7702b8b8eab15391c254b7d0ed7a2b03dec",
+          "png": "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAYAAADN5B7xAAAAGElEQVR4nGNgIBL8n2mxD4SJVT+qgSQNACZMKOGI0MR0AAAAAElFTkSuQmCC"
+        }
+      ],
+      "catalogCoverage": "supplied-catalog"
+    },
+    {
+      "id": "coarse",
+      "sourceId": "exercise-imagery",
+      "sensorFamily": "Authored civil survey",
+      "acquiredAt": "2026-11-18T08:46:00Z",
+      "availableAt": "2026-11-18T09:10:00Z",
+      "timeBasis": "Authored review timeline",
+      "areaRevision": "exercise-road-cells",
+      "grid": "owned-grid-v1",
+      "pixelM": 10,
+      "usableFraction": 0.83,
+      "coveredFraction": 1,
+      "assets": [
+        {
+          "role": "visual",
+          "sha256": "410f0e2e945872a02c4ab96b74fe81d019eabd2587a2559d45638567318253a7",
+          "png": "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAIAAABChommAAAAKElEQVR4nGMobk8niBhIVuRXNBUZIRRlJsfDEZoiuDhxioiyjmq+AwBJVIB9efGX2gAAAABJRU5ErkJggg=="
+        },
+        {
+          "role": "quality-mask",
+          "sha256": "d96be4866e23bb649127992cddb4a7702b8b8eab15391c254b7d0ed7a2b03dec",
+          "png": "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAYAAADN5B7xAAAAGElEQVR4nGNgIBL8n2mxD4SJVT+qgSQNACZMKOGI0MR0AAAAAElFTkSuQmCC"
+        }
+      ],
+      "catalogCoverage": "supplied-catalog"
+    },
+    {
+      "id": "after",
+      "sourceId": "exercise-imagery",
+      "sensorFamily": "Authored civil survey",
+      "acquiredAt": "2026-11-18T08:45:00Z",
+      "availableAt": "2026-11-18T09:40:00Z",
+      "timeBasis": "Authored review timeline",
+      "areaRevision": "exercise-road-cells",
+      "grid": "owned-grid-v1",
+      "pixelM": 1,
+      "usableFraction": 0.83,
+      "coveredFraction": 1,
+      "assets": [
+        {
+          "role": "visual",
+          "sha256": "410f0e2e945872a02c4ab96b74fe81d019eabd2587a2559d45638567318253a7",
+          "png": "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAIAAABChommAAAAKElEQVR4nGMobk8niBhIVuRXNBUZIRRlJsfDEZoiuDhxioiyjmq+AwBJVIB9efGX2gAAAABJRU5ErkJggg=="
+        },
+        {
+          "role": "quality-mask",
+          "sha256": "d96be4866e23bb649127992cddb4a7702b8b8eab15391c254b7d0ed7a2b03dec",
+          "png": "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAYAAADN5B7xAAAAGElEQVR4nGNgIBL8n2mxD4SJVT+qgSQNACZMKOGI0MR0AAAAAElFTkSuQmCC"
+        },
+        {
+          "role": "flood-overlay",
+          "sha256": "aa761b6ca130fffeeec46eef366e3b1ab21c0f6471d21a36c2ad906d8342554d",
+          "png": "iVBORw0KGgoAAAANSUhEUgAAAAwAAAAICAYAAADN5B7xAAAAFklEQVR4nGNgGAJg7v8FGJi6GgYcAADl3hZZHQcR1AAAAABJRU5ErkJggg==",
+          "availableAt": "2026-11-18T09:55:00Z"
+        }
+      ],
+      "catalogCoverage": "supplied-catalog"
+    }
+  ],
+  "assessments": [
+    {
+      "id": "mapping-a",
+      "sourceId": "exercise-flood",
+      "label": "Practice flood mapping",
+      "kind": "delineation",
+      "version": 1,
+      "availableAt": "2026-11-18T09:00:00Z",
+      "sceneRefs": [
+        "after"
+      ],
+      "sourceImageTimes": [
+        "2026-11-18T08:45:00Z"
+      ],
+      "coverage": "inside",
+      "affected": true
+    },
+    {
+      "id": "mapping-b",
+      "sourceId": "exercise-flood",
+      "label": "Practice flood mapping",
+      "kind": "delineation",
+      "version": 1,
+      "availableAt": "2026-11-18T09:00:00Z",
+      "sceneRefs": [],
+      "sourceImageTimes": [
+        "2026-11-18T08:45:00Z"
+      ],
+      "coverage": "outside",
+      "affected": null
+    },
+    {
+      "id": "mapping-a",
+      "sourceId": "exercise-flood",
+      "label": "Practice flood mapping",
+      "kind": "delineation",
+      "version": 2,
+      "availableAt": "2026-11-18T09:45:00Z",
+      "sceneRefs": [
+        "after"
+      ],
+      "sourceImageTimes": [
+        "2026-11-18T08:45:00Z"
+      ],
+      "coverage": "inside",
+      "affected": false
+    }
+  ],
+  "briefing": [
+    {
+      "id": "receipt",
+      "sourceId": "exercise-handoff",
+      "availableAt": "2026-11-18T09:00:00Z",
+      "briefing": "The crew received an unconfirmed report and asks who should verify it."
+    },
+    {
+      "id": "request",
+      "sourceId": "exercise-handoff",
+      "availableAt": "2026-11-18T09:40:00Z",
+      "briefing": "The municipal desk asks for a named follow-up owner and a confirmation."
+    }
+  ],
+  "traffic": [
+    {
+      "day": "2026-11-16",
+      "sourceId": "exercise-traffic",
+      "availableAt": "2026-11-18T09:00:00Z",
+      "civilCount": 0,
+      "unclassified": 2,
+      "usableHours": 6,
+      "oldestAt": "2026-11-16T08:00:00Z"
+    },
+    {
+      "day": "2026-11-17",
+      "sourceId": "exercise-traffic",
+      "availableAt": "2026-11-18T09:00:00Z",
+      "civilCount": null,
+      "unclassified": null,
+      "usableHours": 0,
+      "oldestAt": null
+    }
+  ],
+  "notices": [
+    {
+      "id": "edition-1",
+      "sourceId": "exercise-sans",
+      "deliveryId": "edition-1",
+      "revision": 1,
+      "kind": "aip-edition",
+      "publisher": "Exercise SANS",
+      "title": "edition-1",
+      "publishedAt": "2026-11-18T08:00:00Z",
+      "availableAt": "2026-11-18T08:00:00Z",
+      "effectiveAt": "2026-11-18T08:30:00Z",
+      "expiresAt": null,
+      "status": "active"
+    },
+    {
+      "id": "edition-2",
+      "sourceId": "exercise-sans",
+      "deliveryId": "edition-2",
+      "revision": 1,
+      "kind": "aip-edition",
+      "publisher": "Exercise SANS",
+      "title": "edition-2",
+      "publishedAt": "2026-11-18T09:20:00Z",
+      "availableAt": "2026-11-18T09:20:00Z",
+      "effectiveAt": "2026-11-18T10:00:00Z",
+      "expiresAt": null,
+      "status": "active"
+    },
+    {
+      "id": "change-a",
+      "sourceId": "exercise-icao",
+      "deliveryId": "copy-icao",
+      "revision": 1,
+      "kind": "service-notice",
+      "publisher": "Civil airport issuer",
+      "title": "Terminal service change",
+      "publishedAt": "2026-11-18T09:00:00Z",
+      "availableAt": "2026-11-18T09:00:00Z",
+      "effectiveAt": "2026-11-18T09:10:00Z",
+      "expiresAt": null,
+      "status": "active"
+    },
+    {
+      "id": "change-a",
+      "sourceId": "exercise-faa",
+      "deliveryId": "copy-faa",
+      "revision": 1,
+      "kind": "service-notice",
+      "publisher": "Civil airport issuer",
+      "title": "Terminal service change",
+      "publishedAt": "2026-11-18T09:00:00Z",
+      "availableAt": "2026-11-18T09:15:00Z",
+      "effectiveAt": "2026-11-18T09:10:00Z",
+      "expiresAt": null,
+      "status": "active"
+    },
+    {
+      "id": "change-a",
+      "sourceId": "exercise-icao",
+      "deliveryId": "cancel-icao",
+      "revision": 2,
+      "kind": "service-notice",
+      "publisher": "Civil airport issuer",
+      "title": "Terminal service change",
+      "publishedAt": "2026-11-18T09:45:00Z",
+      "availableAt": "2026-11-18T09:45:00Z",
+      "effectiveAt": "2026-11-18T10:00:00Z",
+      "expiresAt": null,
+      "status": "cancelled"
+    }
+  ],
+  "survey": {
+    "requiredCells": [
+      "a",
+      "b",
+      "c",
+      "d"
+    ],
+    "assignments": [
+      {
+        "id": "s1",
+        "availableAt": "2026-11-18T09:00:00Z",
+        "status": "completed",
+        "cells": [
+          "a",
+          "b"
+        ]
+      },
+      {
+        "id": "s2",
+        "availableAt": "2026-11-18T09:45:00Z",
+        "status": "completed",
+        "cells": [
+          "b",
+          "c"
+        ]
+      },
+      {
+        "id": "s3",
+        "availableAt": "2026-11-18T09:50:00Z",
+        "status": "aborted",
+        "cells": []
+      }
+    ]
+  },
+  "energy": [
+    {
+      "sourceId": "exercise-flight",
+      "availableAt": "2026-11-18T09:45:00Z",
+      "platform": "Authored research fixture",
+      "testType": "constant power",
+      "trainingFlights": 3,
+      "heldOutFlights": 2,
+      "scoredFlights": 2,
+      "medianAbsoluteErrorWh": 0,
+      "p90AbsoluteErrorWh": 0,
+      "excludedHeldOutSeconds": 0
+    }
+  ]
+}

@@ -13,6 +13,10 @@ vars:
   RECOVERY_PYTHON: '{{if eq OS "windows"}}.venv-recovery/Scripts/python.exe{{else}}.venv-recovery/bin/python{{end}}'
 
 tasks:
+  test:simulation-source-plans:
+    desc: Check simulation source mappings, recorded adapter behavior and environment suitability
+    cmds:
+      - python scripts/ops/check_simulation_source_plans.py --platform-tests
   local:setup:
     desc: Install persistent EMAD development infrastructure, identities and real content
     cmds:

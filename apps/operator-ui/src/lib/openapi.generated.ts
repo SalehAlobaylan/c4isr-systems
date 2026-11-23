@@ -246,6 +246,166 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/environment-releases/{id}/municipal-workload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Analyze one reviewed Riyadh 940 edition for the selected release
+         * @description Requires environments.read and a current source policy permitting internal analysis of the Riyadh 940 Q1 2026 edition. Returns retrospective counts. The request bytes and response are transient.
+         */
+        post: operations["reviewMunicipalWorkload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/port-activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review a bounded historical PortWatch file
+         * @description Requires environments.read and a current source policy permitting internal analysis of the approved PortWatch dataset. Returns daily counts and a fixed historical weekday baseline from the submitted file.
+         */
+        post: operations["reviewPortActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/civilian-access-replay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replay reviewed civilian report and road access evidence
+         * @description Analyze one reviewed exercise package at a pinned cutoff under its active source admission. The source package and response are transient.
+         */
+        post: operations["reviewCivilianAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/civilian-aerial-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review a pinned civilian aerial inspection exercise at a UTC cutoff
+         * @description Requires environments.read and an active source policy permitting internal analysis. The request processes the reviewed package transiently.
+         */
+        post: operations["reviewCivilianAerial"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/regional-response-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replay a reviewed civilian regional service and coastal context package
+         * @description Requires environments.read, the selected release manifest, and current internal-analysis rights for the regional-response-review v1 package. Staffing edits are authored assumptions for this request.
+         */
+        post: operations["reviewRegionalResponse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/supporting-source-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replay a reviewed civilian supporting-source package
+         * @description Requires environments.read and current internal-analysis rights for the supporting-source-review v1 package.
+         */
+        post: operations["reviewSupportingSources"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/flood-mapping": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Read delivered versions of one public Copernicus EMS flood activation
+         * @description Requires environments.read and an active source policy permitting internal analysis. The submitted file is checked against the supplied digest and processed for this request.
+         */
+        post: operations["reviewFloodMapping"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/environment-releases/{id}/radar-outages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Review country-level historical outage annotations in a Radar file
+         * @description Requires environments.read and an active source policy permitting internal analysis. The submitted file is checked against the supplied digest and processed for this request.
+         */
+        post: operations["reviewRadarOutages"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/environment-worker/claim": {
         parameters: {
             query?: never;
@@ -1736,6 +1896,23 @@ export interface paths {
         get: operations["getGeographicReleases"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/geography/place-handoffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Issue an authorized portable reference to an exact admitted civilian place. */
+        post: operations["issueCivilianPlaceHandoff"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6063,6 +6240,8 @@ export interface components {
             mediaType: string;
             sourceId: string;
             admissionId: string;
+            referenceId?: string;
+            sceneId?: string;
             sha256: string;
             bytes: number;
             retainUntil: string;
@@ -8306,7 +8485,7 @@ export interface components {
             resolution: {
                 value: number;
                 /** @enum {string} */
-                unit: "arc_seconds" | "metres" | "map_scale";
+                unit: "arc_seconds" | "metres" | "map_scale" | "unknown";
             };
             aoi: components["schemas"]["SourceAOI"];
             validity: string;
@@ -9367,6 +9546,11 @@ export interface components {
             meaning: string;
         };
         SourceActivation: {
+            /** @description Availability of retained environment inputs within the caller's scope and current source policy. */
+            geographicRetention?: {
+                readable: boolean;
+                assetsAvailable: boolean;
+            };
             /** @description Last reported OpenSky states balance. An absent header produces null, never the configured daily allowance. */
             providerCredits?: {
                 /** @enum {string} */
@@ -9656,6 +9840,681 @@ export interface components {
                     [key: string]: unknown;
                 } | null;
             }[];
+        };
+        MunicipalWorkloadReview: {
+            releaseId: string;
+            manifestSha256: string;
+            inputSha256: string;
+            sourceId: string;
+            admissionId: string;
+            currentAdmissionId: string;
+            productVersion: string;
+            attribution: string;
+            workload: {
+                rowCount: number;
+                rowsWithoutPlaceLabel: number;
+                /** @enum {string} */
+                temporalMeaning: "retrospective-export";
+                categoryCounts: {
+                    [key: string]: number;
+                };
+                utcDayCounts: {
+                    [key: string]: number;
+                };
+            };
+        };
+        PortActivityReview: {
+            releaseId: string;
+            manifestSha256: string;
+            inputSha256: string;
+            sourceId: string;
+            admissionId: string;
+            currentAdmissionId: string;
+            productVersion: string;
+            attribution: string;
+            activity: {
+                portId: string;
+                /** Format: date */
+                baselineFrom: string;
+                /** Format: date */
+                from: string;
+                /** Format: date */
+                toExclusive: string;
+                missingDays: number;
+                recovery: {
+                    minimumWeekdays: number;
+                    consecutiveDays: number;
+                    /** Format: date */
+                    firstBelowDate: string | null;
+                    /** Format: date */
+                    returnConfirmedOn: string | null;
+                    daysToConfirmation: number | null;
+                    /** @enum {string} */
+                    status: "insufficient-coverage" | "no-below-range-day" | "unresolved" | "confirmed";
+                };
+                baselineValidation: {
+                    comparedDays: number;
+                    weekdayMeanAbsoluteError: number | null;
+                    trailingMeanAbsoluteError: number | null;
+                    withinWeekdayRange: number;
+                };
+                days: {
+                    /** Format: date */
+                    date: string;
+                    portCalls: number | null;
+                    baselineDays: number;
+                    baselineMedian: number | null;
+                    baselineRange: number[] | null;
+                    departureFromMedian: number | null;
+                    /** @enum {string} */
+                    comparison: "missing-day" | "insufficient-history" | "below-history" | "above-history" | "within-history";
+                }[];
+            };
+        };
+        SimulationSourceReviewLineage: {
+            releaseId: string;
+            manifestSha256: string;
+            inputSha256: string;
+            sourceId: string;
+            admissionId: string;
+            currentAdmissionId: string;
+            productVersion: string;
+            attribution: string;
+        };
+        CivilianAccessPath: {
+            /** @enum {string} */
+            outcome: "reachable" | "unknown" | "outside-known-network" | "unreachable-in-graph";
+            verifiedDistanceM: number | null;
+            edgeIds: string[];
+        };
+        CivilianAccessReview: components["schemas"]["SimulationSourceReviewLineage"] & {
+            replay: {
+                title: string;
+                /** @enum {string} */
+                kind: "authored-exercise" | "reviewed-history";
+                graphEdition: string;
+                retainedManifestSha256?: string;
+                serviceClass: string;
+                origin: string;
+                /** Format: date-time */
+                cutoff: string;
+                populationYear: number | null;
+                populationAllocation?: string;
+                unallocatedPeople: number | null;
+                sources: {
+                    id: string;
+                    edition: string;
+                    sha256: string;
+                    attribution: string;
+                }[];
+                edges: {
+                    id: string;
+                    from: string;
+                    to: string;
+                    distanceM: number;
+                    sourceId: string;
+                    featureId: string;
+                    retainedOSMFeatureId?: string;
+                    /** @enum {string} */
+                    state: "open" | "closed" | "partial" | "unknown" | "disputed";
+                    evidenceIds: string[];
+                    plannedPermits: string[];
+                }[];
+                destinations: {
+                    id: string;
+                    node?: string;
+                    label: string;
+                    observed: components["schemas"]["CivilianAccessPath"];
+                    withPlannedWork: components["schemas"]["CivilianAccessPath"];
+                    knownPeople: number | null;
+                    unknownCells: number;
+                }[];
+                reports: {
+                    id: string;
+                    sourceId: string;
+                    category: string;
+                    placeLabel?: string;
+                    localText?: string;
+                    /** Format: date-time */
+                    receiptAt: string;
+                    /** Format: date-time */
+                    availableAt: string;
+                    /** Format: date-time */
+                    ticketClosedAt?: string;
+                }[];
+                assignments: {
+                    id: string;
+                    sourceId: string;
+                    reportId: string;
+                    crewLabel: string;
+                    /** Format: date-time */
+                    dispatchedAt: string;
+                    /** Format: date-time */
+                    availableAt: string;
+                    /** Format: date-time */
+                    arrivedAt?: string;
+                    /** Format: date-time */
+                    arrivalKnownAt?: string;
+                }[];
+                associations: {
+                    reportId: string;
+                    otherId: string;
+                    /** @enum {string} */
+                    decision: "suggested" | "linked" | "separate";
+                    reviewer?: string;
+                }[];
+                associationChecks: {
+                    reviewedPairs: number;
+                    correctCandidates: number;
+                    falseCandidates: number;
+                    missedLinks: number;
+                };
+                inspections: {
+                    id: string;
+                    sourceId: string;
+                    reportId?: string;
+                    edgeId: string;
+                    /** Format: date-time */
+                    observedAt: string;
+                    /** Format: date-time */
+                    availableAt: string;
+                    reviewer: string;
+                    /** @enum {string} */
+                    access: "open" | "closed" | "partial" | "unknown";
+                }[];
+                works: {
+                    id: string;
+                    sourceId: string;
+                    edgeId?: string;
+                    roadLabel: string;
+                    revision: number;
+                    /** Format: date-time */
+                    availableAt: string;
+                    /** Format: date-time */
+                    from: string;
+                    /** Format: date-time */
+                    toExclusive: string;
+                    /** @enum {string} */
+                    status: "scheduled" | "cancelled";
+                }[];
+                restoration: {
+                    id: string;
+                    sourceId: string;
+                    destinationId: string;
+                    label: string;
+                    /** Format: date-time */
+                    availableAt: string;
+                    /** Format: date-time */
+                    expectedCompleteAt?: string;
+                    /** Format: date-time */
+                    completedAt?: string;
+                    /** Format: date-time */
+                    completionKnownAt?: string;
+                    cost?: number;
+                    currency?: string;
+                    pricingYear?: number;
+                }[];
+            };
+        };
+        AerialReviewScene: {
+            id: string;
+            sourceId: string;
+            sensorFamily: string;
+            /** Format: date-time */
+            acquiredAt: string;
+            /** Format: date-time */
+            availableAt: string | null;
+            timeBasis: string;
+            areaRevision: string;
+            grid: string;
+            pixelM: number;
+            bounds?: number[];
+            catalogCoverage?: string;
+            usableFraction: number | null;
+            coveredFraction: number | null;
+            assets: {
+                /** @enum {string} */
+                role: "visual" | "quality-mask" | "flood-overlay";
+                sha256: string;
+                png: string;
+                /** Format: date-time */
+                availableAt?: string;
+            }[];
+        };
+        CivilianAerialReview: components["schemas"]["SimulationSourceReviewLineage"] & {
+            review: {
+                title: string;
+                /** @enum {string} */
+                kind: "authored-exercise" | "reviewed-history";
+                /** Format: date-time */
+                cutoff: string;
+                /** Format: date-time */
+                incidentAt: string;
+                areaRevision: string;
+                /** @enum {string} */
+                imageStatus: "paired" | "needs-another-observation";
+                before: components["schemas"]["AerialReviewScene"] | null;
+                after: components["schemas"]["AerialReviewScene"] | null;
+                candidates: {
+                    id: string;
+                    /** @enum {string} */
+                    state: "usable" | "review-area-mismatch" | "assets-unavailable" | "insufficient-resolution" | "quality-unknown" | "usable-area-below-threshold";
+                    usableFraction: number | null;
+                    coveredFraction: number | null;
+                    /** @enum {string} */
+                    catalogCoverage?: "partial-page" | "supplied-catalog";
+                }[];
+                sources: {
+                    id: string;
+                    edition: string;
+                    sha256: string;
+                    attribution: string;
+                }[];
+                assessments: {
+                    id: string;
+                    sourceId: string;
+                    label: string;
+                    /** @enum {string} */
+                    kind: "delineation" | "grading";
+                    version: number;
+                    /** Format: date-time */
+                    availableAt: string;
+                    sceneRefs: string[];
+                    sourceImageTimes?: string[];
+                    /** @enum {string} */
+                    coverage: "inside" | "partial" | "outside" | "unknown";
+                    affected: boolean | null;
+                    sharesScene: boolean;
+                    classes?: string[];
+                    assessedAreaWkt?: string;
+                }[];
+                briefing: {
+                    id: string;
+                    sourceId: string;
+                    /** Format: date-time */
+                    availableAt: string;
+                    briefing: string;
+                }[];
+                traffic: {
+                    /** Format: date */
+                    day: string;
+                    sourceId: string;
+                    /** Format: date-time */
+                    availableAt: string;
+                    civilCount: number | null;
+                    unclassified: number | null;
+                    usableHours: number;
+                    /** Format: date-time */
+                    oldestAt: string | null;
+                }[];
+                notices: {
+                    id: string;
+                    sourceId: string;
+                    deliveryId: string;
+                    deliveryIds: string[];
+                    revision: number;
+                    /** @enum {string} */
+                    kind: "aip-edition" | "service-notice";
+                    publisher: string;
+                    title: string;
+                    /** Format: date-time */
+                    publishedAt: string;
+                    /** Format: date-time */
+                    availableAt: string;
+                    /** Format: date-time */
+                    effectiveAt: string;
+                    /** Format: date-time */
+                    expiresAt: string | null;
+                    /** @enum {string} */
+                    status: "active" | "cancelled" | "expired" | "scheduled";
+                }[];
+                energy: {
+                    sourceId: string;
+                    /** Format: date-time */
+                    availableAt: string;
+                    platform: string;
+                    testType: string;
+                    trainingFlights: number;
+                    heldOutFlights: number;
+                    scoredFlights: number;
+                    medianAbsoluteErrorWh: number | null;
+                    p90AbsoluteErrorWh: number | null;
+                    excludedHeldOutSeconds: number;
+                }[];
+                survey: {
+                    assignments: number;
+                    aborted: number;
+                    requiredCells: number;
+                    coveredCells: number;
+                    duplicateVisits: number;
+                } | null;
+            };
+        };
+        RegionalIndicator: {
+            id: string;
+            sourceId: string;
+            regionCode: string;
+            region: string;
+            geography: string;
+            measure: string;
+            nativeLabel: string;
+            unit: string;
+            populationScope: string;
+            channel: string;
+            /** Format: date */
+            periodFrom: string;
+            /** Format: date */
+            periodToExclusive: string;
+            /** Format: date-time */
+            availableAt: string;
+            value: number | null;
+        };
+        RegionalQueue: {
+            started: number;
+            completed: number;
+            awaitingService: number;
+            inServiceAtCutoff: number;
+            medianStartedWaitSeconds: number | null;
+            p90StartedWaitSeconds: number | null;
+        };
+        RegionalServiceReview: {
+            region: string;
+            /** Format: date-time */
+            referenceAt: string | null;
+            graphEdition?: string;
+            zones: {
+                id: string;
+                label: string;
+                reference: components["schemas"]["CivilianAccessPath"];
+                current: components["schemas"]["CivilianAccessPath"];
+            }[];
+            capacity: {
+                id: string;
+                label: string;
+                sourceId: string;
+                /** @enum {string} */
+                kind: "authored" | "observed" | "unavailable" | "unknown";
+                /** Format: date-time */
+                availableAt: string;
+                staffedSlots: number | null;
+            }[];
+            workloads: {
+                id: string;
+                label: string;
+                sourceId: string;
+                /** @enum {string} */
+                kind: "authored" | "reviewed-history";
+                plannedArrivals: number | null;
+                arrivals: number;
+                reachable: number;
+                disconnected: number;
+                accessUnknown: number;
+                byZone: {
+                    [key: string]: number;
+                };
+                reference?: {
+                    reachable: number;
+                    disconnected: number;
+                    accessUnknown: number;
+                    queues: {
+                        [key: string]: components["schemas"]["RegionalQueue"] | null;
+                    };
+                };
+                queues: {
+                    [key: string]: components["schemas"]["RegionalQueue"] | null;
+                };
+            }[];
+        };
+        RegionalCoastReview: {
+            port: string;
+            portWatchId: string;
+            inventory: {
+                sourceId: string;
+                identifier: string;
+                locality: string;
+                /** @enum {string} */
+                match: "matched-locality" | "ambiguous" | "unmatched";
+            } | null;
+            depth: {
+                gridSourceId: string;
+                shorelineSourceId: string;
+                horizontalReference: string;
+                verticalReference: string;
+                samples: {
+                    cell: string;
+                    /** @enum {string} */
+                    state: "land" | "offshore" | "nodata";
+                    elevationM: number | null;
+                    sourceType: string;
+                }[];
+            } | null;
+            coverage: {
+                sourceId: string;
+                /** Format: date */
+                day: string;
+                /** Format: date-time */
+                availableAt: string;
+                windowMinutes: number;
+                usableMinutes: number;
+                uniqueReports: number | null;
+                duplicates: number | null;
+                portWatchCalls: number | null;
+                portWatchSourceId?: string;
+                /** Format: date-time */
+                portWatchAvailableAt?: string;
+            }[];
+            notices: {
+                id: string;
+                publisher: string;
+                sourceId: string;
+                warningArea: string;
+                revision: number;
+                /** @enum {string} */
+                kind: "civil-service-notice" | "historical-debrief";
+                /** @enum {string} */
+                status: "active" | "cancelled" | "expired";
+                /** Format: date-time */
+                issuedAt: string;
+                /** Format: date-time */
+                availableAt: string;
+                /** Format: date-time */
+                effectiveAt: string;
+                /** Format: date-time */
+                expiresAt: string | null;
+                summary: string;
+                /** @enum {string} */
+                serviceImpact: "unknown" | "reported" | "independently-verified";
+                impactSourceId?: string;
+                issuerReference: string;
+            }[];
+        };
+        RegionalResponseReview: components["schemas"]["SimulationSourceReviewLineage"] & {
+            review: {
+                title: string;
+                /** Format: date-time */
+                cutoff: string;
+                sources: {
+                    id: string;
+                    edition: string;
+                    sha256: string;
+                    attribution: string;
+                }[];
+                indicators: components["schemas"]["RegionalIndicator"][];
+                reconciliations: {
+                    totalId: string;
+                    componentIds: string[];
+                    componentSum: number | null;
+                    unallocatedResidual: number | null;
+                }[];
+                service: components["schemas"]["RegionalServiceReview"] | null;
+                coast: components["schemas"]["RegionalCoastReview"] | null;
+            };
+        };
+        SupportingSource: {
+            id: string;
+            edition: string;
+            sha256: string;
+            attribution: string;
+        };
+        SupportingEvent: {
+            id: string;
+            sourceId: string;
+            origin: string;
+            kind: string;
+            status: string;
+            label: string;
+            area: string;
+            revision: number;
+            /** Format: date-time */
+            observedAt: string;
+            /** Format: date-time */
+            availableAt: string;
+            details?: string;
+            /** Format: date-time */
+            effectiveAt?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            value?: number | null;
+            unit?: string;
+            languages?: {
+                [key: string]: string;
+            };
+        };
+        SupportingField: {
+            id: string;
+            sourceId: string;
+            kind: string;
+            lane: string;
+            variable: string;
+            area: string;
+            support: string;
+            nativeRef: string;
+            method: string;
+            reference: string;
+            status: string;
+            units: string;
+            value: number | null;
+            samples: number | null;
+            coverage: number | null;
+            /** Format: date-time */
+            validFrom: string;
+            /** Format: date-time */
+            availableAt: string;
+            /** Format: date-time */
+            validTo?: string;
+            /** Format: date-time */
+            initializedAt?: string;
+        };
+        SupportingIndicator: {
+            id: string;
+            sourceId: string;
+            upstream: string;
+            area: string;
+            level: string;
+            kind: string;
+            definition: string;
+            method: string;
+            boundary: string;
+            periodGrain: string;
+            from: string;
+            toExclusive: string;
+            units: string;
+            status: string;
+            value: number | null;
+            /** Format: date-time */
+            availableAt: string;
+            origin?: string;
+            asylum?: string;
+        };
+        SupportingComparison: {
+            before: string;
+            after: string;
+            status: string;
+            difference: number | null;
+        };
+        SupportingReceipt: {
+            id: string;
+            recipient: string;
+            /** Format: date-time */
+            sentAt: string;
+            /** Format: date-time */
+            receivedAt: string | null;
+            /** Format: date-time */
+            acknowledgedAt: string | null;
+        };
+        SupportingQueue: {
+            mode: string;
+            recoveryStatus: string;
+            pending: number;
+            peakBacklog: number;
+            received: number;
+            p50LagSeconds: number | null;
+            p90LagSeconds: number | null;
+            recoverySeconds: number | null;
+            receipts: components["schemas"]["SupportingReceipt"][];
+        };
+        SupportingReplay: {
+            title: string;
+            /** Format: date-time */
+            cutoff: string;
+            uniqueOrigins: number;
+            sources: components["schemas"]["SupportingSource"][];
+            events: components["schemas"]["SupportingEvent"][];
+            fields: components["schemas"]["SupportingField"][];
+            indicators: components["schemas"]["SupportingIndicator"][];
+            comparisons: components["schemas"]["SupportingComparison"][];
+            delivery: components["schemas"]["SupportingQueue"][];
+        };
+        SupportingSourceReview: components["schemas"]["SimulationSourceReviewLineage"] & {
+            review: components["schemas"]["SupportingReplay"];
+        };
+        FloodMappingReview: components["schemas"]["SimulationSourceReviewLineage"] & {
+            floodMapping: {
+                activation: string;
+                /** Format: date-time */
+                cutoff: string;
+                /** @enum {string} */
+                versionCoverage: "versions-in-supplied-response";
+                products: {
+                    productId: number;
+                    /** @enum {string} */
+                    type: "DEL" | "GRA";
+                    areaNumber: number;
+                    areaName: string;
+                    versionId: string;
+                    versionNumber: number;
+                    /** Format: date-time */
+                    deliveredAt: string;
+                    monitoringNumber: number;
+                    sourceImages: {
+                        sourceImageId: string;
+                        sensor: string;
+                        /** Format: date-time */
+                        acquisitionAt: string | null;
+                    }[];
+                }[];
+            };
+        };
+        RadarOutageReview: components["schemas"]["SimulationSourceReviewLineage"] & {
+            outages: {
+                country: string;
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                toExclusive: string;
+                /** Format: date-time */
+                availabilityAt: string | null;
+                /** @enum {string} */
+                coverage: "annotations-in-supplied-response";
+                annotations: {
+                    id: string;
+                    /** Format: date-time */
+                    startAt: string;
+                    /** Format: date-time */
+                    endAt: string | null;
+                    providerType: string;
+                }[];
+            };
         };
         RetainedGeographicAdmission: {
             originalProducer: string;
@@ -10776,6 +11635,341 @@ export interface operations {
             };
         };
     };
+    reviewMunicipalWorkload: {
+        parameters: {
+            query: {
+                manifestSha256: string;
+                sourceId: string;
+                admissionId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Source lineage and retrospective workload summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MunicipalWorkloadReview"];
+                };
+            };
+            /** @description Input, release or source policy rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reviewPortActivity: {
+        parameters: {
+            query: {
+                manifestSha256: string;
+                sourceId: string;
+                admissionId: string;
+                inputSha256: string;
+                portId: "port24" | "port2074";
+                baselineFrom: string;
+                from: string;
+                toExclusive: string;
+                minimumWeekdays?: number;
+                consecutiveDays?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Source lineage and retrospective port activity */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PortActivityReview"];
+                };
+            };
+            /** @description Input, release or source policy rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reviewCivilianAccess: {
+        parameters: {
+            query: {
+                manifestSha256: string;
+                sourceId: string;
+                admissionId: string;
+                inputSha256: string;
+                knownAt: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Source lineage and cutoff-specific road access replay */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CivilianAccessReview"];
+                };
+            };
+            /** @description Input, release or source policy rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reviewCivilianAerial: {
+        parameters: {
+            query: {
+                manifestSha256: string;
+                sourceId: string;
+                admissionId: string;
+                inputSha256: string;
+                knownAt: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Historical imagery and civilian inspection evidence visible at the cutoff */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CivilianAerialReview"];
+                };
+            };
+            /** @description Input, release or source policy rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reviewRegionalResponse: {
+        parameters: {
+            query: {
+                manifestSha256: string;
+                inputSha256: string;
+                sourceId: string;
+                admissionId: string;
+                knownAt: string;
+                staffedSlots?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Source lineage, evidence available at the cutoff and comparison results */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegionalResponseReview"];
+                };
+            };
+            /** @description Input, release or source policy rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reviewSupportingSources: {
+        parameters: {
+            query: {
+                manifestSha256: string;
+                inputSha256: string;
+                sourceId: string;
+                admissionId: string;
+                knownAt: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Scoped review at the selected cutoff */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupportingSourceReview"];
+                };
+            };
+            /** @description Input, release or source policy rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reviewFloodMapping: {
+        parameters: {
+            query: {
+                manifestSha256: string;
+                sourceId: string;
+                admissionId: string;
+                inputSha256: string;
+                activation: string;
+                knownAt: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Source lineage and a historical metadata summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FloodMappingReview"];
+                };
+            };
+            /** @description Input, release or source policy rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reviewRadarOutages: {
+        parameters: {
+            query: {
+                manifestSha256: string;
+                sourceId: string;
+                admissionId: string;
+                inputSha256: string;
+                country: string;
+                from: string;
+                toExclusive: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Source lineage and a historical metadata summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RadarOutageReview"];
+                };
+            };
+            /** @description Input, release or source policy rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     claimEnvironmentBuild: {
         parameters: {
             query?: never;
@@ -11455,6 +12649,8 @@ export interface operations {
             query?: {
                 after?: string;
                 layer?: string;
+                /** @description Limit to retained inputs from this authorized source */
+                source?: string;
             };
             header?: never;
             path?: never;
@@ -13950,6 +15146,74 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    issueCivilianPlaceHandoff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    featureId: string;
+                    releaseId: string;
+                    /** Format: date-time */
+                    expiresAt: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Authorized place package with a base64 member and pinned provenance. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        schema: "emad.desert-maps-civilian-reference.v2";
+                        /** @enum {string} */
+                        purpose: "civilian-exercise-reference";
+                        geographyReleaseId: string;
+                        releaseSha256: string;
+                        editionId: string;
+                        editionSha256: string;
+                        sourceSha256: string;
+                        normalizer: string;
+                        attribution: string;
+                        rightsId: string;
+                        /** Format: date-time */
+                        expiresAt: string;
+                        memberSha256: string;
+                        /** Format: byte */
+                        member: string;
+                    };
+                };
+            };
+            /** @description Invalid handoff request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing permission or source distribution grant. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Exact admitted place unavailable. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     createGeographicProfiles: {

@@ -25,7 +25,9 @@ Follow each candidate to the original provider and record the exact product, Sau
 
 For the first simulation data package, prioritize Riyadh municipal incident reports, connected roads, inspection evidence and civilian service demand. These inputs support a concrete exercise in which crews verify a reported obstruction and decide when access can reopen. The 18 November revision also identifies measured civilian drone flight logs, labeled aerial imagery, historical air traffic and coastal activity for follow-on exercises in eastern and southern Saudi Arabia. [Source assessment and acquisition priorities](docs/data/WORLDMONITOR_SOURCE_REVIEW_2026_11_17.md)
 
-The [simulation source and feature plans](plans/simulation-sources/README.md) give each shortlisted source a proposed use, a first deliverable and an acceptance test. Start with the Riyadh road-reopening exercise, then use the aerial inspection, Asir service-access and Jubail port-activity plans for their respective environments.
+The [archived simulation source and feature plans](plans/archive/simulation-sources/README.md) record the proposed source uses, implemented workflows and acceptance tests. Start with the Riyadh road-reopening exercise, then use the aerial inspection, Asir service-access and Jubail port-activity plans for their respective environments.
+
+[Desert Maps regional references](docs/data/DESERT_MAPS.md) lists the publisher’s maps and the admission workflow for licensed Arabic place names.
 
 ## Start the map installation
 

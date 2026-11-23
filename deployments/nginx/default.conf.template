@@ -33,6 +33,12 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
+
+        location ~ ^/api/v1/environment-releases/[^/]+/(municipal-workload|port-activity|flood-mapping|radar-outages|civilian-access-replay|civilian-aerial-review|regional-response-review|supporting-source-review)$ {
+            client_max_body_size 3m;
+            proxy_request_buffering off;
+            proxy_pass http://emad_api;
+        }
     }
 
     location = /health {

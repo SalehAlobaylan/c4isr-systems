@@ -64,6 +64,36 @@ const scope: ScopeInput = {
     interval:{from:'2025-06-01T00:00:00Z',to:'2025-07-01T00:00:00Z'}},
 }
 
+test('review forms reset when switching between cached releases with the same manifest', async ({page}, info) => {
+  test.skip(info.project.name !== 'no-token', 'One release identity check')
+  await mockOperationalWorkflow(page)
+  const session = mockSession({'x-emad-partition': 'PUBLIC_EVIDENCE', 'x-emad-run-id': ''})
+  await page.route('**/api/v1/auth/me', route => json(route, {...session, productProfile:'map',
+    permissions:[...session.permissions, 'environments.read']}))
+  await page.route('**/api/v1/environment-profiles', route => json(route,[{id:'fixture-profile'}]))
+  const manifest = {profileId:'fixture-profile',members:[],quality:{physicalAccuracy:'UNKNOWN',unsupported:[]}}
+  const first = {id:'georelease_'+'1'.repeat(26),name:'First release',state:'RELEASED',manifestSha256:'a'.repeat(64),createdAt:'2026-11-20T10:00:00Z'}
+  const second = {...first,id:'georelease_'+'2'.repeat(26),name:'Second release'}
+  await page.route('**/api/v1/environment-releases', route => json(route,{items:[first,second]}))
+  for (const release of [first,second]) {
+    await page.route(`**/api/v1/environment-releases/${release.id}`, route => json(route,{...release,manifest}))
+  }
+  await page.goto('/map?'+new URLSearchParams({tool:'environments',scope:JSON.stringify(scope)}))
+  const panel = page.getByRole('region',{name:'Environment Library'})
+  const releases = panel.getByLabel('Available releases')
+  await releases.selectOption(second.id)
+  await expect(panel.getByRole('heading',{name:second.name})).toBeVisible()
+  await releases.selectOption(first.id)
+  await expect(panel.getByRole('heading',{name:first.name})).toBeVisible()
+  const label = 'Regional response and coastal evidence'
+  await panel.getByText(label,{exact:true}).click()
+  const form = panel.locator('details').filter({has:page.getByText(label,{exact:true})})
+  await form.getByLabel('Source ID',{exact:true}).fill('first-release-source')
+  await releases.selectOption(second.id)
+  await expect(panel.getByRole('heading',{name:second.name})).toBeVisible()
+  await expect(form.getByLabel('Source ID',{exact:true})).toHaveValue('')
+})
+
 function terrainFixture() {
   const doc = JSON.stringify({
     asset:{version:'2.0'}, scene:0, scenes:[{nodes:[0]}], nodes:[{mesh:0}],
@@ -166,6 +196,7 @@ for (const size of [{width:390,height:844},{width:740,height:360}]) {
     const sha256 = createHash('sha256').update(glb).digest('hex')
     const display = {id:'preview-fixture',releaseId:release.id,schemaVersion:1,state:'READY',recipe:'terrain-glb-v1',manifestSha256:release.manifestSha256,
       bytes:glb.length,sha256,physicalAccuracy:'UNKNOWN',verticalDatum:'WGS84 ellipsoid',
+      areaRevisionId:'fixture-terrain-area',frame:{origin:[55.74,24.21,0]},
       retainUntil:'2100-01-01T00:00:00Z'}
     const displayJob = {id:'geobuild_'+'c'.repeat(26),state:'QUEUED',attempt:0}
     let savedJobReads = 0
@@ -201,6 +232,216 @@ for (const size of [{width:390,height:844},{width:740,height:360}]) {
     await expect(panel.getByText('Preparation succeeded · attempt 1')).toBeVisible()
     await panel.getByLabel('Available releases').selectOption('release')
     await expect(panel.getByText('Release status: staged')).toBeVisible()
+    if (size.width === 390) {
+      const common = {releaseId:release.id,manifestSha256:release.manifestSha256,inputSha256:'b'.repeat(64),
+        sourceId:'fixture-source',admissionId:'fixture-admission',currentAdmissionId:'fixture-head',attribution:'Fixture source attribution'}
+      await page.route('**/api/v1/environment-releases/release/municipal-workload?*', route => {
+        expect(new URL(route.request().url()).searchParams.get('manifestSha256')).toBe(release.manifestSha256)
+        expect(route.request().postData()).toBe('[]')
+        return json(route,{...common,productVersion:'2026-q1',workload:{rowCount:12,rowsWithoutPlaceLabel:1,
+          temporalMeaning:'retrospective-export',categoryCounts:{'الطرق':12},utcDayCounts:{'2026-01-01':12}}})
+      })
+      const municipal = panel.getByText('Riyadh 940 workload',{exact:true}).locator('..')
+      await municipal.getByText('Riyadh 940 workload',{exact:true}).click()
+      await municipal.getByLabel('Source ID',{exact:true}).fill(common.sourceId)
+      await municipal.getByLabel('Reviewed admission ID').fill(common.admissionId)
+      await municipal.getByLabel('Municipal Q1 JSON').setInputFiles({name:'q1.json',mimeType:'application/json',buffer:Buffer.from('[]')})
+      await municipal.getByRole('button',{name:'Review workload'}).click()
+      await expect(municipal.getByText('12 reports')).toBeVisible()
+      await municipal.getByText('Riyadh 940 workload',{exact:true}).click()
+
+      await page.route('**/api/v1/environment-releases/release/port-activity?*', route => {
+        expect(new URL(route.request().url()).searchParams.get('inputSha256')).toBe(common.inputSha256)
+        expect(new URL(route.request().url()).searchParams.get('consecutiveDays')).toBe('3')
+        return json(route,{...common,productVersion:'daily-ports-v1',activity:{portId:'port24',
+          baselineFrom:'2023-01-01',from:'2024-01-01',toExclusive:'2024-01-03',missingDays:1,
+          recovery:{minimumWeekdays:4,consecutiveDays:3,firstBelowDate:'2024-01-01',returnConfirmedOn:null,daysToConfirmation:null,status:'unresolved'},days:[
+            {date:'2024-01-01',portCalls:0,baselineDays:4,baselineMedian:4,comparison:'below-history'},
+            {date:'2024-01-02',portCalls:null,baselineDays:4,baselineMedian:4,comparison:'missing-day'},
+          ]}})
+      })
+      const ports = panel.getByText('Historical port activity',{exact:true}).locator('..')
+      await ports.getByText('Historical port activity',{exact:true}).click()
+      await ports.getByLabel('Source ID',{exact:true}).fill(common.sourceId)
+      await ports.getByLabel('Reviewed admission ID').fill(common.admissionId)
+      await ports.getByLabel('Reviewed file SHA-256').fill(common.inputSha256)
+      await ports.getByLabel('PortWatch daily JSON').setInputFiles({name:'ports.json',mimeType:'application/json',buffer:Buffer.from('{}')})
+      await ports.getByRole('button',{name:'Review activity'}).click()
+      await expect(ports.getByRole('row',{name:/2024-01-01/}).getByRole('cell',{name:'0',exact:true})).toBeVisible()
+      await expect(ports.getByRole('row',{name:/2024-01-02/}).getByRole('cell',{name:'Unavailable',exact:true})).toBeVisible()
+      await expect(ports.getByText(/Sustained return remains unresolved/)).toBeVisible()
+      await ports.getByText('Historical port activity',{exact:true}).click()
+      await page.route('**/api/v1/environment-releases/release/flood-mapping?*', route => {
+        expect(new URL(route.request().url()).searchParams.get('knownAt')).toBe('2024-09-21T10:00:00.000Z')
+        return json(route,{...common,productVersion:'emergency-response-v1',floodMapping:{
+          activation:'EMSR761',cutoff:'2024-09-21T10:00:00Z',versionCoverage:'versions-in-supplied-response',
+          products:[{productId:1061,areaNumber:1,areaName:'Dresden',type:'DEL',versionId:'v2',versionNumber:2,
+            deliveredAt:'2024-09-20T13:13:21Z',monitoringNumber:0,
+            sourceImages:[{sourceImageId:'image',sensor:'Radar',acquisitionAt:null}]}]}})
+      })
+      await page.route('**/api/v1/environment-releases/release/radar-outages?*', route => {
+        expect(new URL(route.request().url()).searchParams.get('country')).toBe('SA')
+        return json(route,{...common,productVersion:'v4',outages:{
+          country:'SA',from:'2024-09-20T00:00:00Z',toExclusive:'2024-09-21T00:00:00Z',
+          availabilityAt:null,coverage:'annotations-in-supplied-response',
+          annotations:[{id:'outage',startAt:'2024-09-20T12:00:00Z',endAt:null,providerType:'REGIONAL'}]}})
+      })
+      const evidenceForm = async (title:string, fileLabel:string, digestLabel = 'Reviewed file SHA-256') => {
+        const entry = panel.getByText(title,{exact:true}).locator('..')
+        await entry.getByText(title,{exact:true}).click()
+        await entry.getByLabel('Source ID',{exact:true}).fill(common.sourceId)
+        await entry.getByLabel('Reviewed admission ID').fill(common.admissionId)
+        await entry.getByLabel(digestLabel).fill(common.inputSha256)
+        await entry.getByLabel(fileLabel).setInputFiles({name:'evidence.json',mimeType:'application/json',buffer:Buffer.from('{}')})
+        return entry
+      }
+      const flood = await evidenceForm('Copernicus flood mapping','Activation JSON')
+      await flood.getByLabel('Public activation code').fill('emsr761')
+      await flood.getByLabel('Delivery cutoff in UTC').fill('2024-09-21T10:00')
+      await flood.getByRole('button',{name:'Review evidence'}).click()
+      await expect(flood.getByText('Dresden · Delineation · version 2')).toBeVisible()
+      await flood.getByText('Copernicus flood mapping',{exact:true}).click()
+
+      const outages = await evidenceForm('Historical Internet outage annotations','Radar annotations JSON')
+      await outages.getByLabel('Interval start in UTC').fill('2024-09-20T00:00')
+      await outages.getByLabel('Interval end in UTC, exclusive').fill('2024-09-21T00:00')
+      await outages.getByRole('button',{name:'Review evidence'}).click()
+      await expect(outages.getByText(/End time unknown/)).toBeVisible()
+      await expect(outages.getByText(/availability at the time is unknown/)).toBeVisible()
+      await outages.getByText('Historical Internet outage annotations',{exact:true}).click()
+
+      await page.route('**/api/v1/environment-releases/release/civilian-access-replay?*', route => {
+        const cutoff = new URL(route.request().url()).searchParams.get('knownAt')
+        expect(cutoff).toMatch(/^2026-11-21T(06:45|07:05):00\.000Z$/)
+        const early = cutoff!.includes('06:45')
+        return json(route,{...common,productVersion:'v1',replay:{
+          title:'Riyadh road access tabletop',kind:'authored-exercise',graphEdition:'owned-example',origin:'junction-a',
+          serviceClass:'civilian service vehicle',cutoff,
+          destinations:[{id:'service-zone',label:'Service zone',knownPeople:90,unknownCells:0,
+            observed:{outcome:'reachable',verifiedDistanceM:early ? 230 : 120,edgeIds:early ? ['detour'] : ['eastbound']},
+            withPlannedWork:early ? {outcome:'unreachable-in-graph',verifiedDistanceM:null,edgeIds:[]} :
+              {outcome:'reachable',verifiedDistanceM:120,edgeIds:['eastbound']}}],
+          reports:[{id:'report-1',sourceId:'owned',category:'عوائق الطريق',availableAt:'2026-11-21T06:10:00Z'}],
+          associations:[{reportId:'report-1',otherId:'report-2',decision:'suggested'}],
+          associationChecks:{reviewedPairs:0,correctCandidates:0,falseCandidates:0,missedLinks:0},
+          sources:[],edges:[{id:'eastbound',from:'junction-a',to:'junction-b',featureId:'fixture',
+            retainedOSMFeatureId:'osm-way-1',state:early ? 'closed' : 'open',sourceId:'owned',evidenceIds:[],plannedPermits:[]}],
+          works:[],inspections:[],assignments:[],restoration:[],populationYear:2024,unallocatedPeople:10,
+        }})
+      })
+      const replay = await evidenceForm('Riyadh reports and road access replay','Reviewed road exercise JSON','Exercise file SHA-256')
+      await replay.getByLabel('Evidence cutoff in UTC').fill('2026-11-21T06:45')
+      await replay.getByRole('button',{name:'Replay access'}).click()
+      await expect(replay.getByRole('cell',{name:/Reachable · 230 m/})).toBeVisible()
+      await expect(replay.getByRole('cell',{name:'Unreachable on this graph'})).toBeVisible()
+      await replay.getByText('Reports and associations',{exact:true}).click()
+      await replay.getByRole('button',{name:'Keep separate in this review'}).click()
+      await expect(replay.getByRole('button',{name:'Keep separate in this review'})).toHaveAttribute('aria-pressed','true')
+      await replay.getByRole('button',{name:'Use this cutoff as comparison'}).click()
+      await replay.getByLabel('Evidence cutoff in UTC').fill('2026-11-21T07:05')
+      await replay.getByRole('button',{name:'Replay access'}).click()
+      await expect(replay.getByRole('cell',{name:/Reachable · 230 m/})).toBeVisible()
+      await expect(replay.getByRole('cell',{name:/Reachable · 120 m/}).first()).toBeVisible()
+      await replay.getByText('Riyadh reports and road access replay',{exact:true}).click()
+
+      await page.route('**/api/v1/environment-releases/release/civilian-aerial-review?*', route => {
+        const cutoff = new URL(route.request().url()).searchParams.get('knownAt')
+        expect(cutoff).toMatch(/^2026-11-18T(09:25|10:05):00\.000Z$/)
+        const early = cutoff!.includes('09:25')
+        const preview = {sensorFamily:'Authored civil survey',pixelM:1,usableFraction:.83,coveredFraction:1,
+          timeBasis:'Authored review timeline', assets:['visual','quality-mask'].map(role => ({role,
+            png:'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a0b0AAAAASUVORK5CYII='}))}
+        return json(route,{...common,productVersion:'v1',review:{title:'Civilian flood inspection tabletop',kind:'authored-exercise',
+          cutoff,incidentAt:'2026-11-18T08:30:00Z',areaRevision:'exercise-road-cells',
+          before:early ? null : {...preview,acquiredAt:'2026-11-18T08:00:00Z'},
+          after:early ? null : {...preview,acquiredAt:'2026-11-18T08:45:00Z',
+            assets:[...preview.assets,{...preview.assets[0],role:'flood-overlay'}]},
+          candidates:[{id:'unavailable',state:'assets-unavailable',catalogCoverage:'partial-page',usableFraction:null,coveredFraction:null}],
+          sources:[],assessments:[],traffic:[],notices:[],survey:null,energy:[],
+          briefing:[{id:'receipt',availableAt:'2026-11-18T09:00:00Z',briefing:'The crew asks who should verify the report.'}],
+        }})
+      })
+      const aerial = await evidenceForm('Civilian aerial inspection replay','Reviewed aerial JSON','Aerial package SHA-256')
+      await aerial.getByLabel('Evidence cutoff in UTC').fill('2026-11-18T09:25')
+      await aerial.getByRole('button',{name:'Review aerial evidence'}).click()
+      await expect(aerial.getByText(/Another observation is needed/)).toBeVisible()
+      await aerial.getByText('Scene selection evidence',{exact:true}).click()
+      await expect(aerial.getByText(/catalog query is partial/)).toBeVisible()
+      await aerial.getByLabel('Evidence cutoff in UTC').fill('2026-11-18T10:05')
+      await aerial.getByRole('button',{name:'Review aerial evidence'}).click()
+      await expect(aerial.getByRole('img',{name:'After reviewed image'})).toBeVisible()
+      await aerial.getByLabel('Show local quality mask').check()
+      await expect(aerial.getByRole('img',{name:'After review quality mask'})).toBeVisible()
+      await aerial.getByLabel('Show suggested flooded-road pixels').check()
+      await expect(aerial.getByRole('img',{name:'Suggested flooded-road pixels'})).toBeVisible()
+      await aerial.getByText('Civilian handoff exercise',{exact:true}).click()
+      await aerial.getByRole('button',{name:'Acknowledge briefing'}).click()
+      await aerial.getByLabel('Follow-up owner').fill('Municipal inspection desk')
+      await aerial.getByRole('button',{name:'Record handoff'}).click()
+      await expect(aerial.getByText(/Follow-up assigned.*Municipal inspection desk/)).toBeVisible()
+      const saved = page.waitForEvent('download')
+      await aerial.getByRole('button',{name:'Download handoff for scoring'}).click()
+      expect((await saved).suggestedFilename()).toBe('civilian-handoff.json')
+      await aerial.getByText('Civilian aerial inspection replay',{exact:true}).click()
+
+      await page.route('**/api/v1/environment-releases/release/regional-response-review?*', route => {
+        const query = new URL(route.request().url()).searchParams
+        expect(query.get('knownAt')).toBe('2026-11-20T08:40:00.000Z')
+        expect(query.get('staffedSlots')).toBe('2')
+        return json(route,{...common,productVersion:'v1',review:{
+          title:'Asir service evidence',cutoff:query.get('knownAt'),sources:[],coast:null,
+          indicators:[{id:'beds',sourceId:'moh',measure:'Annual ER beds',nativeLabel:'أسرة الطوارئ',value:367,unit:'beds',
+            region:'Aseer',regionCode:'moh-aseer',geography:'MOH health region',populationScope:'MOH hospitals',
+            channel:'Workbook',periodFrom:'2023-01-01',periodToExclusive:'2024-01-01'}],reconciliations:[],
+          service:{region:'Asir tabletop',referenceAt:'2026-11-20T08:05:00Z',graphEdition:'owned',zones:[{
+            id:'ridge',label:'Ridge zone',reference:{outcome:'reachable',verifiedDistanceM:620,edgeIds:['ridge']},
+            current:{outcome:'unreachable-in-graph',verifiedDistanceM:null,edgeIds:[]},
+          }],capacity:[{id:'analyst-override',label:'Edited staffing assumption',kind:'authored',staffedSlots:2}],
+          workloads:[{id:'peak',label:'Peaked arrivals',kind:'authored',plannedArrivals:6,arrivals:6,reachable:3,disconnected:2,accessUnknown:1,
+            reference:{reachable:5,disconnected:0,accessUnknown:1,queues:{'analyst-override':{started:5,completed:4,awaitingService:0,inServiceAtCutoff:1,medianStartedWaitSeconds:60,p90StartedWaitSeconds:120}}},
+            byZone:{ridge:2},queues:{'analyst-override':{started:3,completed:3,awaitingService:0,inServiceAtCutoff:0,medianStartedWaitSeconds:0,p90StartedWaitSeconds:60}}}]},
+        }})
+      })
+      const regional = await evidenceForm('Regional response and coastal evidence','Reviewed regional JSON','Regional package SHA-256')
+      await regional.getByLabel('Evidence cutoff in UTC').fill('2026-11-20T08:40')
+      await regional.getByLabel('Additional staffing assumption, slots').fill('2')
+      await regional.getByRole('button',{name:'Compare regional evidence'}).click()
+      await expect(regional.getByText(/Reachable · 620 m → unreachable in graph/)).toBeVisible()
+      await expect(regional.getByText('3 completed · 0 in service · 0 waiting')).toBeVisible()
+      await expect(regional.getByText('Reference roads · 4 completed · 1 in service · 0 waiting')).toBeVisible()
+      await regional.getByText('Published regional statistics and scope',{exact:true}).click()
+      await expect(regional.getByText('Annual ER beds · 367 beds')).toBeVisible()
+      await regional.getByText('Regional response and coastal evidence',{exact:true}).click()
+
+      await page.route('**/api/v1/environment-releases/release/supporting-source-review?*', route => {
+        const query = new URL(route.request().url()).searchParams
+        expect(query.get('knownAt')).toBe('2026-11-20T08:10:00.000Z')
+        expect(query.get('inputSha256')).toBe(common.inputSha256)
+        return json(route,{...common,productVersion:'v1',review:{title:'Civilian supporting evidence tabletop',
+          cutoff:query.get('knownAt'),uniqueOrigins:1,sources:[],fields:[],indicators:[],comparisons:[],
+          events:[{id:'scene',sourceId:'owned',origin:'shared',kind:'image-opportunity',status:'possible',revision:1,
+            area:'Civilian exercise',label:'Possible observation opportunity',availableAt:'2026-11-20T08:08:00Z'},
+          {id:'nav-missing',sourceId:'owned',origin:'authored-nav',kind:'navigation-training',status:'missing',revision:1,
+            area:'Training area',label:'Navigation coverage missing',availableAt:'2026-11-20T08:08:00Z'}],
+          delivery:[{mode:'authored-delay',pending:3,peakBacklog:3,received:1,p50LagSeconds:60,p90LagSeconds:60,
+            recoverySeconds:null,recoveryStatus:'unresolved',receipts:[]}],
+        }})
+      })
+      const supporting = await evidenceForm('Supporting evidence replay','Reviewed supporting JSON','Supporting package SHA-256')
+      await supporting.getByLabel('Evidence cutoff in UTC').fill('2026-11-20T08:10')
+      await supporting.getByRole('button',{name:'Replay supporting evidence'}).click()
+      await expect(supporting.getByText(/3 pending · peak backlog 3/)).toBeVisible()
+      await supporting.getByText('Event and publication history',{exact:true}).click()
+      await expect(supporting.getByText('Possible observation opportunity',{exact:true})).toBeVisible()
+      await supporting.getByText('Navigation uncertainty exercise',{exact:true}).click()
+      await supporting.getByLabel('Coverage state').selectOption('missing')
+      await supporting.getByLabel('Cause',{exact:true}).selectOption('unknown')
+      await supporting.getByLabel('Request an independent observation').check()
+      const trainingDownload = page.waitForEvent('download')
+      await supporting.getByRole('button',{name:'Download training decisions'}).click()
+      expect((await trainingDownload).suggestedFilename()).toBe('civilian-navigation-decisions.json')
+      await supporting.getByText('Supporting evidence replay',{exact:true}).click()
+    }
     await expect(panel.getByText(/Physical accuracy: unknown/)).toBeVisible()
     await panel.getByText('Source dates, resolution and attribution').click()
     await expect(panel.getByText('Retained fixture attribution')).toBeVisible()
@@ -236,6 +477,32 @@ for (const size of [{width:390,height:844},{width:740,height:360}]) {
     await expect(preview.getByRole('status')).toHaveText('Verified reference terrain')
     await expect(preview.getByLabel('Interactive reference terrain')).toBeVisible()
     expect(contentReads).toBe(failedReads+1)
+    if (size.width === 740) {
+      const reference = (id:string, name:string, longitude:number) => ({
+        type:'Feature',id,geometry:{type:'Point',coordinates:[longitude,24.2099]},
+        properties:{name,sourceId:'owned-places',releaseId:'georel_owned',allowTerrainDisplay:true,
+          attribution:'Owned terrain label fixture'},
+      })
+      const selectedPlace = reference('owned-first','وادي المثال',55.7401)
+      const nearbyPlace = reference('owned-nearby','جبل المثال',55.7403)
+      await page.route('**/api/v1/geography/regions?*', route => {
+        const query = new URL(route.request().url()).searchParams
+        return query.get('id') === selectedPlace.id
+          ? json(route,{type:'FeatureCollection',features:[selectedPlace]}) : route.fallback()
+      })
+      await page.route('**/api/v1/catalog/reads', route => {
+        const read = route.request().postDataJSON()
+        if (read.filters?.releaseId !== 'georel_owned') return route.fallback()
+        expect(read.scope.area.revisionId).toBe('fixture-terrain-area')
+        return json(route,{items:[selectedPlace,nearbyPlace]})
+      })
+      await panel.getByText('Reference place',{exact:true}).click()
+      await panel.getByLabel('Place reference from the Atlas').fill(selectedPlace.id)
+      await panel.getByRole('button',{name:'Locate place on terrain'}).click()
+      await expect(panel.getByText(/Placed on the preview surface/)).toBeVisible()
+      await panel.getByRole('checkbox',{name:'Show nearby places from this edition'}).check()
+      await expect(panel.getByRole('list',{name:'Nearby reference places'})).toContainText('جبل المثال')
+    }
     await panel.getByText('3D terrain preview').click()
     await expect(preview).toHaveCount(0)
     await page.goto(libraryURL)
@@ -251,5 +518,32 @@ for (const size of [{width:390,height:844},{width:740,height:360}]) {
     await panel.getByText('Build a display', {exact:true}).click()
     await expect(panel.getByText('Display queued · attempt 0')).toBeVisible()
     expect(savedJobReads).toBeGreaterThan(readsBeforeReload)
+    if (size.width === 390) {
+      const roadBytes = Buffer.from(JSON.stringify({schema:'emad.display-layer.v1',manifestSha256:release.manifestSha256,
+        layer:'roads',data:{displayedFeatures:1,availableFeatures:1,vertices:2,method:'Owned test',
+          features:[{type:'Feature',id:'fixture-edition:osm-way-1',paths:[[[1,0,1],[4,0,4]]],
+            geometry:{type:'LineString',coordinates:[[55.73,24.2],[55.74,24.21]]},
+            properties:{sourceId:'osm-way-1',edition:'fixture-edition',product:'Owned road',dataTime:'Fixture date',
+              producer:'Fixture producer',tags:{name:'Reviewed fixture road'},height:{kind:'unknown'}}}]}}))
+      const roadSha = createHash('sha256').update(roadBytes).digest('hex')
+      await page.route('**/api/v1/environment-releases/release/displays', route => json(route,{items:[
+        display,{...display,id:'road-preview',sha256:roadSha,bytes:roadBytes.length,recipe:'roads-display-v1'},
+      ]}))
+      await page.route('**/api/v1/environment-displays/road-preview/content', route =>
+        route.fulfill({body:roadBytes,contentType:'application/json',headers:{etag:`"${roadSha}"`}}))
+      await page.reload()
+      await panel.getByLabel('Available releases').selectOption('release')
+      const access = panel.getByText('Riyadh reports and road access replay',{exact:true}).locator('..')
+      await access.getByText('Riyadh reports and road access replay',{exact:true}).click()
+      await access.getByLabel('Source ID',{exact:true}).fill('fixture-source')
+      await access.getByLabel('Reviewed admission ID').fill('fixture-admission')
+      await access.getByLabel('Exercise file SHA-256').fill('b'.repeat(64))
+      await access.getByLabel('Evidence cutoff in UTC').fill('2026-11-21T07:05')
+      await access.getByLabel('Reviewed road exercise JSON').setInputFiles({name:'exercise.json',mimeType:'application/json',buffer:Buffer.from('{}')})
+      await access.getByRole('button',{name:'Replay access'}).click()
+      await access.getByText('Road findings and inspections',{exact:true}).click()
+      await access.getByRole('button',{name:'Inspect retained road in 3D'}).click()
+      await expect(preview.getByLabel('Inspect feature')).toHaveValue('fixture-edition:osm-way-1')
+    }
   })
 }

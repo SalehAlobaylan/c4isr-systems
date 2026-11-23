@@ -32,6 +32,12 @@ func main() {
 }
 
 func run() error {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "replay-access", "replay-aerial", "replay-regional", "replay-port", "replay-supporting":
+			return replayEvidence(os.Args[1], os.Args[2:])
+		}
+	}
 	credential := flag.String("token-file", "", "private source-scoped environment service token")
 	apiOrigin := flag.String("api-origin", "", "use the scoped worker HTTP API at this origin")
 	displayOnly := flag.Bool("display-only", false, "claim only geographic display jobs through direct transport")

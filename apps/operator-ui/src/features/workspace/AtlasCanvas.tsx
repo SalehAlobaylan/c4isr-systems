@@ -12,12 +12,13 @@ export {layerInfo, type AtlasLayer} from './LayerCatalog'
 import {layerInfo, type AtlasLayer} from './LayerCatalog'
 const empty:FeatureCollection={type:'FeatureCollection',features:[]}
 const color=(token:string)=>resolveTokenColor(token)??'transparent'
+export type ReferenceDrawing={id:string;datasetId:string;name:string;family:string;attribution:string}
 export type RasterOverlay={url:string;bounds:[number,number,number,number];opacity:number;label:string;side?:'before'|'after';role?:'quality'}
 let rtlReady:Promise<void>|undefined
 function loadLocalRTL(){return rtlReady??=maplibregl.setRTLTextPlugin(new URL(`${import.meta.env.BASE_URL}vendor/rtl-text-0.3.0/mapbox-gl-rtl-text.js`,location.origin).href,false)}
-export function AtlasCanvas({proposalOverlay=empty,cameraRef,initialCamera,onCamera,onPointer,onBounds,regions,scope,selection,boundaryLevel,features,datasets,referenceOpacity,basemap,streetArchive,onSelect,onRegion,mode,onDraw,sketch,rasters,swipe=.5,onError}:{proposalOverlay?:FeatureCollection;cameraRef:Ref<AtlasHandle>;initialCamera:Camera;onCamera:(c:Camera)=>void;onPointer:(p:[number,number])=>void;onBounds:(b:[number,number,number,number])=>void;regions:FeatureCollection;scope?:Feature;selection?:Feature;boundaryLevel:'auto'|'country'|'region';features:Partial<Record<AtlasLayer,FeatureCollection>>;datasets:string[];referenceOpacity:number;basemap:'streets'|'quiet'|'reference';streetArchive?:ArrayBuffer;onSelect:(f:Feature[])=>void;onRegion:(f:Feature)=>void;mode:'inspect'|'measure'|'area';onDraw:(p:[number,number])=>void;sketch:FeatureCollection;rasters:RasterOverlay[];swipe?:number;onError:(message:string)=>void}){
- const api=useAPI(),root=useRef<HTMLDivElement>(null),map=useRef<LibreMap|null>(null),[ready,setReady]=useState(false),callbacks=useRef({onCamera,onPointer,onBounds,onSelect,onRegion,boundaryLevel,mode,onDraw,onError})
- callbacks.current={onCamera,onPointer,onBounds,onSelect,onRegion,boundaryLevel,mode,onDraw,onError}
+export function AtlasCanvas({proposalOverlay=empty,cameraRef,initialCamera,onCamera,onPointer,onBounds,regions,scope,selection,referencePlace,boundaryLevel,features,datasets,referenceOpacity,basemap,streetArchive,onSelect,onRegion,onReference,mode,onDraw,sketch,rasters,swipe=.5,onError}:{proposalOverlay?:FeatureCollection;cameraRef:Ref<AtlasHandle>;initialCamera:Camera;onCamera:(c:Camera)=>void;onPointer:(p:[number,number])=>void;onBounds:(b:[number,number,number,number])=>void;regions:FeatureCollection;scope?:Feature;selection?:Feature;referencePlace?:Feature;boundaryLevel:'auto'|'country'|'region';features:Partial<Record<AtlasLayer,FeatureCollection>>;datasets:string[];referenceOpacity:number;basemap:'streets'|'quiet'|'reference';streetArchive?:ArrayBuffer;onSelect:(f:Feature[])=>void;onRegion:(f:Feature)=>void;onReference?:(value:ReferenceDrawing)=>void;mode:'inspect'|'measure'|'area';onDraw:(p:[number,number])=>void;sketch:FeatureCollection;rasters:RasterOverlay[];swipe?:number;onError:(message:string)=>void}){
+ const api=useAPI(),root=useRef<HTMLDivElement>(null),map=useRef<LibreMap|null>(null),[ready,setReady]=useState(false),callbacks=useRef({onCamera,onPointer,onBounds,onSelect,onRegion,onReference,boundaryLevel,mode,onDraw,onError})
+ callbacks.current={onCamera,onPointer,onBounds,onSelect,onRegion,onReference,boundaryLevel,mode,onDraw,onError}
  const canonicalRegions=useRef(regions),canonicalFeatures=useRef(features)
  canonicalRegions.current=regions;canonicalFeatures.current=features
  const pendingView=useRef<{bounds:[number,number,number,number]}|{camera:Camera}|undefined>(undefined)
@@ -44,7 +45,7 @@ export function AtlasCanvas({proposalOverlay=empty,cameraRef,initialCamera,onCam
      m.addLayer({id:'scope-fill',source:'scope',type:'fill',paint:{'fill-color':color('--emad-signal-teal'),'fill-opacity':.06}})
      m.addLayer({id:'scope-line',source:'scope',type:'line',paint:{'line-color':color('--emad-signal-teal'),'line-width':2.2,'line-dasharray':[4,2]}})
      m.addLayer({id:'ref-fill',source:'references','source-layer':'reference',type:'fill',minzoom:12,filter:['all',['==',['geometry-type'],'Polygon'],['==',['get','layer'],'buildings']],paint:{'fill-color':color('--emad-text-secondary'),'fill-opacity':.14}})
-     m.addLayer({id:'ref-line',source:'references','source-layer':'reference',type:'line',filter:['all',['!=',['get','layer'],'countries'],['!=',['get','layer'],'buildings']],paint:{'line-color':['match',['get','layer'],'coastline',color('--emad-map-history'),'major-roads',color('--emad-text-secondary'),'roads',color('--emad-map-history'),color('--emad-text-secondary')],'line-width':['interpolate',['linear'],['zoom'],4,.35,10,.8,15,2.4],'line-opacity':.7}})
+     m.addLayer({id:'ref-line',source:'references','source-layer':'reference',type:'line',filter:['all',['!=',['get','layer'],'countries'],['!=',['get','layer'],'buildings']],paint:{'line-color':['match',['get','layer'],'desert-maps',color('--emad-signal-teal'),'coastline',color('--emad-map-history'),'major-roads',color('--emad-text-secondary'),'roads',color('--emad-map-history'),color('--emad-text-secondary')],'line-width':['interpolate',['linear'],['zoom'],4,.35,10,.8,15,2.4],'line-opacity':.7}})
      m.addLayer({id:'ref-point',source:'references','source-layer':'reference',type:'circle',filter:['==',['geometry-type'],'Point'],paint:{'circle-radius':3,'circle-color':color('--emad-map-history')}})
      for(const [kind,info]of Object.entries(layerInfo)){
        addGeo(kind+'-areas')
@@ -79,6 +80,14 @@ export function AtlasCanvas({proposalOverlay=empty,cameraRef,initialCamera,onCam
      if(hits.length){const unique=[...new Map(hits.map(f=>{const original=Object.values(canonicalFeatures.current).flatMap(c=>c?.features??[]).find(v=>v.properties?.recordId===f.properties.recordId&&v.geometry.type===f.geometry.type);return [String(f.properties.recordId),original??f as Feature]})).values()];callbacks.current.onSelect(unique);return}
      const streetLayers=['street-roads','street-buildings','street-water'].filter(id=>m.getLayer(id));const streets=streetLayers.length?m.queryRenderedFeatures(e.point,{layers:streetLayers}):[];if(streets.length){callbacks.current.onSelect(streets.slice(0,8).map(f=>({type:'Feature',id:f.id,geometry:f.geometry,properties:{...f.properties,kind:'retained street',title:f.properties.name||f.properties.source_id,source:'OpenStreetMap contributors',meaning:'Rendered tile geometry from the retained OpenStreetMap edition.'}})) as Feature[]);return}
      const refs=m.queryRenderedFeatures(e.point,{layers:['ref-fill','ref-line','ref-point']});if(refs.length){callbacks.current.onSelect(refs.slice(0,8).map(f=>({type:'Feature',id:f.id,geometry:f.geometry,properties:{...f.properties,kind:'reference',meaning:'Visible vector-tile geometry. Inspect the retained dataset for the full feature.'}})) as Feature[]);return}
+     const reference=m.queryRenderedFeatures([[e.point.x-5,e.point.y-5],[e.point.x+5,e.point.y+5]],{layers:['ref-line','ref-point']})
+       .find(f=>f.properties.layer==='desert-maps')
+     if(reference&&callbacks.current.onReference){
+       const p=reference.properties
+       callbacks.current.onReference({id:String(p.feature_id),datasetId:String(p.dataset_id),
+         name:String(p.name??''),family:String(p.family??''),attribution:String(p.attribution??'')})
+       return
+     }
      const boundaries=m.queryRenderedFeatures(e.point,{layers:['region-fill']});if(boundaries[0]){const original=canonicalRegions.current.features.find(f=>String(f.id)===String(boundaries[0].id));if(original)callbacks.current.onRegion(original)}
    })
    m.on('error',e=>{if(!requestController.signal.aborted&&e.error?.message&&!e.error.message.includes('Abort'))callbacks.current.onError(e.error.message.includes('tile.openstreetmap')?'Street basemap unavailable; retained evidence and reference layers remain available.':'A map source could not be loaded. Check Layers and source access.')})
@@ -141,5 +150,16 @@ export function AtlasCanvas({proposalOverlay=empty,cameraRef,initialCamera,onCam
  // Cluster labels use DOM text, avoiding a remote font dependency. Limit labels
  // by the actual viewport; all data remains in the WebGL source.
  useEffect(()=>{const m=map.current;if(!m||!ready)return;let frame=0,timer:ReturnType<typeof setTimeout>|undefined,signature="";const refresh=()=>{frame=requestAnimationFrame(()=>{const next=JSON.stringify(Object.keys(layerInfo).map(k=>m.queryRenderedFeatures(undefined,{layers:[k+'-cluster',k+'-symbol']}).filter(f=>f.properties.cluster||f.properties.aggregate).map(f=>[f.properties.cluster_id,f.properties.recordId,f.properties.records??f.properties.count,f.geometry])));if(signature===next)return;signature=next;labels.current.forEach(l=>l.remove());labels.current=[];const seen=new Set<string>();for(const kind of Object.keys(layerInfo)){const hits=m.queryRenderedFeatures(undefined,{layers:[kind+'-cluster',kind+'-symbol']}).filter(f=>f.properties.cluster||f.properties.aggregate);for(const f of hits){const id=kind+(f.properties.cluster_id??f.properties.recordId);if(seen.has(id)||labels.current.length>=100||f.geometry.type!=='Point')continue;seen.add(id);const el=document.createElement('span');el.className='atlas-cluster-count';el.textContent=String(f.properties.records??f.properties.count);el.setAttribute('aria-hidden','true');labels.current.push(new maplibregl.Marker({element:el}).setLngLat(f.geometry.coordinates as [number,number]).addTo(m))}}})};const update=()=>{if(timer!==undefined)return;timer=setTimeout(()=>{timer=undefined;refresh()},100)};m.on('render',update);m.on('moveend',update);update();return()=>{if(timer!==undefined)clearTimeout(timer);cancelAnimationFrame(frame);m.off('render',update);m.off('moveend',update);labels.current.forEach(l=>l.remove());labels.current=[]}},[ready])
+ useEffect(()=>{
+   const m=map.current, geometry=referencePlace?.geometry
+   if(!m||!ready||geometry?.type!=='Point')return
+   const [longitude,latitude]=geometry.coordinates
+   if(!Number.isFinite(longitude)||!Number.isFinite(latitude))return
+   const label=document.createElement('bdi')
+   label.dir='auto';label.className='atlas-area-name'
+   label.textContent=String(referencePlace?.properties?.name??'')
+   const marker=new maplibregl.Marker({element:label,anchor:'bottom'}).setLngLat([longitude,latitude]).addTo(m)
+   return ()=>{marker.remove()}
+ },[ready,referencePlace])
  return <div ref={root} className="atlas-canvas" data-proposal-footprint-count={proposalOverlay.features.length} data-map-ready={ready} data-public-feature-count={Object.values(features).reduce((n,v)=>n+(v?.features.length??0),0)} data-navigation-feature-count={regions.features.length} data-map-layers={Object.keys(features).map(k=>k+'-symbol').join(' ')} aria-label="Interactive Public Context map"/>
 }

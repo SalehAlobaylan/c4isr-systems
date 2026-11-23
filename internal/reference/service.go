@@ -127,7 +127,7 @@ func (s *Service) List(ctx context.Context, onlyEligible bool) ([]Dataset, error
 	if err := require(ctx, "sources.read"); err != nil {
 		return nil, err
 	}
-	rows, err := platformdb.Scoped(s.pool).Query(ctx, `SELECT document FROM reference_datasets WHERE emad_content_visible('reference',id) ORDER BY dataset_key,version,id LIMIT 64`)
+	rows, err := platformdb.Scoped(s.pool).Query(ctx, `SELECT document FROM reference_datasets WHERE emad_content_visible('reference',id) AND COALESCE((document#>>'{rights,expiresAt}')::timestamptz > clock_timestamp(), true) ORDER BY dataset_key,version,id LIMIT 64`)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func (s *Service) Get(ctx context.Context, id string) (Dataset, error) {
 	}
 	var raw []byte
 	var d Dataset
-	err := platformdb.Scoped(s.pool).QueryRow(ctx, `SELECT document FROM reference_datasets WHERE id=$1`, id).Scan(&raw)
+	err := platformdb.Scoped(s.pool).QueryRow(ctx, `SELECT document FROM reference_datasets WHERE id=$1 AND COALESCE((document#>>'{rights,expiresAt}')::timestamptz > clock_timestamp(), true)`, id).Scan(&raw)
 	if errors.Is(err, pgx.ErrNoRows) {
 		err = apperr.NotFound("reference version", "unavailable")
 	}

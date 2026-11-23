@@ -179,12 +179,19 @@ func TestMapFirstTemporalReadSnapshotsPublicationRacesAndAccess(t *testing.T) {
 	}
 	ingest(record("at-start", "1", start, 46.5, false), record("inside", "1", start.Add(time.Hour), 46.5, false), record("at-end", "1", end, 46.5, false))
 	in := analystscope.Input{Area: areas.Selection{Kind: "drawn", Geometry: json.RawMessage(`{"type":"Polygon","coordinates":[[[46,24],[47,24],[47,25],[46,25],[46,24]]]}`)}, Temporal: queryscope.Temporal{Mode: "historical", Interval: &queryscope.Interval{From: start, To: end}, RevisionView: "latest", Timezone: "Asia/Riyadh"}}
-	read, e := svc.Read(ctx, analystscope.ReadInput{Input: in, Families: []string{"earthquakes", "weather"}, IncludeEvents: true})
+	read, e := svc.Read(ctx, analystscope.ReadInput{Input: in, Families: []string{"earthquakes", "weather", "coverage"}, IncludeEvents: true})
 	if e != nil {
 		t.Fatal(e)
 	}
 	if read.Events.Total != 2 || read.Layers["earthquakes"].Total != 2 || read.Layers["weather"].State != "historical_unsupported" {
 		t.Fatal("exclusive end/family support", read)
+	}
+	queryAreas := read.Layers["coverage"]
+	if queryAreas.State != "latest_retained" || queryAreas.Total != 1 || len(queryAreas.Features) != 1 || queryAreas.Features[0].ID != f.source || queryAreas.Features[0].Properties["profileKey"] != "default" {
+		t.Fatal("map read must include the admitted query area with its source feature ID", queryAreas, read.Errors["coverage"])
+	}
+	if code, b := scopeRequest(t, f.h, f.manager, "GET", "/api/v1/map/features?family=coverage", nil, nil); code != 200 || b["total"] != float64(1) {
+		t.Fatal("direct map query must include the admitted source query area", code, b)
 	}
 	legacy := url.Values{"observed_from": {start.Format(time.RFC3339Nano)}, "observed_to": {end.Format(time.RFC3339Nano)}}
 	if code, b := scopeRequest(t, f.h, f.manager, "GET", "/api/v1/public-events?"+legacy.Encode(), nil, nil); code != 200 || b["total"] != float64(3) {

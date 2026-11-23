@@ -137,10 +137,14 @@ func (in Input) validate() (Collection, error) {
 	if err := in.AOI.Validate(); err != nil {
 		return Collection{}, err
 	}
-	if in.Resolution.Value <= 0 || math.IsNaN(in.Resolution.Value) || math.IsInf(in.Resolution.Value, 0) {
+	if in.Resolution.Unit == "unknown" {
+		if in.Kind != "vector" || in.Resolution.Value != 0 {
+			return fail()
+		}
+	} else if in.Resolution.Value <= 0 || math.IsNaN(in.Resolution.Value) || math.IsInf(in.Resolution.Value, 0) {
 		return fail()
 	}
-	if in.Resolution.Unit != "arc_seconds" && in.Resolution.Unit != "metres" && in.Resolution.Unit != "map_scale" {
+	if in.Resolution.Unit != "arc_seconds" && in.Resolution.Unit != "metres" && in.Resolution.Unit != "map_scale" && in.Resolution.Unit != "unknown" {
 		return fail()
 	}
 	for _, s := range []string{in.RetrievalReference, in.Rights.TermsURL} {

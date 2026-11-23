@@ -318,6 +318,9 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 		}
 	}
 	if len(parts) > 0 && parts[0] == "geography" {
+		if method == http.MethodPost && len(parts) == 2 && parts[1] == "place-handoffs" {
+			return RoutePolicy{Known: true, Permission: "context.export"}
+		}
 		if method == http.MethodGet && len(parts) == 2 && (parts[1] == "availability" || parts[1] == "releases") {
 			return RoutePolicy{Known: true, Permission: "sources.read"}
 		}

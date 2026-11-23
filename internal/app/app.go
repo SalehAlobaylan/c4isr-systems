@@ -191,6 +191,9 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, options ..
 	reviewSvc := assessments.NewReviews(pool, imagerySvc)
 	ingestionRepo.SetProjector(publiccontext.Projector{Next: externaltracks.Projector{Next: imagery.Projector{Next: publicevents.Projector{}}}})
 	ingestionSvc := publicingest.NewService(ingestionRepo, ingestion.locations, ingestion.fetcher, sourceSvc, identityStore)
+	if cfg.EnvironmentLibraryEnabled || cfg.EnvironmentToolchain != "" {
+		ingestionSvc.SetGeographicRetentionReader(geoenv.Service{Pool: pool})
+	}
 	sourceSvc.SetCatalog(ingestionRepo)
 	assetSvc := assets.NewServiceWithFreshness(assets.NewPostgresRepository(pool), bus, freshnessPolicy)
 	observationSvc := observations.NewService(observations.NewPostgresRepository(pool), sourceSvc, bus)

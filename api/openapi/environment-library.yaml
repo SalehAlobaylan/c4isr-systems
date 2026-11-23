@@ -326,6 +326,7 @@ paths:
       parameters:
         - {"name":"after","in":"query","schema":{"type":"string"}}
         - {"name":"layer","in":"query","schema":{"type":"string"}}
+        - {"name":"source","in":"query","schema":{"type":"string"},"description":"Limit to retained inputs from this authorized source"}
       responses:
         '200':
           description: Scoped environment library result
@@ -758,8 +759,649 @@ paths:
           content:
             application/json:
               schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/municipal-workload:
+    post:
+      operationId: reviewMunicipalWorkload
+      summary: Analyze one reviewed Riyadh 940 edition for the selected release
+      description: Requires environments.read and a current source policy permitting internal analysis of the Riyadh 940 Q1 2026 edition. Returns retrospective counts. The request bytes and response are transient.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: manifestSha256, in: query, required: true, schema: {type: string}}
+        - {name: sourceId, in: query, required: true, schema: {type: string}}
+        - {name: admissionId, in: query, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '200':
+          description: Source lineage and retrospective workload summary
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/MunicipalWorkloadReview'}
+        '4XX':
+          description: Input, release or source policy rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/port-activity:
+    post:
+      operationId: reviewPortActivity
+      summary: Review a bounded historical PortWatch file
+      description: Requires environments.read and a current source policy permitting internal analysis of the approved PortWatch dataset. Returns daily counts and a fixed historical weekday baseline from the submitted file.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: manifestSha256, in: query, required: true, schema: {type: string}}
+        - {name: sourceId, in: query, required: true, schema: {type: string}}
+        - {name: admissionId, in: query, required: true, schema: {type: string}}
+        - {name: inputSha256, in: query, required: true, schema: {type: string}}
+        - {name: portId, in: query, required: true, schema: {type: string, enum: [port24, port2074]}}
+        - {name: baselineFrom, in: query, required: true, schema: {type: string, format: date}}
+        - {name: from, in: query, required: true, schema: {type: string, format: date}}
+        - {name: toExclusive, in: query, required: true, schema: {type: string, format: date}}
+        - {name: minimumWeekdays, in: query, schema: {type: integer, minimum: 2, maximum: 30, default: 4}}
+        - {name: consecutiveDays, in: query, schema: {type: integer, minimum: 1, maximum: 30, default: 3}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '200':
+          description: Source lineage and retrospective port activity
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/PortActivityReview'}
+        '4XX':
+          description: Input, release or source policy rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/flood-mapping:
+    post:
+      operationId: reviewFloodMapping
+      summary: Read delivered versions of one public Copernicus EMS flood activation
+      description: Requires environments.read and an active source policy permitting internal analysis. The submitted file is checked against the supplied digest and processed for this request.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: manifestSha256, in: query, required: true, schema: {type: string}}
+        - {name: sourceId, in: query, required: true, schema: {type: string}}
+        - {name: admissionId, in: query, required: true, schema: {type: string}}
+        - {name: inputSha256, in: query, required: true, schema: {type: string}}
+        - {name: activation, in: query, required: true, schema: {type: string}}
+        - {name: knownAt, in: query, required: true, schema: {type: string, format: date-time}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '200':
+          description: Source lineage and a historical metadata summary
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/FloodMappingReview'}
+        '4XX':
+          description: Input, release or source policy rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/radar-outages:
+    post:
+      operationId: reviewRadarOutages
+      summary: Review country-level historical outage annotations in a Radar file
+      description: Requires environments.read and an active source policy permitting internal analysis. The submitted file is checked against the supplied digest and processed for this request.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: manifestSha256, in: query, required: true, schema: {type: string}}
+        - {name: sourceId, in: query, required: true, schema: {type: string}}
+        - {name: admissionId, in: query, required: true, schema: {type: string}}
+        - {name: inputSha256, in: query, required: true, schema: {type: string}}
+        - {name: country, in: query, required: true, schema: {type: string}}
+        - {name: from, in: query, required: true, schema: {type: string, format: date-time}}
+        - {name: toExclusive, in: query, required: true, schema: {type: string, format: date-time}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '200':
+          description: Source lineage and a historical metadata summary
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RadarOutageReview'}
+        '4XX':
+          description: Input, release or source policy rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/civilian-access-replay:
+    post:
+      operationId: reviewCivilianAccess
+      summary: Replay reviewed civilian report and road access evidence
+      description: Analyze one reviewed exercise package at a pinned cutoff under its active source admission. The source package and response are transient.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: manifestSha256, in: query, required: true, schema: {type: string}}
+        - {name: sourceId, in: query, required: true, schema: {type: string}}
+        - {name: admissionId, in: query, required: true, schema: {type: string}}
+        - {name: inputSha256, in: query, required: true, schema: {type: string}}
+        - {name: knownAt, in: query, required: true, schema: {type: string, format: date-time}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '200':
+          description: Source lineage and cutoff-specific road access replay
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CivilianAccessReview'}
+        '4XX':
+          description: Input, release or source policy rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+  /api/v1/environment-releases/{id}/civilian-aerial-review:
+    post:
+      operationId: reviewCivilianAerial
+      summary: Review a pinned civilian aerial inspection exercise at a UTC cutoff
+      description: Requires environments.read and an active source policy permitting internal analysis. The request processes the reviewed package transiently.
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+        - {name: manifestSha256, in: query, required: true, schema: {type: string}}
+        - {name: sourceId, in: query, required: true, schema: {type: string}}
+        - {name: admissionId, in: query, required: true, schema: {type: string}}
+        - {name: inputSha256, in: query, required: true, schema: {type: string}}
+        - {name: knownAt, in: query, required: true, schema: {type: string, format: date-time}}
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: {type: string, format: binary}
+      responses:
+        '200':
+          description: Historical imagery and civilian inspection evidence visible at the cutoff
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CivilianAerialReview'}
+        '4XX':
+          description: Input, release or source policy rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
 components:
   schemas:
+    AerialReviewScene:
+      type: object
+      required: [id, sourceId, sensorFamily, acquiredAt, availableAt, timeBasis, areaRevision, grid, pixelM, usableFraction, coveredFraction, assets]
+      properties:
+        id: {type: string}
+        sourceId: {type: string}
+        sensorFamily: {type: string}
+        acquiredAt: {type: string, format: date-time}
+        availableAt: {type: string, format: date-time, nullable: true}
+        timeBasis: {type: string}
+        areaRevision: {type: string}
+        grid: {type: string}
+        pixelM: {type: number}
+        bounds: {type: array, items: {type: number}}
+        catalogCoverage: {type: string}
+        usableFraction: {type: number, nullable: true}
+        coveredFraction: {type: number, nullable: true}
+        assets:
+          type: array
+          items:
+            type: object
+            required: [role, sha256, png]
+            properties:
+              role: {type: string, enum: [visual, quality-mask, flood-overlay]}
+              sha256: {type: string}
+              png: {type: string}
+              availableAt: {type: string, format: date-time}
+    CivilianAerialReview:
+      allOf:
+        - $ref: '#/components/schemas/SimulationSourceReviewLineage'
+        - type: object
+          required: [review]
+          properties:
+            review:
+              type: object
+              required: [title, kind, cutoff, incidentAt, areaRevision, imageStatus, candidates, before, after, sources, assessments, briefing, traffic, notices, survey, energy]
+              properties:
+                title: {type: string}
+                kind: {type: string, enum: [authored-exercise, reviewed-history]}
+                cutoff: {type: string, format: date-time}
+                incidentAt: {type: string, format: date-time}
+                areaRevision: {type: string}
+                imageStatus: {type: string, enum: [paired, needs-another-observation]}
+                before:
+                  nullable: true
+                  allOf: [{$ref: '#/components/schemas/AerialReviewScene'}]
+                after:
+                  nullable: true
+                  allOf: [{$ref: '#/components/schemas/AerialReviewScene'}]
+                candidates:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, state, usableFraction, coveredFraction]
+                    properties:
+                      id: {type: string}
+                      state: {type: string, enum: [usable, review-area-mismatch, assets-unavailable, insufficient-resolution, quality-unknown, usable-area-below-threshold]}
+                      usableFraction: {type: number, nullable: true}
+                      coveredFraction: {type: number, nullable: true}
+                      catalogCoverage: {type: string, enum: [partial-page, supplied-catalog]}
+                sources:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, edition, sha256, attribution]
+                    properties:
+                      id: {type: string}
+                      edition: {type: string}
+                      sha256: {type: string}
+                      attribution: {type: string}
+                assessments:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, sourceId, label, kind, version, availableAt, sceneRefs, coverage, affected, sharesScene]
+                    properties:
+                      id: {type: string}
+                      sourceId: {type: string}
+                      label: {type: string}
+                      kind: {type: string, enum: [delineation, grading]}
+                      version: {type: integer}
+                      availableAt: {type: string, format: date-time}
+                      sceneRefs: {type: array, items: {type: string}}
+                      sourceImageTimes: {type: array, items: {type: string, format: date-time}}
+                      coverage: {type: string, enum: [inside, partial, outside, unknown]}
+                      affected: {type: boolean, nullable: true}
+                      sharesScene: {type: boolean}
+                      classes: {type: array, items: {type: string}}
+                      assessedAreaWkt: {type: string}
+                briefing:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, sourceId, availableAt, briefing]
+                    properties:
+                      id: {type: string}
+                      sourceId: {type: string}
+                      availableAt: {type: string, format: date-time}
+                      briefing: {type: string}
+                traffic:
+                  type: array
+                  items:
+                    type: object
+                    required: [day, sourceId, availableAt, civilCount, unclassified, usableHours, oldestAt]
+                    properties:
+                      day: {type: string, format: date}
+                      sourceId: {type: string}
+                      availableAt: {type: string, format: date-time}
+                      civilCount: {type: integer, nullable: true}
+                      unclassified: {type: integer, nullable: true}
+                      usableHours: {type: integer}
+                      oldestAt: {type: string, format: date-time, nullable: true}
+                notices:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, sourceId, deliveryId, deliveryIds, revision, kind, publisher, title, publishedAt, availableAt, effectiveAt, expiresAt, status]
+                    properties:
+                      id: {type: string}
+                      sourceId: {type: string}
+                      deliveryId: {type: string}
+                      deliveryIds: {type: array, items: {type: string}}
+                      revision: {type: integer}
+                      kind: {type: string, enum: [aip-edition, service-notice]}
+                      publisher: {type: string}
+                      title: {type: string}
+                      publishedAt: {type: string, format: date-time}
+                      availableAt: {type: string, format: date-time}
+                      effectiveAt: {type: string, format: date-time}
+                      expiresAt: {type: string, format: date-time, nullable: true}
+                      status: {type: string, enum: [active, cancelled, expired, scheduled]}
+                energy:
+                  type: array
+                  items:
+                    type: object
+                    required: [sourceId, availableAt, platform, testType, trainingFlights, heldOutFlights, scoredFlights, medianAbsoluteErrorWh, p90AbsoluteErrorWh, excludedHeldOutSeconds]
+                    properties:
+                      sourceId: {type: string}
+                      availableAt: {type: string, format: date-time}
+                      platform: {type: string}
+                      testType: {type: string}
+                      trainingFlights: {type: integer}
+                      heldOutFlights: {type: integer}
+                      scoredFlights: {type: integer}
+                      medianAbsoluteErrorWh: {type: number, nullable: true}
+                      p90AbsoluteErrorWh: {type: number, nullable: true}
+                      excludedHeldOutSeconds: {type: number}
+                survey:
+                  type: object
+                  nullable: true
+                  required: [assignments, aborted, requiredCells, coveredCells, duplicateVisits]
+                  properties:
+                    assignments: {type: integer}
+                    aborted: {type: integer}
+                    requiredCells: {type: integer}
+                    coveredCells: {type: integer}
+                    duplicateVisits: {type: integer}
+    CivilianAccessPath:
+      type: object
+      required: [outcome, verifiedDistanceM, edgeIds]
+      properties:
+        outcome: {type: string, enum: [reachable, unknown, outside-known-network, unreachable-in-graph]}
+        verifiedDistanceM: {type: number, nullable: true}
+        edgeIds: {type: array, items: {type: string}}
+    CivilianAccessReview:
+      allOf:
+        - $ref: '#/components/schemas/SimulationSourceReviewLineage'
+        - type: object
+          required: [replay]
+          properties:
+            replay:
+              type: object
+              required: [title, kind, graphEdition, serviceClass, origin, cutoff, sources, edges, destinations, reports, assignments, associations, associationChecks, inspections, works, restoration, populationYear, unallocatedPeople]
+              properties:
+                title: {type: string}
+                kind: {type: string, enum: [authored-exercise, reviewed-history]}
+                graphEdition: {type: string}
+                retainedManifestSha256: {type: string}
+                serviceClass: {type: string}
+                origin: {type: string}
+                cutoff: {type: string, format: date-time}
+                populationYear: {type: integer, nullable: true}
+                populationAllocation: {type: string}
+                unallocatedPeople: {type: number, nullable: true}
+                sources:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, edition, sha256, attribution]
+                    properties:
+                      id: {type: string}
+                      edition: {type: string}
+                      sha256: {type: string}
+                      attribution: {type: string}
+                edges:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, from, to, distanceM, sourceId, featureId, state, evidenceIds, plannedPermits]
+                    properties:
+                      id: {type: string}
+                      from: {type: string}
+                      to: {type: string}
+                      distanceM: {type: number}
+                      sourceId: {type: string}
+                      featureId: {type: string}
+                      retainedOSMFeatureId: {type: string}
+                      state: {type: string, enum: [open, closed, partial, unknown, disputed]}
+                      evidenceIds: {type: array, items: {type: string}}
+                      plannedPermits: {type: array, items: {type: string}}
+                destinations:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, label, observed, withPlannedWork, knownPeople, unknownCells]
+                    properties:
+                      id: {type: string}
+                      node: {type: string}
+                      label: {type: string}
+                      observed: {$ref: '#/components/schemas/CivilianAccessPath'}
+                      withPlannedWork: {$ref: '#/components/schemas/CivilianAccessPath'}
+                      knownPeople: {type: number, nullable: true}
+                      unknownCells: {type: integer}
+                reports:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, sourceId, category, receiptAt, availableAt]
+                    properties:
+                      id: {type: string}
+                      sourceId: {type: string}
+                      category: {type: string}
+                      placeLabel: {type: string}
+                      localText: {type: string}
+                      receiptAt: {type: string, format: date-time}
+                      availableAt: {type: string, format: date-time}
+                      ticketClosedAt: {type: string, format: date-time}
+                assignments:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, sourceId, reportId, crewLabel, dispatchedAt, availableAt]
+                    properties:
+                      id: {type: string}
+                      sourceId: {type: string}
+                      reportId: {type: string}
+                      crewLabel: {type: string}
+                      dispatchedAt: {type: string, format: date-time}
+                      availableAt: {type: string, format: date-time}
+                      arrivedAt: {type: string, format: date-time}
+                      arrivalKnownAt: {type: string, format: date-time}
+                associations:
+                  type: array
+                  items:
+                    type: object
+                    required: [reportId, otherId, decision]
+                    properties:
+                      reportId: {type: string}
+                      otherId: {type: string}
+                      decision: {type: string, enum: [suggested, linked, separate]}
+                      reviewer: {type: string}
+                associationChecks:
+                  type: object
+                  required: [reviewedPairs, correctCandidates, falseCandidates, missedLinks]
+                  properties:
+                    reviewedPairs: {type: integer}
+                    correctCandidates: {type: integer}
+                    falseCandidates: {type: integer}
+                    missedLinks: {type: integer}
+                inspections:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, sourceId, edgeId, observedAt, availableAt, reviewer, access]
+                    properties:
+                      id: {type: string}
+                      sourceId: {type: string}
+                      reportId: {type: string}
+                      edgeId: {type: string}
+                      observedAt: {type: string, format: date-time}
+                      availableAt: {type: string, format: date-time}
+                      reviewer: {type: string}
+                      access: {type: string, enum: [open, closed, partial, unknown]}
+                works:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, sourceId, roadLabel, revision, availableAt, from, toExclusive, status]
+                    properties:
+                      id: {type: string}
+                      sourceId: {type: string}
+                      edgeId: {type: string}
+                      roadLabel: {type: string}
+                      revision: {type: integer}
+                      availableAt: {type: string, format: date-time}
+                      from: {type: string, format: date-time}
+                      toExclusive: {type: string, format: date-time}
+                      status: {type: string, enum: [scheduled, cancelled]}
+                restoration:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, sourceId, destinationId, label, availableAt]
+                    properties:
+                      id: {type: string}
+                      sourceId: {type: string}
+                      destinationId: {type: string}
+                      label: {type: string}
+                      availableAt: {type: string, format: date-time}
+                      expectedCompleteAt: {type: string, format: date-time}
+                      completedAt: {type: string, format: date-time}
+                      completionKnownAt: {type: string, format: date-time}
+                      cost: {type: number}
+                      currency: {type: string}
+                      pricingYear: {type: integer}
+    SimulationSourceReviewLineage:
+      type: object
+      required: [releaseId, manifestSha256, inputSha256, sourceId, admissionId, currentAdmissionId, productVersion, attribution]
+      properties:
+        releaseId: {type: string}
+        manifestSha256: {type: string}
+        inputSha256: {type: string}
+        sourceId: {type: string}
+        admissionId: {type: string}
+        currentAdmissionId: {type: string}
+        productVersion: {type: string}
+        attribution: {type: string}
+    FloodMappingReview:
+      allOf:
+        - $ref: '#/components/schemas/SimulationSourceReviewLineage'
+        - type: object
+          required: [floodMapping]
+          properties:
+            floodMapping:
+              type: object
+              required: [activation, cutoff, versionCoverage, products]
+              properties:
+                activation: {type: string}
+                cutoff: {type: string, format: date-time}
+                versionCoverage: {type: string, enum: [versions-in-supplied-response]}
+                products:
+                  type: array
+                  items:
+                    type: object
+                    required: [productId, type, areaNumber, areaName, versionId, versionNumber, deliveredAt, monitoringNumber, sourceImages]
+                    properties:
+                      productId: {type: integer}
+                      type: {type: string, enum: [DEL, GRA]}
+                      areaNumber: {type: integer}
+                      areaName: {type: string}
+                      versionId: {type: string}
+                      versionNumber: {type: integer}
+                      deliveredAt: {type: string, format: date-time}
+                      monitoringNumber: {type: integer}
+                      sourceImages:
+                        type: array
+                        items:
+                          type: object
+                          required: [sourceImageId, sensor, acquisitionAt]
+                          properties:
+                            sourceImageId: {type: string}
+                            sensor: {type: string}
+                            acquisitionAt: {type: string, format: date-time, nullable: true}
+    RadarOutageReview:
+      allOf:
+        - $ref: '#/components/schemas/SimulationSourceReviewLineage'
+        - type: object
+          required: [outages]
+          properties:
+            outages:
+              type: object
+              required: [country, from, toExclusive, availabilityAt, coverage, annotations]
+              properties:
+                country: {type: string}
+                from: {type: string, format: date-time}
+                toExclusive: {type: string, format: date-time}
+                availabilityAt: {type: string, format: date-time, nullable: true}
+                coverage: {type: string, enum: [annotations-in-supplied-response]}
+                annotations:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, startAt, endAt, providerType]
+                    properties:
+                      id: {type: string}
+                      startAt: {type: string, format: date-time}
+                      endAt: {type: string, format: date-time, nullable: true}
+                      providerType: {type: string}
+    PortActivityReview:
+      type: object
+      required: [releaseId, manifestSha256, inputSha256, sourceId, admissionId, currentAdmissionId, productVersion, attribution, activity]
+      properties:
+        releaseId: {type: string}
+        manifestSha256: {type: string}
+        inputSha256: {type: string}
+        sourceId: {type: string}
+        admissionId: {type: string}
+        currentAdmissionId: {type: string}
+        productVersion: {type: string}
+        attribution: {type: string}
+        activity:
+          type: object
+          required: [portId, baselineFrom, from, toExclusive, missingDays, days, recovery, baselineValidation]
+          properties:
+            portId: {type: string}
+            baselineFrom: {type: string, format: date}
+            from: {type: string, format: date}
+            toExclusive: {type: string, format: date}
+            missingDays: {type: integer}
+            recovery:
+              type: object
+              required: [minimumWeekdays, consecutiveDays, firstBelowDate, returnConfirmedOn, daysToConfirmation, status]
+              properties:
+                minimumWeekdays: {type: integer}
+                consecutiveDays: {type: integer}
+                firstBelowDate: {type: string, format: date, nullable: true}
+                returnConfirmedOn: {type: string, format: date, nullable: true}
+                daysToConfirmation: {type: integer, nullable: true}
+                status: {type: string, enum: [insufficient-coverage, no-below-range-day, unresolved, confirmed]}
+            baselineValidation:
+              type: object
+              required: [comparedDays, weekdayMeanAbsoluteError, trailingMeanAbsoluteError, withinWeekdayRange]
+              properties:
+                comparedDays: {type: integer}
+                weekdayMeanAbsoluteError: {type: number, nullable: true}
+                trailingMeanAbsoluteError: {type: number, nullable: true}
+                withinWeekdayRange: {type: integer}
+            days:
+              type: array
+              items:
+                type: object
+                required: [date, portCalls, baselineDays, baselineMedian, baselineRange, departureFromMedian, comparison]
+                properties:
+                  date: {type: string, format: date}
+                  portCalls: {type: integer, nullable: true}
+                  baselineDays: {type: integer}
+                  baselineMedian: {type: number, nullable: true}
+                  baselineRange: {type: array, nullable: true, minItems: 2, maxItems: 2, items: {type: integer}}
+                  departureFromMedian: {type: number, nullable: true}
+                  comparison:
+                    type: string
+                    enum: [missing-day, insufficient-history, below-history, above-history, within-history]
+    MunicipalWorkloadReview:
+      type: object
+      required: [releaseId, manifestSha256, inputSha256, sourceId, admissionId, currentAdmissionId, productVersion, attribution, workload]
+      properties:
+        releaseId: {type: string}
+        manifestSha256: {type: string}
+        inputSha256: {type: string}
+        sourceId: {type: string}
+        admissionId: {type: string}
+        currentAdmissionId: {type: string}
+        productVersion: {type: string}
+        attribution: {type: string}
+        workload:
+          type: object
+          required: [rowCount, rowsWithoutPlaceLabel, categoryCounts, utcDayCounts, temporalMeaning]
+          properties:
+            rowCount: {type: integer}
+            rowsWithoutPlaceLabel: {type: integer}
+            temporalMeaning: {type: string, enum: [retrospective-export]}
+            categoryCounts:
+              type: object
+              additionalProperties: {type: integer}
+            utcDayCounts:
+              type: object
+              additionalProperties: {type: integer}
     EnvironmentSourceImpact:
       type: object
       required: [sourceId, sourceStatus, currentPolicy, retainedInputs, retainedBytes, pendingInputs, tombstones, releases]
@@ -1043,6 +1685,8 @@ components:
         mediaType: {"type":"string"}
         sourceId: {"type":"string"}
         admissionId: {"type":"string"}
+        referenceId: {"type":"string"}
+        sceneId: {"type":"string"}
         sha256: {"type":"string"}
         bytes: {"type":"integer"}
         retainUntil: {"type":"string"}

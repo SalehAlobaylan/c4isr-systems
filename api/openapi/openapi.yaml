@@ -72,6 +72,22 @@ paths:
     $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-sources~1{id}~1impact'
   /api/v1/environment-releases/{id}/quality-report:
     $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1quality-report'
+  /api/v1/environment-releases/{id}/municipal-workload:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1municipal-workload'
+  /api/v1/environment-releases/{id}/port-activity:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1port-activity'
+  /api/v1/environment-releases/{id}/civilian-access-replay:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1civilian-access-replay'
+  /api/v1/environment-releases/{id}/civilian-aerial-review:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1civilian-aerial-review'
+  /api/v1/environment-releases/{id}/regional-response-review:
+    $ref: './regional-response.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1regional-response-review'
+  /api/v1/environment-releases/{id}/supporting-source-review:
+    $ref: './supporting-sources.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1supporting-source-review'
+  /api/v1/environment-releases/{id}/flood-mapping:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1flood-mapping'
+  /api/v1/environment-releases/{id}/radar-outages:
+    $ref: './environment-library.yaml#/paths/~1api~1v1~1environment-releases~1{id}~1radar-outages'
   /api/v1/environment-worker/claim:
     $ref: './environment-worker.yaml#/paths/~1api~1v1~1environment-worker~1claim'
   /api/v1/environment-worker/reconcile:
@@ -240,6 +256,47 @@ paths:
     $ref: './analyst-scope.yaml#/paths/~1api~1v1~1geography~1releases'
   /api/v1/geography/releases/{id}:
     $ref: './analyst-scope.yaml#/paths/~1api~1v1~1geography~1releases~1{id}'
+  /api/v1/geography/place-handoffs:
+    post:
+      operationId: issueCivilianPlaceHandoff
+      summary: Issue an authorized portable reference to an exact admitted civilian place.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [featureId, releaseId, expiresAt]
+              properties:
+                featureId: {type: string, maxLength: 256}
+                releaseId: {type: string, maxLength: 160}
+                expiresAt: {type: string, format: date-time}
+      responses:
+        '200':
+          description: Authorized place package with a base64 member and pinned provenance.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [schema, purpose, geographyReleaseId, releaseSha256, editionId, editionSha256, sourceSha256, normalizer, attribution, rightsId, expiresAt, memberSha256, member]
+                properties:
+                  schema: {type: string, enum: [emad.desert-maps-civilian-reference.v2]}
+                  purpose: {type: string, enum: [civilian-exercise-reference]}
+                  geographyReleaseId: {type: string}
+                  releaseSha256: {type: string}
+                  editionId: {type: string}
+                  editionSha256: {type: string}
+                  sourceSha256: {type: string}
+                  normalizer: {type: string}
+                  attribution: {type: string}
+                  rightsId: {type: string}
+                  expiresAt: {type: string, format: date-time}
+                  memberSha256: {type: string}
+                  member: {type: string, format: byte}
+        '400': {description: Invalid handoff request.}
+        '403': {description: Missing permission or source distribution grant.}
+        '404': {description: Exact admitted place unavailable.}
   /api/v1/geography/profiles:
     $ref: './analyst-scope.yaml#/paths/~1api~1v1~1geography~1profiles'
   /api/v1/geography/profiles/{id}:
@@ -7786,13 +7843,14 @@ components:
           properties:
             value:
               type: number
-              exclusiveMinimum: 0
+              minimum: 0
             unit:
               type: string
               enum:
               - arc_seconds
               - metres
               - map_scale
+              - unknown
         aoi:
           $ref: '#/components/schemas/SourceAOI'
         validity:
@@ -10241,6 +10299,13 @@ components:
       - reason
       - nextAction
       properties:
+        geographicRetention:
+          type: object
+          description: Availability of retained environment inputs within the caller's scope and current source policy.
+          required: [readable, assetsAvailable]
+          properties:
+            readable: {type: boolean}
+            assetsAvailable: {type: boolean}
         providerCredits:
           type: object
           description: Last reported OpenSky states balance. An absent header produces null, never the configured daily allowance.

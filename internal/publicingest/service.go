@@ -21,6 +21,7 @@ type ConnectorIdentities interface {
 }
 
 type Service struct {
+	retained   GeographicRetentionReader
 	identities ConnectorIdentities
 	repo       *Repository
 	locations  Registry
@@ -30,6 +31,10 @@ type Service struct {
 
 func NewService(repo *Repository, locations Registry, fetcher Fetcher, registry SourceRegistry, identities ConnectorIdentities) *Service {
 	return &Service{repo: repo, locations: locations, fetcher: fetcher, sources: registry, identities: identities}
+}
+
+func (s *Service) SetGeographicRetentionReader(reader GeographicRetentionReader) {
+	s.retained = reader
 }
 
 func requirePublic(ctx context.Context, source, permission string) error {

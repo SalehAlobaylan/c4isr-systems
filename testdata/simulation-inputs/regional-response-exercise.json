@@ -1,0 +1,527 @@
+{
+  "schema": "emad.regional-response-review.v1",
+  "title": "Asir access and coastal evidence tabletop",
+  "sources": [
+    {
+      "id": "authored-service",
+      "edition": "owned-regional-v1",
+      "sha256": "6578fa8a18c9782136ed6f42e34b59ac5afeaf09f63f8c39812214c7f6c45c5d",
+      "attribution": "EMAD authored regional exercise material"
+    },
+    {
+      "id": "authored-reception",
+      "edition": "owned-disconnect-control",
+      "sha256": "8ea9d76e674247e74b36ef5308e2b089486acafda1b91d408cb5b1eb2f23420e",
+      "attribution": "EMAD authored disconnect and duplicate receipts"
+    },
+    {
+      "id": "authored-coastal",
+      "edition": "owned-regional-v1",
+      "sha256": "c61828fdbb823a83e836cd27a0580f5850ae6d802fcac6108cc61094914c5b8e",
+      "attribution": "EMAD authored regional exercise material"
+    },
+    {
+      "id": "authored-coastal-port",
+      "edition": "owned-regional-v1",
+      "sha256": "f5b6f70df244629af07ddce9498551f76660b6cdebb6d8a23a61f0e6e7411cf6",
+      "attribution": "EMAD authored regional exercise material"
+    },
+    {
+      "id": "authored-nav",
+      "edition": "owned-regional-v1",
+      "sha256": "29e0b4b12b324caeb7030a8e0baff2761fbad5258a8cf5e0002a62451099c311",
+      "attribution": "EMAD authored regional exercise material"
+    },
+    {
+      "id": "authored-debrief",
+      "edition": "owned-regional-v1",
+      "sha256": "9147d4376e2bd93329e6216b359e5ba9cc2ffb4dfa9b6b852c2e6c5bbebb4efb",
+      "attribution": "EMAD authored regional exercise material"
+    },
+    {
+      "id": "authored-statistics",
+      "edition": "owned-regional-v1",
+      "sha256": "b3368a451ddbcfabd6477a7a80363515443b85c9ada138994d6c48ab6b49a485",
+      "attribution": "EMAD authored regional exercise material"
+    }
+  ],
+  "indicators": [
+    {
+      "sourceId": "authored-statistics",
+      "id": "field",
+      "regionCode": "authored-east",
+      "region": "Eastern Province example",
+      "geography": "Authored publication model",
+      "measure": "Field cases",
+      "nativeLabel": "Field cases",
+      "unit": "cases",
+      "populationScope": "Cases handled in the field",
+      "channel": "Exercise field services",
+      "periodFrom": "2025-01-01",
+      "periodToExclusive": "2026-01-01",
+      "availableAt": "2026-01-08T00:00:00Z",
+      "value": 110718
+    },
+    {
+      "sourceId": "authored-statistics",
+      "id": "transfers",
+      "regionCode": "authored-east",
+      "region": "Eastern Province example",
+      "geography": "Authored publication model",
+      "measure": "Hospital transfers",
+      "nativeLabel": "Hospital transfers",
+      "unit": "cases",
+      "populationScope": "Cases handled in the field",
+      "channel": "Exercise field services",
+      "periodFrom": "2025-01-01",
+      "periodToExclusive": "2026-01-01",
+      "availableAt": "2026-01-08T00:00:00Z",
+      "value": 71841
+    },
+    {
+      "sourceId": "authored-statistics",
+      "id": "at-scene",
+      "regionCode": "authored-east",
+      "region": "Eastern Province example",
+      "geography": "Authored publication model",
+      "measure": "Care at scene",
+      "nativeLabel": "Care at scene",
+      "unit": "cases",
+      "populationScope": "Cases handled in the field",
+      "channel": "Exercise field services",
+      "periodFrom": "2025-01-01",
+      "periodToExclusive": "2026-01-01",
+      "availableAt": "2026-01-08T00:00:00Z",
+      "value": 38865
+    },
+    {
+      "sourceId": "authored-statistics",
+      "id": "exercise-bed-count",
+      "regionCode": "authored-health",
+      "region": "Asir fixture health region",
+      "geography": "Authored health region",
+      "measure": "Annual ER beds",
+      "nativeLabel": "Annual ER beds",
+      "unit": "beds",
+      "populationScope": "Facilities within fixture region",
+      "channel": "Exercise reference table",
+      "periodFrom": "2023-01-01",
+      "periodToExclusive": "2024-01-01",
+      "availableAt": "2025-01-02T00:00:00Z",
+      "value": 367
+    }
+  ],
+  "reconciliations": [
+    {
+      "totalId": "field",
+      "componentIds": [
+        "transfers",
+        "at-scene"
+      ]
+    }
+  ],
+  "service": {
+    "region": "Asir tabletop",
+    "referenceAt": "2026-11-20T08:05:00Z",
+    "access": {
+      "schema": "emad.civilian-road-exercise.v1",
+      "kind": "authored-exercise",
+      "title": "Authored Asir access closure control",
+      "graphEdition": "owned-asir-road-v1",
+      "serviceClass": "Civilian training service access",
+      "windowFrom": "2026-11-20T07:55:00Z",
+      "windowTo": "2026-11-20T10:00:00Z",
+      "sources": [
+        {
+          "id": "authored-service",
+          "edition": "owned-regional-v1",
+          "sha256": "6578fa8a18c9782136ed6f42e34b59ac5afeaf09f63f8c39812214c7f6c45c5d",
+          "attribution": "EMAD authored regional exercise material"
+        }
+      ],
+      "origin": "service-point",
+      "nodes": [
+        "service-point",
+        "valley-node",
+        "ridge-node"
+      ],
+      "boundaryNodes": [],
+      "destinations": [
+        {
+          "id": "valley",
+          "node": "valley-node",
+          "label": "Valley zone"
+        },
+        {
+          "id": "ridge",
+          "node": "ridge-node",
+          "label": "Ridge zone"
+        },
+        {
+          "id": "outside",
+          "label": "Unreviewed zone"
+        }
+      ],
+      "edges": [
+        {
+          "id": "valley",
+          "to": "service-point",
+          "distanceM": 380,
+          "sourceId": "authored-service",
+          "featureId": "owned-valley",
+          "from": "valley-node"
+        },
+        {
+          "id": "ridge",
+          "to": "service-point",
+          "distanceM": 620,
+          "sourceId": "authored-service",
+          "featureId": "owned-ridge",
+          "from": "ridge-node"
+        }
+      ],
+      "inspections": [
+        {
+          "id": "valley-07:59",
+          "sourceId": "authored-service",
+          "edgeId": "valley",
+          "observedAt": "2026-11-20T07:59:00Z",
+          "availableAt": "2026-11-20T07:59:00Z",
+          "reviewer": "exercise-inspection",
+          "access": "open"
+        },
+        {
+          "id": "ridge-07:59",
+          "sourceId": "authored-service",
+          "edgeId": "ridge",
+          "observedAt": "2026-11-20T07:59:00Z",
+          "availableAt": "2026-11-20T07:59:00Z",
+          "reviewer": "exercise-inspection",
+          "access": "open"
+        },
+        {
+          "id": "ridge-08:20",
+          "sourceId": "authored-service",
+          "edgeId": "ridge",
+          "observedAt": "2026-11-20T08:20:00Z",
+          "availableAt": "2026-11-20T08:20:00Z",
+          "reviewer": "exercise-inspection",
+          "access": "closed"
+        },
+        {
+          "id": "ridge-08:50",
+          "sourceId": "authored-service",
+          "edgeId": "ridge",
+          "observedAt": "2026-11-20T08:50:00Z",
+          "availableAt": "2026-11-20T08:50:00Z",
+          "reviewer": "exercise-inspection",
+          "access": "open"
+        }
+      ]
+    },
+    "capacity": [
+      {
+        "id": "standard",
+        "label": "Staffing profile",
+        "sourceId": "authored-service",
+        "kind": "authored",
+        "availableAt": "2026-11-20T08:00:00Z",
+        "staffedSlots": 1
+      },
+      {
+        "id": "none",
+        "label": "Known unavailable",
+        "sourceId": "authored-service",
+        "kind": "unavailable",
+        "availableAt": "2026-11-20T08:00:00Z",
+        "staffedSlots": 0
+      },
+      {
+        "id": "unknown",
+        "label": "Capacity evidence pending",
+        "sourceId": "authored-service",
+        "kind": "unknown",
+        "availableAt": "2026-11-20T08:00:00Z",
+        "staffedSlots": null
+      }
+    ],
+    "workloads": [
+      {
+        "id": "steady",
+        "label": "Steady arrivals",
+        "kind": "authored",
+        "sourceId": "authored-service",
+        "arrivals": [
+          {
+            "id": "steady-1",
+            "zone": "valley",
+            "arrivedAt": "2026-11-20T08:01:00Z",
+            "availableAt": "2026-11-20T08:01:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "steady-2",
+            "zone": "ridge",
+            "arrivedAt": "2026-11-20T08:05:00Z",
+            "availableAt": "2026-11-20T08:05:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "steady-3",
+            "zone": "valley",
+            "arrivedAt": "2026-11-20T08:09:00Z",
+            "availableAt": "2026-11-20T08:09:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "steady-4",
+            "zone": "ridge",
+            "arrivedAt": "2026-11-20T08:13:00Z",
+            "availableAt": "2026-11-20T08:13:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "steady-5",
+            "zone": "valley",
+            "arrivedAt": "2026-11-20T08:17:00Z",
+            "availableAt": "2026-11-20T08:17:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "steady-6",
+            "zone": "outside",
+            "arrivedAt": "2026-11-20T08:21:00Z",
+            "availableAt": "2026-11-20T08:21:00Z",
+            "serviceSeconds": 900
+          }
+        ]
+      },
+      {
+        "id": "peak",
+        "label": "Peaked arrivals",
+        "kind": "authored",
+        "sourceId": "authored-service",
+        "arrivals": [
+          {
+            "id": "peak-1",
+            "zone": "valley",
+            "arrivedAt": "2026-11-20T08:01:00Z",
+            "availableAt": "2026-11-20T08:01:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "peak-2",
+            "zone": "ridge",
+            "arrivedAt": "2026-11-20T08:02:00Z",
+            "availableAt": "2026-11-20T08:02:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "peak-3",
+            "zone": "valley",
+            "arrivedAt": "2026-11-20T08:03:00Z",
+            "availableAt": "2026-11-20T08:03:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "peak-4",
+            "zone": "ridge",
+            "arrivedAt": "2026-11-20T08:04:00Z",
+            "availableAt": "2026-11-20T08:04:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "peak-5",
+            "zone": "valley",
+            "arrivedAt": "2026-11-20T08:05:00Z",
+            "availableAt": "2026-11-20T08:05:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "peak-6",
+            "zone": "outside",
+            "arrivedAt": "2026-11-20T08:06:00Z",
+            "availableAt": "2026-11-20T08:06:00Z",
+            "serviceSeconds": 900
+          }
+        ]
+      },
+      {
+        "id": "ridge-heavy",
+        "label": "Peaked arrivals, more from ridge",
+        "kind": "authored",
+        "sourceId": "authored-service",
+        "arrivals": [
+          {
+            "id": "ridge-heavy-1",
+            "zone": "ridge",
+            "arrivedAt": "2026-11-20T08:01:00Z",
+            "availableAt": "2026-11-20T08:01:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "ridge-heavy-2",
+            "zone": "ridge",
+            "arrivedAt": "2026-11-20T08:02:00Z",
+            "availableAt": "2026-11-20T08:02:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "ridge-heavy-3",
+            "zone": "valley",
+            "arrivedAt": "2026-11-20T08:03:00Z",
+            "availableAt": "2026-11-20T08:03:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "ridge-heavy-4",
+            "zone": "ridge",
+            "arrivedAt": "2026-11-20T08:04:00Z",
+            "availableAt": "2026-11-20T08:04:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "ridge-heavy-5",
+            "zone": "ridge",
+            "arrivedAt": "2026-11-20T08:05:00Z",
+            "availableAt": "2026-11-20T08:05:00Z",
+            "serviceSeconds": 900
+          },
+          {
+            "id": "ridge-heavy-6",
+            "zone": "outside",
+            "arrivedAt": "2026-11-20T08:06:00Z",
+            "availableAt": "2026-11-20T08:06:00Z",
+            "serviceSeconds": 900
+          }
+        ]
+      }
+    ],
+    "from": "2026-11-20T08:00:00Z"
+  },
+  "coast": {
+    "port": "Jubail exercise",
+    "portWatchId": "port24",
+    "inventory": {
+      "sourceId": "authored-coastal",
+      "identifier": "owned-inventory-control",
+      "locality": "Training coast",
+      "match": "ambiguous"
+    },
+    "depth": {
+      "gridSourceId": "authored-coastal",
+      "shorelineSourceId": "authored-coastal",
+      "horizontalReference": "Owned exercise grid",
+      "verticalReference": "Exercise datum",
+      "samples": [
+        {
+          "cell": "r0c0",
+          "state": "land",
+          "elevationM": 5,
+          "sourceType": "Land classification"
+        },
+        {
+          "cell": "r0c1",
+          "state": "offshore",
+          "elevationM": -18,
+          "sourceType": "Owned offshore sample"
+        },
+        {
+          "cell": "r0c2",
+          "state": "nodata",
+          "elevationM": null,
+          "sourceType": "Unavailable"
+        }
+      ]
+    },
+    "coverage": [
+      {
+        "sourceId": "authored-reception",
+        "day": "2026-11-18",
+        "availableAt": "2026-11-20T08:00:00Z",
+        "windowMinutes": 60,
+        "usableMinutes": 45,
+        "uniqueReports": 2,
+        "duplicates": 1,
+        "portWatchCalls": 0,
+        "portWatchSourceId": "authored-coastal-port"
+      },
+      {
+        "sourceId": "authored-reception",
+        "day": "2026-11-19",
+        "availableAt": "2026-11-20T08:00:00Z",
+        "windowMinutes": 60,
+        "usableMinutes": 0,
+        "uniqueReports": null,
+        "duplicates": null,
+        "portWatchCalls": null
+      }
+    ],
+    "notices": [
+      {
+        "id": "notice-001",
+        "publisher": "Exercise navigation desk",
+        "sourceId": "authored-nav",
+        "warningArea": "Civil coastal exercise area",
+        "revision": 1,
+        "kind": "civil-service-notice",
+        "status": "active",
+        "issuedAt": "2026-11-20T08:00:00Z",
+        "availableAt": "2026-11-20T08:05:00Z",
+        "effectiveAt": "2026-11-20T08:00:00Z",
+        "expiresAt": null,
+        "summary": "A training navigation aid has an inspection pending.",
+        "serviceImpact": "unknown",
+        "issuerReference": "owned:authored-nav:notice-001:1"
+      },
+      {
+        "id": "notice-001",
+        "publisher": "Exercise navigation desk",
+        "sourceId": "authored-nav",
+        "warningArea": "Civil coastal exercise area",
+        "revision": 2,
+        "kind": "civil-service-notice",
+        "status": "cancelled",
+        "issuedAt": "2026-11-20T08:30:00Z",
+        "availableAt": "2026-11-20T08:45:00Z",
+        "effectiveAt": "2026-11-20T08:30:00Z",
+        "expiresAt": null,
+        "summary": "The training desk cancelled its notice.",
+        "serviceImpact": "unknown",
+        "issuerReference": "owned:authored-nav:notice-001:2"
+      },
+      {
+        "id": "report-001",
+        "publisher": "Exercise logistics desk",
+        "sourceId": "authored-debrief",
+        "warningArea": "Civil coastal exercise area",
+        "revision": 1,
+        "kind": "historical-debrief",
+        "status": "active",
+        "issuedAt": "2026-11-20T08:00:00Z",
+        "availableAt": "2026-11-20T08:08:00Z",
+        "effectiveAt": "2026-11-20T08:00:00Z",
+        "expiresAt": null,
+        "summary": "A delay was reported by a participant.",
+        "serviceImpact": "reported",
+        "issuerReference": "owned:authored-debrief:report-001:1"
+      },
+      {
+        "id": "report-001",
+        "publisher": "Exercise logistics desk",
+        "sourceId": "authored-debrief",
+        "warningArea": "Civil coastal exercise area",
+        "revision": 2,
+        "kind": "historical-debrief",
+        "status": "active",
+        "issuedAt": "2026-11-20T08:40:00Z",
+        "availableAt": "2026-11-20T08:45:00Z",
+        "effectiveAt": "2026-11-20T08:40:00Z",
+        "expiresAt": null,
+        "summary": "A correction removed the provisional impact attribution.",
+        "serviceImpact": "unknown",
+        "issuerReference": "owned:authored-debrief:report-001:2"
+      }
+    ]
+  }
+}
