@@ -1465,6 +1465,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/coverage/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Summarize workspace-retained evidence and approved footprints */
+        get: operations["coverageInventory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sources/{id}/scheduler/run": {
         parameters: {
             query?: never;
@@ -6988,6 +7005,65 @@ export interface components {
             storage: string;
             meaning: string;
             recoveryOwner: string;
+        };
+        InventoryBounds: {
+            west: number;
+            south: number;
+            east: number;
+            north: number;
+        };
+        InventorySource: {
+            sourceId: string;
+            name: string;
+            family: string;
+            support: string;
+            gate: string;
+            retainedCount: number;
+            /** Format: date-time */
+            earliestAt?: string;
+            /** Format: date-time */
+            latestAt?: string;
+            bounds?: components["schemas"]["InventoryBounds"];
+            dailyBudget?: number;
+            attemptsToday?: number;
+            nextAction?: string;
+        };
+        InventoryTimeBucket: {
+            month: string;
+            label: string;
+            /** Format: date-time */
+            from: string;
+            /** Format: date-time */
+            to: string;
+            total: number;
+            byFamily: {
+                [key: string]: number;
+            };
+            bounds?: components["schemas"]["InventoryBounds"];
+            suggestedAreaName?: string;
+        };
+        InventoryFootprint: {
+            key: string;
+            name: string;
+            bounds: components["schemas"]["InventoryBounds"];
+            sourceIds: string[];
+            sourceNames: string[];
+            families: string[];
+            retainedCount: number;
+            /** Format: date-time */
+            earliestAt?: string;
+            /** Format: date-time */
+            latestAt?: string;
+        };
+        CoverageInventoryResult: {
+            schema: string;
+            /** Format: date-time */
+            evaluatedAt: string;
+            meaning: string;
+            totalRetained: number;
+            sources: components["schemas"]["InventorySource"][];
+            timeBuckets: components["schemas"]["InventoryTimeBucket"][];
+            footprints: components["schemas"]["InventoryFootprint"][];
         };
         AcquisitionInput: {
             requestKey: string;
@@ -14264,6 +14340,35 @@ export interface operations {
                         items: components["schemas"]["AdapterCapability"][];
                         meaning: string;
                     };
+                };
+            };
+            /** @description Request rejected */
+            "4XX": {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    coverageInventory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized read-only workspace inventory */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CoverageInventoryResult"];
                 };
             };
             /** @description Request rejected */

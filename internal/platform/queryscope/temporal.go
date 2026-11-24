@@ -119,6 +119,9 @@ func Capability(family string, t Evaluated) Support {
 	if family == "coverage" {
 		clock = "admission_policy"
 	}
+	if family == "reference" || family == "terrain" {
+		clock = "reference_edition"
+	}
 	switch family {
 	case "events", "earthquakes", "thermal":
 		return Support{"supported", clock, ""}
@@ -136,6 +139,10 @@ func Capability(family string, t Evaluated) Support {
 	case "imagery", "scenes", "captures", "findings", "coverage":
 		if t.RevisionView != "latest" {
 			return Support{"unsupported", clock, "This family's catalog does not implement known-at/effective-at reconstruction. Select exact retained revisions separately."}
+		}
+	case "reference", "terrain":
+		if t.RevisionView != "latest" {
+			return Support{"unsupported", clock, "Versioned reference artifacts are selected by edition rather than known-at/effective-at reconstruction."}
 		}
 	default:
 		return Support{"unsupported", clock, "Unknown query family."}

@@ -3,11 +3,11 @@ import { localDateValue, type PublicFilters } from './filters'
 import {useAnalystScope} from '@/features/workspace/AnalystScopeProvider'
 
 const fieldClass = 'block min-h-9 w-full min-w-0 rounded border border-edge bg-panel px-2 py-1'
-export function PublicFiltersForm({ data }: { data: PublicContextState }) {
+export function PublicFiltersForm({ data, defaultOpen = false }: { data: PublicContextState; defaultOpen?: boolean }) {
   const scope=useAnalystScope(),browserZone=Intl.DateTimeFormat().resolvedOptions().timeZone
   const set = <K extends keyof PublicFilters,>(key: K, value: PublicFilters[K]) => data.setDraft((previous) => ({ ...previous, [key]: value }))
   const date = (key: 'observedFrom' | 'observedTo' | 'asOf', value: string) => set(key, value ? new Date(value).toISOString() : '')
-  return <details aria-label="Filter public evidence" className="rounded border border-edge p-2">
+  return <details aria-label="Filter public evidence" className="rounded border border-edge p-2" open={defaultOpen || undefined}>
     <summary className="cursor-pointer font-medium">Filters and historical view</summary>
     <form className="mt-2 space-y-2" onSubmit={(event) => { event.preventDefault(); data.applyFilters() }}>
       <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">

@@ -8,11 +8,18 @@ type Receipt = {sourceId?: string; admissionId?: string; profileKey?: string; pr
 export function projectContextStatus({layer, sources, receipts = [], now, failed = false, retained = false, cap}: {
   layer?: Collection; sources: Source[]; receipts?: unknown[]; now: number; failed?: boolean; retained?: boolean; cap?: number;
 }) {
-  const unavailable = failed || layer?.state === 'unavailable' || sources.some(source => source.dataResult === 'unavailable_query')
-  const unsupported = layer?.state === 'historical_unsupported' || sources.length > 0 && sources.every(source => source.support === 'unsupported')
-  const outOfCoverage = sources.length > 0 && sources.every(source => source.spatialRelation === 'none')
-  const partial = sources.some(source => source.retrieval === 'partial_retrieval')
-  const complete = sources.length > 0 && sources.every(source => source.retrieval === 'complete_query_footprint')
+  const activeSources = sources.filter(
+    source =>
+      source.support !== 'not_admitted' &&
+      source.support !== 'not_configured' &&
+      source.dataResult !== 'not_admitted' &&
+      source.dataResult !== 'not_configured',
+  )
+  const unavailable = failed || layer?.state === 'unavailable' || activeSources.some(source => source.dataResult === 'unavailable_query')
+  const unsupported = layer?.state === 'historical_unsupported' || activeSources.length > 0 && activeSources.every(source => source.support === 'unsupported')
+  const outOfCoverage = activeSources.length > 0 && activeSources.every(source => source.spatialRelation === 'none')
+  const partial = activeSources.some(source => source.retrieval === 'partial_retrieval')
+  const complete = activeSources.length > 0 && activeSources.every(source => source.retrieval === 'complete_query_footprint' || source.retrieval === 'retained_reference')
   const sourceIds = new Set(sources.map(source => source.id))
   const received = (receipts as Receipt[]).filter(receipt => receipt?.sourceId && sourceIds.has(receipt.sourceId))
   const retrievalFailed = received.some(receipt => ['FAILED', 'RETRYABLE', 'ERROR', 'PARTIAL'].includes(receipt.runState?.status ?? '')) ||

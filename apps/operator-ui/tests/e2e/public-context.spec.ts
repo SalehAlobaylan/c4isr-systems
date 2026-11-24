@@ -9,7 +9,11 @@ import { resolveScopeFixture } from './fixtures-analyst-scope'
 import type { ScopeReadInput } from '../../src/lib/api'
 
 async function openEvidence(page:Page) {
-  await mapControl(page,'Evidence inspector')
+  const btn = page.getByRole('button',{name:'Evidence inspector',exact:true})
+  const popover = page.getByRole('region',{name:'Investigation and time'})
+  if ((await btn.getAttribute('aria-pressed')) !== 'true' || (await popover.isVisible())) {
+    await btn.click()
+  }
   await expect(page.getByLabel('Public event and reference data')).toBeVisible();await expect(page.getByRole('dialog')).toHaveCount(0)
 }
 
@@ -59,7 +63,7 @@ test('public events retain source revisions and reference attribution on the map
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(page.getByLabel('Reference version')).toBeVisible()
   await page.getByLabel('Reference version').click({ trial: true })
-  await page.getByLabel('Map controls',{exact:true}).click();await page.getByRole('button',{name:'Map layers',exact:true}).click();await expect(page.getByRole('region',{name:'Map layers'}).getByRole('checkbox',{name:'Earthquake reports',exact:false})).toBeVisible()
+  await mapControl(page,'Map layers');await expect(page.getByRole('region',{name:'Map layers'}).getByRole('checkbox',{name:'Earthquake reports',exact:false})).toBeVisible()
   await page.screenshot({ path: '../../tmp/p1-2-4-public-context-mobile.png', fullPage: true })
 })
 
@@ -94,7 +98,6 @@ test('public filters bookmark historical meaning and retain exact FIRMS CSV', as
   await openEvidence(page)
   await page.getByRole('button',{name:'Time & filters',exact:true}).click()
   const filters = page.getByLabel('Filter public evidence')
-  await filters.getByText('Filters and historical view', { exact: true }).click()
   await filters.getByLabel('AOI: west,south,east,north').fill('NaN,21,40,22')
   await filters.getByRole('button', { name: 'Apply public filters' }).click()
   await expect(filters.getByRole('alert')).toContainText('AOI must be')
@@ -131,7 +134,6 @@ test('public filters bookmark historical meaning and retain exact FIRMS CSV', as
   expect((await download).suggestedFilename()).toBe('evi-firms.csv')
   expect(page.url()).toBe(bookmark)
   await page.getByRole('button',{name:'Time & filters',exact:true}).click()
-  await page.getByText('Filters and historical view', { exact: true }).click()
   await filters.getByLabel('Historical interpretation').selectOption('effective_at')
   await filters.getByRole('button', { name: 'Apply public filters' }).click()
   await expect(page.getByLabel('Public view meaning')).toContainText('Late arrivals may appear')
@@ -142,7 +144,6 @@ test('public filters bookmark historical meaning and retain exact FIRMS CSV', as
   await expect(page.getByLabel('Provider coverage')).toContainText('unavailable')
   await page.setViewportSize({ width: 390, height: 844 })
   await page.getByRole('button',{name:'Time & filters',exact:true}).click()
-  await page.getByText('Filters and historical view', { exact: true }).click()
   await expect(filters.getByRole('button', { name: 'Reset public filters' })).toBeVisible()
   await page.screenshot({ path: '../../tmp/p16-filters-mobile.png', fullPage: true })
   await filters.getByRole('button', { name: 'Reset public filters' }).click()

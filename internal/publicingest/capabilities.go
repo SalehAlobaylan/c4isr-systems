@@ -149,3 +149,32 @@ func (s *Service) RequireAcquisitionPolicy(ctx context.Context, source, key, rev
 	}
 	return v, nil
 }
+
+// SourceBinding describes a server-configured connector binding for a source
+// even before an admission profile exists (for example, gated sources awaiting
+// permission or credentials).
+func (s *Service) SourceBinding(ctx context.Context, source string) (AdapterCapability, string, string, bool) {
+	if s == nil {
+		return AdapterCapability{}, "", "", false
+	}
+	if e := requirePublic(ctx, source, "sources.read"); e != nil {
+		return AdapterCapability{}, "", "", false
+	}
+	r, err := access.ResourceFrom(ctx)
+	if err != nil {
+		return AdapterCapability{}, "", "", false
+	}
+	var matched *Location
+	for _, loc := range s.locations {
+		if loc.SourceID == source && loc.Resource == r {
+			if matched == nil || loc.ID < matched.ID {
+				copyLoc := loc
+				matched = &copyLoc
+			}
+		}
+	}
+	if matched == nil {
+		return AdapterCapability{}, "", "", false
+	}
+	return Capability(matched.Adapter), matched.GateState, matched.GateNextAction, true
+}

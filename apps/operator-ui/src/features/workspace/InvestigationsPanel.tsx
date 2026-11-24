@@ -10,9 +10,14 @@ import {useNavigate,useSearch} from '@tanstack/react-router'
 import {ApiError,fixedScopeInput,useAPI,type Investigation,type InvestigationInput,type ScopeInput} from '@/lib/api'
 import {useWorkspace} from '@/lib/workspaceContext'
 import {useAnalystScope,scopePeriodLabel} from './AnalystScopeProvider'
+import {citationKey,useCaseCitationBridge} from './map-panels/caseCitationBridge'
 
 export function InvestigationsPanel({active}:{active:boolean}){
  const api=useAPI(),{prefix,session}=useWorkspace(),analyst=useAnalystScope(),client=useQueryClient(),search=useSearch({strict:false}) as {investigation?:string},navigate=useNavigate()
+ const bridgeScope=JSON.stringify(prefix)
+ const pendingCitation=useCaseCitationBridge(s=>s.scopeKey===bridgeScope?s.pending:null)
+ const consumePending=useCaseCitationBridge(s=>s.consumePending)
+ const syncAttached=useCaseCitationBridge(s=>s.syncAttached)
  const [loaded,setLoaded]=useState<Investigation>(),[title,setTitle]=useState(''),[question,setQuestion]=useState(''),[notes,setNotes]=useState(''),[state,setState]=useState<InvestigationInput['state']>('DRAFT'),[scope,setScope]=useState<ScopeInput>(),[scopeLabel,setScopeLabel]=useState(''),[refs,setRefs]=useState<InvestigationInput['evidence']>([]),[kind,setKind]=useState<InvestigationInput['evidence'][number]['kind']>('observation'),[reference,setReference]=useState(''),[dirty,setDirty]=useState(false),[saving,setSaving]=useState(false),[status,setStatus]=useState(''),[members,setMembers]=useState(''),[owner,setOwner]=useState('')
  const [findings,setFindings]=useState<FindingDraft[]>([]),[autosave,setAutosave]=useState(true),[recovery,setRecovery]=useState(false),[saveFailed,setSaveFailed]=useState(false)
  const [reviewOutputID,setReviewOutputID]=useState('')
@@ -42,6 +47,18 @@ export function InvestigationsPanel({active}:{active:boolean}){
  const isOwner=!loaded||loaded.ownerHumanId===session.operator.id
  const validation=!scope?'Choose a valid area and period before saving.':!title.trim()||!question.trim()?'Enter a title and analytical question to save.':findings.some(f=>!f.title.trim()||!f.conclusion.trim()||!f.evidence.length)?'Each finding needs a title, conclusion and at least one retained citation.':''
  const edits=session.permissions.includes(loaded?'investigations.edit':'investigations.create')&&(!loaded||loaded.revision.state!=='ARCHIVED'||isOwner)
+ useEffect(()=>{syncAttached(bridgeScope,refs.map(r=>citationKey(r.kind,r.id)))},[bridgeScope,refs,syncAttached])
+ useEffect(()=>{
+  if(!active||!pendingCitation||!edits||(search.investigation&&!loaded)||saving||saveFailed)return
+  const next=consumePending(bridgeScope)
+  if(!next)return
+  setRefs(prev=>{
+   if(prev.some(r=>r.kind===next.kind&&r.id===next.id))return prev
+   return [...prev,{kind:next.kind,id:next.id}]
+  })
+  setDirty(true)
+  setStatus(`Attached ${next.label||next.id} from map.`)
+ },[active,pendingCitation,edits,search.investigation,loaded,saving,saveFailed,bridgeScope,consumePending])
  if(!allowed)return active?<p role="status">Investigation access requires an explicit investigator grant.</p>:null
  return <section ref={panelRef} aria-label="Investigations" hidden={!active} className="ux-page scope-workflow">
   <h2>Investigations</h2><nav className="case-workflow-nav" aria-label="Investigation steps"><button type="button" onClick={()=>jump('case-question')}>1. Question</button><button type="button" onClick={()=>jump('case-evidence')}>2. Evidence & findings</button><button type="button" disabled={!loaded} onClick={()=>jump('case-review')}>3. Review</button><button type="button" disabled={!loaded} onClick={()=>jump('case-delivery')}>4. Briefs & packages</button></nav>{!loaded&&<p className="ux-muted">Save your investigation to unlock review and delivery.</p>}<CaseReviewInbox active={active} onOpen={id=>{if(!dirty)open(id)}}/><p>Keep your question, study area, time window and evidence together. Save a revision to resume your work or send it for review.</p>

@@ -24,6 +24,7 @@
 @import './styles/atlas.css';
 @import './styles/atlas-dock.css';
 @import './styles/navigation.css';
+@import './styles/map-panels.css';
 
 /* ============================================================================
    Tailwind v4 integration

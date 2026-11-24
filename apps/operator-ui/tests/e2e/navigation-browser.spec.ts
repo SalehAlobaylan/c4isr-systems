@@ -67,7 +67,7 @@ test('workbenches use purpose and search while unavailable actions stay explicit
 
 test('phone choosers fit the viewport and Escape preserves the underlying map panel',async({page})=>{
  await setup(page);await page.setViewportSize({width:320,height:700});await page.goto('/map')
- await page.getByLabel('Map controls',{exact:true}).click();await page.getByRole('button',{name:'Map layers',exact:true}).click()
+ await page.getByRole('button',{name:'Map layers',exact:true}).click()
  await page.getByRole('button',{name:'Map workspace',exact:true}).click()
  const dialog=page.getByRole('dialog'),bounds=(await dialog.boundingBox())!
  expect(bounds.x).toBeGreaterThanOrEqual(0);expect(bounds.x+bounds.width).toBeLessThanOrEqual(320)

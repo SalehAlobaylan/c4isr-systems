@@ -1,344 +1,2068 @@
-import type {ReferenceDrawing} from './AtlasCanvas'
-import {longitudeLatitude,pointerLabel} from '@/lib/internationalInput'
-import {useCatalog,CatalogPaging} from './useCatalog'
-import {ReadRecords} from './ReadRecords'
-import {useCallback,useEffect,useMemo,useRef,useState,type CSSProperties} from 'react'
-import {useInfiniteQuery,useQueries,useQuery} from '@tanstack/react-query'
-import {useNavigate,useSearch} from '@tanstack/react-router'
-import type {Feature,FeatureCollection,Position,Geometry} from 'geojson'
-import {ApiError,LOCAL_BASEMAP_ONLY,useAPI,fixedScopeInput,isReadCapacityExhausted,retryConcurrentRead,type ScopeInput} from '@/lib/api'
-import {useAnalystScope,monitoringPeriod,scopePeriodLabel,historicalReadOptions} from './AnalystScopeProvider'
-import {useReadSnapshotRelease} from './useReadSnapshotRelease'
-import {useWorkspace} from '@/lib/workspaceContext'
-import {usePublicContext} from '@/features/public-context/usePublicContext'
-import {PublicContextPanel} from '@/features/public-context/PublicContextPanel'
-import {PublicFiltersForm} from '@/features/public-context/PublicFiltersForm'
-import {queryFor,meaningFor} from '@/features/public-context/filters'
-import {AtlasToolbarMenu} from './AtlasToolbarMenu'
-import {MapWorkbenchChooser,PreviewFeedChooser} from './MapWorkbenchChooser'
-import {atlasDockLayout,type AtlasDockSize,type AtlasDockPlacement} from './atlasDockLayout'
-import {AtlasCanvas,layerInfo,type AtlasHandle,type AtlasLayer,type Camera,type RasterOverlay} from './AtlasCanvas'
-import {type MapTool,type WorkbenchSearch} from './WorkbenchContext'
-import {MapUpdates} from './MapUpdates'
-import {MapWorkbenches} from './MapWorkbenches'
-import {readStudyArea,readSharedView} from './atlasState'
-import {CoveragePanel,useCoverage} from './CoveragePanel'
-import {ContextLayerDetails} from './ContextLayerDetails'
-import {projectContextStatus} from './contextLayerStatus'
-import {ReferenceDepthPanel} from './ReferenceDepthPanel'
-import {ArtifactImage} from './ArtifactImage'
-import {fetchDisplayBytes, readSceneFeature} from './displayBytes'
-import {dateLabel,useWorkspacePreference} from './preferences'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useInfiniteQuery, useQueries, useQuery } from '@tanstack/react-query'
+import { useNavigate, useSearch } from '@tanstack/react-router'
+import type { Feature, FeatureCollection, Geometry, Position } from 'geojson'
+import {
+  ApiError,
+  LOCAL_BASEMAP_ONLY,
+  fixedScopeInput,
+  isReadCapacityExhausted,
+  retryConcurrentRead,
+  useAPI,
+  type InventoryFootprint,
+  type InventorySource,
+  type InventoryTimeBucket,
+} from '@/lib/api'
+import { longitudeLatitude, pointerLabel } from '@/lib/internationalInput'
+import { useWorkspace } from '@/lib/workspaceContext'
+import { usePublicContext } from '@/features/public-context/usePublicContext'
+import { PublicContextPanel } from '@/features/public-context/PublicContextPanel'
+import { queryFor } from '@/features/public-context/filters'
+import {
+  historicalReadOptions,
+  monitoringPeriod,
+  scopePeriodLabel,
+  useAnalystScope,
+} from './AnalystScopeProvider'
+import {
+  AtlasCanvas,
+  layerInfo,
+  type AtlasHandle,
+  type AtlasLayer,
+  type Camera,
+  type RasterOverlay,
+  type ReferenceDrawing,
+} from './AtlasCanvas'
+import { readSharedView, readStudyArea } from './atlasState'
+import { projectContextStatus } from './contextLayerStatus'
+import { useCoverage } from './CoveragePanel'
+import { fetchDisplayBytes, readSceneFeature } from './displayBytes'
+import { MapWorkbenches } from './MapWorkbenches'
+import { dateLabel, useWorkspacePreference } from './preferences'
+import { ReferenceDepthPanel } from './ReferenceDepthPanel'
+import { CatalogPaging, useCatalog } from './useCatalog'
+import {
+  scopeForBucket,
+  scopeForFootprint,
+  scopeForInventorySource,
+  useCoverageInventory,
+} from './useCoverageInventory'
+import { useReadSnapshotRelease } from './useReadSnapshotRelease'
+import { toolNames, type MapTool, type WorkbenchSearch } from './WorkbenchContext'
+import { useCaseCitationBridge, type CaseCitationKind } from './map-panels/caseCitationBridge'
+import { ContextualLegend } from './map-panels/ContextualLegend'
+import { LayersPanel, type LayerDisplayStatus, type LayersSubTab } from './map-panels/LayersPanel'
+import { MapCanvasHud } from './map-panels/MapCanvasHud'
+import { MapDiscoveryBanner } from './map-panels/MapDiscoveryBanner'
+import { MapDrawer, type FullPageDestination } from './map-panels/MapDrawer'
+import { MapRail } from './map-panels/MapRail'
+import { MapScopeBar, summarizeCoverageReadiness } from './map-panels/MapScopeBar'
+import { RecordsPanel, type RecordsBrowseMode } from './map-panels/RecordsPanel'
+import { SavedViewsPanel, type MapBookmark } from './map-panels/SavedViewsPanel'
+import { SelectionPeekCard } from './map-panels/SelectionPeekCard'
+import { SpatialToolsPanel } from './map-panels/SpatialToolsPanel'
+import { useMapPanelController } from './map-panels/useMapPanelController'
 
-const empty:FeatureCollection={type:'FeatureCollection',features:[]}
-type MapResponse={type:'FeatureCollection';features:Feature[];total?:number|null;state?:string;truncated?:boolean;countMeaning?:string}
-export const collection=(v:unknown):FeatureCollection=>v&&typeof v==='object'&&Array.isArray((v as FeatureCollection).features)?v as FeatureCollection:empty
-export function boundsOf(f?:Feature):[number,number,number,number]|undefined{
- if(!f)return
- if(Array.isArray(f.properties?.bounds))return f.properties.bounds as [number,number,number,number]
- let w=180,s=90,e=-180,n=-90
- const walk=(c:unknown)=>{if(!Array.isArray(c))return;if(typeof c[0]==='number'&&typeof c[1]==='number'){w=Math.min(w,c[0]);e=Math.max(e,c[0]);s=Math.min(s,c[1]);n=Math.max(n,c[1])}else c.forEach(walk)}
- if('coordinates'in f.geometry)walk(f.geometry.coordinates)
- return w<=e?[w,s,e,n]:undefined
+const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
+type MapResponse = {
+  type: 'FeatureCollection'
+  features: Feature[]
+  total?: number | null
+  state?: string
+  truncated?: boolean
+  countMeaning?: string
 }
-const validCamera=(v:unknown):v is Camera=>!!v&&typeof v==='object'&&['lng','lat','zoom','bearing','pitch'].every(k=>Number.isFinite((v as Record<string,unknown>)[k]))&&Math.abs((v as Camera).lng)<=180&&Math.abs((v as Camera).lat)<=85&&(v as Camera).zoom>=0&&(v as Camera).zoom<=22
-const smallBounds=(b?:number[])=>b&&b[0]<b[2]&&b[1]<b[3]&&(b[2]-b[0])*(b[3]-b[1])<=400?b.join(','):undefined
-type Bookmark={id:string;name:string;camera:Camera;region?:string;publicView?:string;area?:string;scope?:ScopeInput;layers:AtlasLayer[]}
-const defaultLayers:AtlasLayer[]=['earthquakes','thermal','weather','bulletins','imagery']
-const allLayers=Object.keys(layerInfo) as AtlasLayer[]
-const queryLayers=allLayers
-type Sheet=''|'layers'|'filters'|'selection'|'views'|'tools'
 
-export function PublicAtlasWorkspace(){
- const api=useAPI(),analyst=useAnalystScope()!,activeScope=analyst.snapshot,{prefix,session}=useWorkspace(),search=useSearch({from:'/map'}),navigate=useNavigate({from:'/map'})
- const cameraRef=useRef<AtlasHandle>(null),areaRequest=useRef<AbortController|undefined>(undefined)
- useEffect(()=>()=>areaRequest.current?.abort(),[JSON.stringify(analyst.input)])
- const [layoutViewport,setLayoutViewport]=useState(()=>({width:window.innerWidth,height:window.innerHeight}))
- useEffect(()=>{const resize=()=>setLayoutViewport({width:window.innerWidth,height:window.innerHeight});window.addEventListener('resize',resize);return()=>window.removeEventListener('resize',resize)},[])
- const [camera,setCamera]=useWorkspacePreference<Camera>('atlas-camera',{lng:43.3,lat:24.7,zoom:5,bearing:0,pitch:0},validCamera)
- const regionID=activeScope?.area.geography?.regionId??analyst.input?.area.regionId??''
- const [layers,setLayers]=useWorkspacePreference<AtlasLayer[]>('atlas-layers',defaultLayers,(v):v is AtlasLayer[]=>Array.isArray(v)&&v.length<=9&&v.every(k=>k in layerInfo))
- const [size,setSize]=useWorkspacePreference<AtlasDockSize>('atlas-dock-size-v4','collapsed',(v):v is AtlasDockSize=>['collapsed','preview','expanded'].includes(String(v)))
- const [orientation,setOrientation]=useWorkspacePreference<AtlasDockPlacement>('atlas-dock-placement-v4','auto',(v):v is AtlasDockPlacement=>['auto','horizontal','vertical'].includes(String(v)))
- const flyout=useRef<HTMLElement>(null),selectionPanel=useRef<HTMLDivElement>(null),coordinateLabel=useRef<HTMLSpanElement>(null),pointer=useRef<[number,number]>([camera.lng,camera.lat])
- const updatePointer=useCallback((p:[number,number])=>{pointer.current=p;if(coordinateLabel.current)coordinateLabel.current.textContent='Pointer · '+pointerLabel(p)},[])
- const [layerSearch,setLayerSearch]=useState(''),[boundaryLevel,setBoundaryLevel]=useState<'auto'|'country'|'region'>('auto')
- const [proposalOverlay,setProposalOverlay]=useState<FeatureCollection>(empty)
- const [family,setFamily]=useState<AtlasLayer>('imagery'),[sheet,updateSheet]=useState<Sheet>(''),[query,setQuery]=useState(''),[debounced,setDebounced]=useState(''),[searchOpen,setSearchOpen]=useState(false),[mapError,setMapError]=useState(''),[selected,setSelected]=useState<Feature[]>([]),[focus,setFocus]=useState(false)
- const currentSheet=useRef(sheet)
- currentSheet.current=sheet
- const panelReturn=useRef<'collapsed'|'preview'|'expanded'|'full'>('collapsed')
- const panelTrigger=useRef<string|undefined>(undefined)
- const setSheet=useCallback((next:Sheet)=>{
-   if(next){if(!sheet){panelReturn.current=size;const active=document.activeElement as HTMLElement|null;panelTrigger.current=(active?.closest('details.atlas-toolbar-menu')?.querySelector('summary')??active)?.getAttribute('aria-label')??undefined}setSize('preview');setFocus(false)}
-   else if(sheet)setSize(panelReturn.current)
-   updateSheet(next)
- },[sheet,size])
- const [basemap,setBasemap]=useWorkspacePreference<'streets'|'quiet'|'reference'>('atlas-basemap','quiet',(v):v is 'streets'|'quiet'|'reference'=>['streets','quiet','reference'].includes(String(v)))
- const [opacity,setOpacity]=useState(.75),[referenceOpacity,setReferenceOpacity]=useState(.7),[mode,setMode]=useState<'inspect'|'measure'|'area'>('inspect'),[draw,setDraw]=useState<Position[]>([]),[sketchArea,setSketchArea]=useState<Feature|undefined>(()=>readStudyArea(analyst.input?.area.geometry?JSON.stringify(analyst.input.area.geometry):search.area)),[measurement,setMeasurement]=useState(''),[coordinates,setCoordinates]=useState('')
- const [paused,setPaused]=useState(false),[frozen,setFrozen]=useState<{key:string;layers:Partial<Record<AtlasLayer,MapResponse>>}>(),[pauseTime,setPauseTime]=useState('')
- const [bookmarks,setBookmarks]=useWorkspacePreference<Bookmark[]>('atlas-bookmarks',[],(v):v is Bookmark[]=>Array.isArray(v)&&v.length<=20&&v.every(x=>typeof x.name==='string'&&x.name.length<=80&&validCamera(x.camera)&&Array.isArray(x.layers)&&x.layers.every((k:string)=>k in layerInfo)))
- const data=usePublicContext({cartography:false,loadEvents:search.tool==='geography',regionId:sketchArea?undefined:regionID,geometry:sketchArea?JSON.stringify(sketchArea.geometry):undefined})
- const [viewport,setViewport]=useState<[number,number,number,number]>(),[radius,setRadius]=useState('10000')
- useEffect(()=>{setSketchArea(readStudyArea(analyst.input?.area.geometry?JSON.stringify(analyst.input.area.geometry):undefined))},[JSON.stringify(analyst.input?.area)])
- useEffect(()=>{const shared=readSharedView(search.mapState);if(shared){setCamera(shared.camera);setLayers(shared.layers);cameraRef.current?.restore(shared.camera)}},[search.mapState])
- const [bookmarkName,setBookmarkName]=useState(''),[captureId,setCaptureId]=useState(''),[compareId,setCompareId]=useState(''),[quality,setQuality]=useState(false),[swipe,setSwipe]=useState(.5)
- const tool=search.tool==='simulation'&&session.productProfile==='map'?undefined:search.tool as MapTool|undefined
- const previousTool=useRef(tool)
- const wb=useMemo<WorkbenchSearch>(()=>{try{const p=JSON.parse(search.workbench??'{}');return p&&typeof p==='object'&&!Array.isArray(p)?Object.fromEntries(Object.entries(p).filter(([k,v])=>['view','job','assessment','bbox','before','after','id','kind','model','upload','display','manifest','feature','layers','basemap','atlasArea','terrainPoint'].includes(k)&&typeof v==='string'&&v.length<=(k==='layers'||k==='feature'?512:256))):{} }catch{return{}}},[search.workbench])
- useEffect(()=>{if(tool!==previousTool.current)updateSheet('');if(tool){setSize(tool==='environments'&&wb.view==='environment-atlas'?'collapsed':window.innerWidth<=760||window.innerHeight<=500?'full':'preview');setFocus(false)}else if(previousTool.current){setFocus(false)}previousTool.current=tool},[tool,wb.view])
- useEffect(()=>{if(!sheet)return;(sheet==='selection'?selectionPanel.current:flyout.current)?.querySelector<HTMLButtonElement>('button')?.focus();const close=(e:KeyboardEvent)=>{if(e.key==='Escape'){if(e.defaultPrevented||e.target instanceof Element&&e.target.closest('[role="dialog"]'))return;const input=e.target;if(input instanceof HTMLInputElement&&input.type==='search'&&input.value)return;e.preventDefault();setSheet('')}};window.addEventListener('keydown',close);return()=>{window.removeEventListener('keydown',close);const label=panelTrigger.current;requestAnimationFrame(()=>{if(currentSheet.current)return;const target=label?document.querySelector<HTMLElement>(`[aria-label="${CSS.escape(label)}"]`):document.querySelector<HTMLElement>('.atlas-workspace-picker');if(target?.getClientRects().length)target.focus()})}},[sheet])
- useEffect(()=>{const timeout=setTimeout(()=>setDebounced(query.trim()),220);return()=>clearTimeout(timeout)},[query])
- // Basemap geography uses discovery and does not compete with retained evidence reads for a snapshot slot.
- const canReadGeography=session.permissions.includes('sources.read')
- const countries=useInfiniteQuery({
-   queryKey:[...prefix,'geography','countries',session.accessRevision],
-   enabled:canReadGeography,initialPageParam:0,staleTime:300_000,
-   queryFn:({signal,pageParam})=>api.listGeographicRegions({kind:'country',offset:pageParam},signal),
-   getNextPageParam:(page,_,offset)=>page.nextOffset??(page.truncated&&page.features.length?offset+page.features.length:undefined),
- })
- const regionQuery=useQuery({queryKey:[...prefix,'geography','region',regionID],queryFn:({signal})=>api.listGeographicRegions({id:regionID},signal),enabled:!!regionID,staleTime:300_000})
- const scope=collection(regionQuery.data).features[0],scopeBounds=boundsOf(sketchArea??scope),scopeBBox=smallBounds(scopeBounds)??(regionID?undefined:data.savedFilters.bbox||undefined)
- const exactSelection=useMemo<Feature|undefined>(()=>activeScope?.area.geometry?{type:'Feature',id:activeScope.area.geography?.regionId??activeScope.area.revisionId,geometry:activeScope.area.geometry as unknown as Geometry,properties:{...scope?.properties,name:activeScope.area.name,kind:scope?.properties?.kind??'study'}}:undefined,[activeScope?.scopeHash,scope])
- const fittedArea=useRef('')
- useEffect(()=>{if(!exactSelection||fittedArea.current===activeScope?.area.revisionId)return;const first=!fittedArea.current;fittedArea.current=activeScope?.area.revisionId??'';if(first&&search.mapState)return;const b=boundsOf(exactSelection);if(b&&b[1]<85&&b[3]>-85)cameraRef.current?.fitBounds([b[0],Math.max(-85,b[1]),b[2],Math.min(85,b[3])])},[activeScope?.area.revisionId,exactSelection])
+export const collection = (v: unknown): FeatureCollection =>
+  v && typeof v === 'object' && Array.isArray((v as FeatureCollection).features)
+    ? (v as FeatureCollection)
+    : empty
 
- const regionName=activeScope?.area.name??(sketchArea?'Drawn study area':scope?.properties?.name??(regionID?(regionQuery.isSuccess||regionQuery.isError?'Selected area unavailable':'Loading selected area…'):data.savedFilters.bbox?'Bounded investigation':'World · configured evidence'))
- const children=useCatalog<Feature>('geography',undefined,!!scope?.properties?.regionKey,{parent:String(scope?.properties?.regionKey??''),sourceId:scope?.properties?.sourceId,releaseId:activeScope?.area.geography?.releaseId,editionId:activeScope?.area.geography?.releaseId?undefined:scope?.properties?.editionId},300)
- const ancestors=useCatalog<Feature>('geography',undefined,!!scope?.properties?.parentKey,{sourceId:scope?.properties?.sourceId,releaseId:activeScope?.area.geography?.releaseId,editionId:activeScope?.area.geography?.releaseId?undefined:scope?.properties?.editionId},300)
- const searchResults=useInfiniteQuery({queryKey:[...prefix,'geographic-search',debounced],
-   enabled:debounced.length>1&&searchOpen&&session.permissions.includes('sources.read'),gcTime:0,retry:false,
-   initialPageParam:0,queryFn:({signal,pageParam})=>api.listGeographicRegions({q:debounced,offset:pageParam},signal),
-   getNextPageParam:page=>page.nextOffset??undefined})
- const [referenceDrawing,setReferenceDrawing]=useState<ReferenceDrawing>()
- const [pinnedPlace,setPinnedPlace]=useState<Feature>()
- useEffect(()=>{
-   const expiry=pinnedPlace?.properties?.rights?.expiresAt
-   const remaining=typeof expiry==='string'?Date.parse(expiry)-Date.now():NaN
-   if(!Number.isFinite(remaining))return
-   if(remaining<=0){setPinnedPlace(undefined);return}
-   if(remaining>2_147_483_647)return
-   const timeout=window.setTimeout(()=>setPinnedPlace(undefined),remaining)
-   return ()=>window.clearTimeout(timeout)
- },[pinnedPlace])
- const searchFeatures=searchResults.data?.pages.flatMap(page=>collection(page).features)??[]
- const chooseRegion=useCallback((f:Feature)=>{
-   if(f.geometry.type!=='Point')setPinnedPlace(undefined)
-   if(f.geometry.type==='Point'){setPinnedPlace(f.properties?.family ? f : undefined);cameraRef.current?.focus(...f.geometry.coordinates as [number,number]);setSearchOpen(false);setMapError(`${f.properties?.name} is a place point. The investigation remains ${regionName}; choose a region or draw an area.`);return}
-   const id=String(f.id??f.properties?.id);setSketchArea(undefined);setSelected([]);setSearchOpen(false);setQuery('');setPaused(false);setFrozen(undefined);setDraw([]);const bounds=boundsOf(f);if(bounds&&bounds[2]-bounds[0]<=180)cameraRef.current?.fitBounds(bounds);void navigate({search:p=>({...p,...analyst.searchFor({area:{kind:'administrative',regionId:id,sourceId:f.properties?.sourceId,releaseId:f.properties?.releaseId||undefined},temporal:analyst.input?.temporal??monitoringPeriod()}),selected:undefined})})
- },[navigate,regionName,analyst])
- const countryFeatures=useMemo(()=>canReadGeography?countries.data?.pages.flatMap(page=>collection(page).features)??[]:[],[canReadGeography,countries.data])
- const geographicFeatures=useMemo<FeatureCollection>(()=>({type:'FeatureCollection',features:[...countryFeatures,...collection(children.data).features.filter(f=>f.geometry.type!=='Point')]}),[countryFeatures,children.data])
- const enabledLayers=layers.filter(k=>session.permissions.includes(layerInfo[k].permission)),temporal=queryFor(data.savedFilters)
- const filters={region_id:sketchArea?undefined:regionID||undefined,bbox:sketchArea?undefined:scopeBBox,view:temporal.view,as_of:temporal.as_of,observed_from:temporal.observed_from,observed_to:temporal.observed_to,source_id:temporal.source_id,quality:temporal.quality,zoom:Math.floor(camera.zoom),geometry:sketchArea?JSON.stringify(sketchArea.geometry):undefined}
- const scopeKey=activeScope?.scopeHash??JSON.stringify([analyst.input,analyst.error])
- useEffect(()=>{setSelected([]);setProposalOverlay(empty)},[scopeKey])
- const scopeCoverage=useCoverage(activeScope,!paused),historical=activeScope?.temporal.mode==='historical',readFamilies=historical?queryLayers.filter(k=>session.permissions.includes(layerInfo[k].permission)):enabledLayers
- const inspectingEnvironment=tool==='environments'&&['environment-3d','environment-atlas'].includes(wb.view??'')
- const mapBatch=useQuery({...historicalReadOptions(activeScope),queryKey:[...prefix,'atlas-read',scopeKey,activeScope?.authorizationRevision,temporal.source_id,temporal.quality,historical?'fixed-study':Math.floor(camera.zoom),readFamilies],queryFn:({signal})=>api.readAnalystScope({...fixedScopeInput(activeScope!),families:readFamilies,filters:{sourceId:temporal.source_id,quality:temporal.quality},zoom:Math.floor(camera.zoom),includeEvents:false},signal),enabled:!!activeScope&&!analyst.error&&enabledLayers.length>0&&!paused&&!inspectingEnvironment,retry:retryConcurrentRead,retryDelay:attempt=>150*(attempt+1),refetchInterval:q=>isReadCapacityExhausted(q.state.error)?15_000:false,gcTime:0})
-  // The retained map read holds a bounded budget slot. The server supersedes
-  // the previous manifest of the same view; this releases the one a changed
-  // scope, layer set or filter superseded, and the one this view held when it
-  // unmounted, so navigation cannot exhaust the read capacity.
-  useReadSnapshotRelease(inspectingEnvironment?undefined:mapBatch.data?.id,[...prefix,'atlas-read'])
- const mapQueries=queryLayers.map(k=>({...mapBatch,isError:mapBatch.isError||mapBatch.data?.layers[k]?.state==='unavailable',data:mapBatch.data?.scope.scopeHash===scopeKey?mapBatch.data.layers[k] as unknown as MapResponse:undefined}))
+export function boundsOf(f?: Feature): [number, number, number, number] | undefined {
+  if (!f) return
+  if (Array.isArray(f.properties?.bounds)) return f.properties.bounds as [number, number, number, number]
+  let w = 180
+  let s = 90
+  let e = -180
+  let n = -90
+  const walk = (c: unknown) => {
+    if (!Array.isArray(c)) return
+    if (typeof c[0] === 'number' && typeof c[1] === 'number') {
+      w = Math.min(w, c[0])
+      e = Math.max(e, c[0])
+      s = Math.min(s, c[1])
+      n = Math.max(n, c[1])
+    } else {
+      c.forEach(walk)
+    }
+  }
+  if ('coordinates' in f.geometry) walk(f.geometry.coordinates)
+  return w <= e ? [w, s, e, n] : undefined
+}
 
- const currentLayers=useMemo(()=>Object.fromEntries(queryLayers.map((k,i)=>[k,mapQueries[i].data])) as Partial<Record<AtlasLayer,MapResponse>>,[...mapQueries.map(q=>q.data)])
- const lostLayerAccess=mapBatch.error instanceof ApiError&&[401,403].includes(mapBatch.error.status)
- const display=lostLayerAccess?{}:paused&&frozen?.key===scopeKey?frozen.layers:currentLayers
- useEffect(()=>{if(lostLayerAccess){setSelected([]);setFrozen(undefined)}},[lostLayerAccess])
- const rendered=useMemo(()=>Object.fromEntries(enabledLayers.map(k=>[k,collection(display[k])])),[display,layers.join(',')])
- const updateLayers=useMemo(()=>Object.fromEntries(enabledLayers.filter(k=>!!display[k]).map(k=>[k,collection(display[k])])),[display,layers.join(',')])
-  useEffect(()=>{if(paused&&frozen?.key!==scopeKey){setPaused(false);setFrozen(undefined)}},[scopeKey,paused,frozen?.key])
- const toggle=(k:AtlasLayer)=>setLayers(v=>v.includes(k)?v.filter(x=>x!==k):[...v,k])
- const openTool=useCallback((next:MapTool,values?:WorkbenchSearch)=>{updateSheet('');setSize(window.innerWidth<=760||window.innerHeight<=500?'full':'preview');setFocus(false);void navigate({search:p=>({...p,tool:next,workbench:JSON.stringify({...values,bbox:values?.bbox??scopeBBox,view:values?.view??(next==='review'?'review':next==='context'?'context':next==='jobs'?'analysis':undefined)})})})},[navigate,scopeBBox])
- const updateWorkbench=useCallback((value:WorkbenchSearch,replace=false)=>{
-   const handoff=value.view==='environment-3d'||value.view==='environment-atlas'
-   const safeArea=activeScope&&(activeScope.area.persistent||activeScope.area.geography||activeScope.area.kind==='world')
-   const frozen=handoff&&safeArea&&analyst.input?.temporal.rollingSeconds?analyst.searchFor(fixedScopeInput(activeScope)):undefined
-   void navigate({search:p=>({...p,...frozen,workbench:JSON.stringify(value)}),replace})
- },[navigate,activeScope,analyst.input?.temporal.rollingSeconds,analyst.searchFor])
- const closeTool=useCallback(()=>{updateSheet('');setSize('collapsed');void navigate({search:p=>({...p,tool:undefined})})},[navigate])
- const showAtlas=useCallback(()=>{updateSheet('');setSize('collapsed');setFocus(false)},[])
- const host=useMemo(()=>({scope:activeScope,scopeInput:activeScope?fixedScopeInput(activeScope):analyst.input,selectionKey:JSON.stringify(analyst.input),previewFootprints:setProposalOverlay,search:{...wb,bbox:wb.bbox??scopeBBox,view:wb.view??(tool==='review'?'review':tool==='context'?'context':undefined)},regionId:sketchArea?undefined:regionID||undefined,geometry:activeScope?.area.geometry?JSON.stringify(activeScope.area.geometry):undefined,operationGeometry:activeScope?.area.geometry?JSON.stringify(activeScope.area.geometry):undefined,areaError:analyst.error??(!activeScope?'Resolving the selected area and period…':undefined),regionName,open:openTool,update:updateWorkbench,close:closeTool,showAtlas,showOnMap:(selected:string)=>{setLayers(v=>[...new Set([...v,...(selected.startsWith('track:')?['aircraft','vessels'] as AtlasLayer[]:[])])]);void navigate({search:p=>({...p,selected})});setFocus(false)}}),[wb,scopeBBox,tool,regionID,filters.geometry,scope,search.area,regionName,openTool,updateWorkbench,closeTool,showAtlas,activeScope,analyst.input,analyst.error])
- const environmentHandoff=tool==='environments'&&wb.view==='environment-atlas'&&(!wb.atlasArea||wb.atlasArea===activeScope?.area.revisionId)&&session.permissions.includes('environments.download')
- const featureLink=environmentHandoff?wb.feature?.match(/^(geodisplay_[a-f0-9]{64}):([a-f0-9]{64}:[A-Za-z0-9_.:-]{1,128})$/):undefined
- const environmentFeature=useQuery({
-   queryKey:[...prefix,'environment-atlas-feature',scopeKey,wb.id,wb.manifest,featureLink?.[0]],
-   enabled:!!featureLink&&!!wb.id&&!!wb.manifest,gcTime:0,retry:false,refetchInterval:30_000,
-   queryFn:async({signal})=>{
-     const display=await api.environmentDisplay(featureLink![1],signal)
-     if(display.releaseId!==wb.id||display.manifestSha256!==wb.manifest||display.state!=='READY')throw new Error('The linked display is unavailable.')
-     return readSceneFeature(await fetchDisplayBytes(api.environmentDisplayContent,display,signal),display,featureLink![2])
-   },
- })
- const terrainCoordinates=wb.terrainPoint?.match(/^(-?\d{1,3}\.\d{6}),(-?\d{1,2}\.\d{6})$/)
- const terrainID=environmentHandoff&&terrainCoordinates&&/^geodisplay_[a-f0-9]{64}$/.test(wb.display??'')?wb.display:undefined
- const terrainPoint=useQuery({
-   queryKey:[...prefix,'environment-atlas-terrain',scopeKey,wb.id,wb.manifest,terrainID,wb.terrainPoint],
-   enabled:!!terrainID&&!!wb.id&&!!wb.manifest,gcTime:0,retry:false,refetchInterval:30_000,
-   queryFn:async({signal}):Promise<Feature>=>{
-     const display=await api.environmentDisplay(terrainID!,signal)
-     const [west,south,east,north]=display.bounds
-     const lng=Number(terrainCoordinates![1]),lat=Number(terrainCoordinates![2])
-     if(display.releaseId!==wb.id||display.manifestSha256!==wb.manifest||display.state!=='READY'||
-       !['terrain-glb-v1','terrain-glb-v2','ground-glb-v1'].includes(display.recipe)||lng<west-0.000001||lng>east+0.000001||lat<south-0.000001||lat>north+0.000001)
-       throw new Error('The linked terrain point is unavailable.')
-     return {type:'Feature',id:`${terrainID}:${wb.terrainPoint}`,geometry:{type:'Point',coordinates:[lng,lat]},properties:{name:'Terrain point'}}
-   },
- })
- const selectedTerrain=environmentHandoff&&terrainID&&terrainPoint.isSuccess?terrainPoint.data:undefined
- const selectedEnvironmentFeature=environmentHandoff&&featureLink&&environmentFeature.isSuccess?environmentFeature.data:undefined
- const retainedSelection=selectedTerrain??selectedEnvironmentFeature
- useEffect(()=>{if(retainedSelection){const bounds=boundsOf(retainedSelection);if(bounds)cameraRef.current?.fitBounds(bounds)}},[retainedSelection?.id])
- const streetID=environmentHandoff&&/^geodisplay_[a-f0-9]{64}$/.test(wb.basemap??'')?wb.basemap:undefined
- const streets=useQuery({
-   queryKey:[...prefix,'environment-street-map',scopeKey,wb.id,wb.manifest,streetID],
-   enabled:!!streetID&&!!wb.id&&!!wb.manifest,gcTime:0,retry:false,refetchInterval:30_000,
-   queryFn:async({signal})=>{
-     const display=await api.environmentDisplay(streetID!,signal)
-     if(display.releaseId!==wb.id||display.manifestSha256!==wb.manifest||display.recipe!=='street-pmtiles-v1'||display.state!=='READY')throw new Error('The retained street map is unavailable.')
-     return {display,bytes:await fetchDisplayBytes(api.environmentDisplayContent,display,signal)}
-   },
- })
- const streetMap=streetID&&streets.isSuccess?streets.data:undefined
- useEffect(()=>{if(streetMap&&!retainedSelection)cameraRef.current?.fitBounds(streetMap.display.bounds as [number,number,number,number])},[streetMap?.display.id,retainedSelection?.id])
- const locateDeepLink=search.selected?.indexOf(':')??-1
- const deepKind=locateDeepLink>0?search.selected!.slice(0,locateDeepLink):'',deepId=locateDeepLink>0?search.selected!.slice(locateDeepLink+1):''
- const deepFeature=Object.values(display).flatMap(v=>collection(v).features).find(f=>f.properties?.recordId===deepId)
- const externalDetail=useQuery({queryKey:[...prefix,'external-track',deepId],queryFn:()=>api.getExternalTrack(deepId),enabled:deepKind==='track'&&!!deepId&&!deepFeature&&session.permissions.includes('tracks.read'),retry:false})
- useEffect(()=>{if(!deepId)return;if(deepFeature){setSelected([deepFeature]);return}if(deepKind==='event'||deepKind==='earthquakes'||deepKind==='thermal'){data.selectEvidence(deepId);const v=data.detail.data?.event;if(v?.evidenceId===deepId&&v.reported.position)setSelected([{type:'Feature',geometry:{type:'Point',coordinates:[v.reported.position.lng,v.reported.position.lat]},properties:{recordId:deepId,evidenceId:deepId,kind:v.reported.type==='thermal.detection'?'thermal':'earthquakes',title:v.reported.title,date:v.reported.observedAt,outsideQuery:true,sourceId:v.sourceId}}])}else if(deepKind==='track'&&externalDetail.data){const v=externalDetail.data;setSelected([{type:'Feature',geometry:{type:'Point',coordinates:[v.reported.position.lng,v.reported.position.lat]},properties:{recordId:v.id,kind:v.kind==='aircraft'?'aircraft':'vessels',title:v.identityClaim,date:v.lastSeenAt,sourceId:v.sourceId,outsideQuery:true}}])}},[search.selected,deepFeature,data.detail.data,externalDetail.data,scopeKey])
- const inspect=(hits:Feature[])=>{setSelected(hits);setSheet('selection');const p=hits[0]?.properties;if(p?.evidenceId&&(p.kind==='earthquakes'||p.kind==='thermal'))data.selectEvidence(String(p.evidenceId));if(p?.recordId&&!p.aggregate)void navigate({search:old=>({...old,selected:`${p.kind}:${p.recordId}`}),replace:true})}
+const validCamera = (v: unknown): v is Camera =>
+  !!v &&
+  typeof v === 'object' &&
+  ['lng', 'lat', 'zoom', 'bearing', 'pitch'].every((k) => Number.isFinite((v as Record<string, unknown>)[k])) &&
+  Math.abs((v as Camera).lng) <= 180 &&
+  Math.abs((v as Camera).lat) <= 85 &&
+  (v as Camera).zoom >= 0 &&
+  (v as Camera).zoom <= 22
 
- const record=selected[0],props=record?.properties??{}
- useEffect(()=>{if(sheet==='selection'&&!record)setSheet('')},[sheet,record])
- const locate=(f?:Feature)=>{const b=boundsOf(f);if(b)cameraRef.current?.fitBounds(b)}
- const previews=(collection(display[family])).features.filter((f,i,rows)=>rows.findIndex(r=>r.properties?.recordId===f.properties?.recordId)===i).slice(0,size==='expanded'?100:24)
- const captures=collection(display.imagery).features.slice().sort((a,b)=>String(a.properties?.date).localeCompare(String(b.properties?.date))),capture=captures.find(f=>f.properties?.recordId===captureId)
- const compatibleCaptures=captures.filter(f=>f.properties?.recordId!==captureId&&!!capture&&boundsOf(f)?.every((v,i)=>Math.abs(v-boundsOf(capture)![i])<1e-7))
- const comparison=compatibleCaptures.find(f=>f.properties?.recordId===compareId)
- const rasterCaptures=[capture,comparison].filter((f):f is Feature=>!!f)
- const rasterDefs=[false,...(quality?[true]:[])].flatMap(mask=>rasterCaptures.map((f,i)=>({id:String((mask?f.properties?.qualityArtifactId:f.properties?.rgbArtifactId)??''),bounds:boundsOf(f)!,label:`${mask?'Quality mask':'Retained true color'} · ${dateLabel(f.properties?.date)}`,side:comparison?(i===0?'before':'after') as 'before'|'after':undefined,role:mask?'quality' as const:undefined})))
- const rasterQueries=useQueries({queries:rasterDefs.map(r=>({queryKey:[...prefix,'preview-artifact',r.id],queryFn:({signal})=>api.downloadArtifact(r.id,signal),enabled:!!r.id,gcTime:0,staleTime:60_000,retry:false}))})
- const [rasters,setRasters]=useState<RasterOverlay[]>([])
- useEffect(()=>{const next=rasterDefs.flatMap((r,i)=>rasterQueries[i]?.data?[{...r,url:URL.createObjectURL(rasterQueries[i].data!),opacity:r.role==='quality'?1:opacity}]:[]);setRasters(next);return()=>next.forEach(r=>URL.revokeObjectURL(r.url))},[rasterQueries.map(q=>q.dataUpdatedAt).join(),rasterDefs.map(r=>r.id+String(r.side)).join(),quality])
- const visibleRasters=useMemo(()=>rasters.map(r=>({...r,opacity:r.role==='quality'?1:opacity})),[rasters,opacity])
- const sketch=useMemo<FeatureCollection>(()=>({type:'FeatureCollection',features:[...(activeScope?.area.geometry?[{type:'Feature' as const,geometry:activeScope.area.geometry as unknown as Feature['geometry'],properties:{name:activeScope.area.name}}]:sketchArea?[sketchArea]:[]),...draw.map(p=>({type:'Feature' as const,geometry:{type:'Point' as const,coordinates:p},properties:{}})),...(draw.length>1?[{type:'Feature' as const,geometry:{type:'LineString' as const,coordinates:draw},properties:{}}]:[])]}),[draw,sketchArea,activeScope?.area.revisionId])
- const onDraw=(p:Position)=>setDraw(v=>[...v,p].slice(0,64))
- const finishSketch=async()=>{setMapError('');areaRequest.current?.abort();const request=new AbortController();areaRequest.current=request;try{if(draw.length<(mode==='area'?3:2))throw new Error(mode==='area'?'Choose at least three points.':'Choose at least two points.');const geometry=mode==='area'?{type:'Polygon',coordinates:[[...draw,draw[0]]]}:{type:'LineString',coordinates:draw};if(mode==='area'){const r=await api.resolveArea({kind:'drawn',name:'Drawn study area',geometry},request.signal);if(request.signal.aborted)return;setMeasurement(`${r.areaM2.toLocaleString(undefined,{maximumFractionDigits:0})} m² · WGS84 geodesic`);analyst.changeArea({kind:'drawn',name:'Drawn study area',geometry});setSelected([])}else{const r=await api.measureMapGeometry(geometry,request.signal);if(request.signal.aborted)return;setMeasurement(`${(r.lengthM/1000).toFixed(3)} km · WGS84 geodesic`)}setMode('inspect')}catch(e){if(!request.signal.aborted)setMapError(e instanceof Error?e.message:'Invalid geometry.')} }
- const presetTime=(days?:number)=>{if(days)analyst.changePeriod(monitoringPeriod(days));else{const to=new Date(),from=new Date(to.getTime()-366*86400000);analyst.changePeriod({mode:'historical',interval:{from:from.toISOString(),to:to.toISOString()},revisionView:'latest',timezone:activeScope?.temporal.timezone??Intl.DateTimeFormat().resolvedOptions().timeZone,backgroundImagery:false})}setPaused(false)}
- const timeLabel=scopePeriodLabel(activeScope)
- const rollingHours=analyst.input?.temporal.rollingSeconds?Math.round(analyst.input.temporal.rollingSeconds/3600):undefined
- const periodTitle=rollingHours?`Last ${rollingHours} hours`:activeScope?.temporal.mode==='historical'?'Historical study':'Selected period'
- const periodDetail=activeScope?`${new Date(activeScope.temporal.interval.from).toLocaleDateString(undefined,{timeZone:activeScope.temporal.timezone,month:'short',day:'numeric',...(activeScope.temporal.mode==='historical'?{year:'numeric' as const}:{})})} – ${new Date(activeScope.temporal.interval.to).toLocaleDateString(undefined,{timeZone:activeScope.temporal.timezone,month:'short',day:'numeric',...(activeScope.temporal.mode==='historical'?{year:'numeric' as const}:{})})} · ${activeScope.temporal.timezone}`:'Resolving time window…'
- const readCapacityExhausted=isReadCapacityExhausted(mapBatch.error)
- const unavailableLayers=enabledLayers.filter(k=>mapQueries[queryLayers.indexOf(k)]?.isError)
+const smallBounds = (b?: number[]) =>
+  b && b[0] < b[2] && b[1] < b[3] && (b[2] - b[0]) * (b[3] - b[1]) <= 400 ? b.join(',') : undefined
 
+const defaultLayers: AtlasLayer[] = ['earthquakes', 'thermal', 'weather', 'bulletins', 'imagery']
+const allLayers = Object.keys(layerInfo) as AtlasLayer[]
+const queryLayers = allLayers
+const EMPTY_KEYS: string[] = []
 
- const parents:Feature[]=[]
- let parentKey=scope?.properties?.parentKey
- for(let i=0;parentKey&&i<5;i++){const f=collection(ancestors.data).features.find(f=>f.properties?.regionKey===parentKey);if(!f||parents.some(p=>p.id===f.id))break;parents.unshift(f);parentKey=f.properties?.parentKey}
- const referenceGroups=useMemo(()=>{const groups=new Map<string,{name:string;ids:string[];features:number}>();for(const d of data.datasets.data?.items??[]){if(d.kind!=='vector')continue;const key=d.sourceId+'/'+d.datasetKey.replace(/-\d+$/,'');const entry=groups.get(key)??{name:d.datasetKey.startsWith('desert-maps-')?d.label:d.datasetKey.replace(/-\d+$/,'').replaceAll('-',' '),ids:[],features:0};entry.ids.push(d.id);entry.features+=d.featureCount;groups.set(key,entry)}return [...groups.values()]},[data.datasets.data])
- const saveView=()=>{if(!bookmarkName.trim()||!analyst.input||analyst.error)return;setBookmarks(v=>[...v,{id:crypto.randomUUID(),name:bookmarkName.trim().slice(0,80),camera,scope:analyst.input,publicView:analyst.searchFor().publicView,layers}].slice(-20));setBookmarkName('')}
- const shareLink=()=>{const link=new URL('/map',window.location.origin);if(tool)link.searchParams.set('tool',tool);if(search.workbench)link.searchParams.set('workbench',search.workbench);if(search.selected)link.searchParams.set('selected',search.selected);for(const [key,value]of Object.entries(analyst.searchFor(activeScope?fixedScopeInput(activeScope):analyst.input)))if(value!==undefined)link.searchParams.set(key,value);link.searchParams.set('mapState',JSON.stringify({camera,layers}));return link.href}
- const searchViewport=()=>{if(!viewport){setMapError('The current map view is unavailable.');return}const [w,s,e,n]=viewport,width=e-w;if(width<=0||width>=360||width*(n-s)>400){setMapError('Zoom in before using this view as a bounded area.');return}const lng=(x:number)=>((x+180)%360+360)%360-180,geometry={type:'Polygon',coordinates:[[[lng(w),s],[lng(e),s],[lng(e),n],[lng(w),n],[lng(w),s]]]};setSheet('');analyst.changeArea({kind:'viewport',name:'Explicit map view',geometry})}
- const surrounding=async()=>{areaRequest.current?.abort();const request=new AbortController();areaRequest.current=request;try{const p=coordinates.trim()?coordinates.split(',').map(Number):[camera.lng,camera.lat];if(p.length!==2||!p.every(Number.isFinite)||!radius.trim())throw new Error('Enter WGS84 longitude,latitude and a radius.');const feature=await api.createSurroundingArea({longitude:p[0],latitude:p[1],radiusM:Number(radius)},request.signal);if(request.signal.aborted)return;const f=feature as unknown as Feature;locate(f);setSheet('');analyst.changeArea({kind:'named',name:`Deliberate ${radius} m context buffer`,geometry:f.geometry as unknown as Record<string,unknown>})}catch(e){if(!request.signal.aborted)setMapError(e instanceof Error?e.message:'Context buffer could not be prepared.')}}
+function fullPageForTool(
+  tool: MapTool | undefined,
+  scopeSearch: Record<string, string | undefined>,
+): FullPageDestination | undefined {
+  if (!tool) return undefined
+  if (tool === 'systems' || tool === 'sources' || tool === 'jobs') {
+    return { to: '/systems', search: scopeSearch, label: 'Open Systems full page' }
+  }
+  if (tool === 'imagery') {
+    return { to: '/intelligence', search: { ...scopeSearch, view: 'compare' }, label: 'Open Imagery full page' }
+  }
+  if (tool === 'review') {
+    return { to: '/intelligence', search: { ...scopeSearch, view: 'review' }, label: 'Open Review desk full page' }
+  }
+  if (tool === 'context') {
+    return { to: '/intelligence', search: { ...scopeSearch, view: 'context' }, label: 'Open Context packages full page' }
+  }
+  if (tool === 'weather') {
+    return { to: '/weather-reports', search: scopeSearch, label: 'Open Weather & reports full page' }
+  }
+  if (tool === 'tracks') {
+    return { to: '/external-tracks', search: scopeSearch, label: 'Open Aircraft & vessels full page' }
+  }
+  return undefined
+}
 
- const keyboardCoordinates=()=>{const p=longitudeLatitude(coordinates);if(!p){setMapError('Enter longitude,latitude in WGS84 decimal degrees. Use signed west/south values.');return}if(mode==='inspect')cameraRef.current?.focus(p[0],p[1]);else onDraw(p)}
- const inspectRecord=()=>{const k=props.kind;if(k==='weather'||k==='bulletins')openTool('weather',{id:props.recordId,kind:k==='weather'?'WEATHER':'REPORT'});else if(k==='aircraft'||k==='vessels')openTool('tracks',{id:props.recordId});else if(k==='imagery'){setCaptureId(props.recordId);openTool('imagery')}else if(k==='findings')openTool('imagery',{view:'analysis',job:props.jobId});else if(k==='coverage')openTool('sources');else if(props.dataset_id){data.selectDataset(props.dataset_id);openTool('geography')}else{data.selectEvidence(props.evidenceId);openTool('geography')}}
- const dockLayout=atlasDockLayout(size,orientation,layoutViewport.width,layoutViewport.height,!!sheet||!!tool)
- const activeContextStatus=projectContextStatus({layer:display[family],sources:lostLayerAccess||scopeCoverage.isError?[]:scopeCoverage.data?.sources.filter(source=>source.family===family)??[],
-   receipts:lostLayerAccess?[]:mapBatch.data?.coverageReceipts,now:Date.now(),failed:mapQueries[queryLayers.indexOf(family)]?.isError,
-   retained:!!display[family]?.features.length})
- const quickCount=(kind:AtlasLayer)=>{const value=display[kind],query=mapQueries[queryLayers.indexOf(kind)];return query.isError?'Unavailable':value?.state==='historical_unsupported'?'—':value?.total?.toLocaleString()??'…'}
- const panelTabs=<nav className="atlas-panel-tabs" aria-label="Map panels">
-   {record&&<button aria-label="Selected map object" aria-pressed={sheet==='selection'} title={props.title||props.name} onClick={()=>setSheet(sheet==='selection'&&size!=='collapsed'?'':'selection')}>Selection</button>}
-   <button aria-label="Map layers" aria-pressed={sheet==='layers'} onClick={()=>setSheet(sheet==='layers'&&size!=='collapsed'?'':'layers')}><span>Layers</span></button>
-   <button aria-label="Map tools" aria-pressed={sheet==='tools'} onClick={()=>setSheet(sheet==='tools'&&size!=='collapsed'?'':'tools')}><span>Tools</span></button>
-   <button aria-label="Map views" aria-pressed={sheet==='views'} onClick={()=>setSheet(sheet==='views'&&size!=='collapsed'?'':'views')}><span>Saved views</span></button>
-   <button aria-label="Evidence inspector" aria-pressed={tool==='geography'&&!sheet} onClick={()=>{if(tool==='geography'){updateSheet('');setSize('preview')}else openTool('geography')}}>Evidence</button>
- </nav>
- const previewPicker=<PreviewFeedChooser value={family} items={allLayers.map(k=>({id:k,label:layerInfo[k].name,group:['aircraft','vessels'].includes(k)?'Moving contacts':['imagery','findings','coverage'].includes(k)?'Imagery & sources':'Reported context',description:!layers.includes(k)?'Layer off · enable it in Layers to draw these records':display[k]?.state==='historical_unsupported'?'Historical query unavailable':mapQueries[queryLayers.indexOf(k)]?.isError?'Feed unavailable · inspect source health':`${display[k]?.total?.toLocaleString()??'…'} matching retained records`,icon:<span style={{color:`var(${layerInfo[k].token})`}} aria-hidden="true">{layerInfo[k].glyph}</span>,keywords:k}))} onChoose={value=>{setFamily(value as AtlasLayer);updateSheet('');setSize('preview')}}/>
- return <div className="public-map-workspace atlas-workspace" aria-label="Public Context map workspace">
-   {canReadGeography&&referenceDrawing&&data.showReference&&data.selectedLayers.includes(referenceDrawing.datasetId)&&
-     data.datasets.data?.items.some(item=>item.id===referenceDrawing.datasetId)&&
-     <p className="ux-muted"><bdi dir="auto">{referenceDrawing.name||'Unnamed drawing'}</bdi>
-       {' · '}{referenceDrawing.family.replaceAll('-',' ')} · <bdi dir="auto">{referenceDrawing.attribution}</bdi>
-       {' · '}<code>{referenceDrawing.id}</code>{' '}
-       <button className="ux-button" onClick={()=>setReferenceDrawing(undefined)}>Clear drawing selection</button>
-     </p>}
-   {canReadGeography&&pinnedPlace&&<p className="ux-muted">
-     <bdi dir="auto">{pinnedPlace.properties?.name}</bdi> · <bdi dir="auto">{pinnedPlace.properties?.publisherRegion}</bdi>
-     {' '}<button className="ux-button" onClick={()=>setPinnedPlace(undefined)}>Clear place selection</button>
-     {pinnedPlace.properties?.allowTerrainDisplay===true&&<> · 3D place reference <code>{String(pinnedPlace.id)}</code></>}
-   </p>}
-   {analyst.error&&<div role="alert" className="ux-notice">{analyst.error} <button className="ux-button" onClick={()=>analyst.setScope({area:{kind:'world'},temporal:monitoringPeriod()})}>Start a new view</button></div>}{activeScope?.area.display.state==='partial'&&<p role="status" className="ux-notice">{activeScope.area.display.message}</p>}<div className="atlas-contextbar" aria-label={data.savedFilters.view!=='latest'?'Historical report map':'Public map scope'}><div className="atlas-search"><label className="sr-only" htmlFor="atlas-place-search">Find a country, region or place</label><span aria-hidden="true">⌕</span><input id="atlas-place-search" dir="auto" type="search" placeholder="Country, region, place…" autoComplete="off" value={query} onFocus={()=>setSearchOpen(true)} onChange={e=>{setQuery(e.target.value);setSearchOpen(true)}} onKeyDown={e=>{if(e.key==='Escape')setSearchOpen(false);if(e.key==='ArrowDown'){e.preventDefault();document.querySelector<HTMLButtonElement>('.atlas-search-results button:has(strong)')?.focus()}}}/>{searchOpen&&query.length>1&&<div className="atlas-search-results" aria-label="Geographic search results"><button onClick={()=>setSearchOpen(false)}>Close results</button>{searchResults.isPending?<p role="status">Searching admitted geography…</p>:searchResults.isError?<p role="alert">Geographic search unavailable.</p>:searchFeatures.length?searchFeatures.map(f=><button key={f.id} onClick={()=>chooseRegion(f)}><strong><bdi dir="auto">{f.properties?.name}</bdi></strong><span>{f.properties?.family?.replaceAll?.('-', ' ') || f.properties?.kind} · <bdi dir="auto">{f.properties?.publisherRegion || f.properties?.parentKey || 'World'}</bdi>{f.geometry.type==='Point'?' · location only':''}{f.properties?.matchBasis ? ' · '+f.properties.matchBasis : ''}{f.properties?.publisher ? <> · <bdi dir="auto">{f.properties.publisher}</bdi></> : null}</span></button>):<p>No admitted matching location. Use coordinates or draw an area.</p>}{searchResults.hasNextPage&&<button disabled={searchResults.isFetchingNextPage} onClick={()=>void searchResults.fetchNextPage()}>More geographic results</button>}</div>}</div>
-   <nav className="atlas-breadcrumb" aria-label="Selected geographic area"><button onClick={()=>{setSketchArea(undefined);setSelected([]);analyst.changeArea({kind:'world'});cameraRef.current?.fitBounds([-165,-55,165,75])}}>World</button>{parents.map(parent=><span className="atlas-crumb-parent" key={parent.id}><span>›</span><button onClick={()=>chooseRegion(parent)}>{parent.properties?.name}</button></span>)}<span>›</span><strong>{regionName}</strong></nav><div className="atlas-scope-actions"><button className="ux-button" onClick={()=>{const parts=activeScope?.area.components;if(parts?.length){cameraRef.current?.fitBounds(parts[0].bounds as [number,number,number,number]);if(parts.length>1)setMapError(`Showing component 1 of ${parts.length}. All components remain in the analytical scope; choose another in Geography.`)}else locate(sketchArea??scope)}} disabled={!activeScope?.area.components.length}>Fit area</button><button className="ux-button" aria-label="Time & filters" title={timeLabel} onClick={()=>setSheet('filters')}> <span className="atlas-period-label"><strong>{periodTitle}</strong><small>{periodDetail}</small></span></button><button className="ux-button atlas-focus-toggle" aria-pressed={focus} onClick={()=>{setFocus(v=>!v);setSheet('')}}>{focus?'Restore workspace':'Focus map'}</button></div></div><nav className="atlas-task-actions" aria-label="Map tasks"><div><strong>Evidence workspace</strong><span>Select an area, inspect coverage, then build your investigation.</span></div><div className="atlas-task-buttons">{session.permissions.includes('investigations.read')&&<button className="ux-button" data-primary={tool==='investigations'||!tool} aria-pressed={tool==='investigations'} onClick={()=>openTool('investigations')}>Investigations</button>}{session.permissions.includes('sources.read')&&<><button className="ux-button" aria-pressed={tool==='coverage'} onClick={()=>openTool('coverage')}>Check coverage</button><button className="ux-button" aria-pressed={tool==='imagery'} onClick={()=>openTool('imagery')}>Analyze imagery</button></>}</div></nav><CoveragePanel scope={activeScope} active={!paused} compact/>
-   {(data.filterWarning||regionQuery.isError||!!regionID&&regionQuery.isSuccess&&!scope)&&<p className="ux-notice" role="alert">{data.filterWarning||'Selected geography unavailable. Choose another admitted region.'}</p>}
-   <div className="atlas-stage" data-orientation={dockLayout.orientation} data-dock={focus?'collapsed':size} data-panel={sheet||tool||'previews'} data-compact-controls={dockLayout.compactControls} style={{'--atlas-dock-size':dockLayout.extent} as CSSProperties}>
-     <div className="public-map-canvas atlas-map-region">
-       <AtlasCanvas proposalOverlay={proposalOverlay} cameraRef={cameraRef} initialCamera={camera} onCamera={setCamera} onPointer={updatePointer} onBounds={setViewport} regions={geographicFeatures} scope={exactSelection??sketchArea??scope} selection={retainedSelection??record} referencePlace={canReadGeography?pinnedPlace:undefined} boundaryLevel={boundaryLevel} features={rendered} datasets={data.showReference?data.selectedLayers:[]} referenceOpacity={referenceOpacity} basemap={LOCAL_BASEMAP_ONLY?'reference':basemap} streetArchive={streetMap?.bytes} onSelect={inspect} onRegion={chooseRegion} onReference={setReferenceDrawing} mode={mode} onDraw={onDraw} sketch={sketch} rasters={visibleRasters} swipe={swipe} onError={setMapError}/>
-       {environmentHandoff&&<aside className="atlas-data-notice" aria-label="Environment selection">
-         {selectedEnvironmentFeature&&<p><bdi dir="auto">{selectedEnvironmentFeature.properties.tags.name||selectedEnvironmentFeature.properties.sourceId}</bdi> · {selectedEnvironmentFeature.properties.sourceId}</p>}
-         {selectedTerrain&&<p>Terrain point · {wb.terrainPoint?.replace(',', '°, ')}°</p>}
-         {terrainID&&terrainPoint.isError&&<p role="status">The linked terrain point is unavailable in this workspace.</p>}
-         {featureLink&&environmentFeature.isPending&&<p role="status">Resolving the retained feature…</p>}
-         {featureLink&&environmentFeature.isError&&<p role="status">The retained feature is unavailable in this workspace.</p>}
-         {streetID&&streets.isPending&&<p role="status">Verifying the retained street map…</p>}
-         {streetID&&streets.isError&&<p role="status">Retained street detail is unavailable. Regional reference geography remains available.</p>}
-         {streetMap&&<p>Retained street detail · zoom 12–16 · {streetMap.display.bounds.map(value=>value.toFixed(3)).join(', ')} · <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a></p>}
-         {wb.display&&<button className="ux-button" onClick={()=>openTool('environments',{...wb,view:'environment-3d'})}>Reopen 3D preview</button>}
-         <button className="ux-button" onClick={closeTool}>Clear environment selection</button>
-       </aside>}
-       {unavailableLayers.length>0&&!focus&&!inspectingEnvironment&&<aside className="atlas-data-notice" aria-label="Map data availability"><strong>{readCapacityExhausted?'Temporary evidence read limit reached':'Some evidence layers could not load'}</strong><details className="atlas-recovery-details" open={layoutViewport.width>760}><summary>Details & recovery</summary><p>{readCapacityExhausted?'The map will retry as temporary reads expire. You can also close unused EMAD tabs and select Retry layers.':`${unavailableLayers.map(k=>layerInfo[k].name).join(', ')}. Retry these layers to check for retained records.`}</p><div><button className="ux-button" disabled={mapBatch.isFetching} onClick={()=>void mapBatch.refetch()}>{mapBatch.isFetching?'Retrying…':'Retry layers'}</button><button className="ux-button" onClick={()=>openTool('sources')}>Check sources</button></div><details><summary>Technical details</summary><p>{mapBatch.error?.message??'One or more retained evidence queries are unavailable.'}</p></details></details></aside>}
-       <div className="atlas-map-footer">
-         <span ref={coordinateLabel}>Pointer · {pointerLabel(pointer.current)}</span>
-         {rasters.length>0&&<button aria-label="Retained raster acquisitions" onClick={()=>setSheet('layers')}>Sentinel-2 · {dateLabel(capture?.properties?.date)}{comparison?` ↔ ${dateLabel(comparison.properties?.date)}`:''}{quality?' · SCL exclusions':''}</button>}
-         <span data-active-state={paused||boundaryLevel!=='auto'}>{paused?`Display paused · ${new Date(pauseTime).toLocaleTimeString()}`:boundaryLevel!=='auto'?`Selecting ${boundaryLevel==='country'?'countries':'subdivisions'}`:measurement||'Provider coverage varies by area'}{boundaryLevel!=='auto'&&<button onClick={()=>setBoundaryLevel('auto')}>Return to objects</button>}</span>
-       </div>
-       {mapError&&<div className="atlas-map-warning" role="status"><span>{mapError}</span><button aria-label="Dismiss map notice" onClick={()=>setMapError('')}>×</button></div>}
-     </div>
-     <section hidden={focus} className="map-preview-dock atlas-dock atlas-unified-dock" aria-label="Map preview dock" data-size={size}>
-       <header className="map-preview-header">
-         <MapWorkbenchChooser value={tool} permissions={session.permissions} onChoose={next=>{if(next==='previews'){closeTool();setSize('preview')}else openTool(next)}}/>
-         {!tool&&!dockLayout.compactControls&&previewPicker}
-         {dockLayout.compactControls?<AtlasToolbarMenu label="Map controls" className="atlas-controls-menu" summary="Tools">{panelTabs}</AtlasToolbarMenu>:panelTabs}
-         <AtlasToolbarMenu label="Show area situation" className="atlas-situation-menu" summary={<><span>Layer status</span><small>{enabledLayers.includes('earthquakes')?`${quickCount('earthquakes')} earthquakes`:''}{enabledLayers.includes('weather')?` · ${quickCount('weather')} stations`:''}</small></>}>
-<div className="atlas-summary" aria-label="Area situation">
-         <div className="atlas-layer-chips">{enabledLayers.map(k=>{const q=mapQueries[queryLayers.indexOf(k)],v=display[k];return <button key={k} aria-pressed={family===k&&!tool&&!sheet} onClick={()=>{setFamily(k);closeTool();setSize('preview')}} title={`${layerInfo[k].name} · ${v?.countMeaning??'Matching retained records'}`}><span style={{color:`var(${layerInfo[k].token})`}} aria-hidden="true">{layerInfo[k].glyph}</span><strong>{q?.isError?'!':!v?regionID&&!scope?'—':'…':v.state==='historical_unsupported'?'—':v.total?.toLocaleString()??0}</strong><span>{layerInfo[k].name}</span></button>})}</div>
-         <MapUpdates scopeKey={scopeKey} layers={updateLayers} onInspect={(kind,f)=>{setFamily(kind);inspect([f])}}/>
-         <div className="atlas-summary-actions">
-           <button aria-label="Refresh display" disabled={paused} title="Refresh retained records; retrieval has its own worker schedule" onClick={()=>{void mapBatch.refetch();void scopeCoverage.refetch();analyst.refresh()}}>↻</button>
-           <button aria-label="Previous view" title="Previous map view" onClick={()=>cameraRef.current?.previous()}>↶</button>
-           <button aria-label={paused?'Resume display':'Pause display'} title="Freezes display only; retrieval continues" aria-pressed={paused} onClick={()=>{setPaused(v=>!v);if(!paused){setFrozen({key:scopeKey,layers:currentLayers});setPauseTime(new Date().toISOString())}}}>{paused?'▶':'Ⅱ'}</button>
-         </div>
-       </div>
-         </AtlasToolbarMenu>
-         <div className="dock-tools">
-           <AtlasToolbarMenu label="Workbench layout" className="atlas-layout-menu" summary="Layout">
-             <button aria-pressed={orientation==='auto'} onClick={()=>setOrientation('auto')}>Automatic layout</button>
-             <button aria-pressed={orientation==='vertical'} onClick={()=>setOrientation('vertical')}>Side dock</button>
-             <button aria-pressed={orientation==='horizontal'} onClick={()=>setOrientation('horizontal')}>Bottom dock</button>
-             <button aria-label={size==='full'?'Return tool to map':'Maximize map workbench'} onClick={()=>setSize(v=>v==='full'?'preview':'full')}>{size==='full'?'Return to map':'Maximize'}</button>
-             <button aria-label={size==='expanded'?'Reduce preview dock':'Expand preview dock'} onClick={()=>setSize(v=>v==='expanded'?'preview':'expanded')}>{size==='expanded'?'Compact panel':'Expand panel'}</button>
-           </AtlasToolbarMenu>
-           {tool&&!sheet&&<button aria-label="Close workbench" onClick={closeTool}>×</button>}
-           <button aria-label={size==='collapsed'?'Restore previews':'Collapse previews'} aria-expanded={size!=='collapsed'} onClick={()=>setSize(v=>v==='collapsed'?'preview':'collapsed')}>{size==='collapsed'?'Show':'Hide'}</button>
-         </div>
-       </header>
-       {mode!=='inspect'&&<div className="atlas-draw-controls" role="status"><strong>{mode==='area'?'Draw study polygon':'Measure distance'}</strong><span>{draw.length} points · tap map or add coordinates</span><button className="ux-button" onClick={()=>setSheet('tools')}>Coordinates</button><button className="ux-button" onClick={()=>setDraw(v=>v.slice(0,-1))}>Undo</button><button className="ux-button" onClick={()=>void finishSketch()}>Finish</button><button className="ux-button" onClick={()=>{setMode('inspect');setDraw([])}}>Cancel</button></div>}
-       <div className="atlas-dock-body" hidden={size==='collapsed'}>
-         <div hidden={!!sheet}><MapWorkbenches tool={tool} host={host} routeKey={search.workbench} geography={<div className="ux-page"><h2>Geography & reference</h2><p>{regionName}</p><ReferenceDepthPanel/><div className="catalog-paging"><p role="status">{countries.isError?'Country boundaries could not load.':countries.isPending?'Loading country boundaries…':`${countryFeatures.length} country boundaries loaded`}</p>{countries.hasNextPage&&<button className="ux-button" disabled={countries.isFetching} onClick={()=>void countries.fetchNextPage()}>More countries</button>}<button className="ux-button" disabled={countries.isFetching} onClick={()=>void countries.refetch()}>Refresh countries</button></div>{scope&&<CatalogPaging catalog={children} label="subdivisions"/>}{scope&&<details className="atlas-region-provenance" open><summary>Selected area & source</summary><dl><dt>Meaning</dt><dd>{scope.properties?.meaning}</dd><dt>Version / edition</dt><dd>{scope.properties?.version} · {scope.properties?.editionId}</dd><dt>Attribution</dt><dd>{scope.properties?.attribution}</dd><dt>Canonical area geometry SHA-256</dt><dd>{activeScope?.area.geometrySha256}</dd><dt>Source edition artifact SHA-256</dt><dd>{scope.properties?.sha256}</dd></dl><p>Generalized reference geometry does not certify jurisdiction or current source coverage.</p></details>}{activeScope&&activeScope.area.components.length>1&&<div aria-label="Area components">{activeScope.area.components.map((part,i)=><button className="ux-button" key={i} onClick={()=>cameraRef.current?.fitBounds(part.bounds as [number,number,number,number])}>Fit component {i+1}</button>)}</div>}<button className="ux-button" onClick={()=>setSheet('layers')}>Manage layers</button><button className="ux-button" onClick={()=>setSheet('tools')}>Subdivisions & study areas</button><PublicContextPanel embedded data={data} focus={(lng,lat)=>cameraRef.current?.focus(lng,lat)} replaying={false}/></div>}/></div>
-         {sheet==='selection'&&<div ref={selectionPanel} className="atlas-selection-panel">         {record&&<section className="atlas-peek" aria-label="Selected map object"><header><span className="ux-status">{props.kind??'Reference feature'}</span><button className="ux-button" aria-label="Clear selected map object" onClick={()=>{setSelected([]);setSheet('');void navigate({search:p=>({...p,selected:undefined}),replace:true})}}>×</button></header>{selected.length>1&&<label>Overlapping objects<select value={String(record.id??props.recordId??0)} onChange={e=>setSelected(v=>[...v.filter(f=>String(f.id??f.properties?.recordId??0)===e.target.value),...v.filter(f=>String(f.id??f.properties?.recordId??0)!==e.target.value)])}>{selected.map((f,i)=><option key={i} value={String(f.id??f.properties?.recordId??0)}>{f.properties?.title??f.properties?.name??f.properties?.kind??'Reference'}</option>)}</select></label>}<h2><bdi dir="auto">{props.title||props.name||'Retained reference feature'}</bdi></h2><p>{timeLabel}</p>{props.validityStatus&&<p role="status">Current retained provider status: {String(props.validityStatus).replaceAll('_',' ')}. This is separate from the selected historical interpretation and is not independent verification.</p>}{props.outsideQuery&&<p className="ux-notice">Pinned record outside the selected query. Its own date and location are preserved.</p>}<p>{props.date?new Date(props.date).toLocaleString():props.meaning??'Source version retained; observation time not supplied.'}</p>{props.temperature!=null&&<p className="atlas-weather-value">{Number(props.temperature).toFixed(1)} °C <span>Wind {props.wind==null?'unknown':`${Number(props.wind).toFixed(1)} m/s`}</span></p>}{props.reviewStatus&&<p>Workflow: {props.reviewStatus} · algorithmic geometry; inspect human review</p>}{props.synthetic===true&&<p className="ux-notice">Synthetic development inputs</p>}{props.status&&<p className="ux-status">{props.status} · {Math.round(Number(props.ageSeconds??0)/60)} minutes since reported validity</p>}<p>{props.source||props.sourceId||(props.aggregate?'Multiple retained records; inspect individual sources':'Reference geography')}{props.uncertainty?` · ${props.uncertainty}`:''}</p>{props.aggregate&&mapBatch.data?.id&&['earthquakes','thermal','events'].includes(String(props.kind))&&<ReadRecords scope={mapBatch.data.scope} readId={mapBatch.data.id} family={String(props.kind)} aggregate={String(props.aggregateId??'')} onChoose={v=>{data.selectEvidence(String(v.evidenceId));if(!v.displayPosition){setMapError('This retained report has no usable map locator. Inspect its source location and uncertainty.');return}setSelected([{type:'Feature',geometry:v.displayPosition as Geometry,properties:{...v,kind:props.kind,evidenceId:v.evidenceId,recordId:v.evidenceId,title:(v.reported as {title?:string})?.title}}])}}/>}{props.aggregate&&<p>Display aggregate · {props.count} records. Zoom for reported positions.</p>}<div className="ux-actions"><button className="ux-button" onClick={()=>locate(record)}>Locate</button><button className="ux-button" onClick={inspectRecord} disabled={!!props.aggregate}>Inspect</button>{props.kind==='imagery'&&<button className="ux-button" data-primary onClick={()=>{setCaptureId(props.recordId);setSheet('layers')}}>Show pixels</button>}</div></section>}
-</div>}
-         {sheet&&sheet!=='selection'&&<section ref={flyout} className="atlas-flyout atlas-docked-controls" aria-label={sheet==='layers'?'Map layers':sheet==='filters'?'Investigation and time':sheet==='views'?'Saved map views':'Investigation tools'}><header><h2>{sheet==='layers'?'Map layers':sheet==='filters'?'Investigation & time':sheet==='views'?'Saved views':'Measure & study area'}</h2><button className="ux-button" onClick={()=>setSheet('')} aria-label="Close map tool">×</button></header><div className="atlas-flyout-body">
-           {sheet==='layers'?<div className="atlas-settings-grid"><section><h3>Map appearance</h3><div className="ux-tabs" aria-label="Map view presets">{['Situation','Imagery','Geography'].map(p=><button key={p} onClick={()=>setLayers(p==='Situation'?defaultLayers:p==='Imagery'?['imagery','findings']:['coverage'])}>{p}</button>)}</div><label>Boundary selection<select className="atlas-field" value={boundaryLevel} onChange={e=>setBoundaryLevel(e.target.value as typeof boundaryLevel)}><option value="auto">Objects first, then boundaries</option><option value="country">Country boundaries</option><option value="region">Admitted subdivisions</option></select></label>{LOCAL_BASEMAP_ONLY?<p>Local reference basemap. Open retained street detail from an authorized environment release.</p>:<label>Basemap<select className="atlas-field" value={basemap} onChange={e=>setBasemap(e.target.value as typeof basemap)}><option value="quiet">Quiet streets</option><option value="streets">Streets & labels</option><option value="reference">Retained reference only</option></select></label>}</section><fieldset className="atlas-layer-list"><legend>Evidence & context</legend>{allLayers.map(k=>{const q=mapQueries[queryLayers.indexOf(k)],v=display[k];return <label key={k}><input type="checkbox" checked={layers.includes(k)} disabled={!session.permissions.includes(layerInfo[k].permission)} onChange={()=>toggle(k)}/><span className="atlas-legend-glyph" style={{color:`var(${layerInfo[k].token})`}}>{layerInfo[k].glyph}</span><span>{layerInfo[k].name}<small>{!session.permissions.includes(layerInfo[k].permission)?'Read grant required':q?.isError?'Unavailable · inspect sources':v?.state==='historical_unsupported'?'Historical query unsupported':v?.state==='aggregated'?'Complete result shown as aggregates':v?`${v.total??0} scoped records`:'Enable to query'}</small></span></label>})}</fieldset>
-           <details open={!!captureId}><summary>Retained imagery on map</summary><p className="ux-muted">Captured windows at native extents. Compare uses matching retained windows; acquisition dates remain explicit.</p>{(['Base','Compare'] as const).map((label,i)=><label key={label}>{label} acquisition<select className="atlas-field" value={i?compareId:captureId} onChange={e=>i?setCompareId(e.target.value):setCaptureId(e.target.value)}><option value="">{i?'Single acquisition':'Footprints only'}</option>{(i?compatibleCaptures:captures).map(f=><option key={f.id} value={f.properties?.recordId}>{dateLabel(f.properties?.date)} · {f.properties?.title}</option>)}</select></label>)}<label><input type="checkbox" checked={quality} onChange={e=>setQuality(e.target.checked)}/> Quality mask · SCL exclusions</label><label>Raster opacity · {Math.round(opacity*100)}%<input type="range" min="0" max="1" step=".05" value={opacity} onChange={e=>setOpacity(Number(e.target.value))}/></label>{comparison&&<label>Before / after divider<input type="range" min="0" max="1" step=".01" value={swipe} onChange={e=>setSwipe(Number(e.target.value))}/></label>}{rasterQueries.some(q=>q.isError)&&<p role="alert">Retained image unavailable. Check capture or storage readiness.</p>}{quality&&<p className="ux-notice">Amber: excluded by Sentinel-2 SCL. Transparent: eligible classes 4, 5 and 6. Classification can be wrong; exclusions include clouds, shadows and other ineligible classes.</p>}{rasters.map((r,i)=><p className="ux-muted" key={i}>{r.side==='after'?'After: ':r.side==='before'?'Before: ':''}{r.label}</p>)}</details>
-           <section><label>Find a map layer<input className="atlas-field" type="search" value={layerSearch} onChange={e=>setLayerSearch(e.target.value)} placeholder="Roads, buildings, places…"/></label><details open={!!layerSearch}><summary>Reference geography · {data.selectedLayers.length} versions</summary><label><input type="checkbox" checked={data.showReference} onChange={e=>data.setShowReference(e.target.checked)}/> Show retained geometry</label><label>Reference opacity<input type="range" min="0" max="1" step=".05" value={referenceOpacity} onChange={e=>setReferenceOpacity(Number(e.target.value))}/></label>{referenceGroups.filter(group=>group.name.toLowerCase().includes(layerSearch.toLowerCase())).map(group=><label className="atlas-reference-choice" key={group.ids[0]}><input type="checkbox" checked={group.ids.every(id=>data.selectedLayers.includes(id))} onChange={()=>data.toggleLayers(group.ids)}/><span>{group.name}<small>{group.features.toLocaleString()} features · {group.ids.length} retained storage versions</small></span></label>)}<p className="ux-muted">Complete PostGIS geometry per tile. Zoom resolves detail; inspection does not page the map.</p></details></section></div>:sheet==='filters'?<><div className="ux-tabs">{([[1,'24 hours'],[7,'7 days'],[30,'30 days'],[undefined,'Last 366 days']] as const).map(([days,label])=><button key={label} onClick={()=>presetTime(days)}>{label}</button>)}</div><p className="ux-notice">{timeLabel}. Observation, acquisition and publication use different clocks.</p><p className="ux-muted" aria-label="Public view meaning">{meaningFor(data.savedFilters.view)}</p><PublicFiltersForm data={data}/><button className="ux-button" onClick={searchViewport}>Use this view</button><p className="ux-muted">Panning changes the camera only. Use this view deliberately to change the analytical area. Draw a study polygon to search an exact area; administrative scopes use their retained polygons.</p></>:sheet==='views'?<><form onSubmit={e=>{e.preventDefault();saveView()}}><label>Name this map view<input className="atlas-field" maxLength={80} value={bookmarkName} onChange={e=>setBookmarkName(e.target.value)} required/></label><button className="ux-button" type="submit">Save current view</button></form><p className="ux-muted">Private to this account and workspace. Settings only, never imagery or credentials.</p>{bookmarks.map(b=><article className="atlas-bookmark" key={b.id}><button className="ux-button" onClick={()=>{setLayers(b.layers);setCamera(b.camera);cameraRef.current?.restore(b.camera);void navigate({search:p=>({...p,...(b.scope?analyst.searchFor(b.scope):{scope:undefined,region:b.region||'world',area:b.area,publicView:b.publicView})})});setSheet('')}}>{b.name}</button><button className="ux-button" aria-label={`Delete saved view ${b.name}`} onClick={()=>setBookmarks(v=>v.filter(x=>x.id!==b.id))}>×</button></article>)}<button className="ux-button" onClick={()=>{void navigator.clipboard?.writeText(shareLink()).then(()=>setMapError('View link copied. The recipient needs their own grants.')).catch(()=>setMapError('Copy the address bar to share this authorized view.'))}}>Copy view link</button><p className="ux-muted">The link includes area, dates, camera and visible layers. Recipients need their own grants; drafts stay private.</p></>:<><p className="ux-muted">PostGIS WGS84 geodesic measurements. Study polygons are analyst boundaries, never administrative or maritime claims.</p><div className="ux-actions"><button className="ux-button" onClick={()=>{setMode('measure');setDraw([]);setMeasurement('');setSheet('')}}>Measure distance</button><button className="ux-button" onClick={()=>{setMode('area');setDraw([]);setMeasurement('');setSheet('')}}>Draw study polygon</button></div><label>Longitude, latitude<input className="atlas-field" value={coordinates} placeholder="39.18,21.5" onChange={e=>setCoordinates(e.target.value)}/></label><button className="ux-button" onClick={keyboardCoordinates}>{mode==='inspect'?'Locate coordinates':'Add point'}</button><button className="ux-button" onClick={()=>void finishSketch()} disabled={draw.length<2}>Finish drawing</button><p role="status">{measurement}</p>{sketchArea&&<button className="ux-button" onClick={()=>{analyst.changeArea({kind:'world'});setDraw([])}}>Return to named area</button>}<label>Surrounding context radius (metres)<input className="atlas-field" type="number" min="100" max="50000" value={radius} onChange={e=>setRadius(e.target.value)}/></label><button className="ux-button" onClick={()=>void surrounding()}>Create nearby context area</button><p className="ux-muted">Uses the coordinates above, or the camera centre. This context buffer does not define maritime jurisdiction.</p><label>Admitted subdivisions<select className="atlas-field" value="" onChange={e=>{const f=collection(children.data).features.find(v=>v.id===e.target.value);if(f)chooseRegion(f)}}><option value="">Choose region / study area</option>{collection(children.data).features.map(f=><option key={f.id} value={String(f.id)}>{f.properties?.name} · {f.properties?.kind}</option>)}</select></label><p className="ux-muted">Only admitted subdivisions appear. Place points do not invent city limits.</p></>}
-         </div></section>}
-         {!tool&&!sheet&&<>{dockLayout.compactControls&&<div className="atlas-preview-picker">{previewPicker}</div>}<div className="preview-records" aria-label="Record previews">{previews.map((f,i)=><button className="preview-record" aria-pressed={props.recordId===f.properties?.recordId} key={String(f.id??i)} onClick={()=>inspect([f])}>{f.properties?.rgbArtifactId?<ArtifactImage id={f.properties.rgbArtifactId} alt={`Retained acquisition ${dateLabel(f.properties.date)}`}/>:<span className="preview-placeholder" aria-hidden="true">{layerInfo[family].glyph}</span>}<div><span className="preview-record-type">{layerInfo[family].name}</span><h2>{f.properties?.title||f.properties?.recordId}</h2><p>{dateLabel(f.properties?.date)}</p><p>{f.properties?.source||f.properties?.sourceId||'Derived retained result'}</p></div></button>)}{!layers.includes(family)?<div className="atlas-empty"><h2>This layer is off</h2><p>Preview choices and map layers are independent.</p><button className="ux-button" onClick={()=>toggle(family)}>Enable {layerInfo[family].name}</button></div>:!previews.length&&<div className="atlas-empty"><h2>{mapQueries[queryLayers.indexOf(family)]?.isError?'Layer unavailable':display[family]?.state==='historical_unsupported'?'Historical query unavailable':'No matching retained records'}</h2><ContextLayerDetails status={activeContextStatus}/><p>{timeLabel}</p><button className="ux-button" onClick={()=>openTool('sources')}>Inspect sources</button><button className="ux-button" onClick={()=>presetTime()}>View retained history</button></div>}</div>{!!previews.length&&<details><summary>Layer coverage and freshness</summary><ContextLayerDetails status={activeContextStatus}/></details>}{size!=='preview'&&<div className="atlas-preview-actions"><p>{mapQueries[queryLayers.indexOf(family)]?.isError?'Count unavailable':`${display[family]?.total??previews.length} scoped records` }. Selecting preserves the camera; Locate fits the geometry.</p><button className="ux-button" disabled={!record} onClick={()=>locate(record)}>Locate selected</button><button className="ux-button" onClick={()=>openTool(family==='weather'||family==='bulletins'?'weather':family==='aircraft'||family==='vessels'?'tracks':family==='imagery'||family==='findings'?'imagery':'geography')}>Open workbench</button></div>}</>}
-       </div>
-     </section>
-   </div>
- </div>
+export function PublicAtlasWorkspace() {
+  const api = useAPI()
+  const analyst = useAnalystScope()!
+  const activeScope = analyst.snapshot
+  const { prefix, session } = useWorkspace()
+  const search = useSearch({ from: '/map' })
+  const navigate = useNavigate({ from: '/map' })
+
+  const cameraRef = useRef<AtlasHandle>(null)
+  const areaRequest = useRef<AbortController | undefined>(undefined)
+  const drawerRef = useRef<HTMLElement>(null)
+  const coordinateLabel = useRef<HTMLSpanElement>(null)
+
+  const [layoutViewport, setLayoutViewport] = useState(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }))
+  useEffect(() => {
+    const onResize = () => setLayoutViewport({ width: window.innerWidth, height: window.innerHeight })
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  useEffect(() => () => areaRequest.current?.abort(), [JSON.stringify(analyst.input)])
+
+  const [camera, setCamera] = useWorkspacePreference<Camera>(
+    'atlas-camera',
+    { lng: 43.3, lat: 24.7, zoom: 5, bearing: 0, pitch: 0 },
+    validCamera,
+  )
+  const pointer = useRef<[number, number]>([camera.lng, camera.lat])
+  const updatePointer = useCallback((p: [number, number]) => {
+    pointer.current = p
+    if (coordinateLabel.current) coordinateLabel.current.textContent = 'Pointer · ' + pointerLabel(p)
+  }, [])
+
+  const regionID = activeScope?.area.geography?.regionId ?? analyst.input?.area.regionId ?? ''
+  const [layers, setLayers] = useWorkspacePreference<AtlasLayer[]>(
+    'atlas-layers',
+    defaultLayers,
+    (v): v is AtlasLayer[] => Array.isArray(v) && v.length <= 9 && v.every((k) => k in layerInfo),
+  )
+  const [basemap, setBasemap] = useWorkspacePreference<'streets' | 'quiet' | 'reference'>(
+    'atlas-basemap',
+    'quiet',
+    (v): v is 'streets' | 'quiet' | 'reference' => ['streets', 'quiet', 'reference'].includes(String(v)),
+  )
+  const [bookmarks, setBookmarks] = useWorkspacePreference<MapBookmark[]>(
+    'atlas-bookmarks',
+    [],
+    (v): v is MapBookmark[] =>
+      Array.isArray(v) &&
+      v.length <= 20 &&
+      v.every(
+        (x) =>
+          typeof x.name === 'string' &&
+          x.name.length <= 80 &&
+          validCamera(x.camera) &&
+          Array.isArray(x.layers) &&
+          x.layers.every((k: string) => k in layerInfo),
+      ),
+  )
+
+  const [layerSearch, setLayerSearch] = useState('')
+  const [layersInitialTab, setLayersInitialTab] = useState<LayersSubTab>('evidence')
+  const [layersTabKey, setLayersTabKey] = useState(0)
+  const [recordsInitialMode, setRecordsInitialMode] = useState<RecordsBrowseMode>('view')
+  const [recordsModeKey, setRecordsModeKey] = useState(0)
+  const [boundaryLevel, setBoundaryLevel] = useState<'auto' | 'country' | 'region'>('auto')
+  const [proposalOverlay, setProposalOverlay] = useState<FeatureCollection>(empty)
+  const [family, setFamily] = useState<AtlasLayer>('imagery')
+  const [query, setQuery] = useState('')
+  const [debounced, setDebounced] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [mapError, setMapError] = useState('')
+  const [selected, setSelected] = useState<Feature[]>([])
+  const [opacity, setOpacity] = useState(0.75)
+  const [referenceOpacity, setReferenceOpacity] = useState(0.7)
+  const [mode, setMode] = useState<'inspect' | 'measure' | 'area'>('inspect')
+  const [draw, setDraw] = useState<Position[]>([])
+  const [sketchArea, setSketchArea] = useState<Feature | undefined>(() =>
+    readStudyArea(analyst.input?.area.geometry ? JSON.stringify(analyst.input.area.geometry) : search.area),
+  )
+  const [measurement, setMeasurement] = useState('')
+  const [coordinates, setCoordinates] = useState('')
+  const [paused, setPaused] = useState(false)
+  const [frozen, setFrozen] = useState<{ key: string; layers: Partial<Record<AtlasLayer, MapResponse>> }>()
+  const [pauseTime, setPauseTime] = useState('')
+  const [viewport, setViewport] = useState<[number, number, number, number]>()
+  const [radius, setRadius] = useState('10000')
+  const [bookmarkName, setBookmarkName] = useState('')
+  const [captureId, setCaptureId] = useState('')
+  const [compareId, setCompareId] = useState('')
+  const [quality, setQuality] = useState(false)
+  const [swipe, setSwipe] = useState(0.5)
+  const [referenceDrawing, setReferenceDrawing] = useState<ReferenceDrawing>()
+  const [pinnedPlace, setPinnedPlace] = useState<Feature>()
+
+  const tool =
+    search.tool === 'simulation' && session.productProfile === 'map'
+      ? undefined
+      : (search.tool as MapTool | undefined)
+
+  const wb = useMemo<WorkbenchSearch>(() => {
+    try {
+      const p = JSON.parse(search.workbench ?? '{}')
+      return p && typeof p === 'object' && !Array.isArray(p)
+        ? Object.fromEntries(
+            Object.entries(p).filter(
+              ([k, v]) =>
+                [
+                  'view',
+                  'job',
+                  'assessment',
+                  'bbox',
+                  'before',
+                  'after',
+                  'id',
+                  'kind',
+                  'model',
+                  'upload',
+                  'display',
+                  'manifest',
+                  'feature',
+                  'layers',
+                  'basemap',
+                  'atlasArea',
+                  'terrainPoint',
+                ].includes(k) &&
+                typeof v === 'string' &&
+                v.length <= (k === 'layers' || k === 'feature' ? 512 : 256),
+            ),
+          )
+        : {}
+    } catch {
+      return {}
+    }
+  }, [search.workbench])
+
+  const autoCollapseTool = tool === 'environments' && wb.view === 'environment-atlas'
+  const panels = useMapPanelController(tool, autoCollapseTool)
+
+  const caseBridgeScope = JSON.stringify(prefix)
+  const queueAttachment = useCaseCitationBridge((s) => s.queueAttachment)
+  const attachedKeys = useCaseCitationBridge((s) => (s.scopeKey === caseBridgeScope ? s.attachedKeys : EMPTY_KEYS))
+
+  const data = usePublicContext({
+    cartography: false,
+    loadEvents: search.tool === 'geography',
+    regionId: sketchArea ? undefined : regionID,
+    geometry: sketchArea ? JSON.stringify(sketchArea.geometry) : undefined,
+  })
+
+  useEffect(() => {
+    setSketchArea(readStudyArea(analyst.input?.area.geometry ? JSON.stringify(analyst.input.area.geometry) : undefined))
+  }, [JSON.stringify(analyst.input?.area)])
+
+  useEffect(() => {
+    const shared = readSharedView(search.mapState)
+    if (shared) {
+      setCamera(shared.camera)
+      setLayers(shared.layers)
+      cameraRef.current?.restore(shared.camera)
+    }
+  }, [search.mapState])
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebounced(query.trim()), 220)
+    return () => clearTimeout(timeout)
+  }, [query])
+
+  const canReadGeography = session.permissions.includes('sources.read')
+  const countries = useInfiniteQuery({
+    queryKey: [...prefix, 'geography', 'countries', session.accessRevision],
+    enabled: canReadGeography,
+    initialPageParam: 0,
+    staleTime: 300_000,
+    queryFn: ({ signal, pageParam }) => api.listGeographicRegions({ kind: 'country', offset: pageParam }, signal),
+    getNextPageParam: (page, _, offset) =>
+      page.nextOffset ?? (page.truncated && page.features.length ? offset + page.features.length : undefined),
+  })
+
+  const regionQuery = useQuery({
+    queryKey: [...prefix, 'geography', 'region', regionID],
+    queryFn: ({ signal }) => api.listGeographicRegions({ id: regionID }, signal),
+    enabled: !!regionID,
+    staleTime: 300_000,
+  })
+
+  const scope = collection(regionQuery.data).features[0]
+  const scopeBounds = boundsOf(sketchArea ?? scope)
+  const scopeBBox = smallBounds(scopeBounds) ?? (regionID ? undefined : data.savedFilters.bbox || undefined)
+
+  const exactSelection = useMemo<Feature | undefined>(
+    () =>
+      activeScope?.area.geometry
+        ? {
+            type: 'Feature',
+            id: activeScope.area.geography?.regionId ?? activeScope.area.revisionId,
+            geometry: activeScope.area.geometry as unknown as Geometry,
+            properties: {
+              ...scope?.properties,
+              name: activeScope.area.name,
+              kind: scope?.properties?.kind ?? 'study',
+            },
+          }
+        : undefined,
+    [activeScope?.scopeHash, scope],
+  )
+
+  const fittedArea = useRef('')
+  useEffect(() => {
+    if (!exactSelection || fittedArea.current === activeScope?.area.revisionId) return
+    const first = !fittedArea.current
+    fittedArea.current = activeScope?.area.revisionId ?? ''
+    if (first && search.mapState) return
+    const b = boundsOf(exactSelection)
+    if (b && b[1] < 85 && b[3] > -85) {
+      cameraRef.current?.fitBounds([b[0], Math.max(-85, b[1]), b[2], Math.min(85, b[3])])
+    }
+  }, [activeScope?.area.revisionId, exactSelection])
+
+  const regionName =
+    activeScope?.area.name ??
+    (sketchArea
+      ? 'Drawn study area'
+      : scope?.properties?.name ??
+        (regionID
+          ? regionQuery.isSuccess || regionQuery.isError
+            ? 'Selected area unavailable'
+            : 'Loading selected area…'
+          : data.savedFilters.bbox
+            ? 'Bounded investigation'
+            : 'World · configured evidence'))
+
+  const children = useCatalog<Feature>(
+    'geography',
+    undefined,
+    !!scope?.properties?.regionKey,
+    {
+      parent: String(scope?.properties?.regionKey ?? ''),
+      sourceId: scope?.properties?.sourceId,
+      releaseId: activeScope?.area.geography?.releaseId,
+      editionId: activeScope?.area.geography?.releaseId ? undefined : scope?.properties?.editionId,
+    },
+    300,
+  )
+
+  const ancestors = useCatalog<Feature>(
+    'geography',
+    undefined,
+    !!scope?.properties?.parentKey,
+    {
+      sourceId: scope?.properties?.sourceId,
+      releaseId: activeScope?.area.geography?.releaseId,
+      editionId: activeScope?.area.geography?.releaseId ? undefined : scope?.properties?.editionId,
+    },
+    300,
+  )
+
+  const searchResults = useInfiniteQuery({
+    queryKey: [...prefix, 'geographic-search', debounced],
+    enabled: debounced.length > 1 && searchOpen && session.permissions.includes('sources.read'),
+    gcTime: 0,
+    retry: false,
+    initialPageParam: 0,
+    queryFn: ({ signal, pageParam }) => api.listGeographicRegions({ q: debounced, offset: pageParam }, signal),
+    getNextPageParam: (page) => page.nextOffset ?? undefined,
+  })
+
+  useEffect(() => {
+    const expiry = pinnedPlace?.properties?.rights?.expiresAt
+    const remaining = typeof expiry === 'string' ? Date.parse(expiry) - Date.now() : NaN
+    if (!Number.isFinite(remaining)) return
+    if (remaining <= 0) {
+      setPinnedPlace(undefined)
+      return
+    }
+    if (remaining > 2_147_483_647) return
+    const timeout = window.setTimeout(() => setPinnedPlace(undefined), remaining)
+    return () => window.clearTimeout(timeout)
+  }, [pinnedPlace])
+
+  const searchFeatures = searchResults.data?.pages.flatMap((page) => collection(page).features) ?? []
+
+  const chooseRegion = useCallback(
+    (f: Feature) => {
+      if (f.geometry.type !== 'Point') setPinnedPlace(undefined)
+      if (f.geometry.type === 'Point') {
+        setPinnedPlace(f.properties?.family ? f : undefined)
+        cameraRef.current?.focus(...(f.geometry.coordinates as [number, number]))
+        setSearchOpen(false)
+        setMapError(
+          `${f.properties?.name} is a place point. The investigation remains ${regionName}; choose a region or draw an area.`,
+        )
+        return
+      }
+      const id = String(f.id ?? f.properties?.id)
+      setSketchArea(undefined)
+      setSelected([])
+      setSearchOpen(false)
+      setQuery('')
+      setPaused(false)
+      setFrozen(undefined)
+      setDraw([])
+      const bounds = boundsOf(f)
+      if (bounds && bounds[2] - bounds[0] <= 180) cameraRef.current?.fitBounds(bounds)
+      void navigate({
+        search: (p) => ({
+          ...p,
+          ...analyst.searchFor({
+            area: {
+              kind: 'administrative',
+              regionId: id,
+              sourceId: f.properties?.sourceId,
+              releaseId: f.properties?.releaseId || undefined,
+            },
+            temporal: analyst.input?.temporal ?? monitoringPeriod(),
+          }),
+          selected: undefined,
+        }),
+      })
+    },
+    [navigate, regionName, analyst],
+  )
+
+  const countryFeatures = useMemo(
+    () => (canReadGeography ? countries.data?.pages.flatMap((page) => collection(page).features) ?? [] : []),
+    [canReadGeography, countries.data],
+  )
+
+  const geographicFeatures = useMemo<FeatureCollection>(
+    () => ({
+      type: 'FeatureCollection',
+      features: [
+        ...countryFeatures,
+        ...collection(children.data).features.filter((f) => f.geometry.type !== 'Point'),
+      ],
+    }),
+    [countryFeatures, children.data],
+  )
+
+  const enabledLayers = layers.filter((k) => session.permissions.includes(layerInfo[k].permission))
+  const temporal = queryFor(data.savedFilters)
+  const filters = {
+    region_id: sketchArea ? undefined : regionID || undefined,
+    bbox: sketchArea ? undefined : scopeBBox,
+    view: temporal.view,
+    as_of: temporal.as_of,
+    observed_from: temporal.observed_from,
+    observed_to: temporal.observed_to,
+    source_id: temporal.source_id,
+    quality: temporal.quality,
+    zoom: Math.floor(camera.zoom),
+    geometry: sketchArea ? JSON.stringify(sketchArea.geometry) : undefined,
+  }
+
+  const scopeKey = activeScope?.scopeHash ?? JSON.stringify([analyst.input, analyst.error])
+  useEffect(() => {
+    setSelected([])
+    setProposalOverlay(empty)
+  }, [scopeKey])
+
+  const scopeCoverage = useCoverage(activeScope, !paused)
+  const coverageInventory = useCoverageInventory(!paused)
+  const historical = activeScope?.temporal.mode === 'historical'
+  const readFamilies = historical
+    ? queryLayers.filter((k) => session.permissions.includes(layerInfo[k].permission))
+    : enabledLayers
+  const inspectingEnvironment = tool === 'environments' && ['environment-3d', 'environment-atlas'].includes(wb.view ?? '')
+
+  const mapBatch = useQuery({
+    ...historicalReadOptions(activeScope),
+    queryKey: [
+      ...prefix,
+      'atlas-read',
+      scopeKey,
+      activeScope?.authorizationRevision,
+      temporal.source_id,
+      temporal.quality,
+      historical ? 'fixed-study' : Math.floor(camera.zoom),
+      readFamilies,
+    ],
+    queryFn: ({ signal }) =>
+      api.readAnalystScope(
+        {
+          ...fixedScopeInput(activeScope!),
+          families: readFamilies,
+          filters: { sourceId: temporal.source_id, quality: temporal.quality },
+          zoom: Math.floor(camera.zoom),
+          includeEvents: false,
+        },
+        signal,
+      ),
+    enabled: !!activeScope && !analyst.error && enabledLayers.length > 0 && !paused && !inspectingEnvironment,
+    retry: retryConcurrentRead,
+    retryDelay: (attempt) => 150 * (attempt + 1),
+    refetchInterval: (q) => (isReadCapacityExhausted(q.state.error) ? 15_000 : false),
+    gcTime: 0,
+  })
+
+  useReadSnapshotRelease(inspectingEnvironment ? undefined : mapBatch.data?.id, [...prefix, 'atlas-read'])
+
+  const mapQueries = queryLayers.map((k) => ({
+    ...mapBatch,
+    isError: mapBatch.isError || mapBatch.data?.layers[k]?.state === 'unavailable',
+    data:
+      mapBatch.data?.scope.scopeHash === scopeKey
+        ? (mapBatch.data.layers[k] as unknown as MapResponse)
+        : undefined,
+  }))
+
+  const currentLayers = useMemo(
+    () => Object.fromEntries(queryLayers.map((k, i) => [k, mapQueries[i].data])) as Partial<Record<AtlasLayer, MapResponse>>,
+    [...mapQueries.map((q) => q.data)],
+  )
+  const lostLayerAccess = mapBatch.error instanceof ApiError && [401, 403].includes(mapBatch.error.status)
+  const display = lostLayerAccess ? {} : paused && frozen?.key === scopeKey ? frozen.layers : currentLayers
+
+  useEffect(() => {
+    if (lostLayerAccess) {
+      setSelected([])
+      setFrozen(undefined)
+    }
+  }, [lostLayerAccess])
+
+  const rendered = useMemo(
+    () => Object.fromEntries(enabledLayers.map((k) => [k, collection(display[k])])),
+    [display, layers.join(',')],
+  )
+  const updateLayers = useMemo(
+    () => Object.fromEntries(enabledLayers.filter((k) => !!display[k]).map((k) => [k, collection(display[k])])),
+    [display, layers.join(',')],
+  )
+
+  useEffect(() => {
+    if (paused && frozen?.key !== scopeKey) {
+      setPaused(false)
+      setFrozen(undefined)
+    }
+  }, [scopeKey, paused, frozen?.key])
+
+  const toggleLayer = (k: AtlasLayer) => setLayers((v) => (v.includes(k) ? v.filter((x) => x !== k) : [...v, k]))
+
+  const openTool = useCallback(
+    (next: MapTool, values?: WorkbenchSearch) => {
+      panels.openPanel('')
+      panels.setDrawerHiddenForTool(false)
+      panels.setCleanMap(false)
+      panels.setDrawerSize(window.innerWidth <= 760 || window.innerHeight <= 500 ? 'full' : 'normal')
+      void navigate({
+        search: (p) => ({
+          ...p,
+          tool: next,
+          workbench: JSON.stringify({
+            ...values,
+            bbox: values?.bbox ?? scopeBBox,
+            view:
+              values?.view ??
+              (next === 'review' ? 'review' : next === 'context' ? 'context' : next === 'jobs' ? 'analysis' : undefined),
+          }),
+        }),
+      })
+    },
+    [navigate, scopeBBox, panels],
+  )
+
+  const updateWorkbench = useCallback(
+    (value: WorkbenchSearch, replace = false) => {
+      const handoff = value.view === 'environment-3d' || value.view === 'environment-atlas'
+      const safeArea =
+        activeScope && (activeScope.area.persistent || activeScope.area.geography || activeScope.area.kind === 'world')
+      const frozenScope =
+        handoff && safeArea && analyst.input?.temporal.rollingSeconds
+          ? analyst.searchFor(fixedScopeInput(activeScope))
+          : undefined
+      void navigate({ search: (p) => ({ ...p, ...frozenScope, workbench: JSON.stringify(value) }), replace })
+    },
+    [navigate, activeScope, analyst.input?.temporal.rollingSeconds, analyst.searchFor],
+  )
+
+  const closeTool = useCallback(() => {
+    panels.openPanel('')
+    panels.setDrawerHiddenForTool(false)
+    void navigate({ search: (p) => ({ ...p, tool: undefined }) })
+  }, [navigate, panels])
+
+  const showAtlas = useCallback(() => {
+    panels.openPanel('')
+    panels.setDrawerHiddenForTool(true)
+    panels.setCleanMap(false)
+  }, [panels])
+
+  const host = useMemo(
+    () => ({
+      scope: activeScope,
+      scopeInput: activeScope ? fixedScopeInput(activeScope) : analyst.input,
+      selectionKey: JSON.stringify(analyst.input),
+      previewFootprints: setProposalOverlay,
+      search: {
+        ...wb,
+        bbox: wb.bbox ?? scopeBBox,
+        view: wb.view ?? (tool === 'review' ? 'review' : tool === 'context' ? 'context' : undefined),
+      },
+      regionId: sketchArea ? undefined : regionID || undefined,
+      geometry: activeScope?.area.geometry ? JSON.stringify(activeScope.area.geometry) : undefined,
+      operationGeometry: activeScope?.area.geometry ? JSON.stringify(activeScope.area.geometry) : undefined,
+      areaError: analyst.error ?? (!activeScope ? 'Resolving the selected area and period…' : undefined),
+      regionName,
+      open: openTool,
+      update: updateWorkbench,
+      close: closeTool,
+      showAtlas,
+      showOnMap: (sel: string) => {
+        setLayers((v) => [...new Set([...v, ...(sel.startsWith('track:') ? (['aircraft', 'vessels'] as AtlasLayer[]) : [])])])
+        void navigate({ search: (p) => ({ ...p, selected: sel }) })
+        panels.setCleanMap(false)
+      },
+    }),
+    [
+      wb,
+      scopeBBox,
+      tool,
+      regionID,
+      filters.geometry,
+      scope,
+      search.area,
+      regionName,
+      openTool,
+      updateWorkbench,
+      closeTool,
+      showAtlas,
+      activeScope,
+      analyst.input,
+      analyst.error,
+      navigate,
+      panels,
+    ],
+  )
+
+  const environmentHandoff =
+    tool === 'environments' &&
+    wb.view === 'environment-atlas' &&
+    (!wb.atlasArea || wb.atlasArea === activeScope?.area.revisionId) &&
+    session.permissions.includes('environments.download')
+
+  const featureLink = environmentHandoff
+    ? wb.feature?.match(/^(geodisplay_[a-f0-9]{64}):([a-f0-9]{64}:[A-Za-z0-9_.:-]{1,128})$/)
+    : undefined
+
+  const environmentFeature = useQuery({
+    queryKey: [...prefix, 'environment-atlas-feature', scopeKey, wb.id, wb.manifest, featureLink?.[0]],
+    enabled: !!featureLink && !!wb.id && !!wb.manifest,
+    gcTime: 0,
+    retry: false,
+    refetchInterval: 30_000,
+    queryFn: async ({ signal }) => {
+      const displayItem = await api.environmentDisplay(featureLink![1], signal)
+      if (displayItem.releaseId !== wb.id || displayItem.manifestSha256 !== wb.manifest || displayItem.state !== 'READY') {
+        throw new Error('The linked display is unavailable.')
+      }
+      return readSceneFeature(await fetchDisplayBytes(api.environmentDisplayContent, displayItem, signal), displayItem, featureLink![2])
+    },
+  })
+
+  const terrainCoordinates = wb.terrainPoint?.match(/^(-?\d{1,3}\.\d{6}),(-?\d{1,2}\.\d{6})$/)
+  const terrainID =
+    environmentHandoff && terrainCoordinates && /^geodisplay_[a-f0-9]{64}$/.test(wb.display ?? '')
+      ? wb.display
+      : undefined
+
+  const terrainPoint = useQuery({
+    queryKey: [...prefix, 'environment-atlas-terrain', scopeKey, wb.id, wb.manifest, terrainID, wb.terrainPoint],
+    enabled: !!terrainID && !!wb.id && !!wb.manifest,
+    gcTime: 0,
+    retry: false,
+    refetchInterval: 30_000,
+    queryFn: async ({ signal }): Promise<Feature> => {
+      const displayItem = await api.environmentDisplay(terrainID!, signal)
+      const [west, south, east, north] = displayItem.bounds
+      const lng = Number(terrainCoordinates![1])
+      const lat = Number(terrainCoordinates![2])
+      if (
+        displayItem.releaseId !== wb.id ||
+        displayItem.manifestSha256 !== wb.manifest ||
+        displayItem.state !== 'READY' ||
+        !['terrain-glb-v1', 'terrain-glb-v2', 'ground-glb-v1'].includes(displayItem.recipe) ||
+        lng < west - 0.000001 ||
+        lng > east + 0.000001 ||
+        lat < south - 0.000001 ||
+        lat > north + 0.000001
+      ) {
+        throw new Error('The linked terrain point is unavailable.')
+      }
+      return {
+        type: 'Feature',
+        id: `${terrainID}:${wb.terrainPoint}`,
+        geometry: { type: 'Point', coordinates: [lng, lat] },
+        properties: { name: 'Terrain point' },
+      }
+    },
+  })
+
+  const selectedTerrain = environmentHandoff && terrainID && terrainPoint.isSuccess ? terrainPoint.data : undefined
+  const selectedEnvironmentFeature =
+    environmentHandoff && featureLink && environmentFeature.isSuccess ? environmentFeature.data : undefined
+  const retainedSelection = selectedTerrain ?? selectedEnvironmentFeature
+
+  useEffect(() => {
+    if (retainedSelection) {
+      const bounds = boundsOf(retainedSelection)
+      if (bounds) cameraRef.current?.fitBounds(bounds)
+    }
+  }, [retainedSelection?.id])
+
+  const streetID =
+    environmentHandoff && /^geodisplay_[a-f0-9]{64}$/.test(wb.basemap ?? '') ? wb.basemap : undefined
+
+  const streets = useQuery({
+    queryKey: [...prefix, 'environment-street-map', scopeKey, wb.id, wb.manifest, streetID],
+    enabled: !!streetID && !!wb.id && !!wb.manifest,
+    gcTime: 0,
+    retry: false,
+    refetchInterval: 30_000,
+    queryFn: async ({ signal }) => {
+      const displayItem = await api.environmentDisplay(streetID!, signal)
+      if (
+        displayItem.releaseId !== wb.id ||
+        displayItem.manifestSha256 !== wb.manifest ||
+        displayItem.recipe !== 'street-pmtiles-v1' ||
+        displayItem.state !== 'READY'
+      ) {
+        throw new Error('The retained street map is unavailable.')
+      }
+      return { display: displayItem, bytes: await fetchDisplayBytes(api.environmentDisplayContent, displayItem, signal) }
+    },
+  })
+
+  const streetMap = streetID && streets.isSuccess ? streets.data : undefined
+  useEffect(() => {
+    if (streetMap && !retainedSelection) {
+      cameraRef.current?.fitBounds(streetMap.display.bounds as [number, number, number, number])
+    }
+  }, [streetMap?.display.id, retainedSelection?.id])
+
+  const locateDeepLink = search.selected?.indexOf(':') ?? -1
+  const deepKind = locateDeepLink > 0 ? search.selected!.slice(0, locateDeepLink) : ''
+  const deepId = locateDeepLink > 0 ? search.selected!.slice(locateDeepLink + 1) : ''
+  const deepFeature = Object.values(display)
+    .flatMap((v) => collection(v).features)
+    .find((f) => f.properties?.recordId === deepId)
+
+  const externalDetail = useQuery({
+    queryKey: [...prefix, 'external-track', deepId],
+    queryFn: () => api.getExternalTrack(deepId),
+    enabled: deepKind === 'track' && !!deepId && !deepFeature && session.permissions.includes('tracks.read'),
+    retry: false,
+  })
+
+  useEffect(() => {
+    if (!deepId) return
+    if (deepFeature) {
+      setSelected([deepFeature])
+      return
+    }
+    if (deepKind === 'event' || deepKind === 'earthquakes' || deepKind === 'thermal') {
+      data.selectEvidence(deepId)
+      const v = data.detail.data?.event
+      if (v?.evidenceId === deepId && v.reported.position) {
+        setSelected([
+          {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [v.reported.position.lng, v.reported.position.lat] },
+            properties: {
+              recordId: deepId,
+              evidenceId: deepId,
+              kind: v.reported.type === 'thermal.detection' ? 'thermal' : 'earthquakes',
+              title: v.reported.title,
+              date: v.reported.observedAt,
+              outsideQuery: true,
+              sourceId: v.sourceId,
+            },
+          },
+        ])
+      }
+    } else if (deepKind === 'track' && externalDetail.data) {
+      const v = externalDetail.data
+      setSelected([
+        {
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [v.reported.position.lng, v.reported.position.lat] },
+          properties: {
+            recordId: v.id,
+            kind: v.kind === 'aircraft' ? 'aircraft' : 'vessels',
+            title: v.identityClaim,
+            date: v.lastSeenAt,
+            sourceId: v.sourceId,
+            outsideQuery: true,
+          },
+        },
+      ])
+    }
+  }, [search.selected, deepFeature, data.detail.data, externalDetail.data, scopeKey])
+
+  // Selecting an object opens the floating SelectionPeekCard — NEVER hijacks the left drawer!
+  const inspect = useCallback(
+    (hits: Feature[]) => {
+      setSelected(hits)
+      const p = hits[0]?.properties
+      if (p?.evidenceId && (p.kind === 'earthquakes' || p.kind === 'thermal')) {
+        data.selectEvidence(String(p.evidenceId))
+      }
+      if (p?.recordId && !p.aggregate) {
+        void navigate({ search: (old) => ({ ...old, selected: `${p.kind}:${p.recordId}` }), replace: true })
+      }
+    },
+    [data, navigate],
+  )
+
+  const record = selected[0]
+  const props = record?.properties ?? {}
+  const locate = (f?: Feature) => {
+    const b = boundsOf(f)
+    if (b) cameraRef.current?.fitBounds(b)
+  }
+
+  const previews = collection(display[family])
+    .features.filter((f, i, rows) => rows.findIndex((r) => r.properties?.recordId === f.properties?.recordId) === i)
+    .slice(0, 100)
+
+  const captures = collection(display.imagery)
+    .features.slice()
+    .sort((a, b) => String(a.properties?.date).localeCompare(String(b.properties?.date)))
+  const capture = captures.find((f) => f.properties?.recordId === captureId)
+  const compatibleCaptures = captures.filter(
+    (f) =>
+      f.properties?.recordId !== captureId &&
+      !!capture &&
+      boundsOf(f)?.every((v, i) => Math.abs(v - boundsOf(capture)![i]) < 1e-7),
+  )
+  const comparison = compatibleCaptures.find((f) => f.properties?.recordId === compareId)
+  const rasterCaptures = [capture, comparison].filter((f): f is Feature => !!f)
+  const rasterDefs = [false, ...(quality ? [true] : [])].flatMap((mask) =>
+    rasterCaptures.map((f, i) => ({
+      id: String((mask ? f.properties?.qualityArtifactId : f.properties?.rgbArtifactId) ?? ''),
+      bounds: boundsOf(f)!,
+      label: `${mask ? 'Quality mask' : 'Retained true color'} · ${dateLabel(f.properties?.date)}`,
+      side: comparison ? ((i === 0 ? 'before' : 'after') as 'before' | 'after') : undefined,
+      role: mask ? ('quality' as const) : undefined,
+    })),
+  )
+
+  const rasterQueries = useQueries({
+    queries: rasterDefs.map((r) => ({
+      queryKey: [...prefix, 'preview-artifact', r.id],
+      queryFn: ({ signal }) => api.downloadArtifact(r.id, signal),
+      enabled: !!r.id,
+      gcTime: 0,
+      staleTime: 60_000,
+      retry: false,
+    })),
+  })
+
+  const [rasters, setRasters] = useState<RasterOverlay[]>([])
+  useEffect(() => {
+    const next = rasterDefs.flatMap((r, i) =>
+      rasterQueries[i]?.data
+        ? [{ ...r, url: URL.createObjectURL(rasterQueries[i].data!), opacity: r.role === 'quality' ? 1 : opacity }]
+        : [],
+    )
+    setRasters(next)
+    return () => next.forEach((r) => URL.revokeObjectURL(r.url))
+  }, [
+    rasterQueries.map((q) => q.dataUpdatedAt).join(),
+    rasterDefs.map((r) => r.id + String(r.side)).join(),
+    quality,
+  ])
+
+  const visibleRasters = useMemo(
+    () => rasters.map((r) => ({ ...r, opacity: r.role === 'quality' ? 1 : opacity })),
+    [rasters, opacity],
+  )
+
+  const sketch = useMemo<FeatureCollection>(
+    () => ({
+      type: 'FeatureCollection',
+      features: [
+        ...(activeScope?.area.geometry
+          ? [
+              {
+                type: 'Feature' as const,
+                geometry: activeScope.area.geometry as unknown as Feature['geometry'],
+                properties: { name: activeScope.area.name },
+              },
+            ]
+          : sketchArea
+            ? [sketchArea]
+            : []),
+        ...draw.map((p) => ({
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: p },
+          properties: {},
+        })),
+        ...(draw.length > 1
+          ? [
+              {
+                type: 'Feature' as const,
+                geometry: { type: 'LineString' as const, coordinates: draw },
+                properties: {},
+              },
+            ]
+          : []),
+      ],
+    }),
+    [draw, sketchArea, activeScope?.area.revisionId],
+  )
+
+  const onDraw = (p: Position) => setDraw((v) => [...v, p].slice(0, 64))
+
+  const finishSketch = async () => {
+    setMapError('')
+    areaRequest.current?.abort()
+    const request = new AbortController()
+    areaRequest.current = request
+    try {
+      if (draw.length < (mode === 'area' ? 3 : 2)) {
+        throw new Error(mode === 'area' ? 'Choose at least three points.' : 'Choose at least two points.')
+      }
+      const geometry =
+        mode === 'area'
+          ? { type: 'Polygon', coordinates: [[...draw, draw[0]]] }
+          : { type: 'LineString', coordinates: draw }
+      if (mode === 'area') {
+        const r = await api.resolveArea({ kind: 'drawn', name: 'Drawn study area', geometry }, request.signal)
+        if (request.signal.aborted) return
+        setMeasurement(`${r.areaM2.toLocaleString(undefined, { maximumFractionDigits: 0 })} m² · WGS84 geodesic`)
+        analyst.changeArea({ kind: 'drawn', name: 'Drawn study area', geometry })
+        setSelected([])
+      } else {
+        const r = await api.measureMapGeometry(geometry, request.signal)
+        if (request.signal.aborted) return
+        setMeasurement(`${(r.lengthM / 1000).toFixed(3)} km · WGS84 geodesic`)
+      }
+      setMode('inspect')
+    } catch (e) {
+      if (!request.signal.aborted) setMapError(e instanceof Error ? e.message : 'Invalid geometry.')
+    }
+  }
+
+  const presetTime = (days?: number) => {
+    if (days) {
+      analyst.changePeriod(monitoringPeriod(days))
+    } else {
+      const to = new Date()
+      const from = new Date(to.getTime() - 366 * 86_400_000)
+      analyst.changePeriod({
+        mode: 'historical',
+        interval: { from: from.toISOString(), to: to.toISOString() },
+        revisionView: 'latest',
+        timezone: activeScope?.temporal.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+        backgroundImagery: false,
+      })
+    }
+    setPaused(false)
+  }
+
+  const timeLabel = scopePeriodLabel(activeScope)
+  const rollingHours = analyst.input?.temporal.rollingSeconds
+    ? Math.round(analyst.input.temporal.rollingSeconds / 3600)
+    : undefined
+  const periodTitle = rollingHours
+    ? `Last ${rollingHours} hours`
+    : activeScope?.temporal.mode === 'historical'
+      ? 'Historical study'
+      : 'Selected period'
+  const periodDetail = activeScope
+    ? `${new Date(activeScope.temporal.interval.from).toLocaleDateString(undefined, {
+        timeZone: activeScope.temporal.timezone,
+        month: 'short',
+        day: 'numeric',
+        ...(activeScope.temporal.mode === 'historical' ? { year: 'numeric' as const } : {}),
+      })} – ${new Date(activeScope.temporal.interval.to).toLocaleDateString(undefined, {
+        timeZone: activeScope.temporal.timezone,
+        month: 'short',
+        day: 'numeric',
+        ...(activeScope.temporal.mode === 'historical' ? { year: 'numeric' as const } : {}),
+      })} · ${activeScope.temporal.timezone}`
+    : 'Resolving time window…'
+
+  const activeFilterCount =
+    (data.savedFilters.sourceId ? 1 : 0) +
+    (data.savedFilters.phenomenon ? 1 : 0) +
+    (data.savedFilters.quality ? 1 : 0) +
+    (data.savedFilters.view !== 'latest' ? 1 : 0) +
+    (data.savedFilters.revisions === 'all' ? 1 : 0)
+
+  const readCapacityExhausted = isReadCapacityExhausted(mapBatch.error)
+  const unavailableLayers = enabledLayers.filter((k) => mapQueries[queryLayers.indexOf(k)]?.isError)
+
+  const parents: Feature[] = []
+  let parentKey = scope?.properties?.parentKey
+  for (let i = 0; parentKey && i < 5; i++) {
+    const f = collection(ancestors.data).features.find((item) => item.properties?.regionKey === parentKey)
+    if (!f || parents.some((p) => p.id === f.id)) break
+    parents.unshift(f)
+    parentKey = f.properties?.parentKey
+  }
+
+  const referenceGroups = useMemo(() => {
+    const groups = new Map<string, { name: string; ids: string[]; features: number }>()
+    for (const d of data.datasets.data?.items ?? []) {
+      if (d.kind !== 'vector') continue
+      const key = d.sourceId + '/' + d.datasetKey.replace(/-\d+$/, '')
+      const entry = groups.get(key) ?? {
+        name: d.datasetKey.startsWith('desert-maps-')
+          ? d.label
+          : d.datasetKey.replace(/-\d+$/, '').replaceAll('-', ' '),
+        ids: [],
+        features: 0,
+      }
+      entry.ids.push(d.id)
+      entry.features += d.featureCount
+      groups.set(key, entry)
+    }
+    return [...groups.values()]
+  }, [data.datasets.data])
+
+  const saveView = () => {
+    if (!bookmarkName.trim() || !analyst.input || analyst.error) return
+    setBookmarks((v) =>
+      [
+        ...v,
+        {
+          id: crypto.randomUUID(),
+          name: bookmarkName.trim().slice(0, 80),
+          camera,
+          scope: analyst.input,
+          publicView: analyst.searchFor().publicView,
+          layers,
+        },
+      ].slice(-20),
+    )
+    setBookmarkName('')
+  }
+
+  const shareLink = () => {
+    const link = new URL('/map', window.location.origin)
+    if (tool) link.searchParams.set('tool', tool)
+    if (search.workbench) link.searchParams.set('workbench', search.workbench)
+    if (search.selected) link.searchParams.set('selected', search.selected)
+    for (const [key, value] of Object.entries(
+      analyst.searchFor(activeScope ? fixedScopeInput(activeScope) : analyst.input),
+    )) {
+      if (value !== undefined) link.searchParams.set(key, value)
+    }
+    link.searchParams.set('mapState', JSON.stringify({ camera, layers }))
+    return link.href
+  }
+
+  const searchViewport = () => {
+    if (!viewport) {
+      setMapError('The current map view is unavailable.')
+      return
+    }
+    const [w, s, e, n] = viewport
+    const width = e - w
+    if (width <= 0 || width >= 360 || width * (n - s) > 400) {
+      setMapError('Zoom in before using this view as a bounded area.')
+      return
+    }
+    const lng = (x: number) => (((x + 180) % 360) + 360) % 360 - 180
+    const geometry = {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [lng(w), s],
+          [lng(e), s],
+          [lng(e), n],
+          [lng(w), n],
+          [lng(w), s],
+        ],
+      ],
+    }
+    panels.openPanel('')
+    analyst.changeArea({ kind: 'viewport', name: 'Explicit map view', geometry })
+  }
+
+  const surrounding = async () => {
+    areaRequest.current?.abort()
+    const request = new AbortController()
+    areaRequest.current = request
+    try {
+      const p = coordinates.trim() ? coordinates.split(',').map(Number) : [camera.lng, camera.lat]
+      if (p.length !== 2 || !p.every(Number.isFinite) || !radius.trim()) {
+        throw new Error('Enter WGS84 longitude,latitude and a radius.')
+      }
+      const feature = await api.createSurroundingArea(
+        { longitude: p[0], latitude: p[1], radiusM: Number(radius) },
+        request.signal,
+      )
+      if (request.signal.aborted) return
+      const f = feature as unknown as Feature
+      locate(f)
+      panels.openPanel('')
+      analyst.changeArea({
+        kind: 'named',
+        name: `Deliberate ${radius} m context buffer`,
+        geometry: f.geometry as unknown as Record<string, unknown>,
+      })
+    } catch (e) {
+      if (!request.signal.aborted) {
+        setMapError(e instanceof Error ? e.message : 'Context buffer could not be prepared.')
+      }
+    }
+  }
+
+  const keyboardCoordinates = () => {
+    const p = longitudeLatitude(coordinates)
+    if (!p) {
+      setMapError('Enter longitude,latitude in WGS84 decimal degrees. Use signed west/south values.')
+      return
+    }
+    if (mode === 'inspect') cameraRef.current?.focus(p[0], p[1])
+    else onDraw(p)
+  }
+
+  const inspectRecord = () => {
+    const k = props.kind
+    if (k === 'weather' || k === 'bulletins') openTool('weather', { id: props.recordId, kind: k === 'weather' ? 'WEATHER' : 'REPORT' })
+    else if (k === 'aircraft' || k === 'vessels') openTool('tracks', { id: props.recordId })
+    else if (k === 'imagery') {
+      setCaptureId(props.recordId)
+      openTool('imagery')
+    } else if (k === 'findings') openTool('imagery', { view: 'analysis', job: props.jobId })
+    else if (k === 'coverage') openTool('sources')
+    else if (props.dataset_id) {
+      data.selectDataset(props.dataset_id)
+      openTool('geography')
+    } else {
+      data.selectEvidence(props.evidenceId)
+      openTool('geography')
+    }
+  }
+
+  const layerStatus = useMemo(() => {
+    const entries = allLayers.map((k) => {
+      const q = mapQueries[queryLayers.indexOf(k)]
+      const v = display[k]
+      const item: LayerDisplayStatus = {
+        total: v?.total,
+        state: v?.state,
+        isError: Boolean(q?.isError),
+        countMeaning: v?.countMeaning,
+      }
+      return [k, item] as const
+    })
+    return Object.fromEntries(entries) as Record<AtlasLayer, LayerDisplayStatus>
+  }, [display, ...mapQueries.map((q) => q.isError)])
+
+  const activeContextStatus = projectContextStatus({
+    layer: display[family],
+    sources:
+      lostLayerAccess || scopeCoverage.isError
+        ? []
+        : scopeCoverage.data?.sources.filter((s) => s.family === family) ?? [],
+    receipts: lostLayerAccess ? [] : mapBatch.data?.coverageReceipts,
+    now: Date.now(),
+    failed: mapQueries[queryLayers.indexOf(family)]?.isError,
+    retained: !!display[family]?.features.length,
+  })
+
+  const coverageSummary = summarizeCoverageReadiness(
+    scopeCoverage.data,
+    scopeCoverage.isPending,
+    scopeCoverage.isError,
+  )
+
+  const ensureFamiliesEnabled = useCallback(
+    (families: string[]) => {
+      const additions = families.filter(
+        (f): f is AtlasLayer =>
+          f in layerInfo && session.permissions.includes(layerInfo[f as AtlasLayer].permission),
+      )
+      if (additions.length === 0) return
+      setLayers((prev) => {
+        const next = new Set(prev)
+        let changed = false
+        for (const f of additions) {
+          if (!next.has(f)) {
+            next.add(f)
+            changed = true
+          }
+        }
+        return changed ? [...next] : prev
+      })
+    },
+    [session.permissions, setLayers],
+  )
+
+  const jumpToBucket = useCallback(
+    (bucket: InventoryTimeBucket) => {
+      const rankedFamilies = Object.entries(bucket.byFamily ?? {})
+        .sort((a, b) => b[1] - a[1])
+        .map(([k]) => k)
+      ensureFamiliesEnabled(rankedFamilies)
+      const topLayer = rankedFamilies.find((f): f is AtlasLayer => f in layerInfo)
+      if (topLayer) setFamily(topLayer)
+      setPaused(false)
+      setSelected([])
+      analyst.setScope(scopeForBucket(bucket, analyst.input?.area, activeScope?.temporal.timezone))
+    },
+    [ensureFamiliesEnabled, analyst, activeScope?.temporal.timezone],
+  )
+
+  const jumpToFootprint = useCallback(
+    (fp: InventoryFootprint) => {
+      ensureFamiliesEnabled(fp.families)
+      setPaused(false)
+      setSelected([])
+      analyst.setScope(scopeForFootprint(fp, analyst.input?.temporal))
+    },
+    [ensureFamiliesEnabled, analyst],
+  )
+
+  const jumpToInventorySource = useCallback(
+    (src: InventorySource) => {
+      ensureFamiliesEnabled([src.family])
+      if (src.family in layerInfo) setFamily(src.family as AtlasLayer)
+      setPaused(false)
+      setSelected([])
+      analyst.setScope(scopeForInventorySource(src, analyst.input, activeScope?.temporal.timezone))
+    },
+    [ensureFamiliesEnabled, analyst, activeScope?.temporal.timezone],
+  )
+
+  const openBrowseAllRetained = useCallback(() => {
+    setRecordsInitialMode('all')
+    setRecordsModeKey((k) => k + 1)
+    panels.openPanel('records', 'Map records')
+  }, [panels])
+
+  const evidenceLayersForEmptyCheck = enabledLayers.filter((k) => k !== 'coverage')
+  const countedLayersForEmptyCheck =
+    evidenceLayersForEmptyCheck.length > 0 ? evidenceLayersForEmptyCheck : enabledLayers
+  const visibleFeatureCount = countedLayersForEmptyCheck.reduce(
+    (sum, k) => sum + (rendered[k]?.features.length ?? 0),
+    0,
+  )
+  const canToggleCoverageFootprints = session.permissions.includes(layerInfo.coverage.permission)
+  const footprintCount = coverageInventory.data?.footprints.length ?? 0
+
+  const handleCloseDrawer = useCallback(() => {
+    if (panels.panel) {
+      const triggerLabel = panels.panelTriggerRef.current
+      panels.openPanel('')
+      requestAnimationFrame(() => {
+        const target = triggerLabel
+          ? document.querySelector<HTMLElement>(`[aria-label="${CSS.escape(triggerLabel)}"]`)
+          : document.querySelector<HTMLElement>('.map-rail-item')
+        if (target?.getClientRects().length) target.focus()
+      })
+    } else if (tool) {
+      closeTool()
+    }
+  }, [panels, tool, closeTool])
+
+  // Keyboard Escape handling for drawer (popover handles its own Escape first)
+  useEffect(() => {
+    if (!panels.panel) return
+    drawerRef.current?.querySelector<HTMLButtonElement>('button')?.focus()
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      if (event.defaultPrevented || (event.target instanceof Element && event.target.closest('[role="dialog"]'))) {
+        return
+      }
+      const input = event.target
+      if (input instanceof HTMLInputElement && input.type === 'search' && input.value) return
+      event.preventDefault()
+      handleCloseDrawer()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [panels.panel, handleCloseDrawer])
+
+  const openLayersAt = (tab: LayersSubTab) => {
+    setLayersInitialTab(tab)
+    setLayersTabKey((v) => v + 1)
+    panels.openPanel('layers', 'Map layers')
+  }
+
+  const handleAttachToCase = (citation: { kind: CaseCitationKind; id: string; label?: string }) => {
+    queueAttachment(caseBridgeScope, citation)
+    if (tool !== 'investigations' || !panels.hasDrawerOpen) {
+      openTool('investigations')
+    }
+    setMapError(`Queued "${citation.label || citation.id}" for the active investigation.`)
+  }
+
+  const validReferenceDrawing =
+    canReadGeography &&
+    referenceDrawing &&
+    data.showReference &&
+    data.selectedLayers.includes(referenceDrawing.datasetId) &&
+    data.datasets.data?.items.some((item) => item.id === referenceDrawing.datasetId)
+      ? referenceDrawing
+      : undefined
+
+  const showDiscoveryBanner =
+    !panels.cleanMap &&
+    mode === 'inspect' &&
+    !inspectingEnvironment &&
+    !environmentHandoff &&
+    unavailableLayers.length === 0 &&
+    selected.length === 0 &&
+    !pinnedPlace &&
+    !validReferenceDrawing &&
+    Boolean(activeScope) &&
+    !mapBatch.isPending &&
+    !mapBatch.isError &&
+    enabledLayers.length > 0 &&
+    visibleFeatureCount === 0
+
+  // Single unified drawer metadata — never displays "Workbenches" above "Map layers"
+  const drawerMeta = useMemo(() => {
+    if (panels.panel === 'layers') {
+      return {
+        title: 'Map layers',
+        subtitle: 'Evidence visibility, imagery overlays and basemap',
+        regionLabel: 'Map layers',
+      }
+    }
+    if (panels.panel === 'records') {
+      return {
+        title: 'Scoped records',
+        subtitle: `${layerInfo[family].name} · ${regionName}`,
+        regionLabel: 'Map records',
+      }
+    }
+    if (panels.panel === 'tools') {
+      return {
+        title: 'Spatial tools',
+        subtitle: 'Measure, draw study polygon, viewport scope and buffer',
+        regionLabel: 'Investigation tools',
+      }
+    }
+    if (panels.panel === 'views') {
+      return {
+        title: 'Saved views',
+        subtitle: 'Private bookmarks and authorized view links',
+        regionLabel: 'Saved map views',
+      }
+    }
+    if (tool) {
+      return {
+        title: toolNames[tool],
+        subtitle: regionName,
+        regionLabel: 'Map preview dock',
+      }
+    }
+    return { title: '', subtitle: '', regionLabel: 'Map preview dock' }
+  }, [panels.panel, tool, family, regionName])
+
+  const canAttachToCase =
+    session.permissions.includes('investigations.edit') || session.permissions.includes('investigations.create')
+
+  const fullPageLink = !panels.panel
+    ? fullPageForTool(tool, analyst.searchFor(activeScope ? fixedScopeInput(activeScope) : analyst.input))
+    : undefined
+
+  return (
+    <div className="public-map-workspace map-workspace atlas-workspace" aria-label="Public Context map workspace">
+      {analyst.error && (
+        <div role="alert" className="ux-notice">
+          {analyst.error}{' '}
+          <button
+            type="button"
+            className="ux-button"
+            onClick={() => analyst.setScope({ area: { kind: 'world' }, temporal: monitoringPeriod() })}
+          >
+            Start a new view
+          </button>
+        </div>
+      )}
+      {activeScope?.area.display.state === 'partial' && (
+        <p role="status" className="ux-notice">
+          {activeScope.area.display.message}
+        </p>
+      )}
+      {(data.filterWarning || regionQuery.isError || (!!regionID && regionQuery.isSuccess && !scope)) && (
+        <p className="ux-notice" role="alert">
+          {data.filterWarning || 'Selected geography unavailable. Choose another admitted region.'}
+        </p>
+      )}
+
+      {/* ROLE 1: Unified 48px Map Scope, Time & Readiness Bar */}
+      {!panels.cleanMap && (
+        <MapScopeBar
+          ariaLabel={data.savedFilters.view !== 'latest' ? 'Historical report map' : 'Public map scope'}
+          query={query}
+          searchOpen={searchOpen}
+          searchPending={searchResults.isPending}
+          searchError={searchResults.isError}
+          searchFeatures={searchFeatures}
+          searchHasNextPage={Boolean(searchResults.hasNextPage)}
+          searchFetchingNext={searchResults.isFetchingNextPage}
+          onQueryChange={setQuery}
+          onSearchOpenChange={setSearchOpen}
+          onSearchFetchNext={() => void searchResults.fetchNextPage()}
+          onChooseRegion={chooseRegion}
+          parents={parents}
+          regionName={regionName}
+          canFitArea={Boolean(activeScope?.area.components.length)}
+          onSelectWorld={() => {
+            setSketchArea(undefined)
+            setSelected([])
+            analyst.changeArea({ kind: 'world' })
+            cameraRef.current?.fitBounds([-165, -55, 165, 75])
+          }}
+          onFitArea={() => {
+            const parts = activeScope?.area.components
+            if (parts?.length) {
+              cameraRef.current?.fitBounds(parts[0].bounds as [number, number, number, number])
+              if (parts.length > 1) {
+                setMapError(
+                  `Showing component 1 of ${parts.length}. All components remain in the analytical scope; choose another in Geography.`,
+                )
+              }
+            } else {
+              locate(sketchArea ?? scope)
+            }
+          }}
+          timeOpen={panels.timePopoverOpen}
+          onTimeOpenChange={panels.setTimePopoverOpen}
+          periodTitle={periodTitle}
+          periodDetail={periodDetail}
+          timeLabel={timeLabel}
+          historical={historical}
+          rollingHours={rollingHours}
+          activeFilterCount={activeFilterCount}
+          publicData={data}
+          onPresetTime={presetTime}
+          timeBuckets={coverageInventory.data?.timeBuckets}
+          onJumpToBucket={jumpToBucket}
+          canReadSources={session.permissions.includes('sources.read')}
+          coverageOpen={panels.hasDrawerOpen && !panels.panel && tool === 'coverage'}
+          coverageSummary={coverageSummary}
+          onToggleCoverage={() => {
+            if (panels.hasDrawerOpen && !panels.panel && tool === 'coverage') closeTool()
+            else openTool('coverage')
+          }}
+          cleanMap={panels.cleanMap}
+          onToggleCleanMap={panels.toggleCleanMap}
+        />
+      )}
+
+      {/* ROLE 2–4: Fixed Left Rail + Resizable Left Drawer + Unobstructed Map Canvas */}
+      <div className="map-stage">
+        <MapRail
+          hidden={panels.cleanMap}
+          activePanel={panels.panel}
+          activeTool={tool}
+          drawerOpen={panels.hasDrawerOpen}
+          permissions={session.permissions}
+          enabledLayerCount={enabledLayers.length}
+          unavailableLayerCount={unavailableLayers.length}
+          caseCitationCount={attachedKeys.length}
+          coverageTone={coverageSummary.tone}
+          onTogglePanel={(target, triggerLabel) => panels.togglePanel(target, triggerLabel)}
+          onToggleTool={(nextTool) => {
+            if (panels.hasDrawerOpen && !panels.panel && tool === nextTool) {
+              if (panels.timePopoverOpen) {
+                panels.setTimePopoverOpen(false)
+              } else {
+                closeTool()
+              }
+            } else {
+              openTool(nextTool)
+            }
+          }}
+          onChooseWorkbench={(next) => {
+            if (next === 'previews') {
+              if (tool) {
+                panels.openPanel('records', 'Map records', { keepOnToolClear: true })
+                void navigate({ search: (p) => ({ ...p, tool: undefined }) })
+              } else {
+                panels.openPanel('records', 'Map records')
+              }
+            } else {
+              openTool(next)
+            }
+          }}
+        />
+
+        <MapDrawer
+          drawerRef={drawerRef}
+          open={panels.hasDrawerOpen}
+          title={drawerMeta.title}
+          subtitle={drawerMeta.subtitle}
+          regionLabel={drawerMeta.regionLabel}
+          closeLabel={panels.panel ? 'Close map tool' : 'Close workbench'}
+          width={panels.drawerWidth}
+          size={panels.drawerSize}
+          fullPageLink={fullPageLink}
+          onResizeWidth={(nextW) => panels.setBoundedWidth(nextW, layoutViewport.width)}
+          onToggleMaximize={panels.toggleMaximize}
+          onToggleWide={panels.toggleWideWidth}
+          onClose={handleCloseDrawer}
+        >
+          {/* Preserved mounted workbench instances (hidden while a support panel is in front) */}
+          <div hidden={Boolean(panels.panel)}>
+            <MapWorkbenches
+              tool={tool}
+              host={host}
+              routeKey={search.workbench}
+              geography={
+                <div className="ux-page space-y-3">
+                  <header className="space-y-1">
+                    <h2 className="text-base font-semibold">Geography &amp; reference</h2>
+                    <p className="ux-muted">{regionName}</p>
+                  </header>
+                  <ReferenceDepthPanel />
+                  <div className="catalog-paging">
+                    <p role="status">
+                      {countries.isError
+                        ? 'Country boundaries could not load.'
+                        : countries.isPending
+                          ? 'Loading country boundaries…'
+                          : `${countryFeatures.length} country boundaries loaded`}
+                    </p>
+                    {countries.hasNextPage && (
+                      <button
+                        type="button"
+                        className="ux-button"
+                        disabled={countries.isFetching}
+                        onClick={() => void countries.fetchNextPage()}
+                      >
+                        More countries
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="ux-button"
+                      disabled={countries.isFetching}
+                      onClick={() => void countries.refetch()}
+                    >
+                      Refresh countries
+                    </button>
+                  </div>
+                  {scope && <CatalogPaging catalog={children} label="subdivisions" />}
+                  {scope && (
+                    <details className="atlas-region-provenance" open>
+                      <summary>Selected area &amp; source</summary>
+                      <dl>
+                        <dt>Meaning</dt>
+                        <dd>{scope.properties?.meaning}</dd>
+                        <dt>Version / edition</dt>
+                        <dd>
+                          {scope.properties?.version} · {scope.properties?.editionId}
+                        </dd>
+                        <dt>Attribution</dt>
+                        <dd>{scope.properties?.attribution}</dd>
+                        <dt>Canonical area geometry SHA-256</dt>
+                        <dd>{activeScope?.area.geometrySha256}</dd>
+                        <dt>Source edition artifact SHA-256</dt>
+                        <dd>{scope.properties?.sha256}</dd>
+                      </dl>
+                      <p>Generalized reference geometry does not certify jurisdiction or current source coverage.</p>
+                    </details>
+                  )}
+                  {activeScope && activeScope.area.components.length > 1 && (
+                    <div aria-label="Area components" className="flex flex-wrap gap-2">
+                      {activeScope.area.components.map((part, i) => (
+                        <button
+                          type="button"
+                          className="ux-button"
+                          key={i}
+                          onClick={() =>
+                            cameraRef.current?.fitBounds(part.bounds as [number, number, number, number])
+                          }
+                        >
+                          Fit component {i + 1}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" className="ux-button" onClick={() => openLayersAt('evidence')}>
+                      Manage layers
+                    </button>
+                    <button type="button" className="ux-button" onClick={() => panels.openPanel('tools', 'Map tools')}>
+                      Subdivisions &amp; study areas
+                    </button>
+                  </div>
+                  <PublicContextPanel
+                    embedded
+                    data={data}
+                    focus={(lng, lat) => cameraRef.current?.focus(lng, lat)}
+                    replaying={false}
+                  />
+                </div>
+              }
+            />
+          </div>
+
+          {panels.panel === 'layers' && (
+            <LayersPanel
+              key={layersTabKey}
+              initialTab={layersInitialTab}
+              layers={layers}
+              defaultLayers={defaultLayers}
+              permissions={session.permissions}
+              layerStatus={layerStatus}
+              onToggleLayer={toggleLayer}
+              onApplyPreset={setLayers}
+              onBrowseLayer={(layer) => {
+                setFamily(layer)
+                setRecordsInitialMode('view')
+                setRecordsModeKey((n) => n + 1)
+                panels.openPanel('records', 'Map records')
+              }}
+              boundaryLevel={boundaryLevel}
+              onBoundaryLevelChange={setBoundaryLevel}
+              basemap={basemap}
+              onBasemapChange={setBasemap}
+              captures={captures}
+              compatibleCaptures={compatibleCaptures}
+              captureId={captureId}
+              compareId={compareId}
+              onCaptureIdChange={setCaptureId}
+              onCompareIdChange={setCompareId}
+              quality={quality}
+              onQualityChange={setQuality}
+              opacity={opacity}
+              onOpacityChange={setOpacity}
+              swipe={swipe}
+              onSwipeChange={setSwipe}
+              hasComparison={Boolean(comparison)}
+              rasterError={rasterQueries.some((q) => q.isError)}
+              rasters={rasters}
+              layerSearch={layerSearch}
+              onLayerSearchChange={setLayerSearch}
+              referenceGroups={referenceGroups}
+              referenceOpacity={referenceOpacity}
+              onReferenceOpacityChange={setReferenceOpacity}
+              publicData={data}
+              footprintCount={footprintCount}
+            />
+          )}
+
+          {panels.panel === 'records' && (
+            <RecordsPanel
+              family={family}
+              allLayers={allLayers}
+              enabledLayers={layers}
+              layerStatus={layerStatus}
+              records={previews}
+              selectedRecordId={props.recordId ? String(props.recordId) : undefined}
+              selectedFeature={record}
+              timeLabel={timeLabel}
+              coverage={scopeCoverage.data}
+              activeContextStatus={activeContextStatus}
+              inventory={coverageInventory.data}
+              inventoryLoading={coverageInventory.isPending}
+              initialBrowseMode={recordsInitialMode}
+              browseModeKey={recordsModeKey}
+              onChooseFamily={setFamily}
+              onEnableLayer={toggleLayer}
+              onSelectFeature={(f) => inspect([f])}
+              onLocateSelected={() => locate(record)}
+              onOpenTool={openTool}
+              onOpenCoverage={() => openTool('coverage')}
+              onPresetHistory={() => presetTime()}
+              onJumpToBucket={jumpToBucket}
+              onJumpToSource={jumpToInventorySource}
+              onJumpToFootprint={jumpToFootprint}
+            />
+          )}
+
+          {panels.panel === 'tools' && (
+            <SpatialToolsPanel
+              mode={mode}
+              drawCount={draw.length}
+              measurement={measurement}
+              hasSketchArea={Boolean(sketchArea)}
+              coordinates={coordinates}
+              radius={radius}
+              subdivisions={collection(children.data).features}
+              onSetMode={(nextMode) => {
+                setMode(nextMode)
+                setDraw([])
+                if (nextMode !== 'inspect') {
+                  setMeasurement('')
+                  panels.openPanel('')
+                }
+              }}
+              onCoordinatesChange={setCoordinates}
+              onRadiusChange={setRadius}
+              onKeyboardCoordinates={keyboardCoordinates}
+              onFinishSketch={() => void finishSketch()}
+              onReturnNamedArea={() => {
+                analyst.changeArea({ kind: 'world' })
+                setDraw([])
+              }}
+              onCreateBuffer={() => void surrounding()}
+              onUseViewportArea={searchViewport}
+              onChooseSubdivision={chooseRegion}
+            />
+          )}
+
+          {panels.panel === 'views' && (
+            <SavedViewsPanel
+              bookmarkName={bookmarkName}
+              bookmarks={bookmarks}
+              onBookmarkNameChange={setBookmarkName}
+              onSaveView={saveView}
+              onRestoreBookmark={(b) => {
+                setLayers(b.layers)
+                setCamera(b.camera)
+                cameraRef.current?.restore(b.camera)
+                void navigate({
+                  search: (p) => ({
+                    ...p,
+                    ...(b.scope
+                      ? analyst.searchFor(b.scope)
+                      : { scope: undefined, region: b.region || 'world', area: b.area, publicView: b.publicView }),
+                  }),
+                })
+                panels.openPanel('')
+              }}
+              onDeleteBookmark={(id) => setBookmarks((v) => v.filter((x) => x.id !== id))}
+              onCopyShareLink={() => {
+                void navigator.clipboard
+                  ?.writeText(shareLink())
+                  .then(() => setMapError('View link copied. The recipient needs their own grants.'))
+                  .catch(() => setMapError('Copy the address bar to share this authorized view.'))
+              }}
+            />
+          )}
+        </MapDrawer>
+
+        {/* MAP CANVAS REGION */}
+        <div className="public-map-canvas atlas-map-region">
+          <AtlasCanvas
+            proposalOverlay={proposalOverlay}
+            cameraRef={cameraRef}
+            initialCamera={camera}
+            onCamera={setCamera}
+            onPointer={updatePointer}
+            onBounds={setViewport}
+            regions={geographicFeatures}
+            scope={exactSelection ?? sketchArea ?? scope}
+            selection={retainedSelection ?? record}
+            referencePlace={canReadGeography ? pinnedPlace : undefined}
+            boundaryLevel={boundaryLevel}
+            features={rendered}
+            datasets={data.showReference ? data.selectedLayers : []}
+            referenceOpacity={referenceOpacity}
+            basemap={LOCAL_BASEMAP_ONLY ? 'reference' : basemap}
+            streetArchive={streetMap?.bytes}
+            onSelect={inspect}
+            onRegion={chooseRegion}
+            onReference={setReferenceDrawing}
+            mode={mode}
+            onDraw={onDraw}
+            sketch={sketch}
+            rasters={visibleRasters}
+            swipe={swipe}
+            onError={setMapError}
+          />
+
+          <MapCanvasHud
+            cleanMap={panels.cleanMap}
+            onRestoreWorkspace={() => panels.setCleanMap(false)}
+            mode={mode}
+            drawCount={draw.length}
+            onOpenCoordinates={() => panels.openPanel('tools', 'Map tools')}
+            onUndoDraw={() => setDraw((v) => v.slice(0, -1))}
+            onFinishDraw={() => void finishSketch()}
+            onCancelDraw={() => {
+              setMode('inspect')
+              setDraw([])
+            }}
+            paused={paused}
+            pauseTime={pauseTime}
+            scopeKey={scopeKey}
+            updateLayers={updateLayers}
+            onInspectUpdate={(kind, f) => {
+              setFamily(kind)
+              inspect([f])
+            }}
+            onRefreshDisplay={() => {
+              void mapBatch.refetch()
+              void scopeCoverage.refetch()
+              void coverageInventory.refetch()
+              analyst.refresh()
+            }}
+            onPreviousCamera={() => cameraRef.current?.previous()}
+            onTogglePause={() => {
+              setPaused((v) => !v)
+              if (!paused) {
+                setFrozen({ key: scopeKey, layers: currentLayers })
+                setPauseTime(new Date().toISOString())
+              }
+            }}
+          />
+
+          {showDiscoveryBanner && (
+            <MapDiscoveryBanner
+              scopeKey={scopeKey}
+              regionName={regionName}
+              periodTitle={periodTitle}
+              inventory={coverageInventory.data}
+              coverage={scopeCoverage.data}
+              coverageFootprintsOn={layers.includes('coverage')}
+              canToggleCoverageFootprints={canToggleCoverageFootprints}
+              canRequestAcquisition={session.permissions.includes('acquisitions.request')}
+              onJumpToBucket={jumpToBucket}
+              onJumpToFootprint={jumpToFootprint}
+              onToggleCoverageFootprints={() => toggleLayer('coverage')}
+              onOpenSmartFetch={() => openTool('coverage')}
+              onBrowseAllRetained={openBrowseAllRetained}
+            />
+          )}
+
+          {environmentHandoff && (
+            <aside className="atlas-data-notice" aria-label="Environment selection">
+              {selectedEnvironmentFeature && (
+                <p>
+                  <bdi dir="auto">
+                    {selectedEnvironmentFeature.properties.tags.name || selectedEnvironmentFeature.properties.sourceId}
+                  </bdi>{' '}
+                  · {selectedEnvironmentFeature.properties.sourceId}
+                </p>
+              )}
+              {selectedTerrain && <p>Terrain point · {wb.terrainPoint?.replace(',', '°, ')}°</p>}
+              {terrainID && terrainPoint.isError && (
+                <p role="status">The linked terrain point is unavailable in this workspace.</p>
+              )}
+              {featureLink && environmentFeature.isPending && <p role="status">Resolving the retained feature…</p>}
+              {featureLink && environmentFeature.isError && (
+                <p role="status">The retained feature is unavailable in this workspace.</p>
+              )}
+              {streetID && streets.isPending && <p role="status">Verifying the retained street map…</p>}
+              {streetID && streets.isError && (
+                <p role="status">
+                  Retained street detail is unavailable. Regional reference geography remains available.
+                </p>
+              )}
+              {streetMap && (
+                <p>
+                  Retained street detail · zoom 12–16 · {streetMap.display.bounds.map((v) => v.toFixed(3)).join(', ')} ·{' '}
+                  <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                {wb.display && (
+                  <button
+                    type="button"
+                    className="ux-button"
+                    onClick={() => openTool('environments', { ...wb, view: 'environment-3d' })}
+                  >
+                    Reopen 3D preview
+                  </button>
+                )}
+                <button type="button" className="ux-button" onClick={closeTool}>
+                  Clear environment selection
+                </button>
+              </div>
+            </aside>
+          )}
+
+          {unavailableLayers.length > 0 && !panels.cleanMap && !inspectingEnvironment && (
+            <aside className="atlas-data-notice" aria-label="Map data availability">
+              <strong>
+                {readCapacityExhausted ? 'Temporary evidence read limit reached' : 'Some evidence layers could not load'}
+              </strong>
+              <details className="atlas-recovery-details" open={layoutViewport.width > 760}>
+                <summary>Details &amp; recovery</summary>
+                <p>
+                  {readCapacityExhausted
+                    ? 'The map will retry as temporary reads expire. You can also close unused EMAD tabs and select Retry layers.'
+                    : `${unavailableLayers.map((k) => layerInfo[k].name).join(', ')}. Retry these layers to check for retained records.`}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="ux-button"
+                    disabled={mapBatch.isFetching}
+                    onClick={() => void mapBatch.refetch()}
+                  >
+                    {mapBatch.isFetching ? 'Retrying…' : 'Retry layers'}
+                  </button>
+                  <button type="button" className="ux-button" onClick={() => openTool('sources')}>
+                    Check sources
+                  </button>
+                </div>
+                <details>
+                  <summary>Technical details</summary>
+                  <p>{mapBatch.error?.message ?? 'One or more retained evidence queries are unavailable.'}</p>
+                </details>
+              </details>
+            </aside>
+          )}
+
+          {/* ROLE 3: Compact Floating Selection Peek Card (never steals the left drawer!) */}
+          <SelectionPeekCard
+            selected={selected}
+            pinnedPlace={pinnedPlace}
+            referenceDrawing={validReferenceDrawing}
+            canReadGeography={canReadGeography}
+            canAttachToCase={canAttachToCase}
+            attachedKeys={attachedKeys}
+            timeLabel={timeLabel}
+            readId={mapBatch.data?.id}
+            readScope={mapBatch.data?.scope}
+            onClearSelection={() => {
+              setSelected([])
+              void navigate({ search: (p) => ({ ...p, selected: undefined }), replace: true })
+            }}
+            onSelectOverlapping={(value) =>
+              setSelected((v) => [
+                ...v.filter((f) => String(f.id ?? f.properties?.recordId ?? 0) === value),
+                ...v.filter((f) => String(f.id ?? f.properties?.recordId ?? 0) !== value),
+              ])
+            }
+            onLocate={locate}
+            onInspect={inspectRecord}
+            onShowPixels={(id) => {
+              setCaptureId(id)
+              openLayersAt('imagery')
+            }}
+            onAttachToCase={handleAttachToCase}
+            onChooseAggregateRecord={(v) => {
+              data.selectEvidence(String(v.evidenceId))
+              if (!v.displayPosition) {
+                setMapError(
+                  'This retained report has no usable map locator. Inspect its source location and uncertainty.',
+                )
+                return
+              }
+              setSelected([
+                {
+                  type: 'Feature',
+                  geometry: v.displayPosition as Geometry,
+                  properties: {
+                    ...v,
+                    kind: props.kind,
+                    evidenceId: v.evidenceId,
+                    recordId: v.evidenceId,
+                    title: (v.reported as { title?: string })?.title,
+                  },
+                },
+              ])
+            }}
+            onClearPinnedPlace={() => setPinnedPlace(undefined)}
+            onClearReferenceDrawing={() => setReferenceDrawing(undefined)}
+          />
+
+          {/* ROLE 4: Contextual Expandable Map Legend */}
+          {!panels.cleanMap && (
+            <ContextualLegend
+              open={panels.legendOpen}
+              onToggle={() => panels.setLegendOpen((v) => !v)}
+              enabledLayers={enabledLayers}
+              layerStatus={layerStatus}
+              regionLoading={Boolean(regionID && !scope)}
+              rasters={rasters}
+              qualityMask={quality}
+              onSelectLayer={(k) => {
+                setFamily(k)
+                setRecordsInitialMode('view')
+                setRecordsModeKey((n) => n + 1)
+                panels.openPanel('records', 'Map records')
+              }}
+              onOpenImageryOverlay={() => openLayersAt('imagery')}
+              coverageFootprintsOn={layers.includes('coverage')}
+              canToggleCoverageFootprints={canToggleCoverageFootprints}
+              footprintCount={footprintCount}
+              onToggleCoverageFootprints={() => toggleLayer('coverage')}
+            />
+          )}
+
+          {/* Bottom Coordinate & Attribution Footer */}
+          <div className="atlas-map-footer">
+            <span ref={coordinateLabel}>Pointer · {pointerLabel(pointer.current)}</span>
+            {rasters.length > 0 && (
+              <button
+                type="button"
+                aria-label="Retained raster acquisitions"
+                onClick={() => openLayersAt('imagery')}
+              >
+                Sentinel-2 · {dateLabel(capture?.properties?.date)}
+                {comparison ? ` ↔ ${dateLabel(comparison.properties?.date)}` : ''}
+                {quality ? ' · SCL exclusions' : ''}
+              </button>
+            )}
+            <span data-active-state={paused || boundaryLevel !== 'auto'}>
+              {paused
+                ? `Display paused · ${new Date(pauseTime).toLocaleTimeString()}`
+                : boundaryLevel !== 'auto'
+                  ? `Selecting ${boundaryLevel === 'country' ? 'countries' : 'subdivisions'}`
+                  : measurement || 'Provider coverage varies by area'}
+              {boundaryLevel !== 'auto' && (
+                <button type="button" onClick={() => setBoundaryLevel('auto')}>
+                  Return to objects
+                </button>
+              )}
+            </span>
+          </div>
+
+          {mapError && (
+            <div className="atlas-map-warning" role="status">
+              <span>{mapError}</span>
+              <button type="button" aria-label="Dismiss map notice" onClick={() => setMapError('')}>
+                ×
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }

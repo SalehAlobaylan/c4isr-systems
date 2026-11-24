@@ -367,9 +367,18 @@ def doctor(cfg):
         raise RuntimeError('API or development credential unavailable. Run task local:setup and task dev; check port and credential expiry.')
 
 
+def rotate_expired(cfg):
+    env = environment(cfg)
+    start_infrastructure()
+    (ROOT / 'bin').mkdir(exist_ok=True)
+    run(['go', 'build', '-trimpath', '-o', ROOT / 'bin' / ('emad-local' + EXE), './apps/emad-local'])
+    run([ROOT / 'bin' / ('emad-local' + EXE), '-credentials-dir', CREDS, '-profile', product_profile(cfg), '-rotate-expired'], env=env)
+    print('Expired local development credentials rotated. Restart task dev so workers load fresh tokens.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['setup', 'dev', 'doctor','stop'])
+    parser.add_argument('action', choices=['setup', 'dev', 'doctor', 'stop', 'rotate-expired'])
     parser.add_argument('--infrastructure-only', action='store_true')
     parser.add_argument('--profile', choices=['map','historical-full'], default=os.environ.get('C4ISR_PRODUCT_PROFILE','map'))
     args = parser.parse_args()
@@ -377,7 +386,8 @@ def main():
     cfg['profile'] = args.profile
     if args.action == 'setup': setup(cfg, args.infrastructure_only)
     elif args.action == 'dev': develop(cfg)
-    elif args.action=='stop':stop_development(cfg)
+    elif args.action == 'stop': stop_development(cfg)
+    elif args.action == 'rotate-expired': rotate_expired(cfg)
     else: doctor(cfg)
 
 

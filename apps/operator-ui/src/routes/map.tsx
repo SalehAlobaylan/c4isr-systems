@@ -174,6 +174,8 @@ function ExerciseMapPage() {
 
   const [hidden, setHidden] = useState<Partial<Record<MapLayerKey | 'legend', boolean>>>({})
   const [dragging, setDragging] = useState(false)
+  const [railTab, setRailTab] = useState<'selection' | 'entities'>('selection')
+  const [entityQuery, setEntityQuery] = useState('')
   const [fitPadding, setFitPadding] = useState({ top: 96, bottom: 72, right: 24 })
   /**
    * Whether the board overlay has grown tall enough to reach the legend.
@@ -1071,30 +1073,119 @@ const railBox = railRef.current?.getBoundingClientRect()
           {/* The region that scrolls. The picture's own instruments above it
               stay put; only what depends on a selection moves. */}
           <div className="aegis-railscroll">
-            <div className="aegis-panel">
-              <p className="aegis-railsection">Selection</p>
-              <h2>
-              {selectedTrack
-                ? `Track ${shortRef(selectedTrack.externalRef, selectedTrack.id)}`
-                : selectedAsset
-                  ? `Asset ${selectedAsset.name || truncateId(selectedAsset.id, 12)}`
-                  : 'No selection'}
-            </h2>
-            <p className="sub">
-              {selection?.kind === 'track'
-                ? 'Track · fused from observations'
-                : selection?.kind === 'asset'
-                  ? 'Controlled unit · telemetry and orders'
-                  : 'Pick an entity on the plot'}
-            </p>
-            {selection?.kind === 'track' ? <TrackDetailPanel trackId={selection.id} /> : null}
-            {selection?.kind === 'asset' ? <AssetDetailPanel assetId={selection.id} /> : null}
-            {!selection ? (
-              <p className="m-0 text-[13px] tracking-[.02em] faint">
-                Detail, classifications, evidence and assessments appear here.
-              </p>
-            ) : null}
+            <div className="px-3 pt-3">
+              <div className="map-subtabs" role="tablist" aria-label="Picture drawer sections">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={railTab === 'selection'}
+                  onClick={() => setRailTab('selection')}
+                >
+                  Inspector
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={railTab === 'entities'}
+                  onClick={() => setRailTab('entities')}
+                >
+                  Entities ({entityCount})
+                </button>
+              </div>
             </div>
+
+            {railTab === 'selection' ? (
+              <div className="aegis-panel">
+                <p className="aegis-railsection">Selection</p>
+                <h2>
+                  {selectedTrack
+                    ? `Track ${shortRef(selectedTrack.externalRef, selectedTrack.id)}`
+                    : selectedAsset
+                      ? `Asset ${selectedAsset.name || truncateId(selectedAsset.id, 12)}`
+                      : 'No selection'}
+                </h2>
+                <p className="sub">
+                  {selection?.kind === 'track'
+                    ? 'Track · fused from observations'
+                    : selection?.kind === 'asset'
+                      ? 'Controlled unit · telemetry and orders'
+                      : 'Pick an entity on the plot or browse Entities'}
+                </p>
+                {selection?.kind === 'track' ? <TrackDetailPanel trackId={selection.id} /> : null}
+                {selection?.kind === 'asset' ? <AssetDetailPanel assetId={selection.id} /> : null}
+                {!selection ? (
+                  <p className="m-0 text-[13px] tracking-[.02em] faint">
+                    Detail, classifications, evidence and assessments appear here.
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <div className="aegis-panel space-y-3" aria-label="Picture entity list">
+                <input
+                  type="search"
+                  className="atlas-field mt-0"
+                  aria-label="Filter entities"
+                  placeholder="Filter tracks and assets…"
+                  value={entityQuery}
+                  onChange={(e) => setEntityQuery(e.target.value)}
+                />
+                <div className="map-records-list">
+                  {tracks
+                    .filter((t) =>
+                      !entityQuery.trim() ||
+                      `${shortRef(t.externalRef, t.id)} ${t.status}`.toLowerCase().includes(entityQuery.toLowerCase()),
+                    )
+                    .map((track) => (
+                      <button
+                        key={track.id}
+                        type="button"
+                        className="map-record-card"
+                        aria-pressed={selection?.kind === 'track' && selection.id === track.id}
+                        onClick={() => {
+                          handleSelect({ kind: 'track', id: track.id })
+                          setRailTab('selection')
+                        }}
+                      >
+                        <div>
+                          <span className="preview-record-type">Track · {track.status}</span>
+                          <h3>{shortRef(track.externalRef, track.id)}</h3>
+                          <p>
+                            {formatSpeed(track.speed)} · {formatRelative(track.lastSeenAt)}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  {assets
+                    .filter((a) =>
+                      !entityQuery.trim() ||
+                      `${a.name || a.id} ${a.type} ${a.status}`.toLowerCase().includes(entityQuery.toLowerCase()),
+                    )
+                    .map((asset) => (
+                      <button
+                        key={asset.id}
+                        type="button"
+                        className="map-record-card"
+                        aria-pressed={selection?.kind === 'asset' && selection.id === asset.id}
+                        onClick={() => {
+                          handleSelect({ kind: 'asset', id: asset.id })
+                          setRailTab('selection')
+                        }}
+                      >
+                        <div>
+                          <span className="preview-record-type">
+                            {asset.type} · {asset.status}
+                          </span>
+                          <h3>{asset.name || truncateId(asset.id, 12)}</h3>
+                          <p>
+                            {asset.connectionState} · {formatRelative(asset.lastSeenAt)}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  {entityCount === 0 && <p className="ux-muted">No entities reported yet.</p>}
+                </div>
+              </div>
+            )}
 
             {/* The scenario transport is a side feature and it is marked as
                 one. It is a separate system — the scenario console owns

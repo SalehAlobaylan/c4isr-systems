@@ -29,6 +29,12 @@ func TestEvaluateSharedClocksAndIntervals(t *testing.T) {
 	if Capability("earthquakes", historical).State != "supported" || Capability("weather", historical).State != "unsupported" || Capability("imagery", historical).State != "unsupported" {
 		t.Fatal("family history support lost")
 	}
+	if Capability("reference", v).State != "supported" || Capability("terrain", v).State != "supported" || Capability("reference", v).Clock != "reference_edition" {
+		t.Fatal("reference and terrain families should be supported for latest edition views")
+	}
+	if Capability("reference", historical).State != "unsupported" || Capability("terrain", historical).State != "unsupported" {
+		t.Fatal("reference and terrain families should reject known_at replay")
+	}
 	if v.Interval.From.Year() != 2025 || v.Interval.To.Year() != 2026 {
 		t.Fatal("year boundary changed")
 	}

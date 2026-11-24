@@ -32,7 +32,7 @@ export function PublicContextPanel({ data, focus, replaying, embedded=false }: {
   const isCSV = selected?.evidence.originalMediaType === 'text/csv'
   const hasOriginal = selected?.evidence.originalRecord != null || (isCSV && selected?.admission.rights.retainRaw)
 
-  return <details className="shrink-0 border-b border-edge bg-panel px-4 py-2 text-sm" open aria-label="Public event and reference data">
+  return <details className="shrink-0 border-b border-edge bg-panel px-4 py-2 text-sm" open={embedded || undefined} aria-label="Public event and reference data">
     <summary className="cursor-pointer font-semibold">Reported events and reference geography · {data.events.data?.total ?? '—'} reports</summary>
     <div className="max-h-64 space-y-3 overflow-auto py-2">
       {!embedded&&<><Link className="inline-block min-h-9 underline" to="/intelligence">Imagery comparison and assessment review</Link>

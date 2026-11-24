@@ -21,12 +21,12 @@ const descriptions:Record<MapTool,[string,string,string]>={
 }
 const icons={'Start here':<LayersIcon/>,Explore:<MapIcon/>,Analyze:<SearchIcon/>,Manage:<ActivityIcon/>,Simulation:<RadarIcon/>} as Record<string,NavigationChoice['icon']>
 
-export function MapWorkbenchChooser({value,permissions,onChoose}:{value?:MapTool;permissions:string[];onChoose:(value:MapTool|'previews')=>void}){
+export function MapWorkbenchChooser({value,permissions,onChoose,className,trigger}:{value?:MapTool;permissions:string[];onChoose:(value:MapTool|'previews')=>void;className?:string;trigger?:import('react').ReactNode}){
  const {session}=useWorkspace()
- const items:NavigationChoice[]=[{id:'previews',label:'Map previews',group:'Start here',description:'Browse records in a shallow tray while keeping the map visible.',icon:<MapIcon/>,keywords:'records preview feed'}]
+ const items:NavigationChoice[]=[{id:'previews',label:'Map previews',group:'Start here',description:'Browse records in the Records panel while keeping the map visible.',icon:<MapIcon/>,keywords:'records preview feed'}]
  const priority:MapTool[]=permissions.includes('investigations.review')?['investigations','coverage','review']:permissions.includes('assessments.review')?['review','investigations','context']:permissions.includes('investigations.edit')?['investigations','imagery','coverage']:permissions.includes('sources.manage')?['sources','coverage','jobs']:['geography','coverage']
  for(const tool of [...new Set([...priority,...Object.keys(toolNames)])] as MapTool[]){if(tool==='simulation'&&session.productProfile==='map'||tool==='environments'&&!permissions.includes('environments.read'))continue;const [group,description,keywords]=descriptions[tool];items.push({id:tool,label:toolNames[tool],group,description,keywords,icon:icons[group]??<ShieldAlertIcon/>,disabled:!!toolPermissions[tool]&&!permissions.includes(toolPermissions[tool]!),reason:'Your account needs access to this capability.'})}
- return <ChoiceBrowser label="Map workspace" title="Open a workbench" description="Choose a capability for the current map. Workbenches share the dock and preserve your investigation and drafts." value={value??'previews'} items={items} onChoose={id=>onChoose(id as MapTool|'previews')} className="atlas-workspace-picker" trigger={<><LayersIcon/><span>{value?toolNames[value]:'Workbenches'}</span></>}/>
+ return <ChoiceBrowser label="Map workspace" title="Open a workbench" description="Choose a capability for the current map. Workbenches share the support drawer and preserve your investigation and drafts." value={value??'previews'} items={items} onChoose={id=>onChoose(id as MapTool|'previews')} className={className??'atlas-workspace-picker'} trigger={trigger??<><LayersIcon/><span>{value?toolNames[value]:'Workbenches'}</span></>}/>
 }
 
 export function PreviewFeedChooser({value,items,onChoose}:{value:string;items:NavigationChoice[];onChoose:(value:string)=>void}){

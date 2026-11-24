@@ -25,6 +25,10 @@ tasks:
     desc: Diagnose scoped EMAD feature readiness without exposing credentials
     cmds:
       - python scripts/ops/local.py doctor
+  local:rotate-expired:
+    desc: Explicitly rotate expired local development credentials without resetting data
+    cmds:
+      - python scripts/ops/local.py rotate-expired
   local:stop:
     desc: Stop the supported development supervisor and workers, preserving database and storage
     cmds:

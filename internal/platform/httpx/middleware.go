@@ -306,6 +306,9 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 	if path == "/coverage/adapters" && method == http.MethodGet {
 		return RoutePolicy{Known: true, Permission: "sources.read"}
 	}
+	if path == "/coverage/inventory" && method == http.MethodGet {
+		return RoutePolicy{Known: true, Permission: "sources.read"}
+	}
 	if len(parts) >= 3 && parts[0] == "sources" && parts[2] == "profiles" {
 		if method == http.MethodGet && len(parts) == 3 {
 			return RoutePolicy{Known: true, Permission: "sources.read"}

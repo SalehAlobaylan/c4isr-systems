@@ -206,6 +206,8 @@ paths:
     $ref: './acquisition-coverage.yaml#/paths/~1coverage~1query'
   /api/v1/coverage/adapters:
     $ref: './acquisition-coverage.yaml#/paths/~1coverage~1adapters'
+  /api/v1/coverage/inventory:
+    $ref: './acquisition-coverage.yaml#/paths/~1coverage~1inventory'
   /api/v1/sources/{id}/scheduler/run:
     $ref: './acquisition-coverage.yaml#/paths/~1sources~1{id}~1scheduler~1run'
   /api/v1/sources/{id}/acquisition-metrics:
@@ -4840,6 +4842,11 @@ components:
     CoverageSource: {$ref: './acquisition-coverage.yaml#/components/schemas/CoverageSource'}
     CoverageInput: {$ref: './acquisition-coverage.yaml#/components/schemas/CoverageInput'}
     CoverageResult: {$ref: './acquisition-coverage.yaml#/components/schemas/CoverageResult'}
+    InventoryBounds: {$ref: './acquisition-coverage.yaml#/components/schemas/InventoryBounds'}
+    InventorySource: {$ref: './acquisition-coverage.yaml#/components/schemas/InventorySource'}
+    InventoryTimeBucket: {$ref: './acquisition-coverage.yaml#/components/schemas/InventoryTimeBucket'}
+    InventoryFootprint: {$ref: './acquisition-coverage.yaml#/components/schemas/InventoryFootprint'}
+    CoverageInventoryResult: {$ref: './acquisition-coverage.yaml#/components/schemas/CoverageInventoryResult'}
     AcquisitionInput: {$ref: './acquisition-coverage.yaml#/components/schemas/AcquisitionInput'}
     AcquisitionPart: {$ref: './acquisition-coverage.yaml#/components/schemas/AcquisitionPart'}
     AcquisitionRequest: {$ref: './acquisition-coverage.yaml#/components/schemas/AcquisitionRequest'}

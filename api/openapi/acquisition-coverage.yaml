@@ -132,6 +132,22 @@ paths:
                 required:
                 - items
                 - meaning
+  /coverage/inventory:
+    get:
+      summary: Summarize workspace-retained evidence and approved footprints
+      operationId: coverageInventory
+      responses:
+        '4XX':
+          description: Request rejected
+          content:
+            application/json:
+              schema: {$ref: './openapi.yaml#/components/schemas/Error'}
+        '200':
+          description: Authorized read-only workspace inventory
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CoverageInventoryResult'
   /sources/{id}/scheduler/run:
     parameters:
     - *id002
@@ -506,3 +522,117 @@ components:
       - state
       - evaluatedAt
       - meaning
+    InventoryBounds:
+      type: object
+      properties:
+        west:
+          type: number
+        south:
+          type: number
+        east:
+          type: number
+        north:
+          type: number
+      required:
+      - west
+      - south
+      - east
+      - north
+    InventorySource:
+      type: object
+      properties:
+        sourceId: *id001
+        name: *id001
+        family: *id001
+        support: *id001
+        gate: *id001
+        retainedCount: *id005
+        earliestAt: *id004
+        latestAt: *id004
+        bounds:
+          $ref: '#/components/schemas/InventoryBounds'
+        dailyBudget: *id005
+        attemptsToday: *id005
+        nextAction: *id001
+      required:
+      - sourceId
+      - name
+      - family
+      - support
+      - gate
+      - retainedCount
+    InventoryTimeBucket:
+      type: object
+      properties:
+        month: *id001
+        label: *id001
+        from: *id004
+        to: *id004
+        total: *id005
+        byFamily:
+          type: object
+          additionalProperties: *id005
+        bounds:
+          $ref: '#/components/schemas/InventoryBounds'
+        suggestedAreaName: *id001
+      required:
+      - month
+      - label
+      - from
+      - to
+      - total
+      - byFamily
+    InventoryFootprint:
+      type: object
+      properties:
+        key: *id001
+        name: *id001
+        bounds:
+          $ref: '#/components/schemas/InventoryBounds'
+        sourceIds:
+          type: array
+          items: *id001
+        sourceNames:
+          type: array
+          items: *id001
+        families:
+          type: array
+          items: *id001
+        retainedCount: *id005
+        earliestAt: *id004
+        latestAt: *id004
+      required:
+      - key
+      - name
+      - bounds
+      - sourceIds
+      - sourceNames
+      - families
+      - retainedCount
+    CoverageInventoryResult:
+      type: object
+      properties:
+        schema: *id001
+        evaluatedAt: *id004
+        meaning: *id001
+        totalRetained: *id005
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventorySource'
+        timeBuckets:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryTimeBucket'
+        footprints:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryFootprint'
+      required:
+      - schema
+      - evaluatedAt
+      - meaning
+      - totalRetained
+      - sources
+      - timeBuckets
+      - footprints

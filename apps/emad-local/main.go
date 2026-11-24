@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -31,6 +32,7 @@ func sorted(v []string) []string { out := append([]string{}, v...); sort.Strings
 func run() error {
 	root := flag.String("credentials-dir", "private/local/credentials", "ignored private directory; credentials never printed")
 	productProfile := flag.String("profile", "map", "map or historical-full")
+	rotateExpired := flag.Bool("rotate-expired", false, "explicitly rotate expired local development credentials belonging to their expected principal")
 	flag.Parse()
 	if *productProfile != "map" && *productProfile != "historical-full" {
 		return fmt.Errorf("profile must be map or historical-full")
@@ -183,9 +185,51 @@ func run() error {
 		}
 		path := filepath.Join(*root, item.ID+".token")
 		if raw, readErr := os.ReadFile(path); readErr == nil {
-			s, authErr := store.Authenticate(ctx, string(raw), httpx.PermissionsForRole)
+			tokenStr := strings.TrimSpace(string(raw))
+			s, authErr := store.Authenticate(ctx, tokenStr, httpx.PermissionsForRole)
 			if authErr != nil || s.Principal.ID != item.ID {
-				return fmt.Errorf("existing credential for %s is expired or mismatched; rotate explicitly with emad-admin", item.ID)
+				if !*rotateExpired {
+					return fmt.Errorf("existing credential for %s is expired or mismatched; rotate explicitly with emad-admin or emad-local -rotate-expired", item.ID)
+				}
+				sum := sha256.Sum256([]byte(tokenStr))
+				var oldID, owner string
+				if lookupErr := pool.QueryRow(ctx, `SELECT id,principal_id FROM principal_credentials WHERE token_hash=$1`, sum[:]).Scan(&oldID, &owner); lookupErr != nil || owner != item.ID {
+					return fmt.Errorf("existing credential for %s is mismatched or unrecognized; refusing automatic rotation", item.ID)
+				}
+				newID, secret, issueErr := store.IssueCredential(admin, item.ID, item.Grants[0].Resource, time.Now().Add(30*24*time.Hour))
+				if issueErr != nil {
+					return issueErr
+				}
+				tmp := path + ".rotating"
+				f, createErr := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+				if createErr != nil {
+					_ = store.RevokeCredential(admin, newID)
+					return createErr
+				}
+				_, writeErr := f.WriteString(secret)
+				syncErr := f.Sync()
+				closeErr := f.Close()
+				if writeErr != nil || syncErr != nil || closeErr != nil {
+					_ = os.Remove(tmp)
+					_ = store.RevokeCredential(admin, newID)
+					if writeErr != nil {
+						return writeErr
+					}
+					if syncErr != nil {
+						return syncErr
+					}
+					return closeErr
+				}
+				if renameErr := os.Rename(tmp, path); renameErr != nil {
+					_ = os.Remove(tmp)
+					_ = store.RevokeCredential(admin, newID)
+					return renameErr
+				}
+				if revokeErr := store.RevokeCredential(admin, oldID); revokeErr != nil {
+					return revokeErr
+				}
+				fmt.Printf("%s: rotated expired credential -> %s\n", item.ID, path)
+				continue
 			}
 		} else if !os.IsNotExist(readErr) {
 			return readErr
