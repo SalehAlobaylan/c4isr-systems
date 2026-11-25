@@ -34,6 +34,13 @@ func (b AccountBudget) validate() error {
 	return nil
 }
 
+func (b AccountBudget) PolicyHash() string {
+	groupPolicy := b
+	groupPolicy.RequestCost = 0
+	raw, _ := json.Marshal(groupPolicy)
+	return areas.Hash(raw)
+}
+
 // reserveCost commits an uncertain charge BEFORE I/O. A lost process does not
 // refund the charge. Only the concurrency lease expires; the day's cost stays
 // spent until the configured UTC reset. No account identifiers reach the API.
@@ -46,10 +53,7 @@ func (s *Service) reserveCost(ctx context.Context, l Location, run Run) (string,
 		return "", e
 	}
 	now := time.Now().UTC()
-	groupPolicy := b
-	groupPolicy.RequestCost = 0
-	raw, _ := json.Marshal(groupPolicy)
-	hash := areas.Hash(raw)
+	hash := b.PolicyHash()
 	tx, e := s.repo.pool.Begin(ctx)
 	if e != nil {
 		return "", e

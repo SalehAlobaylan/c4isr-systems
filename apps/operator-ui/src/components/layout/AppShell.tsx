@@ -23,16 +23,19 @@ function Shell(){
   // Studio establishes its own EXERCISE_INPUT authorization. The current COP
   // selection neither grants nor removes that independent capability.
   const blocked = session.productProfile==='map'&&['/simulation-studio','/simulation-assets','/recordings','/exercise','/scenarios'].some(p=>path.startsWith(p)) || (path.startsWith('/weather-reports') && (session.resource.partition !== 'PUBLIC_EVIDENCE' || !session.permissions.includes('sources.read'))) || (path.startsWith('/external-tracks') && (session.resource.partition !== 'PUBLIC_EVIDENCE' || !session.permissions.includes('tracks.read'))) || (path.startsWith('/intelligence') && (session.resource.partition !== 'PUBLIC_EVIDENCE' || !session.permissions.includes('sources.read'))) || (session.resource.partition === 'PUBLIC_EVIDENCE' && ['/assets', '/scenarios', '/exercise'].some((p) => path.startsWith(p))) || (required && !session.permissions.includes(required))
+  const isPublicMap = path === '/map' && session.resource.partition === 'PUBLIC_EVIDENCE'
   return (
-    <div className="aegis-app">
+    <div className="aegis-app" data-map-shell={isPublicMap ? 'compact' : undefined}>
       <WorkspaceHeader />
       <main id="workspace-content" className="aegis-main" tabIndex={-1}>
         {blocked ? <p>{path.startsWith('/weather-reports') || path.startsWith('/external-tracks') || path.startsWith('/intelligence') ? 'This view requires an authorized Public Context workspace.' : 'This view requires an authorized exercise workspace.'}</p> : <Suspense fallback={<p className="p-6" role="status">Opening workspace…</p>}><Outlet /></Suspense>}
       </main>
-      <footer className="aegis-pagefoot">
-        <span data-testid="workspace-basis">{path.startsWith('/recordings')?'Recorded exercise output · virtual replay clock · read only':session.resource.partition==='PUBLIC_EVIDENCE'?'Public sources · retained evidence & provider uncertainty':'Synthetic observations · exercise perception & controlled telemetry'}</span>
-        <span className="aegis-foot-op">EMAD · {session.productProfile==='map'?'Public Context':'Historical facilities'}</span>
-      </footer>
+      {!isPublicMap && (
+        <footer className="aegis-pagefoot">
+          <span data-testid="workspace-basis">{path.startsWith('/recordings')?'Recorded exercise output · virtual replay clock · read only':session.resource.partition==='PUBLIC_EVIDENCE'?'Public sources · retained evidence & provider uncertainty':'Synthetic observations · exercise perception & controlled telemetry'}</span>
+          <span className="aegis-foot-op">EMAD · {session.productProfile==='map'?'Public Context':'Historical facilities'}</span>
+        </footer>
+      )}
       <ToastViewport />
     </div>
   )

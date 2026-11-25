@@ -1,12 +1,12 @@
 import {
   BookmarkIcon,
   FileTextIcon,
+  ImageIcon,
   InfoIcon,
   LayersIcon,
   LayoutGridIcon,
   ListIcon,
   RulerIcon,
-  ShieldAlertIcon,
 } from '@/components/icons'
 import { MapWorkbenchChooser } from '../MapWorkbenchChooser'
 import type { MapTool } from '../WorkbenchContext'
@@ -21,7 +21,6 @@ interface MapRailProps {
   enabledLayerCount: number
   unavailableLayerCount: number
   caseCitationCount: number
-  coverageTone?: 'positive' | 'caution' | 'critical'
   onTogglePanel: (panel: Exclude<SupportPanel, ''>, triggerLabel: string) => void
   onToggleTool: (tool: MapTool) => void
   onChooseWorkbench: (next: MapTool | 'previews') => void
@@ -36,7 +35,6 @@ export function MapRail({
   enabledLayerCount,
   unavailableLayerCount,
   caseCitationCount,
-  coverageTone,
   onTogglePanel,
   onToggleTool,
   onChooseWorkbench,
@@ -45,10 +43,17 @@ export function MapRail({
   const canSources = permissions.includes('sources.read')
   const toolActive = (t: MapTool) => drawerOpen && !activePanel && activeTool === t
   const otherToolActive =
-    drawerOpen && !activePanel && Boolean(activeTool) && activeTool !== 'investigations' && activeTool !== 'coverage'
+    drawerOpen &&
+    !activePanel &&
+    Boolean(activeTool) &&
+    activeTool !== 'investigations' &&
+    activeTool !== 'imagery' &&
+    activeTool !== 'geography' &&
+    activeTool !== 'coverage'
 
   return (
     <nav className="map-rail" hidden={hidden} aria-label="Map panels">
+      {/* Map Controls */}
       <button
         type="button"
         className="map-rail-item"
@@ -73,12 +78,39 @@ export function MapRail({
         aria-label="Map records"
         aria-pressed={drawerOpen && activePanel === 'records'}
         onClick={() => onTogglePanel('records', 'Map records')}
-        title="Browse retained records in the active scope (B)"
+        title="Browse retained records & Data Radar (R)"
       >
         <ListIcon className="size-4" />
         <span className="map-rail-label">Records</span>
       </button>
 
+      <button
+        type="button"
+        className="map-rail-item"
+        aria-label="Map tools"
+        aria-pressed={drawerOpen && activePanel === 'tools'}
+        onClick={() => onTogglePanel('tools', 'Map tools')}
+        title="Measure distance, draw study area, coordinates and buffer (T)"
+      >
+        <RulerIcon className="size-4" />
+        <span className="map-rail-label">Spatial</span>
+      </button>
+
+      <button
+        type="button"
+        className="map-rail-item"
+        aria-label="Map views"
+        aria-pressed={drawerOpen && activePanel === 'views'}
+        onClick={() => onTogglePanel('views', 'Map views')}
+        title="Saved map views and authorized view links (V)"
+      >
+        <BookmarkIcon className="size-4" />
+        <span className="map-rail-label">Views</span>
+      </button>
+
+      <div className="map-rail-divider" aria-hidden="true" />
+
+      {/* Analysis & Workbenches */}
       {canInvestigations && (
         <button
           type="button"
@@ -102,44 +134,15 @@ export function MapRail({
         <button
           type="button"
           className="map-rail-item"
-          aria-label="Coverage & readiness"
-          aria-pressed={toolActive('coverage')}
-          onClick={() => onToggleTool('coverage')}
-          title="Coverage readiness, missing windows and acquisition (C)"
+          aria-label="Imagery & analysis"
+          aria-pressed={toolActive('imagery')}
+          onClick={() => onToggleTool('imagery')}
+          title="Satellite imagery comparison and scene catalogue"
         >
-          <ShieldAlertIcon className="size-4" />
-          <span className="map-rail-label">Coverage</span>
-          {(coverageTone === 'caution' || coverageTone === 'critical') && (
-            <span className="map-rail-badge" data-tone={coverageTone} aria-hidden="true">
-              {coverageTone === 'critical' ? '!' : '◐'}
-            </span>
-          )}
+          <ImageIcon className="size-4" />
+          <span className="map-rail-label">Imagery</span>
         </button>
       )}
-
-      <button
-        type="button"
-        className="map-rail-item"
-        aria-label="Map tools"
-        aria-pressed={drawerOpen && activePanel === 'tools'}
-        onClick={() => onTogglePanel('tools', 'Map tools')}
-        title="Measure distance, draw study area, coordinates and context buffer (T)"
-      >
-        <RulerIcon className="size-4" />
-        <span className="map-rail-label">Spatial</span>
-      </button>
-
-      <button
-        type="button"
-        className="map-rail-item"
-        aria-label="Map views"
-        aria-pressed={drawerOpen && activePanel === 'views'}
-        onClick={() => onTogglePanel('views', 'Map views')}
-        title="Saved map views and authorized view links"
-      >
-        <BookmarkIcon className="size-4" />
-        <span className="map-rail-label">Views</span>
-      </button>
 
       {canSources && (
         <button
@@ -155,8 +158,6 @@ export function MapRail({
         </button>
       )}
 
-      <div className="map-rail-divider" aria-hidden="true" />
-
       <MapWorkbenchChooser
         value={activeTool}
         permissions={permissions}
@@ -166,7 +167,7 @@ export function MapRail({
           <>
             <LayoutGridIcon className="size-4" />
             <span className="map-rail-label" data-active={otherToolActive || undefined}>
-              Tools
+              More
             </span>
           </>
         }

@@ -206,7 +206,7 @@ func (s Service) Inventory(ctx context.Context) (InventoryResult, error) {
 		// Per-source daily attempt counts (strictly per-source, never exposing account groups).
 		attemptsBySource := map[string]int{}
 		today := now.Format("2006-01-02")
-		stRows, err := tx.Query(ctx, `SELECT source_id,requests_today FROM source_connector_state WHERE requests_day=$1::date`, today)
+		stRows, err := tx.Query(ctx, `SELECT source_id,COALESCE(sum(requests_today),0)::int FROM retrieval_profile_state WHERE quota_day=$1::date GROUP BY source_id`, today)
 		if err != nil {
 			return err
 		}

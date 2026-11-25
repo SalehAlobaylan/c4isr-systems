@@ -1,10 +1,20 @@
 import type { Feature, FeatureCollection } from 'geojson'
-import { PauseIcon, PlayIcon, RefreshIcon, UndoIcon } from '@/components/icons'
+import {
+  ExpandFrameIcon,
+  MinimizeIcon,
+  MinusIcon,
+  PauseIcon,
+  PlayIcon,
+  PlusIcon,
+  RefreshIcon,
+  UndoIcon,
+} from '@/components/icons'
 import type { AtlasLayer } from '../AtlasCanvas'
 import { MapUpdates } from '../MapUpdates'
 
 interface MapCanvasHudProps {
   cleanMap: boolean
+  onToggleCleanMap: () => void
   onRestoreWorkspace: () => void
   mode: 'inspect' | 'measure' | 'area'
   drawCount: number
@@ -14,16 +24,21 @@ interface MapCanvasHudProps {
   onCancelDraw: () => void
   paused: boolean
   pauseTime: string
+  bearing: number
   scopeKey: string
   updateLayers: Partial<Record<AtlasLayer, FeatureCollection>>
   onInspectUpdate: (kind: AtlasLayer, feature: Feature) => void
   onRefreshDisplay: () => void
   onPreviousCamera: () => void
   onTogglePause: () => void
+  onZoomIn: () => void
+  onZoomOut: () => void
+  onResetNorth: () => void
 }
 
 export function MapCanvasHud({
   cleanMap,
+  onToggleCleanMap,
   onRestoreWorkspace,
   mode,
   drawCount,
@@ -33,12 +48,16 @@ export function MapCanvasHud({
   onCancelDraw,
   paused,
   pauseTime,
+  bearing,
   scopeKey,
   updateLayers,
   onInspectUpdate,
   onRefreshDisplay,
   onPreviousCamera,
   onTogglePause,
+  onZoomIn,
+  onZoomOut,
+  onResetNorth,
 }: MapCanvasHudProps) {
   return (
     <>
@@ -77,39 +96,74 @@ export function MapCanvasHud({
         </div>
       )}
 
-      <div className="map-hud-top-right">
-        <MapUpdates scopeKey={scopeKey} layers={updateLayers} onInspect={onInspectUpdate} />
-        <div className="map-hud-pill" role="group" aria-label="Map display controls">
-          <button
-            type="button"
-            aria-label="Refresh display"
-            disabled={paused}
-            title="Refresh retained records; retrieval has its own worker schedule"
-            onClick={onRefreshDisplay}
-          >
-            <RefreshIcon className="size-3.5" />
+      {/* Unified Alloy Pearl Right Instrument Column */}
+      <div className="map-right-instruments">
+        <div className="map-hud-top-right">
+          <MapUpdates scopeKey={scopeKey} layers={updateLayers} onInspect={onInspectUpdate} />
+          <div className="map-hud-pill" role="group" aria-label="Map display controls">
+            <button
+              type="button"
+              aria-label="Refresh display"
+              disabled={paused}
+              title="Refresh retained records; retrieval has its own worker schedule"
+              onClick={onRefreshDisplay}
+            >
+              <RefreshIcon className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Previous view"
+              title="Previous map view"
+              onClick={onPreviousCamera}
+            >
+              <UndoIcon className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              aria-label={paused ? 'Resume display' : 'Pause display'}
+              aria-pressed={paused}
+              title={
+                paused && pauseTime
+                  ? `Display frozen at ${new Date(pauseTime).toLocaleTimeString()}; retrieval continues`
+                  : 'Freezes display only; retrieval continues'
+              }
+              onClick={onTogglePause}
+            >
+              {paused ? <PlayIcon className="size-3.5" /> : <PauseIcon className="size-3.5" />}
+              <span>{paused ? 'Paused' : 'Live'}</span>
+            </button>
+            <button
+              type="button"
+              aria-label={cleanMap ? 'Exit focus map' : 'Focus map'}
+              aria-pressed={cleanMap}
+              title={cleanMap ? 'Restore workspace panels (F)' : 'Temporarily hide panels and rail (F)'}
+              onClick={onToggleCleanMap}
+            >
+              {cleanMap ? <MinimizeIcon className="size-3.5" /> : <ExpandFrameIcon className="size-3.5" />}
+            </button>
+          </div>
+        </div>
+
+        <div className="map-hud-pill map-hud-pill--col" role="group" aria-label="Map zoom and orientation">
+          <button type="button" aria-label="Zoom in" title="Zoom in" onClick={onZoomIn}>
+            <PlusIcon className="size-3.5" />
+          </button>
+          <button type="button" aria-label="Zoom out" title="Zoom out" onClick={onZoomOut}>
+            <MinusIcon className="size-3.5" />
           </button>
           <button
             type="button"
-            aria-label="Previous view"
-            title="Previous map view"
-            onClick={onPreviousCamera}
+            aria-label="Reset north"
+            title={Math.abs(bearing) > 0.5 ? `Reset north (bearing ${Math.round(bearing)}°)` : 'North up'}
+            onClick={onResetNorth}
           >
-            <UndoIcon className="size-3.5" />
-          </button>
-          <button
-            type="button"
-            aria-label={paused ? 'Resume display' : 'Pause display'}
-            aria-pressed={paused}
-            title={
-              paused && pauseTime
-                ? `Display frozen at ${new Date(pauseTime).toLocaleTimeString()}; retrieval continues`
-                : 'Freezes display only; retrieval continues'
-            }
-            onClick={onTogglePause}
-          >
-            {paused ? <PlayIcon className="size-3.5" /> : <PauseIcon className="size-3.5" />}
-            <span>{paused ? 'Paused' : 'Live'}</span>
+            <span
+              className="map-hud-compass"
+              style={{ transform: `rotate(${-bearing}deg)` }}
+              aria-hidden="true"
+            >
+              N
+            </span>
           </button>
         </div>
       </div>

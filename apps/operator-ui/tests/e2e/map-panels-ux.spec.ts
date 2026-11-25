@@ -129,7 +129,16 @@ async function setupWorkspace(page: Page) {
           observationCompleteness: 'unknown',
           receipts: [],
           receiptsTruncated: false,
-          actions: [],
+          actions: [
+            {
+              kind: 'request_acquisition',
+              sourceId: 'firms-thermal',
+              profileKey: 'saudi-daily',
+              profileRevisionId: 'rev-firms-1',
+              owner: 'analyst',
+              reason: 'Within approved profile.',
+            },
+          ],
         },
         {
           id: 'local-naturalearth',
@@ -649,4 +658,123 @@ test('never-empty map discovery banner guides operators on empty scopes and disa
   await banner.getByRole('button', { name: /Jump to Mar 2025 · Jeddah corridor \(31\)/ }).click()
   await expect(banner).toHaveCount(0)
   await expect(page.getByRole('navigation', { name: 'Selected geographic area' })).toContainText('Jeddah corridor')
+})
+
+test('map-first compact shell, wired hotkeys, smart omnibox, inline legend toggles and right-click context menu work cleanly', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await setupWorkspace(page)
+  await page.goto(mapUrl)
+
+  // 1. Compact 44px Graphite Command Bar + 44px Scope Bar + single 28px 12px-compliant footer (no stacked taskbar or duplicate pagefoot)
+  await expect(page.locator('.workspace-taskbar')).toHaveCount(0)
+  await expect(page.locator('.aegis-pagefoot')).toHaveCount(0)
+  const topBar = (await page.locator('.workspace-header--compact').boundingBox())!
+  const scopeBar = (await page.locator('.map-scope-bar').boundingBox())!
+  const footer = (await page.locator('.map-telemetry-footer').boundingBox())!
+  expect(topBar.height).toBeLessThanOrEqual(46)
+  expect(scopeBar.height).toBeLessThanOrEqual(46)
+  expect(footer.height).toBeLessThanOrEqual(34)
+  expect(topBar.height + scopeBar.height + footer.height).toBeLessThanOrEqual(124)
+  await expect(page.getByTestId('workspace-basis')).toContainText('Public sources')
+  await expect(page.locator('.workspace-connection')).toHaveCount(1)
+
+  // No operational label below 12px on Public Context /map
+  const sub12 = await page.evaluate(() => {
+    const bad: Array<{ text: string; size: string }> = []
+    for (const el of Array.from(document.querySelectorAll('body *'))) {
+      if (el.closest('.maplibregl-ctrl-attrib, .maplibregl-ctrl-scale')) continue
+      const text = (el.textContent ?? '').trim()
+      if (!text || el.children.length > 0) continue
+      const st = getComputedStyle(el)
+      if (st.display === 'none' || st.visibility === 'hidden') continue
+      if (Number.parseFloat(st.fontSize) < 12) bad.push({ text: text.slice(0, 32), size: st.fontSize })
+    }
+    return bad
+  })
+  expect(sub12, `sub-12px operational text: ${JSON.stringify(sub12)}`).toEqual([])
+
+  // Every left-rail label displays completely without ellipsis or horizontal clipping
+  const clippedRailLabels = await page.evaluate(() => {
+    const rail = document.querySelector('.map-rail')
+    if (!rail) return ['missing .map-rail']
+    const railRect = rail.getBoundingClientRect()
+    return Array.from(rail.querySelectorAll<HTMLElement>('.map-rail-label'))
+      .filter((el) => {
+        const rect = el.getBoundingClientRect()
+        return el.scrollWidth > el.clientWidth + 1 || rect.left < railRect.left - 1 || rect.right > railRect.right + 1
+      })
+      .map((el) => el.textContent?.trim() ?? '')
+  })
+  expect(clippedRailLabels, 'clipped rail labels').toEqual([])
+
+  // 2. Real wired keyboard shortcuts (L, R, C, T, V, F, ?, Esc) + content-aware drawer widths
+  await page.keyboard.press('l')
+  const layersDrawer = page.getByRole('region', { name: 'Map layers' })
+  await expect(layersDrawer).toBeVisible()
+  const layersWidth = (await layersDrawer.boundingBox())!.width
+
+  await page.keyboard.press('c')
+  const coverageRegion = page.getByRole('region', { name: 'Coverage and acquisition', exact: true })
+  await expect(coverageRegion).toBeVisible()
+  const coverageWidth = (await page.locator('.map-drawer').boundingBox())!.width
+  expect(coverageWidth).toBeGreaterThan(layersWidth + 60)
+
+  await page.keyboard.press('r')
+  await expect(page.getByRole('region', { name: 'Map records' })).toBeVisible()
+
+  await page.keyboard.press('f')
+  await expect(page.getByRole('navigation', { name: 'Map panels' })).toBeHidden()
+  await page.keyboard.press('f')
+  await expect(page.getByRole('navigation', { name: 'Map panels' })).toBeVisible()
+
+  await page.keyboard.press('?')
+  const shortcutsDialog = page.getByRole('dialog', { name: 'Map keyboard shortcuts' })
+  await expect(shortcutsDialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(shortcutsDialog).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('region', { name: 'Map records' })).toHaveCount(0)
+
+  // 3. Smart Omnibox: "/" focuses input, parses WGS84 coords, matches loaded records, and executes >commands
+  await page.keyboard.press('/')
+  const omnibox = page.getByRole('searchbox', { name: 'Find a country, region or place' })
+  await expect(omnibox).toBeFocused()
+  await omnibox.fill('24.7136, 46.6753')
+  const results = page.getByLabel('Geographic search results')
+  await expect(results.getByRole('button', { name: /Go to 24\.7136° N, 46\.6753° E/ })).toBeVisible()
+  await results.getByRole('button', { name: /Go to 24\.7136° N, 46\.6753° E/ }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Centered camera at 24.7136°, 46.6753°' })).toBeVisible()
+
+  await omnibox.fill('Red Sea tremor')
+  await expect(results.getByRole('button', { name: /M4\.2 Red Sea tremor/ })).toBeVisible()
+  await results.getByRole('button', { name: /M4\.2 Red Sea tremor/ }).click()
+  await expect(page.getByRole('region', { name: 'Selected map object' })).toBeVisible()
+
+  await omnibox.fill('>layers')
+  await expect(results.getByRole('button', { name: /Map layers & basemap/ })).toBeVisible()
+  await results.getByRole('button', { name: /Map layers & basemap/ }).click()
+  await expect(layersDrawer).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  // 4. Inline layer visibility checkbox directly inside expanded ContextualLegend
+  await page.getByRole('button', { name: 'Show area situation', exact: true }).click()
+  const quakeToggle = page.getByRole('checkbox', { name: 'Toggle Earthquake reports layer' })
+  await expect(quakeToggle).toBeChecked()
+  await quakeToggle.click()
+  await expect(quakeToggle).not.toBeChecked()
+  await quakeToggle.click()
+  await expect(quakeToggle).toBeChecked()
+
+  // 5. Right-click context menu on map canvas exposes WGS84 location actions
+  const canvasBox = (await page.locator('.atlas-canvas').boundingBox())!
+  await page.mouse.click(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2, { button: 'right' })
+  const ctxMenu = page.getByRole('menu', { name: 'Map location actions' })
+  await expect(ctxMenu).toBeVisible()
+  await expect(ctxMenu.getByRole('menuitem', { name: 'Copy WGS84 coordinates' })).toBeVisible()
+  await ctxMenu.getByRole('menuitem', { name: 'Measure distance from here' }).click()
+  await expect(ctxMenu).toHaveCount(0)
+  await expect(page.getByText('Measure distance')).toBeVisible()
+  await expect(page.getByText(/1 point/)).toBeVisible()
 })

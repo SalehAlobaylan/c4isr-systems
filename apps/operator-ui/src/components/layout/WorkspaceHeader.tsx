@@ -57,43 +57,71 @@ export function WorkspaceHeader() {
   ]
   const params = new URLSearchParams(location.searchStr)
   const view = params.get('view') || (params.has('assessment')?'review':params.has('job')?'analysis':'compare')
-  return <div className="workspace-shell">
+  const compactMapBar = path === '/map' && publicArea
+  const navLinks = nav.map(([url, label]) => {
+    const [to, query] = url.split('?')
+    const tab = query?.split('=')[1]
+    const mapTool=to==='/systems'?'systems':to==='/intelligence'?tab==='review'?'review':tab==='context'?'context':'imagery':undefined
+    const active = path==='/map'&&publicArea ? (to==='/map'?!['systems','sources','jobs','imagery','review','context'].includes(params.get('tool')??''):mapTool==='systems'?['systems','sources','jobs'].includes(params.get('tool')??''):mapTool===params.get('tool')) : path === to && (to !== '/intelligence' || (tab ? view === tab : ['compare','catalogue','analysis'].includes(view)))
+    return <Link key={url} activeOptions={{exact:true,explicitUndefined:true}} to={path==='/map'&&publicArea&&mapTool?'/map':to} search={path==='/map'&&publicArea?(previous:Record<string,unknown>)=>({...previous,tool:mapTool,workbench:undefined}):to === '/intelligence' ? (previous: Record<string, unknown>) => {
+      let raw=typeof previous.publicView==='string'?previous.publicView:''
+      if(!raw)try{raw=localStorage.getItem(`emad.ux.v2.${session.principal.id}.${resourceKey(session.resource)}.investigation`)??''}catch{/* Storage may be disabled. */}
+      const bbox=readPublicFilters(raw).filters.bbox||undefined
+      const saved=(key:string)=>typeof previous[key]==='string'?previous[key] as string:undefined
+      return {job:saved('job'),assessment:saved('assessment'),before:saved('before'),after:saved('after'),bbox:path==='/intelligence'?saved('bbox')??bbox:bbox,view:tab??'compare'}
+    } : undefined} aria-current={active ? 'page' : undefined}>{label}</Link>
+  })
+  const moreMenu = (
+    <details ref={more} className={`workspace-more${compactMapBar ? ' workspace-more--dark' : ''}`} onKeyDown={e=>{if(e.key==='Escape'&&more.current){more.current.open=false;more.current.querySelector('summary')?.focus()}}}><summary aria-label="More workspaces">More</summary><nav aria-label="Supporting workspaces">
+      <Link to="/">Home</Link>{publicArea ? <><Link to="/weather-reports">Weather & official reports</Link><Link to="/external-tracks">Aircraft & vessels</Link>{!mapOnly&&<Link to="/simulation-studio">Simulation Studio</Link>}</> : !input && <><Link to="/scenarios">Legacy scenarios</Link><Link to="/assets">Controlled assets</Link><Link to="/board">Operations board</Link><Link to="/alerts">Alerts</Link><Link to="/incidents">Incidents</Link></>}
+      {!mapOnly&&exerciseResource&&publicArea&&<button className="text-left p-2" onClick={chooseExercise}>Choose exercise COP</button>}
+      {!input && <Link to="/timeline">Audit history</Link>}
+    </nav></details>
+  )
+  return <div className={`workspace-shell${compactMapBar ? ' workspace-shell--map-compact' : ''}`} data-map-compact={compactMapBar || undefined}>
     <a href="#workspace-content" className="workspace-skip">Skip to workspace</a>
-    <header className="workspace-header">
-      <Link to="/" className="workspace-brand" aria-label="EMAD Home"><span aria-hidden="true">E</span> EMAD</Link>
-      <div className="workspace-area" aria-label="Product area">
-        <button className={publicArea ? 'is-active' : ''} aria-pressed={publicArea} disabled={!publicResource} title={publicResource?'Open Public Context':'This account has no Public Context grant'} onClick={()=>publicResource&&void change(resourceKey(publicResource))}>Public Context</button>
-        {!mapOnly&&<button className={!publicArea ? 'is-active' : ''} aria-pressed={!publicArea} disabled={openingSimulation} onClick={()=>void openSimulation()}>{openingSimulation?'Opening…':'Simulation'}</button>}
-      </div>
-      <div className="workspace-identity">
-        <span className="workspace-account" title={`Registered operator: ${session.operator.id}`}>{session.operator.name}</span>
-        <SessionLogin compact />
-      </div>
-    </header>
-    <div className="workspace-taskbar">
-      <nav ref={navigation} aria-label="Workspace navigation">{nav.map(([url, label]) => {
-        const [to, query] = url.split('?')
-        const tab = query?.split('=')[1]
-        const mapTool=to==='/systems'?'systems':to==='/intelligence'?tab==='review'?'review':tab==='context'?'context':'imagery':undefined
-        const active = path==='/map'&&publicArea ? (to==='/map'?!['systems','sources','jobs','imagery','review','context'].includes(params.get('tool')??''):mapTool==='systems'?['systems','sources','jobs'].includes(params.get('tool')??''):mapTool===params.get('tool')) : path === to && (to !== '/intelligence' || (tab ? view === tab : ['compare','catalogue','analysis'].includes(view)))
-        return <Link key={url} activeOptions={{exact:true,explicitUndefined:true}} to={path==='/map'&&publicArea&&mapTool?'/map':to} search={path==='/map'&&publicArea?(previous:Record<string,unknown>)=>({...previous,tool:mapTool,workbench:undefined}):to === '/intelligence' ? (previous: Record<string, unknown>) => {
-          let raw=typeof previous.publicView==='string'?previous.publicView:''
-          if(!raw)try{raw=localStorage.getItem(`emad.ux.v2.${session.principal.id}.${resourceKey(session.resource)}.investigation`)??''}catch{/* Storage may be disabled. */}
-          const bbox=readPublicFilters(raw).filters.bbox||undefined
-          const saved=(key:string)=>typeof previous[key]==='string'?previous[key] as string:undefined
-          return {job:saved('job'),assessment:saved('assessment'),before:saved('before'),after:saved('after'),bbox:path==='/intelligence'?saved('bbox')??bbox:bbox,view:tab??'compare'}
-        } : undefined} aria-current={active ? 'page' : undefined}>{label}</Link>
-      })}</nav>
-      <div className="workspace-context" role="region" aria-label="Workspace context" data-resource={resourceKey(session.resource)}>
-        <WorkspaceChooser resources={resources} onChoose={change} openRequest={chooserRequest}/>
-        {!input && <span className="workspace-connection" data-connected={status === 'connected'} title="Event connection only. Source freshness is reported separately.">{status === 'connected' ? 'Events connected' : `Events ${status}`}</span>}
-        <details ref={more} className="workspace-more" onKeyDown={e=>{if(e.key==='Escape'&&more.current){more.current.open=false;more.current.querySelector('summary')?.focus()}}}><summary aria-label="More workspaces">More</summary><nav aria-label="Supporting workspaces">
-          <Link to="/">Home</Link>{publicArea ? <><Link to="/weather-reports">Weather & official reports</Link><Link to="/external-tracks">Aircraft & vessels</Link>{!mapOnly&&<Link to="/simulation-studio">Simulation Studio</Link>}</> : !input && <><Link to="/scenarios">Legacy scenarios</Link><Link to="/assets">Controlled assets</Link><Link to="/board">Operations board</Link><Link to="/alerts">Alerts</Link><Link to="/incidents">Incidents</Link></>}
-          {!mapOnly&&exerciseResource&&publicArea&&<button className="text-left p-2" onClick={chooseExercise}>Choose exercise COP</button>}
-          {!input && <Link to="/timeline">Audit history</Link>}
-        </nav></details>
-      </div>
-    </div>
+    {compactMapBar ? (
+      <header className="workspace-header workspace-header--compact">
+        <Link to="/" className="workspace-brand workspace-brand--compact" aria-label="EMAD Home"><span aria-hidden="true">E</span> EMAD</Link>
+        {!mapOnly && (
+          <div className="workspace-area workspace-area--compact" aria-label="Product area">
+            <button className={publicArea ? 'is-active' : ''} aria-pressed={publicArea} disabled={!publicResource} title={publicResource?'Open Public Context':'This account has no Public Context grant'} onClick={()=>publicResource&&void change(resourceKey(publicResource))}>Public Context</button>
+            <button className={!publicArea ? 'is-active' : ''} aria-pressed={!publicArea} disabled={openingSimulation} onClick={()=>void openSimulation()}>{openingSimulation?'Opening…':'Simulation'}</button>
+          </div>
+        )}
+        <nav ref={navigation} className="workspace-nav-inline" aria-label="Workspace navigation">{navLinks}</nav>
+        <div className="workspace-context workspace-context--dark" role="region" aria-label="Workspace context" data-resource={resourceKey(session.resource)}>
+          <WorkspaceChooser resources={resources} onChoose={change} openRequest={chooserRequest}/>
+          {moreMenu}
+        </div>
+        <div className="workspace-identity workspace-identity--compact">
+          <span className="workspace-account" title={`Registered operator: ${session.operator.id}`}>{session.operator.name}</span>
+          <SessionLogin compact />
+        </div>
+      </header>
+    ) : (
+      <>
+        <header className="workspace-header">
+          <Link to="/" className="workspace-brand" aria-label="EMAD Home"><span aria-hidden="true">E</span> EMAD</Link>
+          <div className="workspace-area" aria-label="Product area">
+            <button className={publicArea ? 'is-active' : ''} aria-pressed={publicArea} disabled={!publicResource} title={publicResource?'Open Public Context':'This account has no Public Context grant'} onClick={()=>publicResource&&void change(resourceKey(publicResource))}>Public Context</button>
+            {!mapOnly&&<button className={!publicArea ? 'is-active' : ''} aria-pressed={!publicArea} disabled={openingSimulation} onClick={()=>void openSimulation()}>{openingSimulation?'Opening…':'Simulation'}</button>}
+          </div>
+          <div className="workspace-identity">
+            <span className="workspace-account" title={`Registered operator: ${session.operator.id}`}>{session.operator.name}</span>
+            <SessionLogin compact />
+          </div>
+        </header>
+        <div className="workspace-taskbar">
+          <nav ref={navigation} aria-label="Workspace navigation">{navLinks}</nav>
+          <div className="workspace-context" role="region" aria-label="Workspace context" data-resource={resourceKey(session.resource)}>
+            <WorkspaceChooser resources={resources} onChoose={change} openRequest={chooserRequest}/>
+            {!input && <span className="workspace-connection" data-connected={status === 'connected'} title="Event connection only. Source freshness is reported separately.">{status === 'connected' ? 'Events connected' : `Events ${status}`}</span>}
+            {moreMenu}
+          </div>
+        </div>
+      </>
+    )}
     {connectionWarning&&<div className="workspace-connection-warning" role="status">{connectionWarning} <button className="ux-button" onClick={()=>void revalidate()}>Retry connection</button></div>}
     {error && <p className="workspace-error" role="alert">{error}</p>}
   </div>

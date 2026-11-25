@@ -48,6 +48,43 @@ func TestOpenSkyTimeAndClaimsRemainSeparate(t *testing.T) {
 		t.Fatal("old snapshot refreshed")
 	}
 }
+
+func TestOpenSkyLiveFetchWindowNormalizationAndRecordCap(t *testing.T) {
+	now := time.Now().UTC().Truncate(time.Second)
+	in := FetchRequest{
+		Now:  now.Add(3 * time.Second),
+		From: now.Add(-5 * time.Minute),
+		To:   now,
+		Admission: Admission{AdmissionInput: AdmissionInput{Policy: Policy{
+			AOI:               Bounds{West: 34, South: 16, East: 56, North: 33},
+			LookbackSeconds:   300,
+			MaxRecordsPerPage: 2,
+			MaxResponseBytes:  2 * 1024 * 1024,
+		}}},
+	}
+	states := []any{
+		// Live observation observed 2s after Begin's To, uppercase ICAO24, 360deg course
+		[]any{" 7102A3 ", "SVA1041 ", "Saudi Arabia", now.Add(2 * time.Second).Unix(), now.Add(2 * time.Second).Unix(), 46.7, 24.7, 10500, false, 230.0, 360.0, nil, nil, nil, nil, false, 0},
+		// Malformed transponder identity should be excluded without failing the snapshot
+		[]any{"bad-id", "TEST00", "Saudi Arabia", now.Unix(), now.Unix(), 46.8, 24.8, 9000, false, 210.0, 180.0, nil, nil, nil, nil, false, 0},
+		// Second valid aircraft within Riyadh area
+		[]any{"7102a4", "FXY202", "Saudi Arabia", now.Add(-5 * time.Second).Unix(), now.Unix(), 46.6, 24.9, 8200, false, 200.0, 90.0, nil, nil, nil, nil, false, 0},
+		// Third valid aircraft triggers bounded partial cap instead of rejecting all
+		[]any{"7102a5", "SVA303", "Saudi Arabia", now.Add(-10 * time.Second).Unix(), now.Unix(), 39.2, 21.6, 7500, false, 195.0, 45.0, nil, nil, nil, nil, false, 0},
+	}
+	raw, _ := json.Marshal(map[string]any{"time": now.Add(3 * time.Second).Unix(), "states": states})
+	p, err := DecodeOpenSky(raw, in)
+	if err != nil {
+		t.Fatalf("unexpected decode error: %v", err)
+	}
+	if len(p.Records) != 2 || p.ExcludedRecords != 2 || p.PartialReason != "provider_record_cap" {
+		t.Fatalf("unexpected page: records=%d excluded=%d partial=%q", len(p.Records), p.ExcludedRecords, p.PartialReason)
+	}
+	first := p.Records[0].Moving
+	if first.IdentityClaim != "7102a3" || first.Course == nil || *first.Course != 0 {
+		t.Fatalf("identity/course not normalized: %+v", first)
+	}
+}
 func TestAISUnitsSentinelsAndOriginTime(t *testing.T) {
 	in := movingRequest()
 	raw := aisBytes(in.Now.Add(-5 * time.Second))

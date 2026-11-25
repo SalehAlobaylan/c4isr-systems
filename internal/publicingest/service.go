@@ -73,16 +73,14 @@ func (s *Service) location(ctx context.Context, a Admission) (Location, error) {
 	if location.Adapter == EarthSearchAdapter && (a.Dataset != EarthSearchDataset || a.ProductVersion != "sentinel2-c1-l2a" || a.RevisionPolicy != "content_hash" || a.Policy.MaxRecordsPerPage > 25 || a.Policy.MinIntervalSeconds < 5) {
 		return Location{}, apperr.Validation("Earth Search requires the reviewed Collection 1 policy")
 	}
-	if location.Adapter == OpenSkyAdapter || location.Adapter == AISAdapter {
-		expected := OpenSkyDataset
-		pace, quota := 60, 300
-		if location.Adapter == AISAdapter {
-			expected = AISDataset
-			pace = 10
-			quota = 1000
+	if location.Adapter == OpenSkyAdapter {
+		if a.Dataset != OpenSkyDataset || a.ProductVersion != "v1" || a.RevisionPolicy != "content_hash" || !a.Rights.AllowAnalysis || a.Policy.MaxPages != 1 || a.Policy.MaxRecordsPerPage > 1000 || a.Policy.MaxResponseBytes > 2*1024*1024 || a.Policy.LookbackSeconds > 300 || a.Policy.MinIntervalSeconds < 60 || a.Policy.MaxRequestsPerDay > 300 || (a.Policy.AOI.East-a.Policy.AOI.West)*(a.Policy.AOI.North-a.Policy.AOI.South) > 400 {
+			return Location{}, apperr.Validation("OpenSky requires its native v1 product, reviewed analysis rights, one bounded page, at most 1000 records/2 MiB/400 square degrees/5 minute lookback and provider pacing/quota")
 		}
-		if a.Dataset != expected || a.ProductVersion != "v1" || a.RevisionPolicy != "content_hash" || !a.Rights.AllowAnalysis || a.Policy.MaxPages != 1 || a.Policy.MaxRecordsPerPage > 200 || a.Policy.MaxResponseBytes > 1048576 || a.Policy.LookbackSeconds > 300 || a.Policy.MinIntervalSeconds < pace || a.Policy.MaxRequestsPerDay > quota || (a.Policy.AOI.East-a.Policy.AOI.West)*(a.Policy.AOI.North-a.Policy.AOI.South) > 25 || (location.Adapter == AISAdapter && a.Policy.TimeoutSeconds < 6) {
-			return Location{}, apperr.Validation("moving feed requires its native v1 product, reviewed analysis rights, one bounded page, at most 200 records/1 MiB/25 square degrees/5 minute lookback and provider pacing/quota")
+	}
+	if location.Adapter == AISAdapter {
+		if a.Dataset != AISDataset || a.ProductVersion != "v1" || a.RevisionPolicy != "content_hash" || !a.Rights.AllowAnalysis || a.Policy.MaxPages != 1 || a.Policy.MaxRecordsPerPage > 200 || a.Policy.MaxResponseBytes > 1048576 || a.Policy.LookbackSeconds > 300 || a.Policy.MinIntervalSeconds < 10 || a.Policy.MaxRequestsPerDay > 1000 || (a.Policy.AOI.East-a.Policy.AOI.West)*(a.Policy.AOI.North-a.Policy.AOI.South) > 25 || a.Policy.TimeoutSeconds < 6 {
+			return Location{}, apperr.Validation("AIS requires its native v1 product, reviewed analysis rights, one bounded page, at most 200 records/1 MiB/25 square degrees/5 minute lookback and provider pacing/quota")
 		}
 	}
 
@@ -400,10 +398,16 @@ func (s *Service) ExecuteWindow(ctx context.Context, source string, window *Wind
 	// A failed catalog projection does not roll back or refetch durable
 	// evidence. The pending receipt stays visible and can be retried alone.
 	projectionBudget := 100
+	projectionTimeout := 5 * time.Second
 	if location.Adapter == OpenSkyAdapter || location.Adapter == AISAdapter || location.Adapter == METARAdapter || isGDACS(location.Adapter) {
 		projectionBudget = 1000
+		projectionTimeout = 20 * time.Second
 	}
-	_, _ = s.Replay(bound, source, projectionBudget)
+	replayContext, replayCancel := context.WithTimeout(context.WithoutCancel(ctx), projectionTimeout)
+	defer replayCancel()
+	if replayBound, replayErr := liveWorker(ctx, replayContext, source, p.ID); replayErr == nil {
+		_, _ = s.Replay(replayBound, source, projectionBudget)
+	}
 	// Projection can exhaust its own bounded cleanup budget after evidence
 	// and run completion committed. The immutable receipt gets a fresh,
 	// separately authenticated deadline and records any publication gap.

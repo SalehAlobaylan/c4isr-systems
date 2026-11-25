@@ -17,7 +17,7 @@ PROVIDERS = {
  'cdse': ('https://stac.dataspace.copernicus.eu/v1/search', 'cdse-sentinel2-stac-v1', 24),
  'earthsearch': ('https://earth-search.aws.element84.com/v1/search', 'earthsearch-sentinel2-c1-v1', 24),
  'firms': ('https://firms.modaps.eosdis.nasa.gov/api/area/csv/', 'firms-viirs-noaa20-v1', 24),
- 'opensky': ('https://opensky-network.org/api/states/all', 'opensky-states-v1', 96),
+ 'opensky': ('https://opensky-network.org/api/states/all', 'opensky-states-v1', 300),
  'ais': ('wss://stream.aisstream.io/v0/stream', 'aisstream-position-v1', 96),
 }
 
@@ -70,10 +70,11 @@ def configure(env):
         # USGS endpoints share one allowance. Custom credential/account groups
         # can be reviewed in the private configuration without exposing keys.
         account_key = 'usgs' if key == 'usgs-history' else key
+        request_cost = 4 if key == 'opensky' else 1
         entry['accountBudget'] = record.get('accountBudget', {
             'group': 'local-account-' + account_key,
-            'dailyCost': PROVIDERS[account_key][2],
-            'requestCost': 4 if key == 'opensky' else 1,
+            'dailyCost': PROVIDERS[account_key][2] * request_cost,
+            'requestCost': request_cost,
             'concurrency': 1, 'minIntervalSeconds': 1})
         if state!='CONFIGURED':entry.update(gateState=state,gateNextAction=action)
         if token_env: entry['authTokenEnv'] = token_env

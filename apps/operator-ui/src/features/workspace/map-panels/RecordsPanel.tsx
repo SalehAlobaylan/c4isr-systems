@@ -514,7 +514,24 @@ export function RecordsPanel({
                         <bdi dir="auto">{f.properties?.title || f.properties?.recordId}</bdi>
                       </h3>
                       <p>{dateLabel(f.properties?.date)}</p>
-                      <p>{f.properties?.source || f.properties?.sourceId || 'Derived retained result'}</p>
+                      <p>
+                        {(family === 'aircraft' || family === 'vessels') &&
+                        (f.properties?.altitude != null || f.properties?.speedMps != null || f.properties?.originCountry)
+                          ? [
+                              f.properties?.onGround === true
+                                ? 'On ground'
+                                : f.properties?.altitude != null
+                                  ? `${Math.round(Number(f.properties.altitude)).toLocaleString()} m`
+                                  : null,
+                              f.properties?.speedMps != null
+                                ? `${Math.round(Number(f.properties.speedMps) * 1.94384)} kt`
+                                : null,
+                              f.properties?.originCountry ? String(f.properties.originCountry) : null,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')
+                          : f.properties?.source || f.properties?.sourceId || 'Derived retained result'}
+                      </p>
                     </div>
                   </button>
                 ))}

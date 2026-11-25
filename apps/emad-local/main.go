@@ -256,6 +256,9 @@ func run() error {
 	if e = reconcileGDACS(ctx, pool, pub, sourceID("gdacs")); e != nil {
 		return e
 	}
+	if e = reconcileOpenSkyBudget(ctx, pool, pub, sourceID("opensky")); e != nil {
+		return e
+	}
 	summary := map[string]any{"profile": "emad.local.v2", "productProfile": *productProfile, "accounts": "development identities; no claim of review by two actual people", "workspaceId": "default", "environmentId": "local", "installedAt": time.Now().UTC()}
 	raw, _ := json.MarshalIndent(summary, "", "  ")
 	return os.WriteFile(filepath.Join(*root, "profile.json"), raw, 0600)

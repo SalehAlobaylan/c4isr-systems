@@ -334,6 +334,7 @@ func (f *HTTPFetcher) Fetch(ctx context.Context, location Location, in FetchRequ
 	if location.token != "" && location.Adapter != FIRMSAdapter {
 		req.Header.Set("Authorization", "Bearer "+location.token)
 	}
+	fetchStart := time.Now()
 	privateToken := ""
 	if location.Adapter == OpenSkyAdapter && location.oauthID != "" {
 		privateToken, err = f.openSkyToken(ctx, location)
@@ -427,6 +428,9 @@ func (f *HTTPFetcher) Fetch(ctx context.Context, location Location, in FetchRequ
 		return page, meta, err
 	}
 	if location.Adapter == OpenSkyAdapter {
+		if elapsed := time.Since(fetchStart); elapsed > 0 {
+			in.Now = in.Now.Add(elapsed)
+		}
 		meta.Discontinuous = true
 		meta.CoverageMeaning = "One current bounded snapshot; lookback filters source timestamps and does not provide historical or complete reception coverage."
 		page, err = DecodeOpenSky(raw, in)

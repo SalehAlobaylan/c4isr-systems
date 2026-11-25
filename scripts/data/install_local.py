@@ -75,16 +75,18 @@ def admission(key):
     licence=rights('local-'+key+'-rights-v1',terms,producer+' via '+provider+'; unendorsed attributed development context')
     licence['allowSimulationExport']=imagery
     if imagery: licence['attribution']='Contains modified Copernicus Sentinel data (2025); ESA, Element 84 / Sinergise or CDSE as recorded per scene'
-    policy={'aoi':JEDDAH if imagery or key in ['firms','opensky','ais'] else SAUDI,
+    policy={'aoi':JEDDAH if imagery or key in ['firms','ais'] else SAUDI,
             'lookbackSeconds':31*86400 if imagery or key=='usgs-history' else 7*86400,
             'freshForSeconds':86400,'unavailableAfterSeconds':7*86400,'minIntervalSeconds':3600,
             'timeoutSeconds':10,'maxPages':3,'maxRecordsPerPage':25 if imagery else 200,
             'maxResponseBytes':4*1024*1024,'maxRequestsPerDay':PROVIDERS[key][2]}
     if key=='metar':policy.update(lookbackSeconds=21600,freshForSeconds=3600,unavailableAfterSeconds=7200,maxPages=1,maxRecordsPerPage=400,maxResponseBytes=1048576,minIntervalSeconds=900)
     if key=='gdacs':policy.update(lookbackSeconds=604800,maxPages=1,maxRecordsPerPage=100,maxResponseBytes=1048576,minIntervalSeconds=1800)
-    if key in ['opensky','ais']:policy.update(lookbackSeconds=300,freshForSeconds=60,unavailableAfterSeconds=300,maxPages=1,maxRecordsPerPage=200,maxResponseBytes=1048576,minIntervalSeconds=900)
+    if key=='opensky':policy.update(aoi=SAUDI,lookbackSeconds=300,freshForSeconds=420,unavailableAfterSeconds=900,maxPages=1,maxRecordsPerPage=1000,maxResponseBytes=2*1024*1024,minIntervalSeconds=300,maxRequestsPerDay=300)
+    if key=='ais':policy.update(lookbackSeconds=300,freshForSeconds=60,unavailableAfterSeconds=300,maxPages=1,maxRecordsPerPage=200,maxResponseBytes=1048576,minIntervalSeconds=900)
     if key=='firms':policy['lookbackSeconds']=3*86400
-    return {'analystQuestion':'Which official natural-hazard reports and station observations contextualize this selected Saudi region?',
+    question='Which current external aircraft observations contextualize this selected Saudi region?' if key=='opensky' else 'Which official natural-hazard reports and station observations contextualize this selected Saudi region?'
+    return {'analystQuestion':question,
             'originalProducer':producer,'upstreamProvider':provider,'connectorId':'local-'+key,'connectorPrincipalId':'worker-'+key,
             'dataset':dataset,'productVersion':version,'coverageDescription':'Bounded Saudi-region snapshot; source footprints may include neighbouring areas. '+('Historical retained March 2025 capture, not current conditions.' if key=='usgs-history' else 'No completeness or absence claim.'),
             'revisionPolicy':'content_hash','enabled':True,'rights':licence,'policy':policy}
@@ -116,7 +118,10 @@ def register_public(api, receipts,stop_after_references=False):
     print('Installed '+str(len(references))+' retained reference versions',flush=True)
     if stop_after_references:raise RuntimeError('Intentional acceptance interruption after durable reference checkpoint')
     captures=receipts.setdefault('captures',{})
-    for key in ['usgs','usgs-history','metar','gdacs','earthsearch','cdse']:
+    capture_keys=['usgs','usgs-history','metar','gdacs','earthsearch','cdse']
+    if states.get('opensky',{}).get('state')=='CONFIGURED':
+        capture_keys.append('opensky')
+    for key in capture_keys:
         if key in captures and captures[key].get('status') in ['SUCCEEDED','PARTIAL']:continue
         connector=API('worker-'+key)
         body={'from':'2025-03-01T00:00:00Z','to':'2025-03-31T23:59:59Z'} if key in ['usgs-history','earthsearch','cdse'] else None

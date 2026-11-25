@@ -122,6 +122,25 @@ export function SelectionPeekCard({
             </p>
           )}
 
+          {(kindKey === 'aircraft' || kindKey === 'vessels') && !props.aggregate && (
+            <p className="atlas-weather-value font-mono">
+              {props.onGround === true
+                ? 'On ground'
+                : props.altitude != null
+                  ? `${Math.round(Number(props.altitude)).toLocaleString()} m`
+                  : 'Alt unknown'}
+              {' · '}
+              {props.speedMps != null
+                ? `${Math.round(Number(props.speedMps) * 1.94384)} kt`
+                : 'Speed unknown'}
+              {' · '}
+              {props.course != null ? `${Math.round(Number(props.course))}°` : 'Hdg unknown'}
+              {props.originCountry ? (
+                <span className="ux-muted"> · {String(props.originCountry)}</span>
+              ) : null}
+            </p>
+          )}
+
           <p className="map-peek-meta">
             {props.date
               ? new Date(props.date).toLocaleString()

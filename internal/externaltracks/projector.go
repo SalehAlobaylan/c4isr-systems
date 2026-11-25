@@ -65,7 +65,7 @@ func (p Projector) Project(ctx context.Context, tx pgx.Tx, e publicingest.Eviden
 	newSegment := errors.Is(err, pgx.ErrNoRows) || o.ObservedAt.Sub(last) > SegmentGap
 	if newSegment {
 		var count int
-		if err := tx.QueryRow(ctx, `SELECT count(*) FROM external_track_segments WHERE source_id=$1`, e.SourceID).Scan(&count); err != nil {
+		if err := tx.QueryRow(ctx, `SELECT count(*) FROM external_track_segments s JOIN tracks t ON t.id=s.track_id AND t.scope_id=s.scope_id WHERE s.source_id=$1 AND t.status<>'closed' AND s.last_seen_at>=$2`, e.SourceID, o.ObservedAt.Add(-SegmentGap)).Scan(&count); err != nil {
 			return err
 		}
 		if count >= 2000 {

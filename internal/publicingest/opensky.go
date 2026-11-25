@@ -31,14 +31,19 @@ func DecodeOpenSky(raw []byte, in FetchRequest) (Page, error) {
 		Time   int64             `json:"time"`
 		States []json.RawMessage `json:"states"`
 	}
-	if len(raw) > in.Admission.Policy.MaxResponseBytes || json.Unmarshal(raw, &doc) != nil || doc.Time <= 0 || len(doc.States) > in.Admission.Policy.MaxRecordsPerPage {
+	if len(raw) > in.Admission.Policy.MaxResponseBytes || json.Unmarshal(raw, &doc) != nil || doc.Time <= 0 {
 		return fail()
 	}
 	at := time.Unix(doc.Time, 0).UTC()
-	if at.After(in.Now.Add(5*time.Second)) || at.Before(in.Now.Add(-5*time.Minute)) {
+	if at.After(in.Now.Add(30*time.Second)) || at.Before(in.Now.Add(-5*time.Minute)) {
 		return fail()
 	}
 	p := Page{Records: []Record{}, CoverageFrom: in.From, CoverageTo: in.To}
+	upper := in.To
+	if in.Now.After(upper) {
+		upper = in.Now
+	}
+	maxRecords := in.Admission.Policy.MaxRecordsPerPage
 	for _, vector := range doc.States {
 		var row []json.RawMessage
 		if json.Unmarshal(vector, &row) != nil {
@@ -64,15 +69,30 @@ func DecodeOpenSky(raw []byte, in FetchRequest) (Page, error) {
 		if !point.Valid() {
 			return fail()
 		}
-		if !within(in.Admission.Policy.AOI, point) || t.Before(in.From) || t.After(in.To) || t.After(in.Now.Add(5*time.Second)) {
+		if !within(in.Admission.Policy.AOI, point) || t.Before(in.From) || t.After(upper.Add(5*time.Second)) || t.After(in.Now.Add(5*time.Second)) {
+			p.ExcludedRecords++
+			continue
+		}
+		identity = strings.ToLower(strings.TrimSpace(identity))
+		if course != nil && *course == 360 {
+			zero := 0.0
+			course = &zero
+		}
+		if altitude != nil && (math.IsNaN(*altitude) || math.IsInf(*altitude, 0)) {
 			p.ExcludedRecords++
 			continue
 		}
 		claims := map[string]any{"icao24": identity, "callsign": strings.TrimSpace(call), "registrationCountryInferredByProvider": country, "barometricAltitudeMetres": altitude, "onGround": onGround, "affiliation": "unassessed", "identityStatus": "provider_claim_not_verified"}
 		quality := map[string]any{"positionSourceCode": positionSource, "providerSnapshotAt": at, "analystConfidence": nil, "upstreamLineage": "OpenSky aggregated receiver network; repeat snapshots are not independent corroboration"}
 		o := MovingObservation{Kind: "aircraft", IdentityClaim: identity, ObservedAt: t, Position: point, SpeedMPS: speed, Course: course, Claims: claims, Quality: quality}
-		if o.Validate(in.Now) != nil || (altitude != nil && (math.IsNaN(*altitude) || math.IsInf(*altitude, 0))) {
-			return fail()
+		if o.Validate(in.Now) != nil {
+			p.ExcludedRecords++
+			continue
+		}
+		if maxRecords > 0 && len(p.Records) >= maxRecords {
+			p.ExcludedRecords++
+			p.PartialReason = "provider_record_cap"
+			continue
 		}
 		// Stable content excludes the changing provider snapshot time. Exact vector
 		// bytes remain available, while unchanged snapshots deduplicate correctly.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/access"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/platform/ids"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/publicingest"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -64,6 +65,44 @@ func reconcileGDACS(ctx context.Context, pool *pgxpool.Pool, resource access.Res
 	}
 	document, _ := json.Marshal(map[string]any{"correction": "GDACS RSS now requests XML; JSON content negotiation was rejected with HTTP 406", "previousNextAttemptAt": previous, "nextAttemptAt": next, "lastAttemptAt": attempted, "retainedFailureCode": failure, "requestsTodayUnchanged": quota, "minimumIntervalSeconds": interval, "immutableAttemptsPreserved": true})
 	if _, err = tx.Exec(ctx, `INSERT INTO audit_events(id,scope_id,occurred_at,actor_type,actor_id,action,subject_type,subject_id,correlation_id,data)VALUES($1,$2,now(),'SYSTEM','internal:local-installer','local.connector.request-corrected','source',$3,'',$4)`, receipt, resource.ID(), source, document); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
+}
+
+// Reconciles the local OpenSky account budget hash when trusted local connector
+// configuration updates daily credits (for example to support regional Saudi
+// polling). Preserves daily spent counters, reset timestamps, and reported
+// provider remaining credits.
+func reconcileOpenSkyBudget(ctx context.Context, pool *pgxpool.Pool, resource access.Resource, source string) error {
+	registry, err := publicingest.LoadRegistry(os.Getenv("C4ISR_PUBLIC_CONNECTORS_FILE"))
+	if err != nil {
+		return err
+	}
+	binding, ok := registry["local-opensky"]
+	if !ok || binding.Adapter != publicingest.OpenSkyAdapter || binding.SourceID != source || binding.AccountBudget == nil {
+		return nil
+	}
+	wantHash := binding.AccountBudget.PolicyHash()
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	var priorHash string
+	var spent int64
+	err = tx.QueryRow(ctx, `SELECT policy_hash,spent FROM provider_budget_state WHERE group_key=$1 FOR UPDATE`, binding.AccountBudget.Group).Scan(&priorHash, &spent)
+	if err == pgx.ErrNoRows || (err == nil && priorHash == wantHash) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if _, err = tx.Exec(ctx, `UPDATE provider_budget_state SET policy_hash=$2 WHERE group_key=$1`, binding.AccountBudget.Group, wantHash); err != nil {
+		return err
+	}
+	document, _ := json.Marshal(map[string]any{"correction": "Trusted local OpenSky account budget reconciled for regional Saudi coverage", "previousPolicyHash": priorHash, "policyHash": wantHash, "dailyCost": binding.AccountBudget.DailyCost, "spentPreserved": spent})
+	if _, err = tx.Exec(ctx, `INSERT INTO audit_events(id,scope_id,occurred_at,actor_type,actor_id,action,subject_type,subject_id,correlation_id,data)VALUES($1,$2,now(),'SYSTEM','internal:local-installer','local.connector.budget-reconciled','source',$3,'',$4)`, ids.New("aud"), resource.ID(), source, document); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)

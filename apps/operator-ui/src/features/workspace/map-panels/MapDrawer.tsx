@@ -6,7 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ExternalLinkIcon, MaximizeIcon, MinimizeIcon, XIcon } from '@/components/icons'
+import { ColumnsIcon, ExternalLinkIcon, MaximizeIcon, MinimizeIcon, XIcon } from '@/components/icons'
 import type { DrawerSize } from './useMapPanelController'
 import { MAX_DRAWER_WIDTH, MIN_DRAWER_WIDTH } from './useMapPanelController'
 
@@ -23,6 +23,7 @@ interface MapDrawerProps {
   regionLabel: string
   closeLabel?: string
   width: number
+  isWideWidth?: boolean
   size: DrawerSize
   fullPageLink?: FullPageDestination
   onResizeWidth: (nextWidth: number) => void
@@ -40,6 +41,7 @@ export function MapDrawer({
   regionLabel,
   closeLabel = 'Close map tool',
   width,
+  isWideWidth = false,
   size,
   fullPageLink,
   onResizeWidth,
@@ -107,6 +109,18 @@ export function MapDrawer({
               >
                 <ExternalLinkIcon className="size-3.5" />
               </Link>
+            )}
+            {size !== 'full' && (
+              <button
+                type="button"
+                className="map-drawer-iconbtn map-drawer-width-toggle"
+                aria-label={isWideWidth ? 'Use compact panel width' : 'Use wide panel width'}
+                aria-pressed={isWideWidth}
+                title={isWideWidth ? 'Switch to compact width' : 'Switch to wide analytical width'}
+                onClick={onToggleWide}
+              >
+                <ColumnsIcon className="size-3.5" />
+              </button>
             )}
             <button
               type="button"

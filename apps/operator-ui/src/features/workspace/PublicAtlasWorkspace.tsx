@@ -15,6 +15,7 @@ import {
 } from '@/lib/api'
 import { longitudeLatitude, pointerLabel } from '@/lib/internationalInput'
 import { useWorkspace } from '@/lib/workspaceContext'
+import { useRealtime } from '@/realtime/RealtimeProvider'
 import { usePublicContext } from '@/features/public-context/usePublicContext'
 import { PublicContextPanel } from '@/features/public-context/PublicContextPanel'
 import { queryFor } from '@/features/public-context/filters'
@@ -53,10 +54,13 @@ import { useCaseCitationBridge, type CaseCitationKind } from './map-panels/caseC
 import { ContextualLegend } from './map-panels/ContextualLegend'
 import { LayersPanel, type LayerDisplayStatus, type LayersSubTab } from './map-panels/LayersPanel'
 import { MapCanvasHud } from './map-panels/MapCanvasHud'
+import { MapContextMenu, type MapContextMenuTarget } from './map-panels/MapContextMenu'
 import { MapDiscoveryBanner } from './map-panels/MapDiscoveryBanner'
 import { MapDrawer, type FullPageDestination } from './map-panels/MapDrawer'
 import { MapRail } from './map-panels/MapRail'
 import { MapScopeBar, summarizeCoverageReadiness } from './map-panels/MapScopeBar'
+import { MapShortcutsDialog } from './map-panels/MapShortcutsDialog'
+import type { QuickCommandId } from './map-panels/omnibox'
 import { RecordsPanel, type RecordsBrowseMode } from './map-panels/RecordsPanel'
 import { SavedViewsPanel, type MapBookmark } from './map-panels/SavedViewsPanel'
 import { SelectionPeekCard } from './map-panels/SelectionPeekCard'
@@ -112,7 +116,7 @@ const validCamera = (v: unknown): v is Camera =>
 const smallBounds = (b?: number[]) =>
   b && b[0] < b[2] && b[1] < b[3] && (b[2] - b[0]) * (b[3] - b[1]) <= 400 ? b.join(',') : undefined
 
-const defaultLayers: AtlasLayer[] = ['earthquakes', 'thermal', 'weather', 'bulletins', 'imagery']
+const defaultLayers: AtlasLayer[] = ['earthquakes', 'thermal', 'weather', 'bulletins', 'aircraft', 'imagery']
 const allLayers = Object.keys(layerInfo) as AtlasLayer[]
 const queryLayers = allLayers
 const EMPTY_KEYS: string[] = []
@@ -148,12 +152,14 @@ export function PublicAtlasWorkspace() {
   const analyst = useAnalystScope()!
   const activeScope = analyst.snapshot
   const { prefix, session } = useWorkspace()
+  const { status: realtimeStatus } = useRealtime()
   const search = useSearch({ from: '/map' })
   const navigate = useNavigate({ from: '/map' })
 
   const cameraRef = useRef<AtlasHandle>(null)
   const areaRequest = useRef<AbortController | undefined>(undefined)
   const drawerRef = useRef<HTMLElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const coordinateLabel = useRef<HTMLSpanElement>(null)
 
   const [layoutViewport, setLayoutViewport] = useState(() => ({
@@ -240,6 +246,8 @@ export function PublicAtlasWorkspace() {
   const [swipe, setSwipe] = useState(0.5)
   const [referenceDrawing, setReferenceDrawing] = useState<ReferenceDrawing>()
   const [pinnedPlace, setPinnedPlace] = useState<Feature>()
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [contextMenu, setContextMenu] = useState<MapContextMenuTarget | null>(null)
 
   const tool =
     search.tool === 'simulation' && session.productProfile === 'map'
@@ -1130,33 +1138,44 @@ export function PublicAtlasWorkspace() {
     analyst.changeArea({ kind: 'viewport', name: 'Explicit map view', geometry })
   }
 
+  const createBufferAt = useCallback(
+    async (lng: number, lat: number, radiusM: number) => {
+      areaRequest.current?.abort()
+      const request = new AbortController()
+      areaRequest.current = request
+      try {
+        if (!Number.isFinite(lng) || !Number.isFinite(lat) || !Number.isFinite(radiusM) || radiusM <= 0) {
+          throw new Error('Enter WGS84 longitude,latitude and a radius.')
+        }
+        const feature = await api.createSurroundingArea(
+          { longitude: lng, latitude: lat, radiusM },
+          request.signal,
+        )
+        if (request.signal.aborted) return
+        const f = feature as unknown as Feature
+        locate(f)
+        panels.openPanel('')
+        analyst.changeArea({
+          kind: 'named',
+          name: `Deliberate ${radiusM} m context buffer`,
+          geometry: f.geometry as unknown as Record<string, unknown>,
+        })
+      } catch (e) {
+        if (!request.signal.aborted) {
+          setMapError(e instanceof Error ? e.message : 'Context buffer could not be prepared.')
+        }
+      }
+    },
+    [api, analyst, panels],
+  )
+
   const surrounding = async () => {
-    areaRequest.current?.abort()
-    const request = new AbortController()
-    areaRequest.current = request
-    try {
-      const p = coordinates.trim() ? coordinates.split(',').map(Number) : [camera.lng, camera.lat]
-      if (p.length !== 2 || !p.every(Number.isFinite) || !radius.trim()) {
-        throw new Error('Enter WGS84 longitude,latitude and a radius.')
-      }
-      const feature = await api.createSurroundingArea(
-        { longitude: p[0], latitude: p[1], radiusM: Number(radius) },
-        request.signal,
-      )
-      if (request.signal.aborted) return
-      const f = feature as unknown as Feature
-      locate(f)
-      panels.openPanel('')
-      analyst.changeArea({
-        kind: 'named',
-        name: `Deliberate ${radius} m context buffer`,
-        geometry: f.geometry as unknown as Record<string, unknown>,
-      })
-    } catch (e) {
-      if (!request.signal.aborted) {
-        setMapError(e instanceof Error ? e.message : 'Context buffer could not be prepared.')
-      }
+    const p = coordinates.trim() ? coordinates.split(',').map(Number) : [camera.lng, camera.lat]
+    if (p.length !== 2 || !p.every(Number.isFinite) || !radius.trim()) {
+      setMapError('Enter WGS84 longitude,latitude and a radius.')
+      return
     }
+    await createBufferAt(p[0], p[1], Number(radius))
   }
 
   const keyboardCoordinates = () => {
@@ -1309,23 +1328,202 @@ export function PublicAtlasWorkspace() {
     }
   }, [panels, tool, closeTool])
 
-  // Keyboard Escape handling for drawer (popover handles its own Escape first)
+  // Focus first control inside drawer when a support panel opens
   useEffect(() => {
     if (!panels.panel) return
     drawerRef.current?.querySelector<HTMLButtonElement>('button')?.focus()
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      if (event.defaultPrevented || (event.target instanceof Element && event.target.closest('[role="dialog"]'))) {
+  }, [panels.panel])
+
+  const selectWorldScope = useCallback(() => {
+    setSketchArea(undefined)
+    setSelected([])
+    analyst.changeArea({ kind: 'world' })
+    cameraRef.current?.fitBounds([-165, -55, 165, 75])
+  }, [analyst])
+
+  const toggleCoverageDrawer = useCallback(() => {
+    if (!session.permissions.includes('sources.read')) return
+    if (panels.hasDrawerOpen && !panels.panel && tool === 'coverage') closeTool()
+    else openTool('coverage')
+  }, [session.permissions, panels.hasDrawerOpen, panels.panel, tool, closeTool, openTool])
+
+  const toggleInvestigationsDrawer = useCallback(() => {
+    if (!session.permissions.includes('investigations.read')) return
+    if (panels.hasDrawerOpen && !panels.panel && tool === 'investigations') closeTool()
+    else openTool('investigations')
+  }, [session.permissions, panels.hasDrawerOpen, panels.panel, tool, closeTool, openTool])
+
+  const handleRunOmniboxCommand = useCallback(
+    (cmd: QuickCommandId) => {
+      if (cmd === 'layers') panels.openPanel('layers', 'Map layers')
+      else if (cmd === 'records') panels.openPanel('records', 'Map records')
+      else if (cmd === 'coverage') openTool('coverage')
+      else if (cmd === 'investigations') openTool('investigations')
+      else if (cmd === 'imagery') openTool('imagery')
+      else if (cmd === 'measure') {
+        setMode('measure')
+        setDraw([])
+        setMeasurement('')
+        panels.openPanel('')
+      } else if (cmd === 'area') {
+        setMode('area')
+        setDraw([])
+        setMeasurement('')
+        panels.openPanel('')
+      } else if (cmd === 'focus') panels.toggleCleanMap()
+      else if (cmd === 'world') selectWorldScope()
+      else if (cmd === 'shortcuts') setShortcutsOpen(true)
+    },
+    [panels, openTool, selectWorldScope],
+  )
+
+  const handleJumpToCoordinates = useCallback(
+    (lng: number, lat: number, withBuffer = false) => {
+      if (withBuffer) {
+        void createBufferAt(lng, lat, 10000)
         return
       }
-      const input = event.target
-      if (input instanceof HTMLInputElement && input.type === 'search' && input.value) return
-      event.preventDefault()
-      handleCloseDrawer()
+      cameraRef.current?.focus(lng, lat)
+      setMapError(`Centered camera at ${lat.toFixed(4)}°, ${lng.toFixed(4)}° (WGS84).`)
+    },
+    [createBufferAt],
+  )
+
+  const handleSelectLoadedRecord = useCallback(
+    (layer: AtlasLayer, feature: Feature) => {
+      setFamily(layer)
+      inspect([feature])
+      locate(feature)
+    },
+    [inspect],
+  )
+
+  // Global guarded keyboard shortcuts for /map (L, R/B, C, I, T, V, F, /, Ctrl+K, [, ?, Esc)
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return
+
+      // Ctrl+K / Cmd+K always focuses Omnibox unless a modal dialog is open
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k') {
+        if (document.querySelector('[role="dialog"][aria-modal="true"], dialog[open]')) return
+        event.preventDefault()
+        if (panels.cleanMap) panels.setCleanMap(false)
+        setSearchOpen(true)
+        requestAnimationFrame(() => {
+          searchInputRef.current?.focus()
+          searchInputRef.current?.select()
+        })
+        return
+      }
+
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+
+      const target = event.target as HTMLElement | null
+      const tag = target?.tagName.toLowerCase() ?? ''
+      const inDialog = Boolean(
+        target?.closest('dialog, [role="dialog"]') ||
+          document.querySelector('[role="dialog"][aria-modal="true"], dialog[open]'),
+      )
+
+      if (event.key === 'Escape') {
+        if (inDialog) return
+        if (target instanceof HTMLInputElement && target.type === 'search' && target.value) return
+        if (contextMenu) {
+          event.preventDefault()
+          setContextMenu(null)
+          return
+        }
+        if (searchOpen) {
+          event.preventDefault()
+          setSearchOpen(false)
+          return
+        }
+        if (mode !== 'inspect') {
+          event.preventDefault()
+          setMode('inspect')
+          setDraw([])
+          return
+        }
+        if (panels.hasDrawerOpen) {
+          event.preventDefault()
+          handleCloseDrawer()
+          return
+        }
+        if (selected.length > 0) {
+          event.preventDefault()
+          setSelected([])
+          void navigate({ search: (p) => ({ ...p, selected: undefined }), replace: true })
+        }
+        return
+      }
+
+      if (
+        inDialog ||
+        tag === 'input' ||
+        tag === 'textarea' ||
+        tag === 'select' ||
+        target?.isContentEditable
+      ) {
+        return
+      }
+
+      const key = event.key
+      const lower = key.toLowerCase()
+
+      if (key === '/') {
+        event.preventDefault()
+        if (panels.cleanMap) panels.setCleanMap(false)
+        setSearchOpen(true)
+        requestAnimationFrame(() => {
+          searchInputRef.current?.focus()
+          searchInputRef.current?.select()
+        })
+      } else if (key === '?') {
+        event.preventDefault()
+        setShortcutsOpen((v) => !v)
+      } else if (key === '[') {
+        event.preventDefault()
+        if (panels.hasDrawerOpen) {
+          handleCloseDrawer()
+        } else {
+          panels.openPanel(panels.lastPanelRef.current)
+        }
+      } else if (lower === 'l') {
+        event.preventDefault()
+        panels.togglePanel('layers', 'Map layers')
+      } else if (lower === 'r' || lower === 'b') {
+        event.preventDefault()
+        panels.togglePanel('records', 'Map records')
+      } else if (lower === 't') {
+        event.preventDefault()
+        panels.togglePanel('tools', 'Map tools')
+      } else if (lower === 'v') {
+        event.preventDefault()
+        panels.togglePanel('views', 'Map views')
+      } else if (lower === 'c') {
+        event.preventDefault()
+        toggleCoverageDrawer()
+      } else if (lower === 'i') {
+        event.preventDefault()
+        toggleInvestigationsDrawer()
+      } else if (lower === 'f') {
+        event.preventDefault()
+        panels.toggleCleanMap()
+      }
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [panels.panel, handleCloseDrawer])
+  }, [
+    panels,
+    contextMenu,
+    searchOpen,
+    mode,
+    selected.length,
+    handleCloseDrawer,
+    navigate,
+    toggleCoverageDrawer,
+    toggleInvestigationsDrawer,
+  ])
 
   const openLayersAt = (tab: LayersSubTab) => {
     setLayersInitialTab(tab)
@@ -1437,10 +1635,11 @@ export function PublicAtlasWorkspace() {
         </p>
       )}
 
-      {/* ROLE 1: Unified 48px Map Scope, Time & Readiness Bar */}
+      {/* ROLE 1: Unified 44px Scope, Smart Omnibox & Readiness Bar */}
       {!panels.cleanMap && (
         <MapScopeBar
           ariaLabel={data.savedFilters.view !== 'latest' ? 'Historical report map' : 'Public map scope'}
+          searchInputRef={searchInputRef}
           query={query}
           searchOpen={searchOpen}
           searchPending={searchResults.isPending}
@@ -1448,19 +1647,19 @@ export function PublicAtlasWorkspace() {
           searchFeatures={searchFeatures}
           searchHasNextPage={Boolean(searchResults.hasNextPage)}
           searchFetchingNext={searchResults.isFetchingNextPage}
+          renderedFeatures={rendered}
+          permissions={session.permissions}
           onQueryChange={setQuery}
           onSearchOpenChange={setSearchOpen}
           onSearchFetchNext={() => void searchResults.fetchNextPage()}
           onChooseRegion={chooseRegion}
+          onJumpToCoordinates={handleJumpToCoordinates}
+          onSelectLoadedRecord={handleSelectLoadedRecord}
+          onRunCommand={handleRunOmniboxCommand}
           parents={parents}
           regionName={regionName}
           canFitArea={Boolean(activeScope?.area.components.length)}
-          onSelectWorld={() => {
-            setSketchArea(undefined)
-            setSelected([])
-            analyst.changeArea({ kind: 'world' })
-            cameraRef.current?.fitBounds([-165, -55, 165, 75])
-          }}
+          onSelectWorld={selectWorldScope}
           onFitArea={() => {
             const parts = activeScope?.area.components
             if (parts?.length) {
@@ -1489,16 +1688,11 @@ export function PublicAtlasWorkspace() {
           canReadSources={session.permissions.includes('sources.read')}
           coverageOpen={panels.hasDrawerOpen && !panels.panel && tool === 'coverage'}
           coverageSummary={coverageSummary}
-          onToggleCoverage={() => {
-            if (panels.hasDrawerOpen && !panels.panel && tool === 'coverage') closeTool()
-            else openTool('coverage')
-          }}
-          cleanMap={panels.cleanMap}
-          onToggleCleanMap={panels.toggleCleanMap}
+          onToggleCoverage={toggleCoverageDrawer}
         />
       )}
 
-      {/* ROLE 2–4: Fixed Left Rail + Resizable Left Drawer + Unobstructed Map Canvas */}
+      {/* ROLE 2–4: Fixed 58px Left Rail + Content-Aware Resizable Drawer + Unobstructed Map Canvas */}
       <div className="map-stage">
         <MapRail
           hidden={panels.cleanMap}
@@ -1509,7 +1703,6 @@ export function PublicAtlasWorkspace() {
           enabledLayerCount={enabledLayers.length}
           unavailableLayerCount={unavailableLayers.length}
           caseCitationCount={attachedKeys.length}
-          coverageTone={coverageSummary.tone}
           onTogglePanel={(target, triggerLabel) => panels.togglePanel(target, triggerLabel)}
           onToggleTool={(nextTool) => {
             if (panels.hasDrawerOpen && !panels.panel && tool === nextTool) {
@@ -1544,6 +1737,7 @@ export function PublicAtlasWorkspace() {
           regionLabel={drawerMeta.regionLabel}
           closeLabel={panels.panel ? 'Close map tool' : 'Close workbench'}
           width={panels.drawerWidth}
+          isWideWidth={panels.isWideWidth}
           size={panels.drawerSize}
           fullPageLink={fullPageLink}
           onResizeWidth={(nextW) => panels.setBoundedWidth(nextW, layoutViewport.width)}
@@ -1805,6 +1999,8 @@ export function PublicAtlasWorkspace() {
             onSelect={inspect}
             onRegion={chooseRegion}
             onReference={setReferenceDrawing}
+            onContextMenu={setContextMenu}
+            onMoveStart={() => setContextMenu(null)}
             mode={mode}
             onDraw={onDraw}
             sketch={sketch}
@@ -1815,6 +2011,7 @@ export function PublicAtlasWorkspace() {
 
           <MapCanvasHud
             cleanMap={panels.cleanMap}
+            onToggleCleanMap={panels.toggleCleanMap}
             onRestoreWorkspace={() => panels.setCleanMap(false)}
             mode={mode}
             drawCount={draw.length}
@@ -1827,6 +2024,7 @@ export function PublicAtlasWorkspace() {
             }}
             paused={paused}
             pauseTime={pauseTime}
+            bearing={camera.bearing}
             scopeKey={scopeKey}
             updateLayers={updateLayers}
             onInspectUpdate={(kind, f) => {
@@ -1847,104 +2045,114 @@ export function PublicAtlasWorkspace() {
                 setPauseTime(new Date().toISOString())
               }
             }}
+            onZoomIn={() => cameraRef.current?.zoomIn()}
+            onZoomOut={() => cameraRef.current?.zoomOut()}
+            onResetNorth={() => cameraRef.current?.north()}
           />
 
-          {showDiscoveryBanner && (
-            <MapDiscoveryBanner
-              scopeKey={scopeKey}
-              regionName={regionName}
-              periodTitle={periodTitle}
-              inventory={coverageInventory.data}
-              coverage={scopeCoverage.data}
-              coverageFootprintsOn={layers.includes('coverage')}
-              canToggleCoverageFootprints={canToggleCoverageFootprints}
-              canRequestAcquisition={session.permissions.includes('acquisitions.request')}
-              onJumpToBucket={jumpToBucket}
-              onJumpToFootprint={jumpToFootprint}
-              onToggleCoverageFootprints={() => toggleLayer('coverage')}
-              onOpenSmartFetch={() => openTool('coverage')}
-              onBrowseAllRetained={openBrowseAllRetained}
-            />
-          )}
+          {/* Zero-Collision Top-Left Flex Notice Stack */}
+          {(showDiscoveryBanner ||
+            environmentHandoff ||
+            (unavailableLayers.length > 0 && !panels.cleanMap && !inspectingEnvironment)) && (
+            <div className="map-top-left-stack">
+              {showDiscoveryBanner && (
+                <MapDiscoveryBanner
+                  scopeKey={scopeKey}
+                  regionName={regionName}
+                  periodTitle={periodTitle}
+                  inventory={coverageInventory.data}
+                  coverage={scopeCoverage.data}
+                  coverageFootprintsOn={layers.includes('coverage')}
+                  canToggleCoverageFootprints={canToggleCoverageFootprints}
+                  canRequestAcquisition={session.permissions.includes('acquisitions.request')}
+                  onJumpToBucket={jumpToBucket}
+                  onJumpToFootprint={jumpToFootprint}
+                  onToggleCoverageFootprints={() => toggleLayer('coverage')}
+                  onOpenSmartFetch={() => openTool('coverage')}
+                  onBrowseAllRetained={openBrowseAllRetained}
+                />
+              )}
 
-          {environmentHandoff && (
-            <aside className="atlas-data-notice" aria-label="Environment selection">
-              {selectedEnvironmentFeature && (
-                <p>
-                  <bdi dir="auto">
-                    {selectedEnvironmentFeature.properties.tags.name || selectedEnvironmentFeature.properties.sourceId}
-                  </bdi>{' '}
-                  · {selectedEnvironmentFeature.properties.sourceId}
-                </p>
+              {environmentHandoff && (
+                <aside className="atlas-data-notice" aria-label="Environment selection">
+                  {selectedEnvironmentFeature && (
+                    <p>
+                      <bdi dir="auto">
+                        {selectedEnvironmentFeature.properties.tags.name || selectedEnvironmentFeature.properties.sourceId}
+                      </bdi>{' '}
+                      · {selectedEnvironmentFeature.properties.sourceId}
+                    </p>
+                  )}
+                  {selectedTerrain && <p>Terrain point · {wb.terrainPoint?.replace(',', '°, ')}°</p>}
+                  {terrainID && terrainPoint.isError && (
+                    <p role="status">The linked terrain point is unavailable in this workspace.</p>
+                  )}
+                  {featureLink && environmentFeature.isPending && <p role="status">Resolving the retained feature…</p>}
+                  {featureLink && environmentFeature.isError && (
+                    <p role="status">The retained feature is unavailable in this workspace.</p>
+                  )}
+                  {streetID && streets.isPending && <p role="status">Verifying the retained street map…</p>}
+                  {streetID && streets.isError && (
+                    <p role="status">
+                      Retained street detail is unavailable. Regional reference geography remains available.
+                    </p>
+                  )}
+                  {streetMap && (
+                    <p>
+                      Retained street detail · zoom 12–16 · {streetMap.display.bounds.map((v) => v.toFixed(3)).join(', ')} ·{' '}
+                      <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {wb.display && (
+                      <button
+                        type="button"
+                        className="ux-button"
+                        onClick={() => openTool('environments', { ...wb, view: 'environment-3d' })}
+                      >
+                        Reopen 3D preview
+                      </button>
+                    )}
+                    <button type="button" className="ux-button" onClick={closeTool}>
+                      Clear environment selection
+                    </button>
+                  </div>
+                </aside>
               )}
-              {selectedTerrain && <p>Terrain point · {wb.terrainPoint?.replace(',', '°, ')}°</p>}
-              {terrainID && terrainPoint.isError && (
-                <p role="status">The linked terrain point is unavailable in this workspace.</p>
-              )}
-              {featureLink && environmentFeature.isPending && <p role="status">Resolving the retained feature…</p>}
-              {featureLink && environmentFeature.isError && (
-                <p role="status">The retained feature is unavailable in this workspace.</p>
-              )}
-              {streetID && streets.isPending && <p role="status">Verifying the retained street map…</p>}
-              {streetID && streets.isError && (
-                <p role="status">
-                  Retained street detail is unavailable. Regional reference geography remains available.
-                </p>
-              )}
-              {streetMap && (
-                <p>
-                  Retained street detail · zoom 12–16 · {streetMap.display.bounds.map((v) => v.toFixed(3)).join(', ')} ·{' '}
-                  <a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>
-                </p>
-              )}
-              <div className="flex flex-wrap gap-2">
-                {wb.display && (
-                  <button
-                    type="button"
-                    className="ux-button"
-                    onClick={() => openTool('environments', { ...wb, view: 'environment-3d' })}
-                  >
-                    Reopen 3D preview
-                  </button>
-                )}
-                <button type="button" className="ux-button" onClick={closeTool}>
-                  Clear environment selection
-                </button>
-              </div>
-            </aside>
-          )}
 
-          {unavailableLayers.length > 0 && !panels.cleanMap && !inspectingEnvironment && (
-            <aside className="atlas-data-notice" aria-label="Map data availability">
-              <strong>
-                {readCapacityExhausted ? 'Temporary evidence read limit reached' : 'Some evidence layers could not load'}
-              </strong>
-              <details className="atlas-recovery-details" open={layoutViewport.width > 760}>
-                <summary>Details &amp; recovery</summary>
-                <p>
-                  {readCapacityExhausted
-                    ? 'The map will retry as temporary reads expire. You can also close unused EMAD tabs and select Retry layers.'
-                    : `${unavailableLayers.map((k) => layerInfo[k].name).join(', ')}. Retry these layers to check for retained records.`}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className="ux-button"
-                    disabled={mapBatch.isFetching}
-                    onClick={() => void mapBatch.refetch()}
-                  >
-                    {mapBatch.isFetching ? 'Retrying…' : 'Retry layers'}
-                  </button>
-                  <button type="button" className="ux-button" onClick={() => openTool('sources')}>
-                    Check sources
-                  </button>
-                </div>
-                <details>
-                  <summary>Technical details</summary>
-                  <p>{mapBatch.error?.message ?? 'One or more retained evidence queries are unavailable.'}</p>
-                </details>
-              </details>
-            </aside>
+              {unavailableLayers.length > 0 && !panels.cleanMap && !inspectingEnvironment && (
+                <aside className="atlas-data-notice" aria-label="Map data availability">
+                  <strong>
+                    {readCapacityExhausted ? 'Temporary evidence read limit reached' : 'Some evidence layers could not load'}
+                  </strong>
+                  <details className="atlas-recovery-details" open={layoutViewport.width > 760}>
+                    <summary>Details &amp; recovery</summary>
+                    <p>
+                      {readCapacityExhausted
+                        ? 'The map will retry as temporary reads expire. You can also close unused EMAD tabs and select Retry layers.'
+                        : `${unavailableLayers.map((k) => layerInfo[k].name).join(', ')}. Retry these layers to check for retained records.`}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        className="ux-button"
+                        disabled={mapBatch.isFetching}
+                        onClick={() => void mapBatch.refetch()}
+                      >
+                        {mapBatch.isFetching ? 'Retrying…' : 'Retry layers'}
+                      </button>
+                      <button type="button" className="ux-button" onClick={() => openTool('sources')}>
+                        Check sources
+                      </button>
+                    </div>
+                    <details>
+                      <summary>Technical details</summary>
+                      <p>{mapBatch.error?.message ?? 'One or more retained evidence queries are unavailable.'}</p>
+                    </details>
+                  </details>
+                </aside>
+              )}
+            </div>
           )}
 
           {/* ROLE 3: Compact Floating Selection Peek Card (never steals the left drawer!) */}
@@ -2001,7 +2209,7 @@ export function PublicAtlasWorkspace() {
             onClearReferenceDrawing={() => setReferenceDrawing(undefined)}
           />
 
-          {/* ROLE 4: Contextual Expandable Map Legend */}
+          {/* ROLE 4: Contextual Expandable Map Legend with inline layer visibility toggles */}
           {!panels.cleanMap && (
             <ContextualLegend
               open={panels.legendOpen}
@@ -2017,7 +2225,9 @@ export function PublicAtlasWorkspace() {
                 setRecordsModeKey((n) => n + 1)
                 panels.openPanel('records', 'Map records')
               }}
+              onToggleLayer={toggleLayer}
               onOpenImageryOverlay={() => openLayersAt('imagery')}
+              onOpenLayersPanel={() => openLayersAt('evidence')}
               coverageFootprintsOn={layers.includes('coverage')}
               canToggleCoverageFootprints={canToggleCoverageFootprints}
               footprintCount={footprintCount}
@@ -2025,44 +2235,108 @@ export function PublicAtlasWorkspace() {
             />
           )}
 
-          {/* Bottom Coordinate & Attribution Footer */}
-          <div className="atlas-map-footer">
-            <span ref={coordinateLabel}>Pointer · {pointerLabel(pointer.current)}</span>
-            {rasters.length > 0 && (
-              <button
-                type="button"
-                aria-label="Retained raster acquisitions"
-                onClick={() => openLayersAt('imagery')}
-              >
-                Sentinel-2 · {dateLabel(capture?.properties?.date)}
-                {comparison ? ` ↔ ${dateLabel(comparison.properties?.date)}` : ''}
-                {quality ? ' · SCL exclusions' : ''}
-              </button>
-            )}
-            <span data-active-state={paused || boundaryLevel !== 'auto'}>
-              {paused
-                ? `Display paused · ${new Date(pauseTime).toLocaleTimeString()}`
-                : boundaryLevel !== 'auto'
-                  ? `Selecting ${boundaryLevel === 'country' ? 'countries' : 'subdivisions'}`
-                  : measurement || 'Provider coverage varies by area'}
-              {boundaryLevel !== 'auto' && (
-                <button type="button" onClick={() => setBoundaryLevel('auto')}>
-                  Return to objects
-                </button>
-              )}
-            </span>
-          </div>
+          {/* Right-Click Canvas Context Menu */}
+          <MapContextMenu
+            target={contextMenu}
+            canReadSources={session.permissions.includes('sources.read')}
+            onClose={() => setContextMenu(null)}
+            onCopyCoords={(lng, lat) => {
+              const text = `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+              void navigator.clipboard
+                ?.writeText(text)
+                .then(() => setMapError(`Copied WGS84 coordinates: ${text}`))
+                .catch(() => setMapError(`WGS84 coordinates: ${text}`))
+            }}
+            onMeasureFromHere={(lng, lat) => {
+              setMode('measure')
+              setDraw([[lng, lat]])
+              setMeasurement('')
+              panels.openPanel('')
+            }}
+            onDrawAreaFromHere={(lng, lat) => {
+              setMode('area')
+              setDraw([[lng, lat]])
+              setMeasurement('')
+              panels.openPanel('')
+            }}
+            onBuffer10Km={(lng, lat) => {
+              void createBufferAt(lng, lat, 10000)
+            }}
+            onCheckCoverage={() => openTool('coverage')}
+            onZoomHere={(lng, lat) => cameraRef.current?.zoomToPoint(lng, lat, 2)}
+          />
 
+          {/* Bottom-Center Non-Colliding Map Notice Toast */}
           {mapError && (
-            <div className="atlas-map-warning" role="status">
+            <div className="map-toast atlas-map-warning" role="status">
               <span>{mapError}</span>
               <button type="button" aria-label="Dismiss map notice" onClick={() => setMapError('')}>
-                ×
+                Dismiss
               </button>
             </div>
           )}
         </div>
       </div>
+
+      {/* Unified 28px In-Flow Telemetry, Trust & Shortcuts Strip (12px compliant) */}
+      <footer className="map-telemetry-footer">
+        <div className="map-footer-left">
+          <span ref={coordinateLabel} className="map-footer-mono">
+            Pointer · {pointerLabel(pointer.current)}
+          </span>
+          <span className="map-footer-mono map-footer-zoom" aria-label="Map zoom level">
+            Z {camera.zoom.toFixed(1)}
+          </span>
+          {rasters.length > 0 && (
+            <button
+              type="button"
+              className="map-footer-link"
+              aria-label="Retained raster acquisitions"
+              onClick={() => openLayersAt('imagery')}
+            >
+              Sentinel-2 · {dateLabel(capture?.properties?.date)}
+              {comparison ? ` ↔ ${dateLabel(comparison.properties?.date)}` : ''}
+              {quality ? ' · SCL exclusions' : ''}
+            </button>
+          )}
+          {(paused || boundaryLevel !== 'auto' || measurement) && (
+            <span className="map-footer-state" data-active-state={paused || boundaryLevel !== 'auto'}>
+              {paused
+                ? `Display paused · ${new Date(pauseTime).toLocaleTimeString()}`
+                : boundaryLevel !== 'auto'
+                  ? `Selecting ${boundaryLevel === 'country' ? 'countries' : 'subdivisions'}`
+                  : measurement}
+              {boundaryLevel !== 'auto' && (
+                <button type="button" className="map-footer-link" onClick={() => setBoundaryLevel('auto')}>
+                  Return to objects
+                </button>
+              )}
+            </span>
+          )}
+        </div>
+        <div className="map-footer-right">
+          <span data-testid="workspace-basis" className="map-footer-basis">
+            Public sources · retained evidence &amp; provider uncertainty
+          </span>
+          <span
+            className="workspace-connection"
+            data-connected={realtimeStatus === 'connected'}
+            title="Event connection only. Source freshness is reported separately."
+          >
+            {realtimeStatus === 'connected' ? 'Events connected' : `Events ${realtimeStatus}`}
+          </span>
+          <button
+            type="button"
+            className="map-footer-link map-footer-keys-btn"
+            onClick={() => setShortcutsOpen(true)}
+            title="View keyboard shortcuts (?)"
+          >
+            Shortcuts (?)
+          </button>
+        </div>
+      </footer>
+
+      <MapShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </div>
   )
 }
