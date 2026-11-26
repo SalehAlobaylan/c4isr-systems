@@ -104,6 +104,9 @@ function formatHoverSummary(
 
 export function AtlasCanvas({
   proposalOverlay = empty,
+  simOverlay = empty,
+  simClickActive = false,
+  onSimClick,
   cameraRef,
   initialCamera,
   onCamera,
@@ -132,6 +135,9 @@ export function AtlasCanvas({
   onError,
 }: {
   proposalOverlay?: FeatureCollection
+  simOverlay?: FeatureCollection
+  simClickActive?: boolean
+  onSimClick?: (p: [number, number]) => void
   cameraRef: Ref<AtlasHandle>
   initialCamera: Camera
   onCamera: (c: Camera) => void
@@ -176,6 +182,8 @@ export function AtlasCanvas({
     boundaryLevel,
     mode,
     onDraw,
+    simClickActive,
+    onSimClick,
     onError,
   })
   callbacks.current = {
@@ -190,6 +198,8 @@ export function AtlasCanvas({
     boundaryLevel,
     mode,
     onDraw,
+    simClickActive,
+    onSimClick,
     onError,
   }
   const canonicalRegions = useRef(regions)
@@ -344,6 +354,7 @@ export function AtlasCanvas({
       addGeo('scope')
       addGeo('sketch')
       addGeo('selection')
+      addGeo('sim-setup')
       m.addSource('references', {
         type: 'vector',
         tiles: [`${protocol}://{z}/{x}/{y}/none`],
@@ -564,6 +575,99 @@ export function AtlasCanvas({
           'line-dasharray': [3, 2],
         },
       })
+      m.addLayer({
+        id: 'sim-setup-fill',
+        source: 'sim-setup',
+        type: 'fill',
+        filter: ['==', ['geometry-type'], 'Polygon'],
+        paint: {
+          'fill-color': [
+            'match',
+            ['get', 'simKind'],
+            'protected-zone', '#f065d8',
+            'radar-range', '#38bdf8',
+            'result-ellipse-earliest', '#ef4444',
+            'result-ellipse-safe_window', '#22c55e',
+            '#f59e0b',
+          ],
+          'fill-opacity': [
+            'match',
+            ['get', 'simKind'],
+            'env-bounds', 0.04,
+            'radar-range', 0.04,
+            'protected-zone', 0.14,
+            'result-ellipse-earliest', 0.22,
+            'result-ellipse-safe_window', 0.22,
+            0.08,
+          ],
+        },
+      })
+      m.addLayer({
+        id: 'sim-setup-line',
+        source: 'sim-setup',
+        type: 'line',
+        filter: ['!=', ['geometry-type'], 'Point'],
+        paint: {
+          'line-color': [
+            'match',
+            ['get', 'simKind'],
+            'env-bounds', '#f59e0b',
+            'radar-range', '#38bdf8',
+            'protected-zone', '#f065d8',
+            'threat-path', '#ef4444',
+            'result-ellipse-earliest', '#ef4444',
+            'result-ellipse-safe_window', '#22c55e',
+            '#38bdf8',
+          ],
+          'line-width': [
+            'match',
+            ['get', 'simKind'],
+            'threat-path', 3,
+            'env-bounds', 2.4,
+            'protected-zone', 2.2,
+            'result-ellipse-earliest', 2.4,
+            'result-ellipse-safe_window', 2.4,
+            1.5,
+          ],
+          'line-dasharray': [
+            'match',
+            ['get', 'simKind'],
+            'env-bounds', ['literal', [4, 3]],
+            'radar-range', ['literal', [3, 3]],
+            ['literal', [1, 0]],
+          ],
+        },
+      })
+      m.addLayer({
+        id: 'sim-setup-point',
+        source: 'sim-setup',
+        type: 'circle',
+        filter: ['==', ['geometry-type'], 'Point'],
+        paint: {
+          'circle-radius': [
+            'match',
+            ['get', 'simKind'],
+            'radar', 8,
+            'launcher', 8,
+            'protected-center', 7,
+            'threat-wp', 6,
+            7,
+          ],
+          'circle-color': [
+            'match',
+            ['get', 'simKind'],
+            'radar', '#0ea5e9',
+            'launcher', '#10b981',
+            'protected-center', '#d946ef',
+            'threat-wp', '#ef4444',
+            'result-intercept-earliest', '#dc2626',
+            'result-intercept-safe_window', '#16a34a',
+            '#38bdf8',
+          ],
+          'circle-stroke-width': 2.2,
+          'circle-stroke-color': '#ffffff',
+        },
+      })
       const requested = pendingView.current
       if (requested && 'bounds' in requested) m.fitBounds(requested.bounds, { padding: 70, maxZoom: 15, duration: 0 })
       else if (requested) {
@@ -619,7 +723,7 @@ export function AtlasCanvas({
 
       // Instant Alloy Pearl hover tooltip (DOM-ref updated, zero React re-renders!)
       const tip = tooltipEl.current
-      if (callbacks.current.mode !== 'inspect') {
+      if (callbacks.current.mode !== 'inspect' || callbacks.current.simClickActive) {
         m.getCanvas().style.cursor = 'crosshair'
         hideTooltip()
         return
@@ -668,6 +772,10 @@ export function AtlasCanvas({
     })
 
     m.on('click', async (e) => {
+      if (callbacks.current.simClickActive && callbacks.current.onSimClick) {
+        callbacks.current.onSimClick([e.lngLat.lng, e.lngLat.lat])
+        return
+      }
       if (callbacks.current.mode !== 'inspect') {
         callbacks.current.onDraw([e.lngLat.lng, e.lngLat.lat])
         return
@@ -904,6 +1012,10 @@ export function AtlasCanvas({
   useEffect(() => {
     if (ready) (map.current?.getSource('sketch') as GeoJSONSource)?.setData(sketch)
   }, [ready, sketch])
+
+  useEffect(() => {
+    if (ready) (map.current?.getSource('sim-setup') as GeoJSONSource)?.setData(simOverlay)
+  }, [ready, simOverlay])
 
   useEffect(() => {
     const m = map.current

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EMAD 3D Simulation Workbench</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/build/three.module.js",
+        "three/addons/": "/vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #081016;
+      --panel: rgba(12, 21, 30, 0.92);
+      --panel-strong: rgba(16, 28, 40, 0.96);
+      --border: rgba(114, 217, 255, 0.24);
+      --border-soft: rgba(255, 255, 255, 0.08);
+      --text: #e8f2f9;
+      --muted: #8ea6b8;
+      --cyan: #58d5ff;
+      --green: #69f0ae;
+      --amber: #ffca63;
+      --red: #ff5c72;
+      --magenta: #f065d8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
+    #viewport { position: fixed; inset: 0; }
+    body.hud-hidden .hud-panel { opacity: 0; pointer-events: none; transform: translateY(6px); }
+
+    #hud-restore-pill {
+      position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 35;
+      display: none; background: var(--panel-strong); border: 1px solid var(--cyan);
+      color: #fff; border-radius: 99px; padding: 6px 14px; font-size: 12px; cursor: pointer;
+    }
+    body.hud-hidden #hud-restore-pill { display: inline-flex; align-items: center; gap: 6px; }
+
+    #loading-overlay {
+      position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle at 50% 40%, #132230 0%, #091016 70%);
+    }
+    #loading-overlay.hidden { display: none; }
+    .loading-card {
+      width: min(460px, 92vw); background: var(--panel-strong); border: 1px solid var(--border);
+      border-radius: 12px; padding: 22px 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    }
+    .loading-card h1 { font-size: 16px; margin-bottom: 6px; color: #fff; }
+    .loading-stage { font-size: 13px; color: var(--cyan); margin: 10px 0 14px; font-family: ui-monospace, Consolas, monospace; }
+    .progress-bar { height: 5px; width: 100%; border-radius: 99px; background: rgba(255,255,255,0.1); overflow: hidden; }
+    .progress-fill { height: 100%; width: 35%; background: linear-gradient(90deg, var(--cyan), var(--green)); border-radius: 99px; animation: pulseSlide 1.4s ease-in-out infinite; }
+    @keyframes pulseSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } }
+
+    .panel {
+      position: fixed; background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; backdrop-filter: blur(10px); padding: 11px 13px;
+      font-size: 12px; line-height: 1.42; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      transition: opacity 0.18s ease, transform 0.18s ease;
+      user-select: none; -webkit-user-select: none;
+    }
+    .panel.collapsed .panel-body { display: none; }
+    .field-input, .metric .val, #wind-table { user-select: text; -webkit-user-select: text; }
+
+    #top-left { top: 12px; left: 12px; width: 364px; max-height: calc(100vh - 148px); overflow-y: auto; }
+    #top-right { top: 12px; right: 12px; width: 320px; max-height: calc(100vh - 148px); overflow-y: auto; }
+    #bottom-bar { bottom: 12px; left: 12px; right: 12px; padding: 9px 14px 10px; display: flex; flex-direction: column; gap: 7px; }
+
+    /* Floating click-to-inspect card */
+    #inspector-card {
+      position: fixed; bottom: 116px; left: 50%; transform: translateX(-50%);
+      min-width: 320px; max-width: 460px; z-index: 30; display: none;
+      background: var(--panel-strong); border: 1px solid var(--amber); border-radius: 10px;
+      padding: 10px 14px; font-size: 12px; box-shadow: 0 12px 32px rgba(0,0,0,0.6);
+    }
+    #inspector-card.visible { display: block; }
+    .insp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+    .insp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+    .insp-kv { background: rgba(255,255,255,0.04); padding: 4px 6px; border-radius: 5px; }
+    .insp-kv span { display: block; font-size: 10px; color: var(--muted); }
+    .insp-kv strong { font-size: 12px; color: #fff; }
+
+    .header-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .back-link { font-size: 11px; color: var(--cyan); text-decoration: none; border: 1px solid var(--border); padding: 2px 7px; border-radius: 6px; white-space: nowrap; }
+    .back-link:hover { background: rgba(88,213,255,0.16); }
+    .icon-btn {
+      background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--border-soft);
+      border-radius: 6px; padding: 2px 7px; font-size: 11px; cursor: pointer;
+    }
+    .icon-btn:hover { color: #fff; border-color: var(--cyan); }
+
+    .run-switcher, .field-input {
+      width: 100%; background: rgba(255,255,255,0.06); color: var(--text);
+      border: 1px solid rgba(255,255,255,0.16); border-radius: 6px; padding: 4px 7px; font-size: 11.5px;
+    }
+    .run-switcher { margin: 6px 0 4px; height: 28px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .run-switcher option, .field-input option { background: #101b24; color: #fff; }
+
+    h1 { font-size: 13.5px; font-weight: 600; color: #fff; line-height: 1.3; }
+    h2 { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--cyan); margin: 9px 0 5px; border-top: 1px solid var(--border-soft); padding-top: 7px; display: flex; align-items: center; justify-content: space-between; }
+    .subtitle { font-size: 11px; color: var(--muted); }
+    .badge { display: inline-block; font-size: 10px; padding: 1.5px 6px; border-radius: 99px; border: 1px solid var(--border); color: var(--cyan); margin-right: 4px; margin-top: 3px; }
+    .badge.warn { border-color: rgba(255,202,99,0.45); color: var(--amber); }
+    .badge.danger { border-color: rgba(255,92,114,0.5); color: var(--red); background: rgba(255,92,114,0.12); }
+    .badge.good { border-color: rgba(105,240,174,0.45); color: var(--green); background: rgba(105,240,174,0.1); }
+
+    .tabs-bar { display: flex; gap: 5px; margin-top: 7px; }
+    .btn {
+      background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 6px; padding: 4px 9px; font-size: 11.5px; cursor: pointer;
+      transition: background 0.14s, border-color 0.14s; white-space: nowrap;
+    }
+    .btn:hover:not(:disabled) { background: rgba(88,213,255,0.16); border-color: var(--cyan); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn.active { background: rgba(88,213,255,0.24); border-color: var(--cyan); color: #fff; font-weight: 600; }
+    .btn.primary { background: linear-gradient(135deg, rgba(88,213,255,0.28), rgba(105,240,174,0.24)); border-color: var(--cyan); color: #fff; font-weight: 600; }
+    .btn.primary:hover:not(:disabled) { background: linear-gradient(135deg, rgba(88,213,255,0.4), rgba(105,240,174,0.34)); }
+
+    .metrics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; }
+    .metric { background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft); border-radius: 6px; padding: 5px 7px; }
+    .metric .label { font-size: 10px; color: var(--muted); }
+    .metric .val { font-size: 13.5px; font-weight: 600; color: #fff; }
+    .metric .val.good { color: var(--green); }
+    .metric .val.bad { color: var(--red); }
+    .metric .val.warn { color: var(--amber); }
+
+    .delta-box { margin-top: 7px; padding: 6px 8px; border-radius: 6px; background: rgba(105, 240, 174, 0.1); border: 1px solid rgba(105, 240, 174, 0.34); font-size: 11.5px; }
+
+    /* Candidate optimizer mini bar chart */
+    .cand-chart { display: flex; align-items: flex-end; gap: 3px; height: 48px; margin-top: 6px; padding: 4px; background: rgba(0,0,0,0.25); border-radius: 6px; border: 1px solid var(--border-soft); }
+    .cand-bar {
+      flex: 1; min-width: 6px; border-radius: 2px 2px 0 0; cursor: pointer; opacity: 0.78;
+      transition: opacity 0.12s, transform 0.12s;
+    }
+    .cand-bar:hover { opacity: 1; transform: scaleY(1.06); }
+    .cand-bar.selected { outline: 1.5px solid #fff; opacity: 1; }
+
+    /* What-If form grid */
+    .whatif-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+    .whatif-field label { display: block; font-size: 10px; color: var(--muted); margin-bottom: 2px; }
+    .whatif-presets { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+
+    .toggles { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; }
+    label.chk { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text); cursor: pointer; user-select: none; }
+    label.chk input { accent-color: var(--cyan); }
+
+    .cam-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 4px; }
+    .cam-row .btn { padding: 4px 5px; font-size: 11px; text-align: center; }
+
+    .slider-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .slider-row input[type=range] { flex: 1; accent-color: var(--cyan); }
+
+    .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; font-size: 10.5px; color: var(--muted); margin-top: 4px; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+
+    /* Timeline & Event Bookmarks */
+    .event-bookmarks { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+    .bookmark-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+    .ev-pill {
+      font-size: 11px; padding: 2px 8px; border-radius: 99px; border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.05); color: var(--text); cursor: pointer;
+    }
+    .ev-pill:hover { border-color: var(--cyan); background: rgba(88,213,255,0.18); }
+    .ev-pill.intercept { border-color: rgba(255,202,99,0.55); color: var(--amber); }
+
+    .transport-row { display: flex; align-items: center; gap: 8px; }
+    .slider-track-wrap { position: relative; flex: 1; display: flex; align-items: center; }
+    #time-slider { width: 100%; accent-color: var(--cyan); cursor: pointer; }
+    #timeline-ticks { position: absolute; left: 6px; right: 6px; top: -4px; height: 4px; pointer-events: none; }
+    .tl-tick { position: absolute; width: 3px; height: 7px; border-radius: 2px; transform: translateX(-50%); }
+
+    #time-readout { font-family: ui-monospace, Consolas, monospace; font-size: 12px; min-width: 116px; text-align: right; color: var(--cyan); }
+    #status-line { font-size: 11px; color: var(--amber); margin-top: 6px; }
+    .kbd-hints { font-size: 10px; color: var(--muted); font-family: ui-monospace, Consolas, monospace; }
+    select.btn { padding: 4px 6px; }
+    select.btn option { background: #101b24; color: #fff; }
+  </style>
+</head>
+<body>
+  <div id="viewport"></div>
+
+  <button id="hud-restore-pill" type="button">Show HUD (H)</button>
+
+  <div id="loading-overlay">
+    <div class="loading-card">
+      <h1 id="loading-title">Preparing EMAD 3D Simulation…</h1>
+      <div id="loading-stage" class="loading-stage">Connecting to local simulation engine…</div>
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+      <p id="loading-detail" class="subtitle" style="margin-top: 12px;">
+        Configure scenarios visually from the EMAD Map → Simulate panel, or tweak parameters live in the 3D What-If Lab.
+      </p>
+    </div>
+  </div>
+
+  <!-- LEFT PANEL: Telemetry, Policy Comparison, Optimizer Chart & Live What-If Lab -->
+  <div id="top-left" class="panel hud-panel">
+    <div class="header-row">
+      <h1 id="scenario-title">EMAD 3D Simulation</h1>
+      <div class="header-actions">
+        <a id="map-return-link" class="back-link" href="http://127.0.0.1:5173/map">← Map</a>
+        <button id="collapse-left" class="icon-btn" type="button" title="Collapse left panel">−</button>
+      </div>
+    </div>
+
+    <div class="panel-body">
+      <select id="run-switcher" class="run-switcher" style="display:none;" aria-label="Switch simulation run"></select>
+      <div id="scenario-meta" class="subtitle"></div>
+      <div id="badges"></div>
+
+      <div class="tabs-bar">
+        <button id="tab-telemetry" class="btn active" type="button" style="flex:1;">Telemetry &amp; Eval</button>
+        <button id="tab-whatif" class="btn" type="button" style="flex:1;">⚡ What-If Re-Run</button>
+      </div>
+
+      <!-- TAB 1: Telemetry & Evaluation -->
+      <div id="pane-telemetry">
+        <h2>
+          <span>Engagement Policy</span>
+          <label class="chk" style="text-transform:none; letter-spacing:0; font-weight:normal;">
+            <input type="checkbox" id="tog-ghost-compare" checked /> Overlay Both (C)
+          </label>
+        </h2>
+        <div id="policy-tabs" class="tabs-bar" style="margin-top:4px;"></div>
+
+        <h2>Live Telemetry &amp; Debris Hazard</h2>
+        <div id="live-status" class="subtitle">t = 0.0s</div>
+        <div id="metrics-grid" class="metrics-grid"></div>
+        <div id="delta-box" class="delta-box" style="display:none;"></div>
+
+        <div id="optimizer-section" style="display:none;">
+          <h2>
+            <span>Safe-Window Cost Profile</span>
+            <span class="subtitle" style="text-transform:none; letter-spacing:0;">click bar to focus</span>
+          </h2>
+          <div id="cand-chart" class="cand-chart"></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Live What-If Re-Run Lab -->
+      <div id="pane-whatif" style="display:none;">
+        <h2>Live Parameter Lab (Re-Runs In Place)</h2>
+        <p class="subtitle">Adjust threat profile, wind shear, or interceptor speed on the same map geometry and re-simulate here.</p>
+
+        <div class="whatif-grid">
+          <div class="whatif-field" style="grid-column: span 2;">
+            <label for="wi-kind">Threat Profile</label>
+            <select id="wi-kind" class="field-input">
+              <option value="one_way_uav">One-Way Attack UAV (low terrain-hugging)</option>
+              <option value="cruise_missile">Cruise Missile (fast terrain-skimming)</option>
+              <option value="ballistic_missile">Ballistic Missile (high-apogee gravity arc)</option>
+            </select>
+          </div>
+          <div class="whatif-field">
+            <label for="wi-speed">Threat Speed (m/s)</label>
+            <input id="wi-speed" class="field-input" type="number" min="25" max="600" step="10" value="68" />
+          </div>
+          <div class="whatif-field">
+            <label for="wi-apogee">Ballistic Apogee (m)</label>
+            <input id="wi-apogee" class="field-input" type="number" min="350" max="4500" step="100" value="1400" />
+          </div>
+          <div class="whatif-field">
+            <label for="wi-int-speed">Interceptor Speed (m/s)</label>
+            <input id="wi-int-speed" class="field-input" type="number" min="100" max="900" step="15" value="295" />
+          </div>
+          <div class="whatif-field">
+            <label for="wi-frags">Shrapnel Fragments</label>
+            <input id="wi-frags" class="field-input" type="number" min="40" max="450" step="20" value="220" />
+          </div>
+          <div class="whatif-field">
+            <label for="wi-wind-e">Add East Wind (m/s)</label>
+            <input id="wi-wind-e" class="field-input" type="number" min="-40" max="40" step="2" value="0" />
+          </div>
+          <div class="whatif-field">
+            <label for="wi-wind-n">Add North Wind (m/s)</label>
+            <input id="wi-wind-n" class="field-input" type="number" min="-40" max="40" step="2" value="0" />
+          </div>
+          <div class="whatif-field">
+            <label for="wi-wind-scale">ERA5 Wind Scale (×)</label>
+            <input id="wi-wind-scale" class="field-input" type="number" min="0" max="6" step="0.5" value="1" />
+          </div>
+          <div class="whatif-field">
+            <label for="wi-seed">Seed</label>
+            <div style="display:flex; gap:4px;">
+              <input id="wi-seed" class="field-input" type="number" value="20261125" />
+              <button id="wi-rand-seed" class="btn" type="button" title="Randomize seed">↻</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="whatif-presets">
+          <button class="btn" type="button" data-wind-preset="era5">Exact ERA5</button>
+          <button class="btn" type="button" data-wind-preset="shamal">Shamal +14E/-5N</button>
+          <button class="btn" type="button" data-wind-preset="gale">Strong +22E</button>
+          <button class="btn" type="button" data-wind-preset="calm">Zero Wind</button>
+        </div>
+
+        <button id="btn-whatif-run" class="btn primary" type="button" style="width:100%; margin-top:9px; padding:7px;">
+          ⚡ Re-Run Simulation In Place
+        </button>
+        <div id="whatif-status" class="subtitle" style="margin-top:6px; color:var(--cyan);"></div>
+      </div>
+
+      <div id="status-line"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: Layers, Camera Presets, Vertical Exaggeration, Wind & Legend -->
+  <div id="top-right" class="panel hud-panel">
+    <div class="header-row">
+      <h1 style="font-size:12px; color:var(--cyan); text-transform:uppercase; letter-spacing:0.08em;">3D Controls &amp; Layers</h1>
+      <div class="header-actions">
+        <button id="btn-hide-hud" class="icon-btn" type="button" title="Hide all panels (H)">Hide HUD</button>
+        <button id="collapse-right" class="icon-btn" type="button" title="Collapse right panel">−</button>
+      </div>
+    </div>
+
+    <div class="panel-body">
+      <div class="toggles" style="margin-top:7px;">
+        <label class="chk"><input type="checkbox" id="tog-imagery" checked /> Satellite Drape</label>
+        <label class="chk"><input type="checkbox" id="tog-buildings" checked /> Buildings (Derived)</label>
+        <label class="chk"><input type="checkbox" id="tog-roads" checked /> Roads (OSM)</label>
+        <label class="chk"><input type="checkbox" id="tog-coverage" checked /> Radar LOS Fan</label>
+        <label class="chk"><input type="checkbox" id="tog-wind" checked /> ERA5 Wind Arrows</label>
+        <label class="chk"><input type="checkbox" id="tog-optimizer" checked /> Optimizer Windows</label>
+        <label class="chk"><input type="checkbox" id="tog-truth" checked /> EXERCISE_TRUTH</label>
+        <label class="chk"><input type="checkbox" id="tog-obs" checked /> EXERCISE_OBS</label>
+        <label class="chk"><input type="checkbox" id="tog-shrapnel" checked /> Shrapnel &amp; Ellipse</label>
+        <label class="chk"><input type="checkbox" id="tog-guides" checked /> Full Path Guides</label>
+      </div>
+
+      <h2>Camera Presets (Keys 1–6 · WASD Fly)</h2>
+      <div class="cam-row">
+        <button class="btn" id="cam-overview">1 Overview</button>
+        <button class="btn" id="cam-intercept">2 Intercept</button>
+        <button class="btn" id="cam-radar">3 Radar</button>
+        <button class="btn" id="cam-follow">4 Threat</button>
+        <button class="btn" id="cam-impact">5 Impacts</button>
+        <button class="btn" id="cam-topdown">6 Top-Down</button>
+      </div>
+
+      <h2>
+        <span>Visual Z-Scale (Display Only)</span>
+        <span id="zscale-val" class="subtitle">1.0×</span>
+      </h2>
+      <div class="slider-row">
+        <input type="range" id="zscale-slider" min="1" max="3" step="0.25" value="1" />
+      </div>
+
+      <h2>Wind Profile (ERA5 Derived)</h2>
+      <div id="wind-table" class="subtitle"></div>
+
+      <h2>Color Key (Click Impacts in 3D to Inspect)</h2>
+      <div class="legend">
+        <div><span class="dot" style="background:#ff5c72"></span>Threat (Truth)</div>
+        <div><span class="dot" style="background:#58d5ff"></span>Radar Obs / Track</div>
+        <div><span class="dot" style="background:#69f0ae"></span>Interceptor</div>
+        <div><span class="dot" style="background:#ffca63"></span>Active Ellipse</div>
+        <div><span class="dot" style="background:#ff2e4c"></span>Building Impact</div>
+        <div><span class="dot" style="background:#ff9e3d"></span>Road Impact</div>
+        <div><span class="dot" style="background:#f065d8"></span>Protected Zone</div>
+        <div><span class="dot" style="background:#58e08e"></span>Open Ground Hit</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING 3D CLICK-TO-INSPECT CARD -->
+  <div id="inspector-card" class="hud-panel">
+    <div class="insp-head">
+      <strong id="insp-title" style="color:var(--amber);">Fragment Inspection</strong>
+      <button id="insp-close" class="icon-btn" type="button">✕</button>
+    </div>
+    <div id="insp-body" class="insp-grid"></div>
+  </div>
+
+  <!-- BOTTOM TIMELINE & EVENT BOOKMARKS BAR -->
+  <div id="bottom-bar" class="panel hud-panel">
+    <div class="event-bookmarks">
+      <div id="bookmark-pills" class="bookmark-pills"></div>
+      <div class="kbd-hints">Space: Play/Pause · ←/→: Step · 1–6: Cam · WASD/QE: Fly · C: Compare · H: HUD</div>
+    </div>
+    <div class="transport-row">
+      <button class="btn" id="btn-step-back" title="Step -0.2s (Left Arrow)">◀ -0.2s</button>
+      <button class="btn active" id="btn-play" title="Play / Pause (Space)">Pause</button>
+      <button class="btn" id="btn-step-fwd" title="Step +0.2s (Right Arrow)">+0.2s ▶</button>
+      <button class="btn" id="btn-reset" title="Reset (R)">Reset</button>
+      <select class="btn" id="speed-select" aria-label="Playback speed">
+        <option value="0.1">0.1× Slow-Mo</option>
+        <option value="0.25">0.25×</option>
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+        <option value="4">4×</option>
+      </select>
+      <div class="slider-track-wrap">
+        <div id="timeline-ticks"></div>
+        <input type="range" id="time-slider" min="0" max="100" step="0.1" value="0" />
+      </div>
+      <div id="time-readout">0.0s / 0.0s</div>
+    </div>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

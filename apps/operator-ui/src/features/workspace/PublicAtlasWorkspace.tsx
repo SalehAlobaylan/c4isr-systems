@@ -64,6 +64,8 @@ import type { QuickCommandId } from './map-panels/omnibox'
 import { RecordsPanel, type RecordsBrowseMode } from './map-panels/RecordsPanel'
 import { SavedViewsPanel, type MapBookmark } from './map-panels/SavedViewsPanel'
 import { SelectionPeekCard } from './map-panels/SelectionPeekCard'
+import { SimulationSetupPanel } from './map-panels/SimulationSetupPanel'
+import type { SimPlacementTool } from './map-panels/simClient'
 import { SpatialToolsPanel } from './map-panels/SpatialToolsPanel'
 import { useMapPanelController } from './map-panels/useMapPanelController'
 
@@ -219,6 +221,15 @@ export function PublicAtlasWorkspace() {
   const [recordsModeKey, setRecordsModeKey] = useState(0)
   const [boundaryLevel, setBoundaryLevel] = useState<'auto' | 'country' | 'region'>('auto')
   const [proposalOverlay, setProposalOverlay] = useState<FeatureCollection>(empty)
+  const [simOverlay, setSimOverlay] = useState<FeatureCollection>(empty)
+  const [simTool, setSimTool] = useState<SimPlacementTool>(null)
+  const simClickHandler = useRef<((point: [number, number]) => void) | null>(null)
+  const registerSimMapClick = useCallback((handler: ((point: [number, number]) => void) | null) => {
+    simClickHandler.current = handler
+  }, [])
+  const handleSimMapClick = useCallback((point: [number, number]) => {
+    simClickHandler.current?.(point)
+  }, [])
   const [family, setFamily] = useState<AtlasLayer>('imagery')
   const [query, setQuery] = useState('')
   const [debounced, setDebounced] = useState('')
@@ -1593,6 +1604,13 @@ export function PublicAtlasWorkspace() {
         regionLabel: 'Saved map views',
       }
     }
+    if (panels.panel === 'simulate') {
+      return {
+        title: '3D Simulation Setup',
+        subtitle: 'Place radar, threat & wind on the map, then launch 3D replay',
+        regionLabel: '3D simulation setup',
+      }
+    }
     if (tool) {
       return {
         title: toolNames[tool],
@@ -1975,12 +1993,26 @@ export function PublicAtlasWorkspace() {
               }}
             />
           )}
+
+          {panels.panel === 'simulate' && (
+            <SimulationSetupPanel
+              activeTool={simTool}
+              onSelectTool={setSimTool}
+              onOverlayChange={setSimOverlay}
+              onFitBounds={(bounds) => cameraRef.current?.fitBounds(bounds)}
+              onNotice={setMapError}
+              registerMapClick={registerSimMapClick}
+            />
+          )}
         </MapDrawer>
 
         {/* MAP CANVAS REGION */}
         <div className="public-map-canvas atlas-map-region">
           <AtlasCanvas
             proposalOverlay={proposalOverlay}
+            simOverlay={panels.panel === 'simulate' ? simOverlay : empty}
+            simClickActive={panels.panel === 'simulate' && simTool !== null}
+            onSimClick={handleSimMapClick}
             cameraRef={cameraRef}
             initialCamera={camera}
             onCamera={setCamera}

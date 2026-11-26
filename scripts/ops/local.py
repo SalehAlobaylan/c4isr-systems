@@ -292,12 +292,16 @@ def develop(cfg):
             worker([ROOT/'bin'/('emad-connectors'+EXE),'-token-file',CREDS/(name+'.token'),'-source',source_id(connector)],name,'connectors')
         # Launch Vite directly with Node so terminating this supervisor does not
         # leave a package-manager child holding the frontend port.
+        sim_port = int(cfg.get('simPort', 8765))
+        if PYTHON.exists() and port_free(sim_port):
+            worker([PYTHON, '-m', 'sim', 'service', '--host', '127.0.0.1', '--port', str(sim_port)], 'sim-service')
+        env['VITE_SIM_API_TARGET'] = f"http://127.0.0.1:{sim_port}"
         processes.append(spawn(['node', ROOT / 'apps/operator-ui/node_modules/vite/bin/vite.js', ROOT / 'apps/operator-ui', '--host', '127.0.0.1', '--port', str(cfg['webPort']), '--strictPort'], dict(env, INIT_CWD=str(ROOT)), 'web'))
         # The bookmarked local address follows the normal UI/API lifecycle;
         # it must not depend on a one-hour evaluation server or another API.
         if cfg['webPort'] != 5198 and port_free(5198):
             processes.append(spawn(['node', ROOT / 'scripts/ops/local_web_entry.mjs', '--port', '5198', '--target', f"http://127.0.0.1:{cfg['webPort']}"], env, 'web-entry'))
-        print(f"EMAD: http://127.0.0.1:{cfg['webPort']} · API: http://127.0.0.1:{cfg['apiPort']}", flush=True)
+        print(f"EMAD: http://127.0.0.1:{cfg['webPort']} · API: http://127.0.0.1:{cfg['apiPort']} · 3D Sim: http://127.0.0.1:{sim_port}", flush=True)
         print('Scoped '+product_profile(cfg)+' session. Other credentials: private/local/credentials. Logs: private/local/logs.', flush=True)
         while not done.wait(1):
             marker=PRIVATE/'stop-request.json'

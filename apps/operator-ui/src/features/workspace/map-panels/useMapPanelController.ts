@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useWorkspacePreference } from '../preferences'
 import type { MapTool } from '../WorkbenchContext'
 
-export type SupportPanel = '' | 'layers' | 'records' | 'tools' | 'views'
+export type SupportPanel = '' | 'layers' | 'records' | 'tools' | 'views' | 'simulate'
 export type DrawerSize = 'normal' | 'wide' | 'full'
 
 export const MIN_DRAWER_WIDTH = 310
@@ -36,6 +36,7 @@ export function recommendedDrawerWidth(
   viewportWidth: number,
 ): number {
   const cap = Math.min(MAX_DRAWER_WIDTH, Math.max(MIN_DRAWER_WIDTH, Math.round(viewportWidth * 0.58)))
+  if (panel === 'simulate') return Math.min(420, cap)
   if (panel) return Math.min(DEFAULT_DRAWER_WIDTH, cap)
   if (tool && WIDE_TOOLS.has(tool)) return Math.min(WIDE_DRAWER_WIDTH, cap)
   if (tool && ANALYTICAL_TOOLS.has(tool)) return Math.min(ANALYTICAL_DRAWER_WIDTH, cap)

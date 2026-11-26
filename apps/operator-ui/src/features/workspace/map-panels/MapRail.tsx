@@ -6,6 +6,7 @@ import {
   LayersIcon,
   LayoutGridIcon,
   ListIcon,
+  RadarIcon,
   RulerIcon,
 } from '@/components/icons'
 import { MapWorkbenchChooser } from '../MapWorkbenchChooser'
@@ -106,6 +107,18 @@ export function MapRail({
       >
         <BookmarkIcon className="size-4" />
         <span className="map-rail-label">Views</span>
+      </button>
+
+      <button
+        type="button"
+        className="map-rail-item"
+        aria-label="3D Simulation"
+        aria-pressed={drawerOpen && activePanel === 'simulate'}
+        onClick={() => onTogglePanel('simulate', '3D Simulation')}
+        title="Configure 3D radar, threat & shrapnel simulation on the map and launch 3D replay"
+      >
+        <RadarIcon className="size-4" />
+        <span className="map-rail-label">Simulate</span>
       </button>
 
       <div className="map-rail-divider" aria-hidden="true" />

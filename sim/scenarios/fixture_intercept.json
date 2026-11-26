@@ -1,0 +1,77 @@
+{
+  "schema": "emad.sim-scenario.v1",
+  "scenarioId": "fixture-intercept-v1",
+  "title": "Owned Fixture End-to-End Intercept & Shrapnel Verification",
+  "description": "Deterministic verification scenario running on the git-committed owned-fixture-v1 environment package and companion ERA5 pressure-level grid.",
+  "environmentPackage": "../../testdata/geospatial/owned-fixture-v1/prepared.zip",
+  "expectedManifestSha256": "aaf9f14b027749b5d233018606fb90c81e34808b9522e034fc67b5243c966bdc",
+  "weatherFieldPath": "../../testdata/geospatial/owned-fixture-v1/field-era5.json",
+  "seed": 20261125,
+  "durationS": 90.0,
+  "dtS": 0.1,
+  "derivedBuildingHeightM": 12.0,
+  "roadExposureBufferM": 15.0,
+  "policy": "earliest",
+  "protectedZoneCenterEnu": [1600.0, -400.0],
+  "protectedZoneRadiusM": 420.0,
+  "safeWindowPreviewFragments": 48,
+  "safeWindowHorizonS": 24.0,
+  "safeWindowStepS": 1.5,
+  "atmosphere": {
+    "valid_time": "2022-10-23T12:00:00Z",
+    "known_at": "2022-10-23T12:00:00Z",
+    "wind_scale": 1.0,
+    "wind_add_enu_mps": [6.0, 2.0, 0.0],
+    "boundary_layer_alpha": 0.16
+  },
+  "threat": {
+    "id": "threat-uav-fixture-01",
+    "kind": "one_way_uav",
+    "waypoints_enu": [
+      [-2600.0, -4200.0, 140.0],
+      [-800.0, -2400.0, 220.0],
+      [1600.0, -400.0, 120.0]
+    ],
+    "altitude_mode": "agl",
+    "speed_mps": 70.0,
+    "rcs_m2": 0.25,
+    "spawn_s": 0.0,
+    "mass_kg": 45.0
+  },
+  "radar": {
+    "id": "radar-fixture-01",
+    "position_enu": [1200.0, -800.0, 18.0],
+    "max_range_m": 6000.0,
+    "min_elevation_deg": -2.0,
+    "max_elevation_deg": 75.0,
+    "period_s": 0.5,
+    "delay_s": 0.3,
+    "range_noise_m": 16.0,
+    "azimuth_noise_deg": 0.4,
+    "elevation_noise_deg": 0.5,
+    "base_detection_prob": 0.95,
+    "dropout_every": 0,
+    "include_buildings_in_los": true
+  },
+  "interceptorSite": {
+    "id": "launcher-fixture-01",
+    "position_enu": [1400.0, -600.0, 6.0],
+    "speed_mps": 290.0,
+    "max_accel_mps2": 130.0,
+    "min_range_m": 350.0,
+    "max_range_m": 5500.0,
+    "launch_delay_s": 1.0,
+    "proximity_fuze_m": 18.0,
+    "protected_radius_m": 420.0
+  },
+  "shrapnel": {
+    "fragment_count": 160,
+    "burst_speed_min_mps": 30.0,
+    "burst_speed_max_mps": 140.0,
+    "momentum_retention": 0.5,
+    "drag_param_min": 0.0025,
+    "drag_param_max": 0.06,
+    "dt_s": 0.1,
+    "max_flight_s": 160.0
+  }
+}

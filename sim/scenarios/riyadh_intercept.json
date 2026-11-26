@@ -1,0 +1,82 @@
+{
+  "schema": "emad.sim-scenario.v1",
+  "scenarioId": "riyadh-urban-intercept-v1",
+  "title": "Riyadh Reference Area: Approach, Terrain-Masked Radar, Intercept & Shrapnel Exposure",
+  "description": "End-to-end 3-DOF defensive exercise on the staged Riyadh observation package (Copernicus GLO-30 DSM, EGM2008 geoid, 1,978 OSM buildings, 3,703 roads, and embedded ERA5 pressure-level wind field). Threat traverses the dense SW urban quadrant toward a protected site in the NE, allowing direct comparison of Earliest-Intercept vs. Wind-Aware Safe-Window policies.",
+  "environmentPackage": "../../private/environment-foundation/implementation/riyadh-observation-pilot/staged-prepared.zip",
+  "expectedManifestSha256": "175515f785c2ae6cdbbec0303140f6d425ff8e773dc24375a64d02d87ac63ab4",
+  "weatherFieldPath": null,
+  "seed": 20261125,
+  "durationS": 110.0,
+  "dtS": 0.1,
+  "derivedBuildingHeightM": 11.0,
+  "roadExposureBufferM": 14.0,
+  "policy": "earliest",
+  "protectedZoneCenterEnu": [1650.0, 1750.0],
+  "protectedZoneRadiusM": 480.0,
+  "safeWindowPreviewFragments": 56,
+  "safeWindowHorizonS": 42.0,
+  "safeWindowStepS": 2.0,
+  "safeWindowBuildingWeight": 5.0,
+  "safeWindowRoadWeight": 2.0,
+  "safeWindowProtectedZoneWeight": 12.0,
+  "atmosphere": {
+    "valid_time": "2022-10-23T12:00:00Z",
+    "known_at": "2022-10-23T12:00:00Z",
+    "wind_scale": 1.0,
+    "wind_add_enu_mps": [0.0, 0.0, 0.0],
+    "boundary_layer_alpha": 0.16
+  },
+  "threat": {
+    "id": "threat-uav-riyadh-01",
+    "kind": "one_way_uav",
+    "waypoints_enu": [
+      [-2650.0, -2550.0, 28.0],
+      [-1450.0, -1350.0, 75.0],
+      [-400.0, -250.0, 195.0],
+      [450.0, 600.0, 250.0],
+      [1650.0, 1750.0, 120.0]
+    ],
+    "altitude_mode": "agl",
+    "speed_mps": 68.0,
+    "rcs_m2": 0.25,
+    "spawn_s": 0.0,
+    "mass_kg": 48.0
+  },
+  "radar": {
+    "id": "radar-riyadh-ne-01",
+    "position_enu": [1250.0, 1250.0, 14.0],
+    "max_range_m": 6500.0,
+    "min_elevation_deg": -2.0,
+    "max_elevation_deg": 75.0,
+    "period_s": 0.5,
+    "delay_s": 0.35,
+    "range_noise_m": 18.0,
+    "azimuth_noise_deg": 0.45,
+    "elevation_noise_deg": 0.55,
+    "base_detection_prob": 0.94,
+    "dropout_every": 0,
+    "include_buildings_in_los": true
+  },
+  "interceptorSite": {
+    "id": "launcher-riyadh-ne-01",
+    "position_enu": [1450.0, 1450.0, 8.0],
+    "speed_mps": 295.0,
+    "max_accel_mps2": 135.0,
+    "min_range_m": 400.0,
+    "max_range_m": 5600.0,
+    "launch_delay_s": 1.0,
+    "proximity_fuze_m": 18.0,
+    "protected_radius_m": 480.0
+  },
+  "shrapnel": {
+    "fragment_count": 220,
+    "burst_speed_min_mps": 35.0,
+    "burst_speed_max_mps": 160.0,
+    "momentum_retention": 0.55,
+    "drag_param_min": 0.0025,
+    "drag_param_max": 0.065,
+    "dt_s": 0.1,
+    "max_flight_s": 180.0
+  }
+}
