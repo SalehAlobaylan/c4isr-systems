@@ -64,6 +64,8 @@ import type { QuickCommandId } from './map-panels/omnibox'
 import { RecordsPanel, type RecordsBrowseMode } from './map-panels/RecordsPanel'
 import { SavedViewsPanel, type MapBookmark } from './map-panels/SavedViewsPanel'
 import { SelectionPeekCard } from './map-panels/SelectionPeekCard'
+import { CoverageSetupPanel } from './map-panels/CoverageSetupPanel'
+import type { CovPlacementTool } from './map-panels/coverageClient'
 import { SimulationSetupPanel } from './map-panels/SimulationSetupPanel'
 import type { SimPlacementTool } from './map-panels/simClient'
 import { SpatialToolsPanel } from './map-panels/SpatialToolsPanel'
@@ -223,6 +225,7 @@ export function PublicAtlasWorkspace() {
   const [proposalOverlay, setProposalOverlay] = useState<FeatureCollection>(empty)
   const [simOverlay, setSimOverlay] = useState<FeatureCollection>(empty)
   const [simTool, setSimTool] = useState<SimPlacementTool>(null)
+  const [covTool, setCovTool] = useState<CovPlacementTool>(null)
   const simClickHandler = useRef<((point: [number, number]) => void) | null>(null)
   const registerSimMapClick = useCallback((handler: ((point: [number, number]) => void) | null) => {
     simClickHandler.current = handler
@@ -1611,6 +1614,13 @@ export function PublicAtlasWorkspace() {
         regionLabel: '3D simulation setup',
       }
     }
+    if (panels.panel === 'coverage') {
+      return {
+        title: 'Sensor Coverage & Blind Spots',
+        subtitle: 'Place radar, EO/IR & acoustic sensors on terrain, then optimize siting in 3D',
+        regionLabel: 'Sensor coverage setup',
+      }
+    }
     if (tool) {
       return {
         title: toolNames[tool],
@@ -2004,14 +2014,28 @@ export function PublicAtlasWorkspace() {
               registerMapClick={registerSimMapClick}
             />
           )}
+
+          {panels.panel === 'coverage' && (
+            <CoverageSetupPanel
+              activeTool={covTool}
+              onSelectTool={setCovTool}
+              onOverlayChange={setSimOverlay}
+              onFitBounds={(bounds) => cameraRef.current?.fitBounds(bounds)}
+              onNotice={setMapError}
+              registerMapClick={registerSimMapClick}
+            />
+          )}
         </MapDrawer>
 
         {/* MAP CANVAS REGION */}
         <div className="public-map-canvas atlas-map-region">
           <AtlasCanvas
             proposalOverlay={proposalOverlay}
-            simOverlay={panels.panel === 'simulate' ? simOverlay : empty}
-            simClickActive={panels.panel === 'simulate' && simTool !== null}
+            simOverlay={panels.panel === 'simulate' || panels.panel === 'coverage' ? simOverlay : empty}
+            simClickActive={
+              (panels.panel === 'simulate' && simTool !== null) ||
+              (panels.panel === 'coverage' && covTool !== null)
+            }
             onSimClick={handleSimMapClick}
             cameraRef={cameraRef}
             initialCamera={camera}

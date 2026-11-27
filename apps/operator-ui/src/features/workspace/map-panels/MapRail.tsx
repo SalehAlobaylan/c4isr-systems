@@ -8,6 +8,7 @@ import {
   ListIcon,
   RadarIcon,
   RulerIcon,
+  SignalIcon,
 } from '@/components/icons'
 import { MapWorkbenchChooser } from '../MapWorkbenchChooser'
 import type { MapTool } from '../WorkbenchContext'
@@ -119,6 +120,18 @@ export function MapRail({
       >
         <RadarIcon className="size-4" />
         <span className="map-rail-label">Simulate</span>
+      </button>
+
+      <button
+        type="button"
+        className="map-rail-item"
+        aria-label="Sensor Coverage"
+        aria-pressed={drawerOpen && activePanel === 'coverage'}
+        onClick={() => onTogglePanel('coverage', 'Sensor Coverage')}
+        title="Place radar, EO/IR & acoustic sensors on the map, analyze 3D blind spots, and optimize siting"
+      >
+        <SignalIcon className="size-4" />
+        <span className="map-rail-label">Coverage</span>
       </button>
 
       <div className="map-rail-divider" aria-hidden="true" />

@@ -73,13 +73,17 @@ tasks:
     cmds:
       - '"{{.RECOVERY_PYTHON}}" scripts/ops/paired_backup.py restore-test'
   dev:
-    desc: Start the map API, web application, 3D simulation service and public workers
+    desc: Start the map API, web application, 3D simulation & coverage services and public workers
     cmds:
       - python scripts/ops/local.py dev
   dev:sim:
     desc: Start the standalone local 3D simulation service and replay viewer on http://127.0.0.1:8765
     cmds:
       - '"{{.RECOVERY_PYTHON}}" -m sim service --host 127.0.0.1 --port {{.C4ISR_SIM_PORT | default "8765"}}'
+  dev:coverage:
+    desc: Start the standalone local 3D sensor coverage & blind-spot service on http://127.0.0.1:8766
+    cmds:
+      - '"{{.RECOVERY_PYTHON}}" -m sensor_coverage service --host 127.0.0.1 --port {{.C4ISR_COVERAGE_PORT | default "8766"}}'
   dev:historical:
     desc: Start the preserved full historical installation explicitly
     cmds:

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EMAD 3D Sensor Coverage &amp; Blind-Spot Workbench</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/build/three.module.js",
+        "three/addons/": "/vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #071018;
+      --panel: rgba(11, 20, 30, 0.92);
+      --panel-strong: rgba(15, 27, 40, 0.96);
+      --border: rgba(88, 213, 255, 0.24);
+      --border-soft: rgba(255, 255, 255, 0.08);
+      --text: #e8f2f9;
+      --muted: #8ea6b8;
+      --cyan: #38bdf8;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --red: #f87171;
+      --violet: #c084fc;
+      --magenta: #f472b6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%; width: 100%; overflow: hidden;
+      background: var(--bg); color: var(--text);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+    #viewport { position: fixed; inset: 0; }
+    #viewport.drop-cursor { cursor: crosshair; }
+    body.hud-hidden .hud-panel { opacity: 0; pointer-events: none; transform: translateY(6px); }
+
+    #hud-restore-pill {
+      position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 35;
+      display: none; background: var(--panel-strong); border: 1px solid var(--cyan);
+      color: #fff; border-radius: 99px; padding: 6px 14px; font-size: 12px; cursor: pointer;
+    }
+    body.hud-hidden #hud-restore-pill { display: inline-flex; align-items: center; gap: 6px; }
+
+    #drop-mode-banner {
+      position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 30;
+      display: none; align-items: center; gap: 10px;
+      background: rgba(15, 27, 40, 0.96); border: 1px solid var(--green);
+      color: #fff; border-radius: 99px; padding: 6px 14px; font-size: 12px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+    }
+    #drop-mode-banner.visible { display: inline-flex; }
+
+    #loading-overlay {
+      position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle at 50% 40%, #112233 0%, #071018 70%);
+    }
+    #loading-overlay.hidden { display: none; }
+    .loading-card {
+      width: min(470px, 92vw); background: var(--panel-strong); border: 1px solid var(--border);
+      border-radius: 12px; padding: 22px 24px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+    }
+    .loading-card h1 { font-size: 16px; margin-bottom: 6px; color: #fff; }
+    .loading-stage {
+      font-size: 12.5px; color: var(--cyan); margin: 10px 0 14px;
+      font-family: ui-monospace, Consolas, monospace;
+    }
+    .progress-bar { height: 5px; width: 100%; border-radius: 99px; background: rgba(255,255,255,0.1); overflow: hidden; }
+    .progress-fill {
+      height: 100%; width: 35%; background: linear-gradient(90deg, var(--cyan), var(--green));
+      border-radius: 99px; animation: pulseSlide 1.4s ease-in-out infinite;
+    }
+    @keyframes pulseSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } }
+
+    .panel {
+      position: fixed; background: var(--panel); border: 1px solid var(--border);
+      border-radius: 10px; backdrop-filter: blur(10px); padding: 10px 12px;
+      font-size: 12px; line-height: 1.42; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      user-select: none; -webkit-user-select: none;
+    }
+    .panel input, .panel select, .panel .selectable { user-select: text; -webkit-user-select: text; }
+    .panel.collapsed .panel-body { display: none; }
+
+    .panel-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      margin-bottom: 6px;
+    }
+    .panel.collapsed .panel-head { margin-bottom: 0; }
+    .panel h1 { font-size: 13.5px; font-weight: 650; color: #fff; }
+    .panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--cyan); margin: 0; }
+    .subhead {
+      font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--cyan);
+      margin: 9px 0 5px; display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    }
+    .collapse-btn {
+      background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--border-soft);
+      border-radius: 5px; width: 22px; height: 22px; font-size: 11px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .collapse-btn:hover { color: #fff; border-color: var(--cyan); }
+
+    #header { top: 12px; left: 12px; width: 410px; max-width: calc(100vw - 24px); z-index: 12; }
+    .top-bar { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; min-width: 0; flex: 1; }
+    .nav-btn {
+      display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; flex-shrink: 0;
+      background: rgba(56, 189, 248, 0.14); border: 1px solid var(--border);
+      color: var(--cyan); text-decoration: none; border-radius: 6px;
+      height: 24px; padding: 0 8px; font-size: 11px; font-weight: 600; cursor: pointer;
+    }
+    .nav-btn:hover { background: rgba(56, 189, 248, 0.25); color: #fff; }
+    .run-switcher {
+      background: rgba(255,255,255,0.07); color: var(--text); border: 1px solid var(--border);
+      border-radius: 6px; height: 24px; line-height: 22px; padding: 0 6px; font-size: 11px;
+      flex: 1 1 auto; min-width: 90px; max-width: 215px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .run-switcher option { background: #0c1722; color: #e8f2f9; }
+    .badge {
+      display: inline-block; padding: 1.5px 6px; border-radius: 99px; font-size: 10px;
+      background: rgba(56, 189, 248, 0.14); border: 1px solid var(--border);
+      color: var(--cyan); margin: 2px 4px 2px 0;
+    }
+    .badge.warn { background: rgba(251, 191, 36, 0.14); border-color: rgba(251, 191, 36, 0.4); color: var(--amber); }
+    .badge.good { background: rgba(52, 211, 153, 0.14); border-color: rgba(52, 211, 153, 0.4); color: var(--green); }
+    .badge.bad { background: rgba(248, 113, 113, 0.15); border-color: rgba(248, 113, 113, 0.45); color: var(--red); }
+
+    #left-controls {
+      top: 136px; left: 12px; width: 328px; max-height: calc(100vh - 212px);
+      overflow-y: auto; z-index: 12;
+    }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+    button.chip {
+      background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border);
+      border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer;
+      transition: background 0.12s, border-color 0.12s; white-space: nowrap;
+    }
+    button.chip:hover { background: rgba(56, 189, 248, 0.18); }
+    button.chip.active {
+      background: rgba(56, 189, 248, 0.28); border-color: var(--cyan); color: #fff; font-weight: 600;
+    }
+    button.chip.good-active {
+      background: rgba(52, 211, 153, 0.26); border-color: var(--green); color: #fff; font-weight: 600;
+    }
+    button.chip.primary {
+      background: linear-gradient(90deg, rgba(56, 189, 248, 0.35), rgba(52, 211, 153, 0.35));
+      border-color: var(--green); color: #fff; font-weight: 600;
+    }
+    button.chip:disabled { opacity: 0.42; cursor: not-allowed; }
+
+    .slider-block {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft);
+      border-radius: 7px; padding: 7px 9px; margin-top: 6px;
+    }
+    .slider-head {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11.5px; margin-bottom: 4px;
+    }
+    .slider-head strong { color: var(--cyan); font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+    input[type="range"] { width: 100%; accent-color: var(--cyan); cursor: pointer; }
+
+    .sandbox-box {
+      background: rgba(52, 211, 153, 0.06); border: 1px solid rgba(52, 211, 153, 0.26);
+      border-radius: 7px; padding: 7px 8px; margin-top: 6px;
+    }
+    .sandbox-row { display: flex; gap: 5px; align-items: center; margin-top: 5px; }
+    .sandbox-select, .sandbox-num {
+      background: rgba(255,255,255,0.08); color: #fff; border: 1px solid var(--border);
+      border-radius: 5px; padding: 3px 6px; font-size: 11px; height: 24px;
+    }
+    .sandbox-select option { background: #0c1722; }
+    .sandbox-delta {
+      margin-top: 5px; padding: 4px 7px; border-radius: 5px;
+      background: rgba(52, 211, 153, 0.14); font-size: 10.5px; color: #d1fae5;
+    }
+
+    .sensor-item {
+      display: flex; align-items: center; justify-content: space-between; gap: 6px;
+      padding: 4px 7px; border-radius: 6px; background: rgba(255,255,255,0.035);
+      border: 1px solid var(--border-soft); margin-top: 4px; font-size: 11px;
+    }
+    .sensor-item.off { opacity: 0.42; }
+    .sensor-item.preview-item { border-color: rgba(52, 211, 153, 0.45); background: rgba(52, 211, 153, 0.08); }
+    .sensor-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .sensor-left label { display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sensor-meta { font-family: ui-monospace, Consolas, monospace; font-size: 10px; color: var(--muted); white-space: nowrap; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    .layer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; margin-top: 4px; }
+    .layer-toggle { display: flex; align-items: center; gap: 5px; font-size: 11px; cursor: pointer; }
+    .layer-toggle input { accent-color: var(--cyan); }
+
+    #metrics {
+      top: 12px; right: 12px; width: 368px; max-height: calc(100vh - 96px);
+      overflow-y: auto; z-index: 12;
+    }
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 8px; border-bottom: 1px solid var(--border-soft); padding-bottom: 6px; }
+    .tab-btn {
+      flex: 1; background: rgba(255,255,255,0.04); border: 1px solid transparent;
+      color: var(--muted); border-radius: 6px; padding: 5px 6px; font-size: 11px; font-weight: 600; cursor: pointer;
+    }
+    .tab-btn.active { background: rgba(56, 189, 248, 0.2); border-color: var(--cyan); color: #fff; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px; }
+    .kpi {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft);
+      border-radius: 7px; padding: 6px 8px;
+    }
+    .kpi .k { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi .v { font-size: 15px; font-weight: 700; margin-top: 1px; font-family: ui-monospace, Consolas, monospace; }
+    .kpi .s { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .good { color: var(--green); }
+    .bad { color: var(--red); }
+    .warn { color: var(--amber); }
+    .cyan { color: var(--cyan); }
+
+    .delta-banner {
+      background: linear-gradient(90deg, rgba(52, 211, 153, 0.14), rgba(56, 189, 248, 0.14));
+      border: 1px solid rgba(52, 211, 153, 0.35); border-radius: 7px;
+      padding: 6px 8px; margin-top: 6px; font-size: 11px;
+    }
+
+    .chart-box {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border-soft);
+      border-radius: 7px; padding: 6px 8px; margin-top: 4px;
+    }
+    .cause-bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: rgba(255,255,255,0.08); margin: 5px 0; }
+    .cause-legend { display: flex; flex-wrap: wrap; gap: 8px; font-size: 10.5px; color: var(--muted); }
+
+    table.cov-table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; }
+    table.cov-table th {
+      text-align: left; font-size: 10px; color: var(--muted); font-weight: 600;
+      border-bottom: 1px solid var(--border-soft); padding: 3px 4px;
+    }
+    table.cov-table td {
+      padding: 4px; border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-family: ui-monospace, Consolas, monospace;
+    }
+    table.cov-table tr { cursor: pointer; }
+    table.cov-table tr:hover td { background: rgba(56, 189, 248, 0.1); }
+    table.cov-table tr.selected td { background: rgba(56, 189, 248, 0.18); color: #fff; }
+
+    .route-card {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft);
+      border-radius: 7px; padding: 7px 8px; margin-top: 6px; font-size: 11px;
+    }
+    .route-head { display: flex; justify-content: space-between; align-items: center; gap: 6px; font-weight: 600; }
+    .route-bar {
+      display: flex; height: 7px; border-radius: 99px; overflow: hidden;
+      background: rgba(255,255,255,0.08); margin: 5px 0 4px;
+    }
+    .route-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 10.5px; color: var(--muted); }
+
+    .legend-bar { height: 8px; border-radius: 99px; margin: 4px 0 3px; border: 1px solid rgba(255,255,255,0.14); }
+    .legend-labels { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
+    .legend-row { display: flex; flex-wrap: wrap; gap: 6px 10px; font-size: 11px; margin-top: 4px; }
+    .legend-item { display: inline-flex; align-items: center; gap: 5px; }
+
+    .wi-field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 7px; }
+    .wi-field label { font-size: 10.5px; color: var(--muted); display: flex; justify-content: space-between; }
+    .wi-field input[type="number"], .wi-field select {
+      background: rgba(255,255,255,0.07); color: #fff; border: 1px solid var(--border);
+      border-radius: 6px; padding: 5px 7px; font-size: 11.5px; width: 100%;
+    }
+    .wi-field select option { background: #0c1722; }
+    .wi-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .wi-status { font-size: 11px; color: var(--cyan); margin-top: 6px; min-height: 16px; }
+
+    #inspector-card {
+      bottom: 84px; left: 350px; width: 380px; max-width: calc(100vw - 380px);
+      z-index: 16; display: none; border-color: var(--cyan);
+    }
+    #inspector-card.visible { display: block; }
+    .insp-kv {
+      display: flex; justify-content: space-between; gap: 8px; font-size: 11px;
+      padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .insp-kv span { color: var(--muted); }
+    .insp-kv strong { color: #fff; font-family: ui-monospace, Consolas, monospace; text-align: right; }
+    .los-pills { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 4px; }
+    .los-pill {
+      font-size: 10px; padding: 2px 6px; border-radius: 99px; cursor: pointer;
+      border: 1px solid var(--border-soft); background: rgba(255,255,255,0.05); color: var(--text);
+    }
+    .los-pill.clear { border-color: rgba(52, 211, 153, 0.55); color: #6ee7b7; }
+    .los-pill.blocked { border-color: rgba(248, 113, 113, 0.55); color: #fca5a5; }
+    .los-pill.active { background: rgba(56, 189, 248, 0.25); border-color: var(--cyan); color: #fff; font-weight: 600; }
+
+    #help-card {
+      top: 50%; left: 50%; transform: translate(-50%, -50%); width: 340px; z-index: 40;
+      display: none; border-color: var(--cyan);
+    }
+    #help-card.visible { display: block; }
+
+    #dock {
+      left: 50%; transform: translateX(-50%); bottom: 12px;
+      width: min(890px, calc(100vw - 24px)); z-index: 12;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .dock-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .dock-sep { width: 1px; height: 18px; background: var(--border-soft); margin: 0 2px; }
+    .mono { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; color: var(--cyan); }
+    .kbd-hint { font-size: 10px; color: var(--muted); margin-left: auto; }
+    kbd {
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 4px; padding: 0 4px; font-size: 9.5px; color: #dbe9f5;
+    }
+  </style>
+</head>
+<body>
+  <div id="viewport"></div>
+  <button id="hud-restore-pill" title="Show HUD (H)">Show HUD <kbd>H</kbd></button>
+
+  <div id="drop-mode-banner">
+    <span>📍 <strong>Drop Test Sensor Mode:</strong> Click any hilltop, ridge, or rooftop in 3D to preview live viewshed</span>
+    <button id="btn-exit-drop" class="chip" style="padding:2px 8px;">Done <kbd>Esc</kbd></button>
+  </div>
+
+  <div id="loading-overlay">
+    <div class="loading-card">
+      <h1>EMAD 3D Sensor Coverage &amp; Blind-Spot Workbench</h1>
+      <p style="font-size:12px;color:#8ea6b8;">Verified terrain + building LOS viewsheds, cross-section raycasting &amp; siting optimizer</p>
+      <div class="loading-stage" id="loading-stage">Connecting to local coverage service…</div>
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- Top-Left Header -->
+  <div id="header" class="panel hud-panel">
+    <div class="panel-head">
+      <div class="top-bar">
+        <a id="back-to-map" class="nav-btn" href="http://127.0.0.1:5173/map">← 2D Map</a>
+        <select id="run-switcher" class="run-switcher" title="Switch recent coverage studies"></select>
+        <button id="btn-hud-hide" class="chip" style="height:24px;padding:0 6px;font-size:10px;" title="Toggle HUD (H)">HUD</button>
+        <button id="btn-help" class="chip" style="height:24px;padding:0 6px;font-size:10.5px;" title="Shortcuts (?)">?</button>
+      </div>
+      <button class="collapse-btn" data-target="header" title="Collapse header">▾</button>
+    </div>
+    <div class="panel-body">
+      <h1 id="scenario-title">Loading coverage study…</h1>
+      <div id="env-badges" style="margin-top:4px;"></div>
+      <div id="status-line" style="font-size:10.5px;color:#8ea6b8;margin-top:3px;">Preparing 3D coverage layers…</div>
+    </div>
+  </div>
+
+  <!-- Left Controls -->
+  <div id="left-controls" class="panel hud-panel">
+    <div class="panel-head">
+      <h2>Coverage Slice &amp; Sensors</h2>
+      <button class="collapse-btn" data-target="left-controls" title="Collapse controls">▾</button>
+    </div>
+    <div class="panel-body">
+      <div class="subhead" style="margin-top:2px;">
+        <span>Placement Layout</span>
+        <kbd>C</kbd>
+      </div>
+      <div class="btn-row" id="config-buttons">
+        <button class="chip" data-cfg="baseline">Baseline</button>
+        <button class="chip" data-cfg="optimized">Optimized</button>
+      </div>
+
+      <div class="subhead"><span>3D Surface Mode</span></div>
+      <div class="btn-row" id="mode-buttons">
+        <button class="chip active" data-mode="coverage">Coverage &amp; Gaps</button>
+        <button class="chip" data-mode="floor">Min Detect Floor</button>
+        <button class="chip" data-mode="diff">Gain vs Baseline</button>
+      </div>
+
+      <div class="slider-block">
+        <div class="slider-head">
+          <span>Target Threat Altitude (AGL)</span>
+          <strong id="agl-label">30 m</strong>
+        </div>
+        <input id="agl-slider" type="range" min="10" max="600" step="5" value="30" />
+        <div class="btn-row" id="agl-presets" style="margin-top:5px;"></div>
+        <div class="btn-row" style="margin-top:6px;align-items:center;justify-content:space-between;">
+          <label class="layer-toggle" title="Float coverage slice at target AGL vs conformally drape on terrain (V)">
+            <input type="checkbox" id="tog-float-agl" /> Float at target AGL <kbd>V</kbd>
+          </label>
+          <span class="mono" style="font-size:10px;" id="opacity-label">68%</span>
+        </div>
+        <input id="opacity-slider" type="range" min="0.15" max="0.95" step="0.05" value="0.68" title="Coverage opacity" />
+      </div>
+
+      <div id="surface-legend" style="margin-top:6px;"></div>
+
+      <div class="sandbox-box">
+        <div class="subhead" style="margin:0;">
+          <span style="color:var(--green);">3D Candidate Sandbox</span>
+          <kbd>P</kbd>
+        </div>
+        <div class="sandbox-row">
+          <button id="btn-drop-sensor" class="chip" style="flex:1;" title="Click any hilltop or rooftop in 3D to test a new sensor (P)">
+            📍 Drop Test Sensor
+          </button>
+          <select id="drop-sensor-type" class="sandbox-select" title="Test sensor modality">
+            <option value="radar">Radar</option>
+            <option value="eo_ir">EO/IR</option>
+            <option value="acoustic">Acoustic</option>
+          </select>
+          <input id="drop-sensor-mast" class="sandbox-num" type="number" min="2" max="90" value="15" style="width:48px;" title="Mast height (m AGL)" />
+        </div>
+        <div id="preview-summary" style="display:none;">
+          <div id="preview-delta-text" class="sandbox-delta"></div>
+          <div class="btn-row" style="margin-top:5px;">
+            <button id="btn-commit-preview" class="chip primary" style="flex:1;">⚡ Commit &amp; Re-Run</button>
+            <button id="btn-clear-preview" class="chip">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="subhead">
+        <span>Active Sensors (Outage Test)</span>
+        <button id="btn-all-sensors" class="chip" style="padding:1px 6px;font-size:10px;">All On</button>
+      </div>
+      <div id="sensor-list"></div>
+
+      <div class="subhead"><span>3D Scene Layers</span></div>
+      <div class="layer-grid">
+        <label class="layer-toggle"><input type="checkbox" id="tog-coverage" checked /> Coverage Drape</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-imagery" checked /> Sentinel-2</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-buildings" checked /> Buildings</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-roads" checked /> OSM Roads</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-sensors" checked /> Sensors &amp; Rings</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-labels" checked /> 3D Labels</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-moves" checked /> Move Arcs</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-routes" checked /> Ingress Routes</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-assets" checked /> Priority Zones</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-candidates" /> Optimizer Sites</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Click-to-Inspect Card with Live SVG LOS Cross-Section -->
+  <div id="inspector-card" class="panel hud-panel">
+    <div class="panel-head">
+      <h2 id="insp-title">Cell / Site Inspector</h2>
+      <button id="insp-close" class="collapse-btn" title="Close & clear rays (Esc)">✕</button>
+    </div>
+    <div id="insp-body" class="selectable"></div>
+    <div id="insp-los-section" style="display:none;margin-top:6px;">
+      <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:var(--cyan);">
+        3D Raycast LOS Profile (Click sensor to inspect occlusion)
+      </div>
+      <div id="insp-los-pills" class="los-pills"></div>
+      <div id="insp-los-svg" class="chart-box" style="padding:4px 6px;"></div>
+    </div>
+  </div>
+
+  <!-- Right Telemetry Panel -->
+  <div id="metrics" class="panel hud-panel">
+    <div class="panel-head">
+      <h2>Coverage Telemetry</h2>
+      <button class="collapse-btn" data-target="metrics" title="Collapse metrics">▾</button>
+    </div>
+    <div class="panel-body">
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="overview">Coverage</button>
+        <button class="tab-btn" data-tab="routes">Routes &amp; Opt</button>
+        <button class="tab-btn" data-tab="whatif">⚡ What-If</button>
+      </div>
+
+      <div id="tab-overview" class="tab-pane active">
+        <div class="kpi-grid" id="live-kpis"></div>
+        <div id="comparison-banner"></div>
+
+        <div class="subhead"><span>Coverage vs. Threat Altitude</span></div>
+        <div id="altitude-curve-box" class="chart-box"></div>
+
+        <div class="subhead"><span>Blind-Spot Root Cause</span></div>
+        <div id="blind-cause-box" class="chart-box"></div>
+
+        <div class="subhead"><span>Evaluated Altitude Layers (Click to Slice)</span></div>
+        <table class="cov-table">
+          <thead>
+            <tr><th>AGL</th><th>Covered</th><th>Priority</th><th>Redund.</th><th>Blind km²</th></tr>
+          </thead>
+          <tbody id="layer-table-body"></tbody>
+        </table>
+
+        <div class="subhead"><span>Threat &amp; Atmosphere Model</span></div>
+        <div id="model-info" style="font-size:11px;color:var(--muted);"></div>
+      </div>
+
+      <div id="tab-routes" class="tab-pane">
+        <div class="subhead" style="margin-top:0;"><span>Ingress Warning-Time Analysis</span></div>
+        <div id="routes-summary"></div>
+
+        <div class="subhead"><span>Placement Optimizer Trace</span></div>
+        <div id="optimizer-summary" style="font-size:11px;color:var(--muted);"></div>
+      </div>
+
+      <div id="tab-whatif" class="tab-pane">
+        <p style="font-size:11px;color:var(--muted);margin-bottom:8px;">
+          Re-run this coverage study with adjusted weather, threat signature, or optimizer constraints and hot-reload in place.
+        </p>
+        <div class="wi-row2">
+          <div class="wi-field">
+            <label>Threat RCS (m²)</label>
+            <input id="wi-rcs" type="number" min="0.01" max="20" step="0.05" value="0.1" />
+          </div>
+          <div class="wi-field">
+            <label>Visibility (km)</label>
+            <input id="wi-vis" type="number" min="0.5" max="30" step="0.5" value="10" />
+          </div>
+        </div>
+        <div class="wi-row2">
+          <div class="wi-field">
+            <label>Surface Wind (m/s)</label>
+            <input id="wi-wind" type="number" min="0" max="35" step="1" value="5" />
+          </div>
+          <div class="wi-field">
+            <label>Min Separation (m)</label>
+            <input id="wi-sep" type="number" min="0" max="5000" step="100" value="600" />
+          </div>
+        </div>
+        <div class="wi-row2">
+          <div class="wi-field">
+            <label>Extra Sensors</label>
+            <input id="wi-extra" type="number" min="0" max="6" step="1" value="0" />
+          </div>
+          <div class="wi-field">
+            <label>Extra Sensor Type</label>
+            <select id="wi-extra-type">
+              <option value="radar">Radar</option>
+              <option value="eo_ir">EO / IR</option>
+              <option value="acoustic">Acoustic</option>
+            </select>
+          </div>
+        </div>
+        <div class="layer-grid" style="margin-bottom:8px;">
+          <label class="layer-toggle"><input type="checkbox" id="wi-buildings" checked /> Buildings block LOS</label>
+          <label class="layer-toggle"><input type="checkbox" id="wi-rooftops" checked /> Allow rooftop sites</label>
+          <label class="layer-toggle"><input type="checkbox" id="wi-opt-enabled" checked /> Run optimizer</label>
+        </div>
+        <button id="btn-whatif-run" class="chip primary" style="width:100%;padding:7px 10px;font-size:12px;">
+          ⚡ Re-Run Coverage &amp; Reload 3D
+        </button>
+        <div id="wi-status" class="wi-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Help Card -->
+  <div id="help-card" class="panel">
+    <div class="panel-head">
+      <h2>Workbench Controls &amp; Shortcuts</h2>
+      <button id="help-close" class="collapse-btn">✕</button>
+    </div>
+    <div class="insp-kv"><span>Click terrain cell</span><strong>3D LOS Rays + Cross-Section</strong></div>
+    <div class="insp-kv"><span><kbd>P</kbd> Drop Test Sensor</span><strong>Live 15ms viewshed preview</strong></div>
+    <div class="insp-kv"><span><kbd>C</kbd> Compare Layout</span><strong>Baseline ↔ Optimized</strong></div>
+    <div class="insp-kv"><span><kbd>V</kbd> Float Slice</span><strong>Drape Terrain ↔ Target AGL</strong></div>
+    <div class="insp-kv"><span><kbd>Space</kbd></span><strong>Fly / Pause Ingress Probes</strong></div>
+    <div class="insp-kv"><span><kbd>1</kbd>–<kbd>6</kbd> / <kbd>R</kbd></span><strong>Camera Presets / Reset</strong></div>
+    <div class="insp-kv"><span><kbd>W A S D Q E</kbd></span><strong>Free-Fly Camera</strong></div>
+    <div class="insp-kv"><span><kbd>H</kbd> / <kbd>Esc</kbd></span><strong>Hide HUD / Clear Inspection</strong></div>
+  </div>
+
+  <!-- Bottom Dock -->
+  <div id="dock" class="panel hud-panel">
+    <div class="dock-row">
+      <button id="btn-probe-play" class="chip" title="Animate threat probes along ingress routes (Space)">▶ Fly Ingress</button>
+      <input id="probe-slider" type="range" min="0" max="1" step="0.002" value="0" style="flex:1;min-width:130px;" />
+      <span id="probe-readout" class="mono">0% · Ready</span>
+      <div class="dock-sep"></div>
+      <span style="font-size:10.5px;color:var(--muted);">Z-Scale</span>
+      <input id="zscale-slider" type="range" min="1" max="3" step="0.25" value="1" style="width:70px;" title="Display vertical exaggeration (visual only)" />
+      <span id="zscale-val" class="mono">1.00×</span>
+    </div>
+    <div class="dock-row">
+      <button class="chip" data-cam="overview" title="Overview (1 or R)">1 Overview</button>
+      <button class="chip" data-cam="top" title="Top-Down Map (2)">2 Top-Down</button>
+      <button class="chip" data-cam="asset" title="Defended Asset (3)">3 Asset</button>
+      <button class="chip" data-cam="sensor" title="Primary Sensor (4)">4 Sensor</button>
+      <button class="chip" data-cam="route" title="Ingress Corridor (5)">5 Ingress</button>
+      <button class="chip" data-cam="oblique" title="Low Horizon (6)">6 Low Horizon</button>
+      <span class="kbd-hint">Click terrain = 3D LOS Profile · <kbd>P</kbd> Drop Sensor · <kbd>C</kbd> Compare · <kbd>?</kbd> Help</span>
+    </div>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

@@ -7,7 +7,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 
 function isLoopbackRequest(hostHeader: string | undefined, remoteAddress: string | undefined): boolean {
   try {
@@ -21,7 +21,11 @@ function isLoopbackRequest(hostHeader: string | undefined, remoteAddress: string
   }
 }
 
-function probeSimHealth(origin: string, timeoutMs = 700): Promise<boolean> {
+function probeServiceHealth(
+  origin: string,
+  expectedService?: string,
+  timeoutMs = 700,
+): Promise<boolean> {
   return new Promise((done) => {
     const req = http.get(`${origin}/api/health`, { timeout: timeoutMs }, (res) => {
       let body = ''
@@ -35,8 +39,16 @@ function probeSimHealth(origin: string, timeoutMs = 700): Promise<boolean> {
           return
         }
         try {
-          const parsed = JSON.parse(body) as { status?: string }
-          done(parsed.status === 'ok')
+          const parsed = JSON.parse(body) as { status?: string; service?: string }
+          if (parsed.status !== 'ok') {
+            done(false)
+            return
+          }
+          if (expectedService) {
+            done(parsed.service === expectedService)
+          } else {
+            done(parsed.service !== 'emad-sensor-coverage')
+          }
         } catch {
           done(false)
         }
@@ -84,13 +96,223 @@ export default defineConfig(({ mode }) => {
   const localCredential = resolve(repoRoot, 'private/local/credentials/local-map-analyst.token')
   const apiTarget = process.env.VITE_API_PROXY_TARGET ?? env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080'
   const simTarget = process.env.VITE_SIM_API_TARGET ?? env.VITE_SIM_API_TARGET ?? 'http://127.0.0.1:8765'
+  const covTarget = process.env.VITE_COV_API_TARGET ?? env.VITE_COV_API_TARGET ?? 'http://127.0.0.1:8766'
   const target = new URL(apiTarget)
   if (!['http:', 'https:'].includes(target.protocol) || target.username || target.password || target.pathname !== '/' || target.search || target.hash) {
     throw new Error('VITE_API_PROXY_TARGET must be an HTTP(S) origin without credentials, path, query or fragment.')
   }
   const simUrl = new URL(simTarget)
-  const preferredSimPort = Number(simUrl.port || 8765)
-  const simHost = simUrl.hostname
+  const covUrl = new URL(covTarget)
+
+  const createLocalPythonServicePlugin = (opts: {
+    pluginName: string
+    label: string
+    pythonModule: string
+    logFileName: string
+    host: string
+    preferredPort: number
+    apiPrefix: string
+    controlPrefix: string
+    expectedService?: string
+    autoStart: boolean
+  }): Plugin => ({
+    name: opts.pluginName,
+    apply: 'serve',
+    configureServer(server) {
+      const pythonBin = process.platform === 'win32'
+        ? resolve(repoRoot, '.venv-recovery/Scripts/python.exe')
+        : resolve(repoRoot, '.venv-recovery/bin/python')
+      let activePort = opts.preferredPort
+      let child: ChildProcess | null = null
+      let starting: Promise<{ ok: boolean; origin: string; port: number; error?: string }> | null = null
+
+      const activeOrigin = () => `http://${opts.host}:${activePort}`
+
+      const ensureService = (forceFresh = false): Promise<{ ok: boolean; origin: string; port: number; error?: string }> => {
+        if (starting) return starting
+        starting = (async () => {
+          if (!forceFresh) {
+            for (const candidatePort of [...new Set([activePort, opts.preferredPort])]) {
+              const origin = `http://${opts.host}:${candidatePort}`
+              if (await probeServiceHealth(origin, opts.expectedService, 500)) {
+                activePort = candidatePort
+                return { ok: true, origin, port: candidatePort }
+              }
+            }
+          }
+
+          if (!existsSync(pythonBin)) {
+            return {
+              ok: false,
+              origin: activeOrigin(),
+              port: activePort,
+              error: `Python environment not found at ${pythonBin}`,
+            }
+          }
+
+          let chosenPort: number | null = null
+          for (let p = opts.preferredPort; p < opts.preferredPort + 20; p++) {
+            if (!forceFresh) {
+              const origin = `http://${opts.host}:${p}`
+              if (await probeServiceHealth(origin, opts.expectedService, 300)) {
+                activePort = p
+                return { ok: true, origin, port: p }
+              }
+            }
+            if (!(await isPortListening(opts.host, p, 200))) {
+              chosenPort = p
+              break
+            }
+          }
+          if (chosenPort === null) {
+            return {
+              ok: false,
+              origin: activeOrigin(),
+              port: activePort,
+              error: `No free loopback port available in range ${opts.preferredPort}-${opts.preferredPort + 19}.`,
+            }
+          }
+
+          if (child && child.exitCode === null && !child.killed) {
+            child.kill()
+            child = null
+          }
+          const logDir = resolve(repoRoot, 'private/local/logs')
+          mkdirSync(logDir, { recursive: true })
+          const logFd = openSync(resolve(logDir, opts.logFileName), 'a')
+          try {
+            child = spawn(
+              pythonBin,
+              ['-m', opts.pythonModule, 'service', '--host', opts.host, '--port', String(chosenPort)],
+              {
+                cwd: repoRoot,
+                stdio: ['ignore', logFd, logFd],
+                windowsHide: true,
+              },
+            )
+            child.once('exit', () => {
+              child = null
+            })
+          } catch (err) {
+            return {
+              ok: false,
+              origin: `http://${opts.host}:${chosenPort}`,
+              port: chosenPort,
+              error: err instanceof Error ? err.message : `Failed to spawn ${opts.label}.`,
+            }
+          }
+
+          const chosenOrigin = `http://${opts.host}:${chosenPort}`
+          for (let attempt = 0; attempt < 40; attempt++) {
+            if (await probeServiceHealth(chosenOrigin, opts.expectedService, 500)) {
+              activePort = chosenPort
+              return { ok: true, origin: chosenOrigin, port: chosenPort }
+            }
+            if (!child || child.exitCode !== null) {
+              return {
+                ok: false,
+                origin: chosenOrigin,
+                port: chosenPort,
+                error: `${opts.label} exited during startup. Check private/local/logs/${opts.logFileName}.`,
+              }
+            }
+            await new Promise((r) => setTimeout(r, 250))
+          }
+          return {
+            ok: false,
+            origin: chosenOrigin,
+            port: chosenPort,
+            error: `${opts.label} did not respond in time. Check private/local/logs/${opts.logFileName}.`,
+          }
+        })().finally(() => {
+          starting = null
+        })
+        return starting
+      }
+
+      if (opts.autoStart && existsSync(pythonBin)) {
+        void ensureService()
+      }
+
+      server.httpServer?.once('close', () => {
+        if (child && child.exitCode === null && !child.killed) {
+          child.kill()
+          child = null
+        }
+      })
+
+      server.middlewares.use((request, response, next) => {
+        const rawUrl = request.url ?? ''
+        const pathname = rawUrl.split('?')[0]
+
+        if (pathname === `${opts.controlPrefix}/start` || pathname === `${opts.controlPrefix}/restart`) {
+          if (!isLoopbackRequest(request.headers.host, request.socket.remoteAddress)) {
+            response.writeHead(403).end(`Local ${opts.label} control is available only on this computer.`)
+            return
+          }
+          const isRestart = pathname === `${opts.controlPrefix}/restart`
+          response.setHeader('Cache-Control', 'no-store')
+          response.setHeader('Content-Type', 'application/json; charset=utf-8')
+          void (async () => {
+            if (isRestart) {
+              if (child && child.exitCode === null && !child.killed) {
+                child.kill()
+                child = null
+              }
+              await new Promise<void>((done) => {
+                const req = http.request(
+                  { hostname: opts.host, port: activePort, path: '/api/shutdown', method: 'POST', timeout: 400 },
+                  (res) => { res.resume(); done() },
+                )
+                req.on('timeout', () => { req.destroy(); done() })
+                req.on('error', () => done())
+                req.end()
+              })
+              await new Promise((r) => setTimeout(r, 350))
+            }
+            const result = await ensureService(isRestart)
+            response.writeHead(result.ok ? 200 : 503)
+            response.end(JSON.stringify(result))
+          })()
+          return
+        }
+
+        if (pathname.startsWith(`${opts.apiPrefix}/`)) {
+          if (!isLoopbackRequest(request.headers.host, request.socket.remoteAddress)) {
+            response.writeHead(403).end(`Local ${opts.label} proxy is available only on this computer.`)
+            return
+          }
+          const forwardPath = rawUrl.slice(opts.apiPrefix.length) || '/'
+          const upstream = http.request(
+            {
+              hostname: opts.host,
+              port: activePort,
+              path: forwardPath,
+              method: request.method,
+              headers: { ...request.headers, host: `${opts.host}:${activePort}` },
+              timeout: 60_000,
+            },
+            (reply) => {
+              response.writeHead(reply.statusCode ?? 502, reply.headers)
+              reply.pipe(response)
+            },
+          )
+          upstream.on('error', () => {
+            if (!response.headersSent) {
+              response.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
+              response.end(JSON.stringify({ error: `${opts.label} unavailable at ${activeOrigin()}` }))
+            } else {
+              response.destroy()
+            }
+          })
+          request.pipe(upstream)
+          return
+        }
+
+        next()
+      })
+    },
+  })
 
   return {
   // Parallel test servers must not invalidate the running installation's
@@ -122,190 +344,30 @@ export default defineConfig(({ mode }) => {
         }
       })
     },
-  }, {
-    name: 'emad-sim-service',
-    apply: 'serve',
-    configureServer(server) {
-      const pythonBin = process.platform === 'win32'
-        ? resolve(repoRoot, '.venv-recovery/Scripts/python.exe')
-        : resolve(repoRoot, '.venv-recovery/bin/python')
-      let activePort = preferredSimPort
-      let child: ChildProcess | null = null
-      let starting: Promise<{ ok: boolean; origin: string; port: number; error?: string }> | null = null
-
-      const activeOrigin = () => `http://${simHost}:${activePort}`
-
-      const ensureSimService = (): Promise<{ ok: boolean; origin: string; port: number; error?: string }> => {
-        if (starting) return starting
-        starting = (async () => {
-          // 1. Check currently active port and preferred port for a healthy sim service
-          for (const candidatePort of [...new Set([activePort, preferredSimPort])]) {
-            const origin = `http://${simHost}:${candidatePort}`
-            if (await probeSimHealth(origin, 500)) {
-              activePort = candidatePort
-              return { ok: true, origin, port: candidatePort }
-            }
-          }
-
-          if (!existsSync(pythonBin)) {
-            return {
-              ok: false,
-              origin: activeOrigin(),
-              port: activePort,
-              error: `Python simulation environment not found at ${pythonBin}`,
-            }
-          }
-
-          // 2. Find a port not already occupied by another process (e.g. a legacy `sim serve` terminal)
-          let chosenPort: number | null = null
-          for (let p = preferredSimPort; p < preferredSimPort + 20; p++) {
-            const origin = `http://${simHost}:${p}`
-            if (await probeSimHealth(origin, 300)) {
-              activePort = p
-              return { ok: true, origin, port: p }
-            }
-            if (!(await isPortListening(simHost, p, 200))) {
-              chosenPort = p
-              break
-            }
-          }
-          if (chosenPort === null) {
-            return {
-              ok: false,
-              origin: activeOrigin(),
-              port: activePort,
-              error: `No free loopback port available in range ${preferredSimPort}-${preferredSimPort + 19}.`,
-            }
-          }
-
-          // 3. Stop stale child if any, then launch clean sim service on chosenPort
-          if (child && child.exitCode === null && !child.killed) {
-            child.kill()
-            child = null
-          }
-          const logDir = resolve(repoRoot, 'private/local/logs')
-          mkdirSync(logDir, { recursive: true })
-          const logFd = openSync(resolve(logDir, 'sim-service.log'), 'a')
-          try {
-            child = spawn(
-              pythonBin,
-              ['-m', 'sim', 'service', '--host', simHost, '--port', String(chosenPort)],
-              {
-                cwd: repoRoot,
-                stdio: ['ignore', logFd, logFd],
-                windowsHide: true,
-              },
-            )
-            child.once('exit', () => {
-              child = null
-            })
-          } catch (err) {
-            return {
-              ok: false,
-              origin: `http://${simHost}:${chosenPort}`,
-              port: chosenPort,
-              error: err instanceof Error ? err.message : 'Failed to spawn simulation service.',
-            }
-          }
-
-          const chosenOrigin = `http://${simHost}:${chosenPort}`
-          for (let attempt = 0; attempt < 40; attempt++) {
-            if (await probeSimHealth(chosenOrigin, 500)) {
-              activePort = chosenPort
-              return { ok: true, origin: chosenOrigin, port: chosenPort }
-            }
-            if (!child || child.exitCode !== null) {
-              return {
-                ok: false,
-                origin: chosenOrigin,
-                port: chosenPort,
-                error: 'Simulation service exited during startup. Check private/local/logs/sim-service.log.',
-              }
-            }
-            await new Promise((r) => setTimeout(r, 250))
-          }
-          return {
-            ok: false,
-            origin: chosenOrigin,
-            port: chosenPort,
-            error: 'Simulation service did not respond in time. Check private/local/logs/sim-service.log.',
-          }
-        })().finally(() => {
-          starting = null
-        })
-        return starting
-      }
-
-      if (localAutoEntry && process.env.EMAD_DISABLE_AUTO_SIM !== '1' && existsSync(pythonBin)) {
-        void ensureSimService()
-      }
-
-      server.httpServer?.once('close', () => {
-        if (child && child.exitCode === null && !child.killed) {
-          child.kill()
-          child = null
-        }
-      })
-
-      // Dynamic loopback control + reverse proxy for /sim-api -> active sim service port
-      server.middlewares.use((request, response, next) => {
-        const rawUrl = request.url ?? ''
-        const pathname = rawUrl.split('?')[0]
-
-        if (pathname === '/__local/sim/start' || pathname === '/__local/sim/restart') {
-          if (!isLoopbackRequest(request.headers.host, request.socket.remoteAddress)) {
-            response.writeHead(403).end('Local simulation control is available only on this computer.')
-            return
-          }
-          if (pathname === '/__local/sim/restart' && child && child.exitCode === null && !child.killed) {
-            child.kill()
-            child = null
-          }
-          response.setHeader('Cache-Control', 'no-store')
-          response.setHeader('Content-Type', 'application/json; charset=utf-8')
-          void ensureSimService().then((result) => {
-            response.writeHead(result.ok ? 200 : 503)
-            response.end(JSON.stringify(result))
-          })
-          return
-        }
-
-        if (pathname.startsWith('/sim-api/')) {
-          if (!isLoopbackRequest(request.headers.host, request.socket.remoteAddress)) {
-            response.writeHead(403).end('Local simulation proxy is available only on this computer.')
-            return
-          }
-          const forwardPath = rawUrl.replace(/^\/sim-api/, '') || '/'
-          const upstream = http.request(
-            {
-              hostname: simHost,
-              port: activePort,
-              path: forwardPath,
-              method: request.method,
-              headers: { ...request.headers, host: `${simHost}:${activePort}` },
-              timeout: 60_000,
-            },
-            (reply) => {
-              response.writeHead(reply.statusCode ?? 502, reply.headers)
-              reply.pipe(response)
-            },
-          )
-          upstream.on('error', () => {
-            if (!response.headersSent) {
-              response.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
-              response.end(JSON.stringify({ error: `Simulation service unavailable at ${activeOrigin()}` }))
-            } else {
-              response.destroy()
-            }
-          })
-          request.pipe(upstream)
-          return
-        }
-
-        next()
-      })
-    },
-  }],
+  },
+  createLocalPythonServicePlugin({
+    pluginName: 'emad-sim-service',
+    label: 'Simulation service',
+    pythonModule: 'sim',
+    logFileName: 'sim-service.log',
+    host: simUrl.hostname,
+    preferredPort: Number(simUrl.port || 8765),
+    apiPrefix: '/sim-api',
+    controlPrefix: '/__local/sim',
+    autoStart: localAutoEntry && process.env.EMAD_DISABLE_AUTO_SIM !== '1',
+  }),
+  createLocalPythonServicePlugin({
+    pluginName: 'emad-coverage-service',
+    label: 'Sensor coverage service',
+    pythonModule: 'sensor_coverage',
+    logFileName: 'coverage-service.log',
+    host: covUrl.hostname,
+    preferredPort: Number(covUrl.port || 8766),
+    apiPrefix: '/cov-api',
+    controlPrefix: '/__local/cov',
+    expectedService: 'emad-sensor-coverage',
+    autoStart: localAutoEntry && process.env.EMAD_DISABLE_AUTO_SIM !== '1',
+  })],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
