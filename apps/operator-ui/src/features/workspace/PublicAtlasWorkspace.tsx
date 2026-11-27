@@ -66,6 +66,9 @@ import { SavedViewsPanel, type MapBookmark } from './map-panels/SavedViewsPanel'
 import { SelectionPeekCard } from './map-panels/SelectionPeekCard'
 import { CoverageSetupPanel } from './map-panels/CoverageSetupPanel'
 import type { CovPlacementTool } from './map-panels/coverageClient'
+import { SalvoSetupPanel } from './map-panels/SalvoSetupPanel'
+import type { SalvoPlacementTool } from './map-panels/salvoClient'
+import { BenchmarksPanel } from './map-panels/BenchmarksPanel'
 import { SimulationSetupPanel } from './map-panels/SimulationSetupPanel'
 import type { SimPlacementTool } from './map-panels/simClient'
 import { SpatialToolsPanel } from './map-panels/SpatialToolsPanel'
@@ -226,6 +229,8 @@ export function PublicAtlasWorkspace() {
   const [simOverlay, setSimOverlay] = useState<FeatureCollection>(empty)
   const [simTool, setSimTool] = useState<SimPlacementTool>(null)
   const [covTool, setCovTool] = useState<CovPlacementTool>(null)
+  const [salvoTool, setSalvoTool] = useState<SalvoPlacementTool>(null)
+  const [benchPicking, setBenchPicking] = useState(false)
   const simClickHandler = useRef<((point: [number, number]) => void) | null>(null)
   const registerSimMapClick = useCallback((handler: ((point: [number, number]) => void) | null) => {
     simClickHandler.current = handler
@@ -1621,6 +1626,20 @@ export function PublicAtlasWorkspace() {
         regionLabel: 'Sensor coverage setup',
       }
     }
+    if (panels.panel === 'salvo') {
+      return {
+        title: 'Multi-Threat Salvo & Layered Defense',
+        subtitle: 'Compose mixed raids, place 3-tier batteries, and compare Greedy vs WTA vs AI in 3D',
+        regionLabel: 'Salvo defense setup',
+      }
+    }
+    if (panels.panel === 'bench') {
+      return {
+        title: 'Monte Carlo Risk & AI Benchmarks',
+        subtitle: 'Vectorized debris probability contours, ML surrogate & multi-biome WTA leaderboard',
+        regionLabel: 'Monte Carlo and AI benchmarks',
+      }
+    }
     if (tool) {
       return {
         title: toolNames[tool],
@@ -2025,16 +2044,47 @@ export function PublicAtlasWorkspace() {
               registerMapClick={registerSimMapClick}
             />
           )}
+
+          {panels.panel === 'salvo' && (
+            <SalvoSetupPanel
+              activeTool={salvoTool}
+              onSelectTool={setSalvoTool}
+              onOverlayChange={setSimOverlay}
+              onFitBounds={(bounds) => cameraRef.current?.fitBounds(bounds)}
+              onNotice={setMapError}
+              registerMapClick={registerSimMapClick}
+            />
+          )}
+
+          {panels.panel === 'bench' && (
+            <BenchmarksPanel
+              pickingPoint={benchPicking}
+              onSetPickingPoint={setBenchPicking}
+              onOverlayChange={setSimOverlay}
+              onFitBounds={(bounds) => cameraRef.current?.fitBounds(bounds)}
+              onNotice={setMapError}
+              registerMapClick={registerSimMapClick}
+            />
+          )}
         </MapDrawer>
 
         {/* MAP CANVAS REGION */}
         <div className="public-map-canvas atlas-map-region">
           <AtlasCanvas
             proposalOverlay={proposalOverlay}
-            simOverlay={panels.panel === 'simulate' || panels.panel === 'coverage' ? simOverlay : empty}
+            simOverlay={
+              panels.panel === 'simulate' ||
+              panels.panel === 'coverage' ||
+              panels.panel === 'salvo' ||
+              panels.panel === 'bench'
+                ? simOverlay
+                : empty
+            }
             simClickActive={
               (panels.panel === 'simulate' && simTool !== null) ||
-              (panels.panel === 'coverage' && covTool !== null)
+              (panels.panel === 'coverage' && covTool !== null) ||
+              (panels.panel === 'salvo' && salvoTool !== null) ||
+              (panels.panel === 'bench' && benchPicking)
             }
             onSimClick={handleSimMapClick}
             cameraRef={cameraRef}

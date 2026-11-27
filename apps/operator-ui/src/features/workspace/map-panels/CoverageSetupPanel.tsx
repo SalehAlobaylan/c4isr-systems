@@ -6,14 +6,17 @@ import {
   applyCovPreset,
   buildCoverageOverlay,
   cloneCovDraft,
+  exportCovNetwork,
   fetchCovEnvironments,
   fetchCovHealth,
   fetchCovRun,
   fetchCovRuns,
+  findCovAdversarialRoute,
   isPointInCovBounds,
   restartLocalCovService,
   startCovRun,
   startLocalCovService,
+  type CovAdversarialRoute,
   type CovEnvironment,
   type CovHealth,
   type CovPlacementTool,
@@ -80,6 +83,9 @@ export function CoverageSetupPanel({
   const [activePreset, setActivePreset] = useState<CovPresetId>('baseline_multimodal')
   const [selectedSensorId, setSelectedSensorId] = useState<string | null>(null)
   const [routeAglM, setRouteAglM] = useState(40)
+  const [stealthRoute, setStealthRoute] = useState<CovAdversarialRoute | null>(null)
+  const [stealthBusy, setStealthBusy] = useState(false)
+  const [exportStatus, setExportStatus] = useState('')
   const hasFittedInitial = useRef(false)
 
   const selectedEnv = useMemo(
@@ -170,11 +176,11 @@ export function CoverageSetupPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Keep 2D MapLibre overlay synchronized with draft + completed blind-spot polygons
+  // Keep 2D MapLibre overlay synchronized with draft + completed blind-spot polygons + stealth path
   useEffect(() => {
     const result = showResultOverlay && activeJob?.status === 'completed' ? activeJob.resultOverlay : null
-    onOverlayChange(buildCoverageOverlay(selectedEnv, draft ?? undefined, result, overlayMode))
-  }, [selectedEnv, draft, activeJob, showResultOverlay, overlayMode, onOverlayChange])
+    onOverlayChange(buildCoverageOverlay(selectedEnv, draft ?? undefined, result, overlayMode, stealthRoute))
+  }, [selectedEnv, draft, activeJob, showResultOverlay, overlayMode, stealthRoute, onOverlayChange])
 
   // Interactive map placement clicks
   useEffect(() => {
@@ -223,6 +229,20 @@ export function CoverageSetupPanel({
               },
             ],
           }
+        }
+        if (activeTool === 'add-jammer') {
+          const jammers = [...(prev.jammers ?? [])]
+          jammers.push({
+            id: `jammer-${jammers.length + 1}`,
+            label: `EW Jammer ${jammers.length + 1}`,
+            lon: rLng,
+            lat: rLat,
+            aglM: 180,
+            erpRatio: 16,
+            beamWidthDeg: 36,
+          })
+          onNotice(`Placed Stand-Off EW Jammer at ${rLat.toFixed(5)}°, ${rLng.toFixed(5)}°`)
+          return { ...prev, jammers }
         }
         if (activeTool === 'asset') {
           const nextAssets = prev.assets.length
@@ -368,6 +388,54 @@ export function CoverageSetupPanel({
       optimizer: { ...draft.optimizer, extraSensors: 0 },
     })
     onNotice('Adopted optimized sensor sites onto the 2D map draft.')
+  }
+
+  const handleFindStealthPath = async () => {
+    if (!draft || !health) return
+    setStealthBusy(true)
+    setError('')
+    try {
+      const asset = draft.assets[0]
+      const res = await findCovAdversarialRoute({
+        environmentId: draft.environmentId,
+        aglM: draft.mapLayerAglM,
+        speedMps: 65,
+        includeBuildings: draft.includeBuildings,
+        rcsM2: draft.threat.rcsM2,
+        visibilityKm: draft.weather.visibilityKm,
+        surfaceWindMps: draft.weather.surfaceWindMps,
+        assetLon: asset?.lon,
+        assetLat: asset?.lat,
+        jammers: draft.jammers ?? [],
+        sensors: draft.sensors,
+      })
+      setStealthRoute(res)
+      onNotice(
+        `Stealth path @ ${res.aglM}m AGL: ${(res.stealthFraction * 100).toFixed(0)}% blind, ${res.warningTimeS}s warning`,
+      )
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Adversarial route solver failed.')
+    } finally {
+      setStealthBusy(false)
+    }
+  }
+
+  const handleExportNetwork = async () => {
+    if (!draft || !health) return
+    setExportStatus('Exporting network…')
+    try {
+      const optSensors = activeJob?.status === 'completed' ? activeJob.summary?.optimizedSensors : undefined
+      const saved = await exportCovNetwork({
+        environmentId: draft.environmentId,
+        jobId: activeJob?.status === 'completed' ? activeJob.jobId : undefined,
+        name: `${draft.title}${optSensors?.length ? ' (Optimized)' : ''}`,
+        sensors: optSensors?.length ? undefined : draft.sensors,
+      })
+      setExportStatus(`Saved ${saved.layoutId} (${saved.sensorCount} sensors) — ready in Simulate & Salvo!`)
+      onNotice(`Exported sensor network ${saved.layoutId} to Intercept & Salvo simulators.`)
+    } catch (e) {
+      setExportStatus(e instanceof Error ? e.message : 'Export failed.')
+    }
   }
 
   const handleExportDraft = () => {
@@ -548,6 +616,7 @@ export function CoverageSetupPanel({
                   ['add-radar', '+ Radar'],
                   ['add-eo_ir', '+ EO/IR'],
                   ['add-acoustic', '+ Acoustic'],
+                  ['add-jammer', '+ EW Jammer'],
                   ['asset', 'Move Asset'],
                   ['route-pt', '+ Ingress Pt'],
                 ] as [CovPlacementTool, string][]
@@ -856,7 +925,35 @@ export function CoverageSetupPanel({
                 />
                 ERA5 Wind ({selectedEnv.weather.surfaceWindMps} m/s)
               </label>
+              <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={draft.optimizer.optimizeOrientation ?? true}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      optimizer: { ...draft.optimizer, optimizeOrientation: e.target.checked },
+                    })
+                  }
+                />
+                Optimize sector azimuth
+              </label>
             </div>
+
+            {(draft.jammers?.length ?? 0) > 0 && (
+              <div className="flex items-center justify-between gap-2 rounded border border-orange-400/50 bg-orange-500/10 px-2 py-1 text-xs">
+                <span>
+                  ⚡ <strong>{draft.jammers?.length}</strong> Stand-Off EW Jammer active
+                </span>
+                <button
+                  type="button"
+                  className="ux-button"
+                  onClick={() => setDraft({ ...draft, jammers: [] })}
+                >
+                  Clear EW
+                </button>
+              </div>
+            )}
 
             {!draft.weather.useEra5Wind && (
               <label className="block">
@@ -1142,6 +1239,32 @@ export function CoverageSetupPanel({
                         Apply Optimized Sites to Map Draft
                       </button>
                     )}
+
+                    <div className="grid grid-cols-2 gap-1.5 pt-1">
+                      <button
+                        type="button"
+                        className="ux-button justify-center"
+                        disabled={stealthBusy}
+                        onClick={() => void handleFindStealthPath()}
+                      >
+                        {stealthBusy ? 'Solving A*…' : '🕵 Stealth Path'}
+                      </button>
+                      <button
+                        type="button"
+                        className="ux-button justify-center"
+                        onClick={() => void handleExportNetwork()}
+                      >
+                        📤 Export Network
+                      </button>
+                    </div>
+                    {stealthRoute && (
+                      <div className="rounded border border-purple-400/50 bg-purple-500/10 px-2 py-1 text-[11px]">
+                        <strong>Stealth Corridor ({stealthRoute.aglM}m):</strong>{' '}
+                        {(stealthRoute.stealthFraction * 100).toFixed(0)}% unseen ·{' '}
+                        <strong>{stealthRoute.warningTimeS}s</strong> warning
+                      </div>
+                    )}
+                    {exportStatus && <p className="text-[11px] text-emerald-700 font-medium">{exportStatus}</p>}
                   </div>
                 )}
               </div>

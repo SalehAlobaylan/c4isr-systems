@@ -84,6 +84,14 @@ tasks:
     desc: Start the standalone local 3D sensor coverage & blind-spot service on http://127.0.0.1:8766
     cmds:
       - '"{{.RECOVERY_PYTHON}}" -m sensor_coverage service --host 127.0.0.1 --port {{.C4ISR_COVERAGE_PORT | default "8766"}}'
+  dev:salvo:
+    desc: Start the standalone local 3D multi-threat salvo & layered defense service on http://127.0.0.1:8767
+    cmds:
+      - '"{{.RECOVERY_PYTHON}}" -m salvo_defense service --host 127.0.0.1 --port {{.C4ISR_SALVO_PORT | default "8767"}}'
+  dev:bench:
+    desc: Start the standalone Monte Carlo debris, ML surrogate & AI benchmark service on http://127.0.0.1:8768
+    cmds:
+      - '"{{.RECOVERY_PYTHON}}" -m sim_bench service --host 127.0.0.1 --port {{.C4ISR_BENCH_PORT | default "8768"}}'
   dev:historical:
     desc: Start the preserved full historical installation explicitly
     cmds:

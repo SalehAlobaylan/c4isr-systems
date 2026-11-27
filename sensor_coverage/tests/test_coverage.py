@@ -201,6 +201,80 @@ class TestFixtureEndToEndAndRouter(unittest.TestCase):
         self.assertEqual(len(prev_floor), n_cells)
         self.assertTrue(np.any(prev_floor < 65535))
 
+        # Verify v0.3 A* adversarial stealth route finder endpoint
+        st_adv, _, adv_raw = self.router.resolve(
+            "/api/adversarial-route",
+            method="POST",
+            body=json.dumps(
+                {
+                    "environmentId": "owned-fixture-v1",
+                    "aglM": 30.0,
+                    "speedMps": 65.0,
+                    "gridCellM": g["cellM"],
+                    "assetEnu": [cx, cy],
+                    "sensors": opt_sensors,
+                }
+            ).encode("utf-8"),
+        )
+        self.assertEqual(st_adv, 200)
+        adv = json.loads(adv_raw)
+        self.assertGreaterEqual(len(adv["pointsLonLat"]), 2)
+        self.assertGreaterEqual(adv["stealthFraction"], 0.0)
+        self.assertLessEqual(adv["stealthFraction"], 1.0)
+
+        # Verify v0.3 cross-simulation sensor-network export & listing
+        st_exp, _, exp_raw = self.router.resolve(
+            "/api/export-network",
+            method="POST",
+            body=json.dumps(
+                {
+                    "environmentId": "owned-fixture-v1",
+                    "jobId": job["jobId"],
+                    "name": "Fixture Exported Net",
+                }
+            ).encode("utf-8"),
+        )
+        self.assertEqual(st_exp, 201)
+        exported = json.loads(exp_raw)
+        self.assertEqual(exported["sensorCount"], len(opt_sensors))
+
+    def test_v03_ew_jamming_and_directional_orientation_optimization(self) -> None:
+        from sensor_coverage.contracts import JammerSpec, LayerSpec, OptimizerSpec
+        from sensor_coverage.optimizer import optimize_placement
+
+        _, env, obs = self.service._get_env("owned-fixture-v1")
+        grid = AnalysisGrid.build(obs, cell_m=150.0)
+        cx = 0.5 * (env.east_min + env.east_max)
+        cy = 0.5 * (env.north_min + env.north_max)
+
+        # 1. EW Jammer must strictly reduce radar coverage along the jammed bearing
+        radar = SensorSpec("r1", "radar", cx, cy, 15.0, 9000.0, -1.0, 10.0)
+        f_clean = floor_agl_map(obs, grid, radar, 9000.0, include_buildings=False)
+        jammer = JammerSpec("j1", cx + 1500.0, cy, agl_m=150.0, erp_ratio=40.0, beam_width_deg=60.0)
+        f_jammed = floor_agl_map(obs, grid, radar, 9000.0, include_buildings=False, jammers=[jammer])
+        self.assertLess(int(np.sum(f_jammed <= 60.0)), int(np.sum(f_clean <= 60.0)))
+
+        # 2. Directional sector sensor orientation optimizer must point toward high-priority weight cluster
+        dir_radar = SensorSpec("r_dir", "radar", cx, cy, 15.0, 6000.0, -1.0, 10.0, sector_center_deg=270.0, sector_width_deg=90.0)
+        # Put heavy weight exclusively on the EAST half (azimuth ~90 deg)
+        weights = np.where((grid.east > cx + 400.0) & grid.valid, 20.0, 0.1)
+        weights[~grid.valid] = 0.0
+        res = optimize_placement(
+            obs=obs,
+            grid=grid,
+            baseline=[dir_radar],
+            layers=[LayerSpec(60.0, 1.0)],
+            weights=weights,
+            threat=ThreatSpec(0.5),
+            weather=WeatherSpec(),
+            spec=OptimizerSpec(enabled=True, optimize_orientation=True, swap_passes=1, candidate_spacing_m=900.0),
+            include_buildings=False,
+        )
+        self.assertTrue(res["optimizedOrientations"])
+        opt_sensor = res["sensors"][0]
+        # Heading should have rotated away from west (270 deg) toward the east/northeast/southeast sector
+        self.assertNotEqual(opt_sensor.sector_center_deg, 270.0)
+
     def test_mast_height_and_acoustic_nlos_properties(self) -> None:
         _, env, obs = self.service._get_env("owned-fixture-v1")
         grid = AnalysisGrid.build(obs, cell_m=120.0)

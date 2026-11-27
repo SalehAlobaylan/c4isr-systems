@@ -300,12 +300,20 @@ def develop(cfg):
         if PYTHON.exists() and port_free(cov_port):
             worker([PYTHON, '-m', 'sensor_coverage', 'service', '--host', '127.0.0.1', '--port', str(cov_port)], 'coverage-service')
         env['VITE_COV_API_TARGET'] = f"http://127.0.0.1:{cov_port}"
+        salvo_port = int(cfg.get('salvoPort', 8767))
+        if PYTHON.exists() and port_free(salvo_port):
+            worker([PYTHON, '-m', 'salvo_defense', 'service', '--host', '127.0.0.1', '--port', str(salvo_port)], 'salvo-service')
+        env['VITE_SALVO_API_TARGET'] = f"http://127.0.0.1:{salvo_port}"
+        bench_port = int(cfg.get('benchPort', 8768))
+        if PYTHON.exists() and port_free(bench_port):
+            worker([PYTHON, '-m', 'sim_bench', 'service', '--host', '127.0.0.1', '--port', str(bench_port)], 'bench-service')
+        env['VITE_BENCH_API_TARGET'] = f"http://127.0.0.1:{bench_port}"
         processes.append(spawn(['node', ROOT / 'apps/operator-ui/node_modules/vite/bin/vite.js', ROOT / 'apps/operator-ui', '--host', '127.0.0.1', '--port', str(cfg['webPort']), '--strictPort'], dict(env, INIT_CWD=str(ROOT)), 'web'))
         # The bookmarked local address follows the normal UI/API lifecycle;
         # it must not depend on a one-hour evaluation server or another API.
         if cfg['webPort'] != 5198 and port_free(5198):
             processes.append(spawn(['node', ROOT / 'scripts/ops/local_web_entry.mjs', '--port', '5198', '--target', f"http://127.0.0.1:{cfg['webPort']}"], env, 'web-entry'))
-        print(f"EMAD: http://127.0.0.1:{cfg['webPort']} · API: http://127.0.0.1:{cfg['apiPort']} · 3D Sim: http://127.0.0.1:{sim_port} · Coverage: http://127.0.0.1:{cov_port}", flush=True)
+        print(f"EMAD: http://127.0.0.1:{cfg['webPort']} · API: http://127.0.0.1:{cfg['apiPort']} · Sim: :{sim_port} · Cov: :{cov_port} · Salvo: :{salvo_port} · Bench: :{bench_port}", flush=True)
         print('Scoped '+product_profile(cfg)+' session. Other credentials: private/local/credentials. Logs: private/local/logs.', flush=True)
         while not done.wait(1):
             marker=PRIVATE/'stop-request.json'

@@ -414,6 +414,18 @@
         </div>
       </div>
 
+      <div class="subhead"><span>v0.3 Tactical Tools</span></div>
+      <div class="btn-row">
+        <button id="btn-find-stealth" class="chip" style="flex:1;border-color:rgba(192,132,252,0.55);color:#e9d5ff;" title="Find A* least-detection adversarial corridor at current AGL">
+          🕵 Find Stealth Path
+        </button>
+        <button id="btn-export-network" class="chip" style="flex:1;border-color:rgba(52,211,153,0.5);color:#a7f3d0;" title="Export active layout to Intercept & Salvo simulators">
+          📤 Export Network
+        </button>
+      </div>
+      <div id="stealth-result-box" style="display:none;margin-top:5px;padding:5px 7px;border-radius:6px;background:rgba(192,132,252,0.12);border:1px solid rgba(192,132,252,0.38);font-size:10.5px;"></div>
+      <div id="export-net-status" style="font-size:10.5px;color:var(--green);margin-top:3px;"></div>
+
       <div class="subhead">
         <span>Active Sensors (Outage Test)</span>
         <button id="btn-all-sensors" class="chip" style="padding:1px 6px;font-size:10px;">All On</button>
@@ -537,6 +549,10 @@
           <label class="layer-toggle"><input type="checkbox" id="wi-buildings" checked /> Buildings block LOS</label>
           <label class="layer-toggle"><input type="checkbox" id="wi-rooftops" checked /> Allow rooftop sites</label>
           <label class="layer-toggle"><input type="checkbox" id="wi-opt-enabled" checked /> Run optimizer</label>
+          <label class="layer-toggle"><input type="checkbox" id="wi-jammer" /> Stand-off EW Jammer</label>
+        </div>
+        <div class="btn-row" style="margin-bottom:7px;">
+          <button id="btn-wi-cams-dust" class="chip" style="flex:1;font-size:10.5px;">🌫 Apply CAMS Dust (1.5 km vis)</button>
         </div>
         <button id="btn-whatif-run" class="chip primary" style="width:100%;padding:7px 10px;font-size:12px;">
           ⚡ Re-Run Coverage &amp; Reload 3D

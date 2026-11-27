@@ -22,7 +22,11 @@ import secrets
 import threading
 from typing import Any
 
-from .atmosphere import AtmosphereModel
+from sim_core.atmosphere import AtmosphereModel, load_cams_dust
+from sim_core.environment import EnvironmentModel
+from sim_core.handoff import SensorNetworkStore
+from sim_core.registry import BiomePreset, discover_biomes
+
 from .contracts import (
     AtmosphereOverrideConfig,
     FIDELITY_KINEMATIC_3DOF,
@@ -34,61 +38,118 @@ from .contracts import (
     ThreatConfig,
 )
 from .engine import compare_policies, run_simulation, save_run_bundle
-from .environment import EnvironmentModel
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RUNS_ROOT = REPO_ROOT / "tmp" / "sim-runs"
 
-
-@dataclass(frozen=True)
-class EnvironmentPreset:
-    id: str
-    title: str
-    description: str
-    package_path: Path
-    expected_manifest_sha256: str | None
-    weather_field_path: Path | None
-    glb_path: Path | None
-    imagery_path: Path | None
-    scenario_template_path: Path
+EnvironmentPreset = BiomePreset
 
 
-def discover_presets(repo_root: Path = REPO_ROOT) -> list[EnvironmentPreset]:
-    """Discover all available verified prepared environments on disk."""
-    candidates = [
-        EnvironmentPreset(
-            id="riyadh-observation-v1",
-            title="Riyadh Reference Area (GLO-30 + OSM + ERA5)",
-            description=(
-                "Staged Riyadh observation package: Copernicus GLO-30 DSM, EGM2008 geoid, "
-                "1,978 OSM buildings, 3,703 roads, Sentinel-2 optical drape, and embedded ERA5 winds."
-            ),
-            package_path=repo_root
-            / "private/environment-foundation/implementation/riyadh-observation-pilot/staged-prepared.zip",
-            expected_manifest_sha256="175515f785c2ae6cdbbec0303140f6d425ff8e773dc24375a64d02d87ac63ab4",
-            weather_field_path=None,
-            glb_path=repo_root
-            / "private/environment-foundation/implementation/riyadh-observation-pilot/staged-surface.glb",
-            imagery_path=repo_root
-            / "private/environment-foundation/implementation/riyadh-observation-pilot/staged-imagery.json",
-            scenario_template_path=repo_root / "sim/scenarios/riyadh_intercept.json",
-        ),
-        EnvironmentPreset(
-            id="owned-fixture-v1",
-            title="Owned Fixture Verification Environment",
-            description=(
-                "Git-committed owned verification environment with multi-component surface rasters, "
-                "sample buildings/roads, and companion ERA5 pressure-level wind field."
-            ),
-            package_path=repo_root / "testdata/geospatial/owned-fixture-v1/prepared.zip",
-            expected_manifest_sha256="aaf9f14b027749b5d233018606fb90c81e34808b9522e034fc67b5243c966bdc",
-            weather_field_path=repo_root / "testdata/geospatial/owned-fixture-v1/field-era5.json",
-            glb_path=None,
-            imagery_path=None,
-            scenario_template_path=repo_root / "sim/scenarios/fixture_intercept.json",
-        ),
-    ]
-    return [c for c in candidates if c.package_path.is_file() and c.scenario_template_path.is_file()]
+def discover_presets(repo_root: Path = REPO_ROOT) -> list[BiomePreset]:
+    """Discover all verified/staged biomes via the unified ``sim_core`` registry."""
+    return discover_biomes(repo_root)
+
+
+def _auto_template_for_env(preset: BiomePreset, env: EnvironmentModel) -> dict[str, Any]:
+    """Synthesize a physically sensible default intercept scenario for any verified biome."""
+    span_e = env.east_max - env.east_min
+    span_n = env.north_max - env.north_min
+    span = min(span_e, span_n)
+    cx = 0.5 * (env.east_min + env.east_max)
+    cy = 0.5 * (env.north_min + env.north_max)
+    # Place protected site in NE quadrant, ingress from SW across urban/terrain relief
+    pe = cx + 0.25 * span_e
+    pn = cy + 0.25 * span_n
+    se = cx - 0.38 * span_e
+    sn = cy - 0.38 * span_n
+    re_ = pe - 0.08 * span_e
+    rn_ = pn - 0.08 * span_n
+    le = pe - 0.04 * span_e
+    ln_ = pn - 0.04 * span_n
+    max_rng = round(max(6500.0, min(14500.0, span * 0.95)), 0)
+    speed = 110.0 if span > 14000 else 72.0
+    path_len = math.hypot(pe - se, pn - sn)
+    return {
+        "schema": "emad.sim-scenario.v1",
+        "scenarioId": f"{preset.id}-intercept-v1",
+        "title": f"{preset.title.split('(')[0].strip()}: Intercept & Shrapnel Exposure",
+        "description": preset.description,
+        "environmentPackage": str(preset.package_path),
+        "expectedManifestSha256": preset.expected_manifest_sha256,
+        "weatherFieldPath": str(preset.weather_field_path) if preset.weather_field_path else None,
+        "seed": 20261125,
+        "durationS": round(min(280.0, max(110.0, path_len / speed + 35.0)), 1),
+        "dtS": 0.1,
+        "derivedBuildingHeightM": 11.0,
+        "roadExposureBufferM": 14.0,
+        "policy": "earliest",
+        "protectedZoneCenterEnu": [round(pe, 1), round(pn, 1)],
+        "protectedZoneRadiusM": round(min(900.0, max(450.0, span * 0.08)), 0),
+        "safeWindowPreviewFragments": 56,
+        "safeWindowHorizonS": 45.0,
+        "safeWindowStepS": 2.0,
+        "safeWindowBuildingWeight": 5.0,
+        "safeWindowRoadWeight": 2.0,
+        "safeWindowProtectedZoneWeight": 12.0,
+        "atmosphere": {
+            "valid_time": None,
+            "known_at": None,
+            "wind_scale": 1.0,
+            "wind_add_enu_mps": [0.0, 0.0, 0.0],
+            "boundary_layer_alpha": 0.16,
+        },
+        "threat": {
+            "id": f"threat-{preset.id}-01",
+            "kind": "cruise_missile" if span > 14000 else "one_way_uav",
+            "waypoints_enu": [
+                [round(se, 1), round(sn, 1), 65.0],
+                [round(cx - 0.12 * span_e, 1), round(cy - 0.10 * span_n, 1), 110.0],
+                [round(cx + 0.08 * span_e, 1), round(cy + 0.08 * span_n, 1), 165.0],
+                [round(pe, 1), round(pn, 1), 120.0],
+            ],
+            "altitude_mode": "agl",
+            "speed_mps": 220.0 if span > 14000 else speed,
+            "rcs_m2": 0.25,
+            "spawn_s": 0.0,
+            "mass_kg": 48.0,
+        },
+        "radar": {
+            "id": f"radar-{preset.id}-01",
+            "position_enu": [round(re_, 1), round(rn_, 1), 16.0],
+            "max_range_m": max_rng,
+            "min_elevation_deg": -2.0,
+            "max_elevation_deg": 75.0,
+            "period_s": 0.5,
+            "delay_s": 0.35,
+            "range_noise_m": 18.0,
+            "azimuth_noise_deg": 0.45,
+            "elevation_noise_deg": 0.55,
+            "base_detection_prob": 0.94,
+            "dropout_every": 0,
+            "include_buildings_in_los": True,
+        },
+        "interceptorSite": {
+            "id": f"launcher-{preset.id}-01",
+            "position_enu": [round(le, 1), round(ln_, 1), 8.0],
+            "speed_mps": 380.0 if span > 14000 else 295.0,
+            "max_accel_mps2": 145.0,
+            "min_range_m": 400.0,
+            "max_range_m": round(max_rng * 0.9, 0),
+            "launch_delay_s": 1.0,
+            "proximity_fuze_m": 18.0,
+            "protected_radius_m": round(min(900.0, max(450.0, span * 0.08)), 0),
+        },
+        "shrapnel": {
+            "fragment_count": 220,
+            "burst_speed_min_mps": 35.0,
+            "burst_speed_max_mps": 160.0,
+            "momentum_retention": 0.55,
+            "drag_param_min": 0.0025,
+            "drag_param_max": 0.065,
+            "dt_s": 0.1,
+            "max_flight_s": 180.0,
+        },
+    }
 
 
 def _ellipse_ring_wgs84(
@@ -178,7 +239,8 @@ class SimulationService:
         self.runs_root.mkdir(parents=True, exist_ok=True)
         self.public_origin = public_origin.rstrip("/")
 
-        self._presets: dict[str, EnvironmentPreset] = {p.id: p for p in discover_presets(self.repo_root)}
+        self._presets: dict[str, BiomePreset] = {p.id: p for p in discover_presets(self.repo_root)}
+        self._network_store = SensorNetworkStore(self.repo_root / "tmp" / "shared-layouts")
         self._env_cache: dict[str, EnvironmentModel] = {}
         self._env_lock = threading.Lock()
         self._jobs_lock = threading.Lock()
@@ -201,28 +263,45 @@ class SimulationService:
             except Exception:
                 continue
 
-    def _get_env(self, env_id: str) -> tuple[EnvironmentPreset, EnvironmentModel]:
+    def _load_template(self, preset: BiomePreset, env: EnvironmentModel) -> dict[str, Any]:
+        if preset.scenario_template_path and preset.scenario_template_path.is_file():
+            return json.loads(preset.scenario_template_path.read_text(encoding="utf-8"))
+        return _auto_template_for_env(preset, env)
+
+    def _get_env(self, env_id: str) -> tuple[BiomePreset, EnvironmentModel]:
         preset = self._presets.get(env_id)
         if preset is None:
             raise KeyError(f"Unknown environmentId: {env_id}")
         with self._env_lock:
             model = self._env_cache.get(env_id)
             if model is None:
-                tpl = json.loads(preset.scenario_template_path.read_text(encoding="utf-8"))
+                tpl = (
+                    json.loads(preset.scenario_template_path.read_text(encoding="utf-8"))
+                    if (preset.scenario_template_path and preset.scenario_template_path.is_file())
+                    else {}
+                )
                 model = EnvironmentModel(
                     preset.package_path,
                     expected_manifest_sha256=preset.expected_manifest_sha256,
-                    derived_building_height_m=float(tpl.get("derivedBuildingHeightM", 10.0)),
-                    road_buffer_m=float(tpl.get("roadExposureBufferM", 12.0)),
+                    derived_building_height_m=float(tpl.get("derivedBuildingHeightM", 11.0)),
+                    road_buffer_m=float(tpl.get("roadExposureBufferM", 14.0)),
+                    ghs_obat_path=preset.ghs_obat_path,
+                    worldpop_path=preset.worldpop_path,
+                    gebco_path=preset.gebco_path,
                 )
                 self._env_cache[env_id] = model
         return preset, model
 
-    def _preset_summary(self, preset: EnvironmentPreset) -> dict[str, Any]:
+    def _preset_summary(self, preset: BiomePreset) -> dict[str, Any]:
         _, env = self._get_env(preset.id)
-        tpl = json.loads(preset.scenario_template_path.read_text(encoding="utf-8"))
+        tpl = self._load_template(preset, env)
         spec = ScenarioSpec.from_dict(tpl)
-        atm = AtmosphereModel.load(env, external_path=preset.weather_field_path, override=spec.atmosphere)
+        atm = AtmosphereModel.load(
+            env,
+            external_path=preset.weather_field_path,
+            override=spec.atmosphere,
+            cams_dust_path=preset.cams_dust_path,
+        )
 
         # Exact WGS84 bounding box from ENU bounds
         corners_enu = [
@@ -250,11 +329,13 @@ class SimulationService:
         return {
             "id": preset.id,
             "title": preset.title,
+            "biome": preset.biome,
             "description": preset.description,
             "manifestSha256": env.manifest_sha256,
             "profileId": env.manifest.get("profileId"),
             "buildingCount": len(env.buildings),
             "roadCount": len(env.roads),
+            "enrichment": env.metadata().get("enrichment"),
             "hasGlb": bool(preset.glb_path and preset.glb_path.is_file()),
             "hasImagery": bool(preset.imagery_path and preset.imagery_path.is_file()),
             "boundsWgs84": bounds_wgs84,
@@ -269,6 +350,7 @@ class SimulationService:
                 "mode": "compare",
                 "seed": spec.seed,
                 "durationS": spec.duration_s,
+                "enableCivilianTraffic": True,
                 "radar": {
                     "lon": rad_lon,
                     "lat": rad_lat,
@@ -308,6 +390,9 @@ class SimulationService:
     def list_environments(self) -> list[dict[str, Any]]:
         return [self._preset_summary(p) for p in self._presets.values()]
 
+    def list_sensor_networks(self, environment_id: str | None = None) -> list[dict[str, Any]]:
+        return self._network_store.list(environment_id=environment_id)
+
     def health(self) -> dict[str, Any]:
         with self._jobs_lock:
             running = sum(1 for j in self._jobs.values() if j.get("status") == "running")
@@ -343,11 +428,30 @@ class SimulationService:
         imagery = preset.imagery_path if (preset and preset.imagery_path and preset.imagery_path.is_file()) else None
         return run_dir, glb, imagery
 
-    def _build_spec_from_request(self, payload: dict[str, Any]) -> tuple[EnvironmentPreset, EnvironmentModel, ScenarioSpec, str]:
+    def _build_spec_from_request(self, payload: dict[str, Any]) -> tuple[BiomePreset, EnvironmentModel, ScenarioSpec, str]:
         env_id = str(payload.get("environmentId") or next(iter(self._presets)))
         preset, env = self._get_env(env_id)
-        tpl = json.loads(preset.scenario_template_path.read_text(encoding="utf-8"))
+        tpl = self._load_template(preset, env)
         base = ScenarioSpec.from_dict(tpl)
+
+        # Optional: import primary radar from a saved sensor_coverage network handoff!
+        net_id = payload.get("sensorNetworkId")
+        if net_id:
+            net = self._network_store.get(str(net_id))
+            if net and net.get("sensors"):
+                radars = [s for s in net["sensors"] if s.get("type") == "radar"]
+                chosen = radars[0] if radars else net["sensors"][0]
+                if payload.get("forceNetworkImport") or not (payload.get("radar") or {}).get("lon"):
+                    payload = {
+                        **payload,
+                        "radar": {
+                            **(payload.get("radar") or {}),
+                            "lon": chosen["lon"],
+                            "lat": chosen["lat"],
+                            "heightAglM": chosen.get("mastAglM", 15.0),
+                            "maxRangeM": chosen.get("maxRangeM", 9000.0),
+                        },
+                    }
 
         def to_enu_xy(lon: float, lat: float, label: str) -> tuple[float, float]:
             e, n, _ = env.geodetic_to_enu(float(lon), float(lat), env.up_median)
@@ -503,6 +607,7 @@ class SimulationService:
             safe_window_building_weight=base.safe_window_building_weight,
             safe_window_road_weight=base.safe_window_road_weight,
             safe_window_protected_zone_weight=base.safe_window_protected_zone_weight,
+            enable_civilian_traffic=bool(payload.get("enableCivilianTraffic", True)),
         )
         return preset, env, spec, mode
 
@@ -553,7 +658,12 @@ class SimulationService:
                     self._jobs[job_id]["stage"] = stage
 
             try:
-                atm = AtmosphereModel.load(env, external_path=preset.weather_field_path, override=spec.atmosphere)
+                atm = AtmosphereModel.load(
+                    env,
+                    external_path=preset.weather_field_path,
+                    override=spec.atmosphere,
+                    cams_dust_path=preset.cams_dust_path,
+                )
                 if mode == "compare":
                     set_stage("2/4 Scanning terrain-masked radar & running Earliest baseline…")
                     run_earliest = run_simulation(spec.with_policy("earliest"), env=env, atm=atm)
@@ -566,6 +676,8 @@ class SimulationService:
                         ev = r["evaluation"]
                         exp = ev["shrapnelExposure"] or {}
                         fp = ev["shrapnelFootprint"] or {}
+                        ri = ev.get("roadImpact") or {}
+                        ad = ev.get("airspaceDeconfliction") or {}
                         summary_rows[ev["policy"]] = {
                             "intercepted": ev["interception"]["intercepted"],
                             "launchTimeS": ev["interception"].get("launchTimeS"),
@@ -577,10 +689,14 @@ class SimulationService:
                             "protectedZoneHits": exp.get("protectedZoneHits"),
                             "openHits": exp.get("openHits"),
                             "urbanExposureFraction": exp.get("urbanExposureFraction"),
+                            "estimatedPopulationExposed": exp.get("estimatedPopulationExposed"),
                             "hazardousHits": exp.get("hazardousHits"),
                             "hazardousBuildingHits": exp.get("hazardousBuildingHits"),
                             "maxImpactEnergyJ": exp.get("maxImpactEnergyJ"),
                             "driftDistanceM": fp.get("driftDistanceM"),
+                            "blockedRoadKm": ri.get("blockedRoadKm"),
+                            "emergencyDetourDelayS": ri.get("emergencyDetourDelayS"),
+                            "airspaceWarning": ad.get("warningLevel"),
                         }
                     delta = {}
                     e_row, s_row = summary_rows["earliest"], summary_rows["safe_window"]
@@ -626,6 +742,8 @@ class SimulationService:
                         "exposure": primary_ev.get("shrapnelExposure"),
                         "footprint": primary_ev.get("shrapnelFootprint"),
                         "sensing": primary_ev.get("sensing"),
+                        "roadImpact": primary_ev.get("roadImpact"),
+                        "airspaceDeconfliction": primary_ev.get("airspaceDeconfliction"),
                     },
                     "resultOverlay": overlay,
                 }

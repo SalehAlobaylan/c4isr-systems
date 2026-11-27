@@ -11,9 +11,9 @@ gives the *lowest visible target height* in closed form::
 
     floor_up(D) = s + D * max(A(D), tan(min_elevation)) + drop(D)
 
-So a single radial sweep per sensor answers visibility for **every** target
-altitude at once, which is what makes continuous altitude slicing and greedy
-placement optimization cheap.
+Supports optional stand-off EW radar jamming burn-through range attenuation
+(``jammers``) and omnidirectional floor precomputation for fast joint
+(position, sector azimuth) optimization.
 """
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ import math
 
 import numpy as np
 
-from .contracts import SensorSpec, curvature_drop_m, sector_mask
+from .contracts import JammerSpec, SensorSpec, curvature_drop_m, jammer_range_scale, sector_mask
 from .grid import AnalysisGrid, ObstructionGrid
 
 NOT_VISIBLE = np.float32(np.inf)
@@ -42,11 +42,13 @@ def floor_agl_map(
     include_buildings: bool = True,
     radial_step_m: float | None = None,
     azimuth_spacing_m: float | None = None,
+    jammers: list[JammerSpec] | None = None,
+    ignore_sector: bool = False,
 ) -> np.ndarray:
     """Lowest detectable target altitude above ground (m AGL) for every analysis cell.
 
-    Cells outside range, outside the sensor sector, or outside the verified
-    environment are ``inf`` (never detectable).
+    Cells outside effective (possibly jammed) range, outside the sensor sector,
+    or outside the verified environment are ``inf`` (never detectable).
     """
     _, s_up = sensor_site_up(obs, sensor)
     dx = grid.east - sensor.east
@@ -54,7 +56,14 @@ def floor_agl_map(
     dist = np.hypot(dx, dy)
     az = np.mod(np.arctan2(dx, dy), 2.0 * math.pi)
 
-    usable = grid.valid & (dist <= range_m) & sector_mask(az, sensor)
+    if jammers and sensor.type == "radar":
+        eff_range = range_m * jammer_range_scale(sensor, az, jammers)
+        in_range = dist <= eff_range
+    else:
+        in_range = dist <= range_m
+
+    in_sector = np.ones(grid.count, dtype=bool) if ignore_sector else sector_mask(az, sensor)
+    usable = grid.valid & in_range & in_sector
     floor = np.full(grid.count, NOT_VISIBLE, dtype=np.float32)
     if not np.any(usable):
         return floor
@@ -63,7 +72,6 @@ def floor_agl_map(
     clutter = max(0.0, float(sensor.clutter_floor_agl_m))
 
     if not sensor.requires_los:
-        # Acoustic propagation diffracts around terrain/buildings: range-limited only.
         floor[usable] = np.float32(clutter)
         return floor
 
@@ -84,7 +92,6 @@ def floor_agl_map(
     idx = np.nonzero(usable)[0]
     d_t = dist[idx]
     k_az = np.mod(np.rint(az[idx] / (2.0 * math.pi / n_az)).astype(np.int64), n_az)
-    # Only samples strictly before the target (one obstruction cell margin) can occlude it.
     k_r = np.floor((d_t - step) / step).astype(np.int64) - 1
     has_prior = k_r >= 0
     a_t = np.full(len(idx), -np.inf, dtype=np.float64)

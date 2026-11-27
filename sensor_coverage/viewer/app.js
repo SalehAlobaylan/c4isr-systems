@@ -446,6 +446,8 @@ async function main() {
     probes: new THREE.Group(),
     inspectLos: new THREE.Group(),
     candidates: new THREE.Group(),
+    stealth: new THREE.Group(),
+    jammers: new THREE.Group(),
   };
   Object.values(layerGroups).forEach((g) => worldRoot.add(g));
   layerGroups.candidates.visible = false;
@@ -1302,6 +1304,7 @@ async function main() {
     disposeGroup(layerGroups.moves);
     disposeGroup(layerGroups.assets);
     disposeGroup(layerGroups.candidates);
+    disposeGroup(layerGroups.jammers);
     sensorRotors = [];
     staticPickables = [];
     if (coverageDrapeGroup) coverageDrapeGroup.traverse((o) => { if (o.isMesh) staticPickables.push(o); });
@@ -1407,6 +1410,40 @@ async function main() {
       layerGroups.assets.add(ring);
     });
 
+    // Stand-off EW Jammers (amber-crimson radar-jamming emitter + directional lobe)
+    (replay.jammers || []).forEach((j) => {
+      const pos = enuToThree(j.enu);
+      const emitter = new THREE.Mesh(
+        new THREE.OctahedronGeometry(26, 0),
+        new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0x9a3412, roughness: 0.3 })
+      );
+      emitter.position.set(pos.x, pos.y + 12, pos.z);
+      emitter.userData.inspect = {
+        title: `EW Jammer: ${j.label}`,
+        items: [
+          ['ERP J/S Factor', `${j.erpRatio}× @ 3 km`],
+          ['Jammed Cone Width', `${j.beamWidthDeg}°`],
+          ['Altitude AGL', `${j.aglM} m`],
+          ['Coordinates', `${j.lat.toFixed(5)}°, ${j.lon.toFixed(5)}°`],
+        ],
+      };
+      layerGroups.jammers.add(emitter);
+      staticPickables.push(emitter);
+      const jLbl = createLabelSprite(`⚡ ${j.label}`, '#f97316', 360);
+      jLbl.position.set(pos.x, pos.y + 95, pos.z);
+      layerGroups.labels.add(jLbl);
+      // Connect jammer to each radar with an orange-dashed EW jamming beam
+      allSensors.filter((s) => s.type === 'radar' && !disabledSensors.has(s.id)).forEach((rad) => {
+        const rp = enuToThree(rad.enu);
+        const beam = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints([pos, rp]),
+          new THREE.LineDashedMaterial({ color: 0xf97316, dashSize: 60, gapSize: 35, transparent: true, opacity: 0.72 })
+        );
+        beam.computeLineDistances();
+        layerGroups.jammers.add(beam);
+      });
+    });
+
     const cands = replay.optimizer?.candidates || [];
     cands.forEach((c, idx) => {
       const h = 16 + c.gain * 90;
@@ -1466,6 +1503,8 @@ async function main() {
       const tot = Math.max(causes.totalBlindKm2, 0.001);
       const bPct = (causes.buildingBlockedKm2 / tot) * 100;
       const tPct = (causes.terrainBlockedKm2 / tot) * 100;
+      const jKm2 = causes.jammedKm2 || 0;
+      const jPct = (jKm2 / tot) * 100;
       const rPct = (causes.outOfRangeOrSectorKm2 / tot) * 100;
       causeBox.innerHTML = causes.totalBlindKm2 <= 0.001
         ? `<div class="good" style="font-size:11px;">0.00 km² blind area @ ${causes.aglM}m AGL — full coverage achieved.</div>`
@@ -1474,11 +1513,13 @@ async function main() {
           <div class="cause-bar">
             <span style="width:${bPct}%;background:#fbbf24;" title="Buildings"></span>
             <span style="width:${tPct}%;background:#f87171;" title="Terrain"></span>
+            ${jKm2 > 0.001 ? `<span style="width:${jPct}%;background:#f97316;" title="EW Jammed"></span>` : ''}
             <span style="width:${rPct}%;background:#94a3b8;" title="Range / Sector"></span>
           </div>
           <div class="cause-legend">
             <span><span class="dot" style="display:inline-block;background:#fbbf24;margin-right:3px;"></span>Buildings ${causes.buildingBlockedKm2.toFixed(2)} km²</span>
             <span><span class="dot" style="display:inline-block;background:#f87171;margin-right:3px;"></span>Terrain ${causes.terrainBlockedKm2.toFixed(2)} km²</span>
+            ${jKm2 > 0.001 ? `<span><span class="dot" style="display:inline-block;background:#f97316;margin-right:3px;"></span>EW Jammed ${jKm2.toFixed(2)} km²</span>` : ''}
             <span><span class="dot" style="display:inline-block;background:#94a3b8;margin-right:3px;"></span>Range ${causes.outOfRangeOrSectorKm2.toFixed(2)} km²</span>
           </div>`;
     } else {
@@ -1738,6 +1779,9 @@ async function main() {
 
     disabledSensors.clear();
     previewSensors = [];
+    disposeGroup(layerGroups.stealth);
+    document.getElementById('stealth-result-box').style.display = 'none';
+    document.getElementById('export-net-status').textContent = '';
     setDropMode(false);
     clearInspection();
 
@@ -1812,8 +1856,11 @@ async function main() {
     document.getElementById('wi-buildings').checked = draft.includeBuildings ?? newReplay.scenario.include_buildings ?? true;
     document.getElementById('wi-rooftops').checked = draft.optimizer?.allowRooftops ?? true;
     document.getElementById('wi-opt-enabled').checked = draft.optimizer?.enabled ?? true;
+    document.getElementById('wi-jammer').checked = Boolean((draft.jammers || newReplay.jammers || []).length);
     document.getElementById('btn-whatif-run').disabled = !ep.serviceMode;
     document.getElementById('btn-drop-sensor').disabled = !ep.serviceMode;
+    document.getElementById('btn-find-stealth').disabled = !ep.serviceMode;
+    document.getElementById('btn-export-network').disabled = !ep.serviceMode;
 
     syncConfigAndModeButtons();
     buildCoverageMeshShell();
@@ -1978,6 +2025,110 @@ async function main() {
     if (lastLosData) renderLosInspectorPanel(lastLosData);
   };
 
+  // v0.3 A* Adversarial Least-Detection Stealth Path Finder
+  document.getElementById('btn-find-stealth').onclick = async () => {
+    if (!serviceMode || !replay || !decodedGrid) return;
+    const btn = document.getElementById('btn-find-stealth');
+    const box = document.getElementById('stealth-result-box');
+    btn.disabled = true;
+    box.style.display = 'block';
+    box.innerHTML = 'Running A* stealth solver over coverage raster…';
+    try {
+      const { sensors } = getActiveSensorsAndFloors();
+      const asset = (replay.assets || [])[0];
+      const res = await fetch('/api/adversarial-route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          environmentId: replay.environmentId,
+          aglM: sliceAglM,
+          speedMps: 65,
+          gridCellM: decodedGrid.cellM,
+          includeBuildings: replay.scenario?.include_buildings ?? true,
+          rcsM2: replay.threat?.rcsM2 ?? 0.1,
+          visibilityKm: replay.weather?.visibilityKm ?? 10.0,
+          surfaceWindMps: replay.weather?.surfaceWindMps ?? 0.0,
+          assetEnu: asset ? [asset.enu[0], asset.enu[1]] : undefined,
+          jammers: replay.jammers || [],
+          sensors: sensors.map((s) => ({
+            id: s.id,
+            label: s.label,
+            type: s.type,
+            enu: s.enu,
+            mastAglM: s.mastAglM,
+            maxRangeM: s.maxRangeM,
+            minElevationDeg: s.minElevationDeg,
+            clutterFloorAglM: s.clutterFloorAglM,
+            sectorCenterDeg: s.sectorCenterDeg,
+            sectorWidthDeg: s.sectorWidthDeg,
+          })),
+        }),
+      });
+      const route = await res.json();
+      if (!res.ok) throw new Error(route.error || `HTTP ${res.status}`);
+      disposeGroup(layerGroups.stealth);
+      const pts3 = (route.samples || []).map((p) => enuToThree([p[0], p[1], p[2] + 6]));
+      if (pts3.length >= 2) {
+        const tubeCurve = new THREE.CatmullRomCurve3(pts3);
+        const tube = new THREE.Mesh(
+          new THREE.TubeGeometry(tubeCurve, Math.min(180, pts3.length * 2), 14, 6, false),
+          new THREE.MeshBasicMaterial({ color: 0xc084fc, transparent: true, opacity: 0.92 })
+        );
+        layerGroups.stealth.add(tube);
+        const startLbl = createLabelSprite(`🕵 Stealth Ingress (${Math.round(route.stealthFraction * 100)}% blind)`, '#c084fc', 420);
+        startLbl.position.copy(pts3[0]).add(new THREE.Vector3(0, 95, 0));
+        layerGroups.stealth.add(startLbl);
+      }
+      if (route.firstDetectionEnu) {
+        const dp = enuToThree(route.firstDetectionEnu);
+        const m = new THREE.Mesh(new THREE.OctahedronGeometry(30, 0), new THREE.MeshBasicMaterial({ color: 0xf472b6 }));
+        m.position.copy(dp);
+        layerGroups.stealth.add(m);
+      }
+      box.innerHTML =
+        `<strong style="color:#e9d5ff;">Adversarial Corridor @ ${route.aglM}m AGL</strong><br>` +
+        `Unseen: <strong style="color:#f472b6;">${(route.stealthFraction * 100).toFixed(1)}%</strong> · ` +
+        `Warning: <strong style="color:${route.warningTimeS < 15 ? '#f87171' : '#34d399'};">${route.warningTimeS}s</strong> · ` +
+        `Len: ${(route.lengthM / 1000).toFixed(2)} km`;
+      statusEl.textContent = `Stealth corridor discovered: ${(route.stealthFraction * 100).toFixed(0)}% blind, ${route.warningTimeS}s warning.`;
+    } catch (err) {
+      box.innerHTML = `<span style="color:#f87171;">Stealth solver failed: ${err.message}</span>`;
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  // v0.3 Cross-Simulation Sensor Network Export
+  document.getElementById('btn-export-network').onclick = async () => {
+    if (!serviceMode || !replay) return;
+    const st = document.getElementById('export-net-status');
+    st.textContent = 'Exporting active sensor layout…';
+    try {
+      const { cfgName, sensors } = getActiveSensorsAndFloors();
+      const res = await fetch('/api/export-network', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          environmentId: replay.environmentId,
+          jobId: replay.jobId,
+          name: `${compactRunTitle(replay.scenario?.title || replay.environmentId)} (${cfgName})`,
+          sensors,
+        }),
+      });
+      const saved = await res.json();
+      if (!res.ok) throw new Error(saved.error || `HTTP ${res.status}`);
+      st.textContent = `✓ Saved ${saved.layoutId} (${saved.sensorCount} sensors) — ready in Intercept & Salvo!`;
+    } catch (err) {
+      st.textContent = `Export failed: ${err.message}`;
+    }
+  };
+
+  document.getElementById('btn-wi-cams-dust').onclick = () => {
+    document.getElementById('wi-vis').value = '1.5';
+    document.getElementById('wi-wind').value = '14';
+    document.getElementById('wi-status').textContent = 'Applied CAMS dust storm preset (1.5 km vis, 14 m/s wind). Click Re-Run.';
+  };
+
   const layerToggleMap = {
     'tog-coverage': layerGroups.coverage,
     'tog-imagery': layerGroups.imagery,
@@ -2061,6 +2212,24 @@ async function main() {
         minSeparationM: Number(document.getElementById('wi-sep').value),
         allowRooftops: document.getElementById('wi-rooftops').checked,
       };
+      if (document.getElementById('wi-jammer').checked) {
+        if (!baseDraft.jammers || !baseDraft.jammers.length) {
+          const [w, s, e, n] = replay.environment?.boundsWgs84 || [46.7, 24.68, 46.8, 24.75];
+          baseDraft.jammers = [
+            {
+              id: 'jammer-1',
+              label: 'Stand-Off EW Jammer',
+              lon: Number((w + (e - w) * 0.16).toFixed(6)),
+              lat: Number((s + (n - s) * 0.84).toFixed(6)),
+              aglM: 180,
+              erpRatio: 16,
+              beamWidthDeg: 36,
+            },
+          ];
+        }
+      } else {
+        baseDraft.jammers = [];
+      }
       baseDraft.mapLayerAglM = sliceAglM;
 
       await submitAndReloadDraft(baseDraft, status);

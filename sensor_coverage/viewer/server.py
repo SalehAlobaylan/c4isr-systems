@@ -96,6 +96,18 @@ class CoverageRouter:
                 return self._json_response({"environments": self.service.list_environments()})
             if method == "GET" and req_path == "/api/runs":
                 return self._json_response({"runs": self.service.list_runs()})
+            if method == "GET" and req_path == "/api/networks":
+                return self._json_response({"networks": self.service.list_networks()})
+            if method == "POST" and req_path == "/api/export-network":
+                try:
+                    payload = json.loads(body.decode("utf-8") or "{}")
+                    if not isinstance(payload, dict):
+                        raise ValueError("Request body must be a JSON object")
+                    return self._json_response(self.service.export_network(payload), HTTPStatus.CREATED)
+                except (ValueError, KeyError) as exc:
+                    return self._json_response({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                except Exception as exc:
+                    return self._json_response({"error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
             if method == "POST" and req_path == "/api/runs":
                 try:
                     payload = json.loads(body.decode("utf-8") or "{}")
@@ -124,6 +136,16 @@ class CoverageRouter:
                     if not isinstance(payload, dict):
                         raise ValueError("Request body must be a JSON object")
                     return self._json_response(self.service.preview_sensor(payload))
+                except (ValueError, KeyError) as exc:
+                    return self._json_response({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+                except Exception as exc:
+                    return self._json_response({"error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+            if method == "POST" and req_path == "/api/adversarial-route":
+                try:
+                    payload = json.loads(body.decode("utf-8") or "{}")
+                    if not isinstance(payload, dict):
+                        raise ValueError("Request body must be a JSON object")
+                    return self._json_response(self.service.adversarial_route(payload))
                 except (ValueError, KeyError) as exc:
                     return self._json_response({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
                 except Exception as exc:

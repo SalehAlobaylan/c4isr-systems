@@ -47,7 +47,11 @@ function probeServiceHealth(
           if (expectedService) {
             done(parsed.service === expectedService)
           } else {
-            done(parsed.service !== 'emad-sensor-coverage')
+            done(
+              parsed.service !== 'emad-sensor-coverage' &&
+                parsed.service !== 'emad-salvo-defense' &&
+                parsed.service !== 'emad-sim-bench',
+            )
           }
         } catch {
           done(false)
@@ -97,12 +101,16 @@ export default defineConfig(({ mode }) => {
   const apiTarget = process.env.VITE_API_PROXY_TARGET ?? env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080'
   const simTarget = process.env.VITE_SIM_API_TARGET ?? env.VITE_SIM_API_TARGET ?? 'http://127.0.0.1:8765'
   const covTarget = process.env.VITE_COV_API_TARGET ?? env.VITE_COV_API_TARGET ?? 'http://127.0.0.1:8766'
+  const salvoTarget = process.env.VITE_SALVO_API_TARGET ?? env.VITE_SALVO_API_TARGET ?? 'http://127.0.0.1:8767'
+  const benchTarget = process.env.VITE_BENCH_API_TARGET ?? env.VITE_BENCH_API_TARGET ?? 'http://127.0.0.1:8768'
   const target = new URL(apiTarget)
   if (!['http:', 'https:'].includes(target.protocol) || target.username || target.password || target.pathname !== '/' || target.search || target.hash) {
     throw new Error('VITE_API_PROXY_TARGET must be an HTTP(S) origin without credentials, path, query or fragment.')
   }
   const simUrl = new URL(simTarget)
   const covUrl = new URL(covTarget)
+  const salvoUrl = new URL(salvoTarget)
+  const benchUrl = new URL(benchTarget)
 
   const createLocalPythonServicePlugin = (opts: {
     pluginName: string
@@ -366,6 +374,30 @@ export default defineConfig(({ mode }) => {
     apiPrefix: '/cov-api',
     controlPrefix: '/__local/cov',
     expectedService: 'emad-sensor-coverage',
+    autoStart: localAutoEntry && process.env.EMAD_DISABLE_AUTO_SIM !== '1',
+  }),
+  createLocalPythonServicePlugin({
+    pluginName: 'emad-salvo-service',
+    label: 'Salvo defense service',
+    pythonModule: 'salvo_defense',
+    logFileName: 'salvo-service.log',
+    host: salvoUrl.hostname,
+    preferredPort: Number(salvoUrl.port || 8767),
+    apiPrefix: '/salvo-api',
+    controlPrefix: '/__local/salvo',
+    expectedService: 'emad-salvo-defense',
+    autoStart: localAutoEntry && process.env.EMAD_DISABLE_AUTO_SIM !== '1',
+  }),
+  createLocalPythonServicePlugin({
+    pluginName: 'emad-bench-service',
+    label: 'Benchmark & Monte Carlo service',
+    pythonModule: 'sim_bench',
+    logFileName: 'bench-service.log',
+    host: benchUrl.hostname,
+    preferredPort: Number(benchUrl.port || 8768),
+    apiPrefix: '/bench-api',
+    controlPrefix: '/__local/bench',
+    expectedService: 'emad-sim-bench',
     autoStart: localAutoEntry && process.env.EMAD_DISABLE_AUTO_SIM !== '1',
   })],
   resolve: {

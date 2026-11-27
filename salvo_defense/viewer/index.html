@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EMAD 3D Multi-Threat Salvo &amp; Layered Air Defense Workbench</title>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/build/three.module.js",
+        "three/addons/": "/vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #071018;
+      --panel: rgba(11, 20, 30, 0.92);
+      --panel-strong: rgba(15, 27, 40, 0.96);
+      --border: rgba(88, 213, 255, 0.24);
+      --border-soft: rgba(255, 255, 255, 0.08);
+      --text: #e8f2f9;
+      --muted: #8ea6b8;
+      --cyan: #38bdf8;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --red: #f87171;
+      --violet: #c084fc;
+      --magenta: #f472b6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, -apple-system, sans-serif; }
+    #viewport { position: fixed; inset: 0; }
+    body.hud-hidden .hud-panel { opacity: 0; pointer-events: none; transform: translateY(6px); }
+    #hud-restore-pill { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 35; display: none; background: var(--panel-strong); border: 1px solid var(--cyan); color: #fff; border-radius: 99px; padding: 6px 14px; font-size: 12px; cursor: pointer; }
+    body.hud-hidden #hud-restore-pill { display: inline-flex; align-items: center; gap: 6px; }
+
+    #loading-overlay { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 40%, #112233 0%, #071018 70%); }
+    #loading-overlay.hidden { display: none; }
+    .loading-card { width: min(460px, 92vw); background: var(--panel-strong); border: 1px solid var(--border); border-radius: 12px; padding: 22px 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.65); }
+    .loading-card h1 { font-size: 16px; margin-bottom: 6px; color: #fff; }
+    .loading-stage { font-size: 12px; color: var(--cyan); margin: 10px 0 14px; font-family: ui-monospace, Consolas, monospace; }
+    .progress-bar { height: 5px; width: 100%; border-radius: 99px; background: rgba(255,255,255,0.1); overflow: hidden; }
+    .progress-fill { height: 100%; width: 35%; background: linear-gradient(90deg, var(--cyan), var(--green)); border-radius: 99px; animation: pulseSlide 1.4s ease-in-out infinite; }
+    @keyframes pulseSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } }
+
+    .panel { position: fixed; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; backdrop-filter: blur(10px); padding: 10px 12px; font-size: 12px; line-height: 1.4; box-shadow: 0 12px 32px rgba(0,0,0,0.5); transition: opacity 0.2s, transform 0.2s; user-select: none; }
+    .panel.collapsed .panel-body { display: none; }
+    .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+    .panel.collapsed .panel-head { margin-bottom: 0; }
+    .panel h1 { font-size: 13.5px; font-weight: 650; color: #fff; }
+    .panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--cyan); margin: 0; }
+    .subhead { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--cyan); margin: 9px 0 5px; display: flex; align-items: center; justify-content: space-between; }
+    .collapse-btn { background: rgba(255,255,255,0.06); color: var(--muted); border: 1px solid var(--border-soft); border-radius: 5px; width: 22px; height: 22px; font-size: 11px; cursor: pointer; }
+
+    #header { top: 12px; left: 12px; width: 420px; max-width: calc(100vw - 24px); z-index: 12; }
+    .top-bar { display: flex; flex-wrap: nowrap; align-items: center; gap: 5px; min-width: 0; flex: 1; }
+    .nav-btn { display: inline-flex; align-items: center; white-space: nowrap; flex-shrink: 0; background: rgba(56,189,248,0.14); border: 1px solid var(--border); color: var(--cyan); text-decoration: none; border-radius: 6px; height: 24px; padding: 0 8px; font-size: 11px; font-weight: 600; }
+    .run-switcher { background: rgba(255,255,255,0.07); color: var(--text); border: 1px solid var(--border); border-radius: 6px; height: 24px; padding: 0 6px; font-size: 11px; flex: 1 1 auto; min-width: 90px; max-width: 220px; }
+    .run-switcher option { background: #0c1722; }
+    .badge { display: inline-block; padding: 1.5px 6px; border-radius: 99px; font-size: 10px; background: rgba(56,189,248,0.14); border: 1px solid var(--border); color: var(--cyan); margin: 2px 4px 2px 0; }
+    .badge.warn { background: rgba(251,191,36,0.14); border-color: rgba(251,191,36,0.4); color: var(--amber); }
+    .badge.good { background: rgba(52,211,153,0.14); border-color: rgba(52,211,153,0.4); color: var(--green); }
+
+    #left-panel { top: 132px; left: 12px; width: 320px; max-height: calc(100vh - 220px); overflow-y: auto; z-index: 12; }
+    #right-panel { top: 12px; right: 12px; width: 374px; max-height: calc(100vh - 104px); overflow-y: auto; z-index: 12; }
+
+    .btn-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+    button.chip { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; white-space: nowrap; }
+    button.chip:hover { background: rgba(56,189,248,0.18); }
+    button.chip.active { background: rgba(56,189,248,0.28); border-color: var(--cyan); color: #fff; font-weight: 600; }
+    button.chip.good-active { background: rgba(52,211,153,0.26); border-color: var(--green); color: #fff; font-weight: 600; }
+    button.chip.primary { background: linear-gradient(90deg, rgba(56,189,248,0.35), rgba(52,211,153,0.35)); border-color: var(--green); color: #fff; font-weight: 600; }
+
+    .mag-card { background: rgba(255,255,255,0.035); border: 1px solid var(--border-soft); border-radius: 7px; padding: 6px 8px; margin-top: 5px; }
+    .mag-head { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; }
+    .mag-bar { height: 7px; border-radius: 99px; background: rgba(255,255,255,0.1); overflow: hidden; margin: 4px 0 3px; }
+    .mag-fill { height: 100%; border-radius: 99px; transition: width 0.12s; }
+    .mag-meta { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); font-family: ui-monospace, Consolas, monospace; }
+
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 8px; border-bottom: 1px solid var(--border-soft); padding-bottom: 6px; }
+    .tab-btn { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid transparent; color: var(--muted); border-radius: 6px; padding: 5px 6px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .tab-btn.active { background: rgba(56,189,248,0.2); border-color: var(--cyan); color: #fff; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px; }
+    .kpi { background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft); border-radius: 7px; padding: 6px 8px; }
+    .kpi .k { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi .v { font-size: 14px; font-weight: 700; margin-top: 1px; font-family: ui-monospace, Consolas, monospace; }
+    .good { color: var(--green); }
+    .bad { color: var(--red); }
+    .warn { color: var(--amber); }
+    .cyan { color: var(--cyan); }
+
+    .delta-banner { background: linear-gradient(90deg, rgba(52,211,153,0.14), rgba(56,189,248,0.14)); border: 1px solid rgba(52,211,153,0.35); border-radius: 7px; padding: 6px 8px; margin-top: 6px; font-size: 11px; }
+    .layer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 8px; margin-top: 4px; }
+    .layer-toggle { display: flex; align-items: center; gap: 5px; font-size: 11px; cursor: pointer; }
+
+    .track-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 3.5px 6px; border-radius: 5px; background: rgba(255,255,255,0.035); margin-top: 3px; font-size: 10.5px; font-family: ui-monospace, Consolas, monospace; }
+    .event-log { max-height: 150px; overflow-y: auto; font-size: 10.5px; font-family: ui-monospace, Consolas, monospace; }
+    .event-item { padding: 2.5px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+    .wi-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+    .wi-field label { display: block; font-size: 10.5px; color: var(--muted); margin-bottom: 2px; }
+    .wi-field input { width: 100%; background: rgba(255,255,255,0.07); color: #fff; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; font-size: 11.5px; }
+
+    #dock { left: 50%; transform: translateX(-50%); bottom: 12px; width: min(900px, calc(100vw - 24px)); z-index: 12; display: flex; flex-direction: column; gap: 6px; }
+    .dock-row { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .mono { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; color: var(--cyan); }
+  </style>
+</head>
+<body>
+  <div id="viewport"></div>
+  <button id="hud-restore-pill">Show HUD (H)</button>
+
+  <div id="loading-overlay">
+    <div class="loading-card">
+      <h1>EMAD 3D Multi-Threat Salvo &amp; Layered Defense</h1>
+      <p style="font-size:12px;color:#8ea6b8;">Multi-sensor Kalman/GNN track fusion, Bayesian decoy rejection &amp; 3-tier WTA</p>
+      <div class="loading-stage" id="loading-stage">Connecting to local Salvo Defense service…</div>
+      <div class="progress-bar"><div class="progress-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- Top-Left Header -->
+  <div id="header" class="panel hud-panel">
+    <div class="panel-head">
+      <div class="top-bar">
+        <a id="back-to-map" class="nav-btn" href="http://127.0.0.1:5173/map">← 2D Map</a>
+        <select id="run-switcher" class="run-switcher" title="Switch recent salvo runs"></select>
+        <button id="btn-hud-hide" class="chip" style="height:24px;padding:0 6px;font-size:10px;">HUD</button>
+      </div>
+      <button class="collapse-btn" data-target="header">▾</button>
+    </div>
+    <div class="panel-body">
+      <h1 id="scenario-title">Loading Salvo Defense scenario…</h1>
+      <div id="env-badges" style="margin-top:4px;"></div>
+      <div id="status-line" style="font-size:10.5px;color:#8ea6b8;margin-top:3px;">Preparing 3D theater…</div>
+    </div>
+  </div>
+
+  <!-- Left Panel: Policy Switcher, Live Battery Magazines, Layers -->
+  <div id="left-panel" class="panel hud-panel">
+    <div class="panel-head">
+      <h2>Layered Defense &amp; Magazines</h2>
+      <button class="collapse-btn" data-target="left-panel">▾</button>
+    </div>
+    <div class="panel-body">
+      <div class="subhead" style="margin-top:2px;"><span>WTA Engagement Policy</span></div>
+      <div class="btn-row" id="policy-buttons"></div>
+
+      <div class="subhead"><span>Live Battery Magazines</span></div>
+      <div id="magazine-bars"></div>
+
+      <div class="subhead"><span>3D Scene Layers</span></div>
+      <div class="layer-grid">
+        <label class="layer-toggle"><input type="checkbox" id="tog-truth" checked /> Truth Threats</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-obs" checked /> Fused Tracks</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-civil" checked /> Civil Airliners</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-debris" checked /> Shrapnel Rain</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-rings" checked /> Battery Rings</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-buildings" checked /> Buildings</label>
+        <label class="layer-toggle"><input type="checkbox" id="tog-imagery" checked /> Sentinel-2</label>
+      </div>
+
+      <div class="subhead"><span>Threat Color Key</span></div>
+      <div style="font-size:10.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px;">
+        <span style="color:#ff3b5c;">● Ballistic</span>
+        <span style="color:#fb923c;">● Cruise</span>
+        <span style="color:#f472b6;">● UAV Swarm</span>
+        <span style="color:#fde047;">● Decoy</span>
+        <span style="color:#7dd3fc;">● Civil Airliner</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Panel: Telemetry, Fused Tracks (OBSERVATION), What-If -->
+  <div id="right-panel" class="panel hud-panel">
+    <div class="panel-head">
+      <h2>Salvo Evaluation &amp; Fusion</h2>
+      <button class="collapse-btn" data-target="right-panel">▾</button>
+    </div>
+    <div class="panel-body">
+      <div class="tab-bar">
+        <button class="tab-btn active" data-tab="score">Scorecard</button>
+        <button class="tab-btn" data-tab="tracks">Fused COP</button>
+        <button class="tab-btn" data-tab="whatif">⚡ What-If</button>
+      </div>
+
+      <div id="tab-score" class="tab-pane active">
+        <div class="kpi-grid" id="kpi-grid"></div>
+        <div id="delta-banner"></div>
+        <div class="subhead"><span>Policy Comparison Table</span></div>
+        <div id="policy-table" style="font-size:10.5px;font-family:ui-monospace,Consolas,monospace;"></div>
+        <div class="subhead"><span>Live Engagement Timeline</span></div>
+        <div id="event-log" class="event-log"></div>
+      </div>
+
+      <div id="tab-tracks" class="tab-pane">
+        <p style="font-size:10.5px;color:var(--muted);margin-bottom:5px;">
+          Strictly <strong>EXERCISE_OBSERVATION</strong> fused Kalman tracks &amp; Bayesian class probabilities (no truth leakage).
+        </p>
+        <div id="track-list"></div>
+      </div>
+
+      <div id="tab-whatif" class="tab-pane">
+        <p style="font-size:10.5px;color:var(--muted);margin-bottom:7px;">
+          Adjust raid composition or visibility and re-run Greedy vs Combinatorial WTA live.
+        </p>
+        <div class="wi-row2">
+          <div class="wi-field"><label>RF Decoys</label><input id="wi-decoys" type="number" min="0" max="12" value="3" /></div>
+          <div class="wi-field"><label>UAV Swarm</label><input id="wi-uavs" type="number" min="0" max="16" value="5" /></div>
+        </div>
+        <div class="wi-row2">
+          <div class="wi-field"><label>Cruise Missiles</label><input id="wi-cruise" type="number" min="0" max="10" value="2" /></div>
+          <div class="wi-field"><label>Ballistic Missiles</label><input id="wi-ballistic" type="number" min="0" max="6" value="1" /></div>
+        </div>
+        <div class="wi-row2">
+          <div class="wi-field"><label>Visibility (km · EO/IR)</label><input id="wi-vis" type="number" min="0.5" max="30" step="0.5" value="10" /></div>
+          <div class="wi-field"><label>Seed</label><input id="wi-seed" type="number" value="20261127" /></div>
+        </div>
+        <button id="btn-whatif-run" class="chip primary" style="width:100%;padding:7px;">⚡ Re-Run Salvo &amp; Reload 3D</button>
+        <div id="wi-status" style="font-size:11px;color:var(--cyan);margin-top:6px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Playback & Camera Dock -->
+  <div id="dock" class="panel hud-panel">
+    <div class="dock-row">
+      <button id="btn-play" class="chip active">⏸ Pause</button>
+      <input id="time-slider" type="range" min="0" max="115" step="0.25" value="0" style="flex:1;min-width:140px;" />
+      <span id="time-readout" class="mono">t = 0.0s</span>
+      <select id="speed-select" class="run-switcher" style="flex:0 0 64px;max-width:64px;">
+        <option value="0.5">0.5×</option>
+        <option value="1" selected>1×</option>
+        <option value="2">2×</option>
+        <option value="4">4×</option>
+      </select>
+    </div>
+    <div class="dock-row">
+      <button class="chip" data-cam="overview">1 Overview</button>
+      <button class="chip" data-cam="top">2 Top-Down</button>
+      <button class="chip" data-cam="hub">3 Command Hub</button>
+      <button class="chip" data-cam="ingress">4 Raid Ingress</button>
+      <span style="margin-left:auto;font-size:10px;color:var(--muted);">Space Play · 1-4 Cam · WASDQE Fly · H HUD</span>
+    </div>
+  </div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

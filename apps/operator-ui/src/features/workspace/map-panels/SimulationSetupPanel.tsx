@@ -8,11 +8,13 @@ import {
   draftFromEnvironment,
   fetchSimEnvironments,
   fetchSimHealth,
+  fetchSimNetworks,
   fetchSimRun,
   fetchSimRuns,
   isPointInEnvBounds,
   startLocalSimService,
   startSimRun,
+  type SharedSensorNetwork,
   type SimEnvironment,
   type SimHealth,
   type SimPlacementTool,
@@ -73,6 +75,7 @@ export function SimulationSetupPanel({
   const [error, setError] = useState('')
   const [defaultWaypointAgl, setDefaultWaypointAgl] = useState(140)
   const [activePreset, setActivePreset] = useState<SimTacticalPresetId>('default_uav')
+  const [networks, setNetworks] = useState<SharedSensorNetwork[]>([])
   const hasFittedInitial = useRef(false)
 
   const selectedEnv = useMemo(
@@ -84,24 +87,24 @@ export function SimulationSetupPanel({
     setLoading(true)
     setError('')
     try {
-      const [h, envList, runList] = await Promise.all([
+      const [h, envList, runList, netList] = await Promise.all([
         fetchSimHealth(),
         fetchSimEnvironments(),
         fetchSimRuns(),
+        fetchSimNetworks().catch(() => [] as SharedSensorNetwork[]),
       ])
       setHealth(h)
       setEnvs(envList)
       setRuns(runList)
+      setNetworks(netList)
       if (envList.length > 0) {
-        setDraft((prev) => {
-          if (prev && envList.some((e) => e.id === prev.environmentId)) return prev
-          const initial = draftFromEnvironment(envList[0])
-          if (fitOnFirstLoad && !hasFittedInitial.current) {
-            hasFittedInitial.current = true
-            onFitBounds(envList[0].boundsWgs84)
-          }
-          return initial
-        })
+        if (fitOnFirstLoad && !hasFittedInitial.current) {
+          hasFittedInitial.current = true
+          onFitBounds(envList[0].boundsWgs84)
+        }
+        setDraft((prev) =>
+          prev && envList.some((e) => e.id === prev.environmentId) ? prev : draftFromEnvironment(envList[0]),
+        )
       }
       if (runList.length > 0 && !activeJob) {
         setActiveJob(runList[0])
@@ -457,6 +460,48 @@ export function SimulationSetupPanel({
                 ))}
               </div>
             </div>
+
+            {networks.filter((n) => n.environmentId === draft.environmentId).length > 0 && (
+              <div className="pt-2 border-t border-edge space-y-1">
+                <span className="text-xs font-medium">Import Sensor Network (from Coverage)</span>
+                <select
+                  className="atlas-field"
+                  value={draft.sensorNetworkId ?? ''}
+                  onChange={(e) => {
+                    const id = e.target.value
+                    const net = networks.find((x) => x.layoutId === id)
+                    if (!net) {
+                      setDraft({ ...draft, sensorNetworkId: undefined })
+                      return
+                    }
+                    const rad = net.sensors.find((s) => s.type === 'radar') ?? net.sensors[0]
+                    if (rad) {
+                      setDraft({
+                        ...draft,
+                        sensorNetworkId: net.layoutId,
+                        radar: {
+                          ...draft.radar,
+                          lon: rad.lon,
+                          lat: rad.lat,
+                          heightAglM: rad.mastAglM ?? draft.radar.heightAglM,
+                          maxRangeM: rad.maxRangeM ?? draft.radar.maxRangeM,
+                        },
+                      })
+                      onNotice(`Imported radar site from "${net.name}" (${net.sensorCount} sensors).`)
+                    }
+                  }}
+                >
+                  <option value="">— Use manual / default radar site —</option>
+                  {networks
+                    .filter((n) => n.environmentId === draft.environmentId)
+                    .map((n) => (
+                      <option key={n.layoutId} value={n.layoutId}>
+                        {n.name} ({n.sensorCount} sensors)
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -947,6 +992,14 @@ export function SimulationSetupPanel({
             <label className="flex items-center gap-2 text-xs">
               <input
                 type="checkbox"
+                checked={draft.enableCivilianTraffic ?? true}
+                onChange={(e) => setDraft({ ...draft, enableCivilianTraffic: e.target.checked })}
+              />
+              <span>Freeze civilian airliner traffic (1.5 km airspace deconfliction)</span>
+            </label>
+            <label className="flex items-center gap-2 text-xs">
+              <input
+                type="checkbox"
                 checked={autoOpen3D}
                 onChange={(e) => setAutoOpen3D(e.target.checked)}
               />
@@ -1036,6 +1089,22 @@ export function SimulationSetupPanel({
                     /{activeJob.summary.exposure.total}
                     {activeJob.summary.exposure.maxImpactEnergyJ != null
                       ? ` · Peak ${Math.round(activeJob.summary.exposure.maxImpactEnergyJ).toLocaleString()} J`
+                      : ''}
+                  </p>
+                )}
+                {activeJob.summary?.exposure?.estimatedPopulationExposed != null && (
+                  <p className="ux-muted font-mono text-[11px]">
+                    WorldPop exposed: <strong>~{activeJob.summary.exposure.estimatedPopulationExposed.toFixed(1)}</strong> residents
+                    {activeJob.summary.roadImpact
+                      ? ` · Blocked roads ${activeJob.summary.roadImpact.blockedRoadKm.toFixed(2)} km (+${activeJob.summary.roadImpact.emergencyDetourDelayS.toFixed(0)}s detour)`
+                      : ''}
+                  </p>
+                )}
+                {activeJob.summary?.airspaceDeconfliction && (
+                  <p className="ux-muted font-mono text-[11px]">
+                    Civil Airspace: <strong>{activeJob.summary.airspaceDeconfliction.warningLevel}</strong>
+                    {activeJob.summary.airspaceDeconfliction.closestCallsign
+                      ? ` (closest ${activeJob.summary.airspaceDeconfliction.closestCallsign} @ ${Math.round(activeJob.summary.airspaceDeconfliction.minHorizontalSeparationM ?? 0)}m)`
                       : ''}
                   </p>
                 )}

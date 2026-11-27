@@ -356,7 +356,9 @@ def simulate_shrapnel_cloud(
         wind = np.column_stack((we, wn, wu))
         v_rel = v_act - wind
         v_rel_mag = np.linalg.norm(v_rel, axis=1)
-        drag = -(rho * k_act * v_rel_mag)[:, None] * v_rel
+        # Clamp explicit RK2 drag rate to preserve unconditional numerical stability at supersonic burst speeds
+        drag_rate = np.minimum(rho * k_act * v_rel_mag, 0.85 / max(dt, 1e-4))
+        drag = -drag_rate[:, None] * v_rel
         return gravity[None, :] + drag
 
     for step in range(1, max_steps + 1):

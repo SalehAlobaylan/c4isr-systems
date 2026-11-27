@@ -20,12 +20,13 @@ from typing import Any
 import numpy as np
 import shapely
 
-from sim.atmosphere import AtmosphereModel
+from sim_core.atmosphere import AtmosphereModel, load_cams_dust
+from sim_core.environment import EnvironmentModel
+from sim_core.handoff import SensorNetworkStore
+from sim_core.registry import BiomePreset, discover_biomes
 from sim.contracts import ScenarioSpec
-from sim.environment import EnvironmentModel
-from sim.service import EnvironmentPreset, discover_presets
 
-from .analysis import blind_polygons_enu, coverage_counts, los_cross_section
+from .analysis import blind_polygons_enu, coverage_counts, find_adversarial_route, los_cross_section
 from .contracts import (
     COV_ENGINE_VERSION,
     DEFAULT_LAYERS,
@@ -33,6 +34,7 @@ from .contracts import (
     SENSOR_TYPES,
     AssetSpec,
     CoverageScenario,
+    JammerSpec,
     LayerSpec,
     OptimizerSpec,
     RouteSpec,
@@ -75,7 +77,8 @@ class CoverageService:
         self.runs_root = Path(runs_root).resolve()
         self.runs_root.mkdir(parents=True, exist_ok=True)
         self.public_origin = public_origin.rstrip("/")
-        self._presets: dict[str, EnvironmentPreset] = {p.id: p for p in discover_presets(self.repo_root)}
+        self._presets: dict[str, BiomePreset] = {p.id: p for p in discover_biomes(self.repo_root)}
+        self._network_store = SensorNetworkStore(self.repo_root / "tmp" / "shared-layouts")
         self._env_cache: dict[str, EnvironmentModel] = {}
         self._obs_cache: dict[str, ObstructionGrid] = {}
         self._wind_cache: dict[str, tuple[float, str]] = {}
@@ -101,10 +104,12 @@ class CoverageService:
                 continue
 
     # -- environment ------------------------------------------------------
-    def _template(self, preset: EnvironmentPreset) -> dict[str, Any]:
-        return json.loads(preset.scenario_template_path.read_text(encoding="utf-8"))
+    def _template(self, preset: BiomePreset) -> dict[str, Any]:
+        if preset.scenario_template_path and preset.scenario_template_path.is_file():
+            return json.loads(preset.scenario_template_path.read_text(encoding="utf-8"))
+        return {}
 
-    def _get_env(self, env_id: str) -> tuple[EnvironmentPreset, EnvironmentModel, ObstructionGrid]:
+    def _get_env(self, env_id: str) -> tuple[BiomePreset, EnvironmentModel, ObstructionGrid]:
         preset = self._presets.get(env_id)
         if preset is None:
             raise KeyError(f"Unknown environmentId: {env_id}")
@@ -115,26 +120,36 @@ class CoverageService:
                 env = EnvironmentModel(
                     preset.package_path,
                     expected_manifest_sha256=preset.expected_manifest_sha256,
-                    derived_building_height_m=float(tpl.get("derivedBuildingHeightM", 10.0)),
-                    road_buffer_m=float(tpl.get("roadExposureBufferM", 12.0)),
+                    derived_building_height_m=float(tpl.get("derivedBuildingHeightM", 11.0)),
+                    road_buffer_m=float(tpl.get("roadExposureBufferM", 14.0)),
+                    ghs_obat_path=preset.ghs_obat_path,
+                    worldpop_path=preset.worldpop_path,
+                    gebco_path=preset.gebco_path,
                 )
                 self._env_cache[env_id] = env
             obs = self._obs_cache.get(env_id)
             if obs is None:
-                obs = ObstructionGrid(env)
+                obs = env.obstruction_grid()
                 self._obs_cache[env_id] = obs
         return preset, env, obs
 
-    def _era5_surface_wind(self, preset: EnvironmentPreset, env: EnvironmentModel) -> tuple[float, str]:
+    def _era5_surface_wind(self, preset: BiomePreset, env: EnvironmentModel) -> tuple[float, str]:
         cached = self._wind_cache.get(preset.id)
         if cached is not None:
             return cached
         try:
-            spec = ScenarioSpec.from_dict(self._template(preset))
-            atm = AtmosphereModel.load(env, external_path=preset.weather_field_path, override=spec.atmosphere)
+            tpl = self._template(preset)
+            ov = ScenarioSpec.from_dict(tpl).atmosphere if tpl else None
+            atm = AtmosphereModel.load(
+                env,
+                external_path=preset.weather_field_path,
+                override=ov,
+                cams_dust_path=preset.cams_dust_path,
+            )
             prof = atm.profile_summary(0.0, 0.0)
             speed = float(prof[0]["speedMps"]) if prof else 0.0
-            src = f"ERA5 {atm.valid_time or ''} · {prof[0]['altitudeAglM']:.0f} m AGL at origin".strip()
+            ed = atm.document.get("edition") or "ERA5"
+            src = f"{ed} {atm.valid_time or ''} · {prof[0]['altitudeAglM']:.0f} m AGL at origin".strip()
         except Exception:
             speed, src = 0.0, "ERA5 unavailable — calm assumed"
         self._wind_cache[preset.id] = (round(speed, 2), src)
@@ -144,10 +159,12 @@ class CoverageService:
         lon, lat, _ = env.enu_to_geodetic(float(e), float(n), env.up_median)
         return [round(lon, 6), round(lat, 6)]
 
-    def _default_draft(self, preset: EnvironmentPreset, env: EnvironmentModel) -> dict[str, Any]:
+    def _default_draft(self, preset: BiomePreset, env: EnvironmentModel) -> dict[str, Any]:
         tpl = self._template(preset)
         span_e = env.east_max - env.east_min
         span_n = env.north_max - env.north_min
+        cx = 0.5 * (env.east_min + env.east_max)
+        cy = 0.5 * (env.north_min + env.north_max)
 
         def clamp_en(e: float, n: float) -> tuple[float, float]:
             pad = 0.06 * min(span_e, span_n)
@@ -157,10 +174,13 @@ class CoverageService:
             )
 
         wps = (tpl.get("threat") or {}).get("waypoints_enu") or []
-        p_center = tpl.get("protectedZoneCenterEnu") or (wps[-1][:2] if wps else [0.0, 0.0])
+        p_center = tpl.get("protectedZoneCenterEnu") or (
+            wps[-1][:2] if wps else [cx + 0.18 * span_e, cy + 0.18 * span_n]
+        )
         pe, pn = clamp_en(float(p_center[0]), float(p_center[1]))
-        radar_pos = (tpl.get("radar") or {}).get("position_enu") or [pe - 300.0, pn - 300.0, 15.0]
+        radar_pos = (tpl.get("radar") or {}).get("position_enu") or [pe - 0.06 * span_e, pn - 0.06 * span_n, 15.0]
         re_, rn_ = clamp_en(float(radar_pos[0]), float(radar_pos[1]))
+        radar_range = round(max(9000.0, min(22000.0, min(span_e, span_n) * 0.72)), 0)
 
         def sensor(sid: str, stype: str, e: float, n: float, label: str) -> dict[str, Any]:
             d = SENSOR_DEFAULTS[stype]
@@ -173,7 +193,7 @@ class CoverageService:
                 "lon": lon,
                 "lat": lat,
                 "mastAglM": d["mastAglM"],
-                "maxRangeM": d["maxRangeM"],
+                "maxRangeM": radar_range if stype == "radar" else d["maxRangeM"],
                 "minElevationDeg": d["minElevationDeg"],
                 "clutterFloorAglM": d["clutterFloorAglM"],
                 "sectorCenterDeg": 0.0,
@@ -250,7 +270,9 @@ class CoverageService:
                 "swapPasses": 2,
                 "redundancyWeight": 0.15,
                 "routeWeight": 2.5,
+                "optimizeOrientation": True,
             },
+            "jammers": [],
             "includeBuildings": True,
             "mapLayerAglM": DEFAULT_LAYERS[0]["aglM"],
         }
@@ -268,21 +290,24 @@ class CoverageService:
         for preset in self._presets.values():
             _, env, obs = self._get_env(preset.id)
             wind, wind_src = self._era5_surface_wind(preset, env)
+            cams = load_cams_dust(preset.cams_dust_path)
             out.append(
                 {
                     "id": preset.id,
                     "title": preset.title,
+                    "biome": preset.biome,
                     "description": preset.description,
                     "manifestSha256": env.manifest_sha256,
                     "buildingCount": len(env.buildings),
                     "roadCount": len(env.roads),
+                    "enrichment": env.metadata().get("enrichment"),
                     "hasGlb": bool(preset.glb_path and preset.glb_path.is_file()),
                     "hasImagery": bool(preset.imagery_path and preset.imagery_path.is_file()),
                     "boundsWgs84": self._bounds_wgs84(env),
                     "origin": list(env.origin),
                     "terrainRangeM": [round(env.up_min, 1), round(env.up_max, 1)],
                     "obstructionGrid": obs.metadata(),
-                    "weather": {"surfaceWindMps": wind, "source": wind_src},
+                    "weather": {"surfaceWindMps": wind, "source": wind_src, "camsDust": cams},
                     "sensorDefaults": SENSOR_DEFAULTS,
                     "defaults": self._default_draft(preset, env),
                 }
@@ -297,7 +322,16 @@ class CoverageService:
             "status": "ok",
             "service": "emad-sensor-coverage",
             "engineVersion": COV_ENGINE_VERSION,
-            "capabilities": ["los-profile", "preview-sensor", "blind-causes", "altitude-curve"],
+            "capabilities": [
+                "los-profile",
+                "preview-sensor",
+                "blind-causes",
+                "altitude-curve",
+                "adversarial-route",
+                "ew-jamming",
+                "orientation-opt",
+                "export-network",
+            ],
             "viewerOrigin": self.public_origin,
             "environmentCount": len(self._presets),
             "runningJobs": running,
@@ -325,7 +359,7 @@ class CoverageService:
         return self.runs_root / job_id, glb, imagery
 
     # -- request parsing -------------------------------------------------
-    def build_scenario(self, payload: dict[str, Any]) -> tuple[EnvironmentPreset, EnvironmentModel, ObstructionGrid, CoverageScenario]:
+    def build_scenario(self, payload: dict[str, Any]) -> tuple[BiomePreset, EnvironmentModel, ObstructionGrid, CoverageScenario]:
         if not self._presets:
             raise ValueError("No verified environments are available on this machine.")
         env_id = str(payload.get("environmentId") or next(iter(self._presets)))
@@ -425,6 +459,23 @@ class CoverageService:
             raise ValueError(f"Unsupported extra sensor type: {extra_type}")
         spacing = opt_in.get("candidateSpacingM")
 
+        jammers = []
+        for k, j in enumerate(payload.get("jammers") or []):
+            if not isinstance(j, dict):
+                continue
+            je, jn = to_en(j.get("lon"), j.get("lat"), f"Jammer {k + 1}")
+            jammers.append(
+                JammerSpec(
+                    id=str(j.get("id") or f"jammer-{k + 1}")[:32],
+                    east=je,
+                    north=jn,
+                    agl_m=_clampf(j.get("aglM"), 10.0, 6000.0, 150.0),
+                    erp_ratio=_clampf(j.get("erpRatio"), 0.5, 200.0, 14.0),
+                    beam_width_deg=_clampf(j.get("beamWidthDeg"), 8.0, 180.0, 34.0),
+                    label=str(j.get("label") or f"EW Jammer {k + 1}")[:60],
+                )
+            )
+
         scenario = CoverageScenario(
             scenario_id=f"{preset.id}-coverage",
             title=str(payload.get("title") or f"{preset.title} — Sensor Coverage")[:120],
@@ -451,9 +502,11 @@ class CoverageService:
                 redundancy_weight=_clampf(opt_in.get("redundancyWeight"), 0.0, 1.0, 0.15),
                 route_weight=_clampf(opt_in.get("routeWeight"), 1.0, 10.0, 2.5),
                 swap_passes=int(_clampf(opt_in.get("swapPasses"), 0, 5, 2)),
+                optimize_orientation=bool(opt_in.get("optimizeOrientation", True)),
             ),
             include_buildings=bool(payload.get("includeBuildings", True)),
             analysis_cell_m=_clampf(payload.get("analysisCellM"), 20.0, 500.0, 60.0) if payload.get("analysisCellM") else None,
+            jammers=jammers,
         )
         return preset, env, obs, scenario
 
@@ -680,6 +733,7 @@ class CoverageService:
             threat=threat,
             weather=weather,
             include_buildings=include_buildings,
+            jammers=self._parse_inline_jammers(env, payload.get("jammers")),
         )
 
     def preview_sensor(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -745,3 +799,131 @@ class CoverageService:
             "gridNy": grid.ny,
             "floorB64": base64.b64encode(np.ascontiguousarray(encode_floor_u16(floor)).tobytes()).decode("ascii"),
         }
+
+    def _parse_inline_jammers(self, env: EnvironmentModel, raw_list: Any) -> list[JammerSpec]:
+        jammers: list[JammerSpec] = []
+        for k, j in enumerate((raw_list or [])[:8]):
+            if not isinstance(j, dict):
+                continue
+            enu = j.get("enu")
+            if isinstance(enu, list) and len(enu) >= 2:
+                je, jn = float(enu[0]), float(enu[1])
+            elif j.get("lon") is not None and j.get("lat") is not None:
+                je, jn, _ = env.geodetic_to_enu(float(j["lon"]), float(j["lat"]), env.up_median)
+            else:
+                continue
+            jammers.append(
+                JammerSpec(
+                    id=str(j.get("id") or f"jammer-{k + 1}"),
+                    east=je,
+                    north=jn,
+                    agl_m=_clampf(j.get("aglM"), 10.0, 6000.0, 150.0),
+                    erp_ratio=_clampf(j.get("erpRatio"), 0.5, 200.0, 14.0),
+                    beam_width_deg=_clampf(j.get("beamWidthDeg"), 8.0, 180.0, 34.0),
+                    label=str(j.get("label") or f"EW Jammer {k + 1}"),
+                )
+            )
+        return jammers
+
+    def adversarial_route(self, payload: dict[str, Any]) -> dict[str, Any]:
+        """Find the worst-case least-detection A* stealth corridor to a defended asset (~15-45 ms)."""
+        env_id = str(payload.get("environmentId") or next(iter(self._presets)))
+        _, env, obs = self._get_env(env_id)
+
+        grid_cell_m = _clampf(payload.get("gridCellM"), 20.0, 500.0, 80.0) if payload.get("gridCellM") else None
+        grid = AnalysisGrid.build(obs, cell_m=grid_cell_m)
+        include_buildings = bool(payload.get("includeBuildings", True))
+        agl_m = _clampf(payload.get("aglM"), 10.0, 2000.0, 35.0)
+        speed_mps = _clampf(payload.get("speedMps"), 10.0, 800.0, 65.0)
+        start_edge = str(payload.get("startEdge") or "any").lower()
+        if start_edge not in ("any", "north", "south", "east", "west"):
+            start_edge = "any"
+
+        threat = ThreatSpec(rcs_m2=_clampf(payload.get("rcsM2"), 0.001, 50.0, 0.1))
+        weather = WeatherSpec(
+            visibility_km=_clampf(payload.get("visibilityKm"), 0.2, 50.0, 10.0),
+            surface_wind_mps=_clampf(payload.get("surfaceWindMps"), 0.0, 40.0, 0.0),
+        )
+        jammers = self._parse_inline_jammers(env, payload.get("jammers"))
+
+        asset_enu = payload.get("assetEnu")
+        if isinstance(asset_enu, list) and len(asset_enu) >= 2:
+            ae, an = float(asset_enu[0]), float(asset_enu[1])
+        elif payload.get("assetLon") is not None and payload.get("assetLat") is not None:
+            ae, an, _ = env.geodetic_to_enu(float(payload["assetLon"]), float(payload["assetLat"]), env.up_median)
+        else:
+            ae = 0.5 * (env.east_min + env.east_max)
+            an = 0.5 * (env.north_min + env.north_max)
+
+        sensors_in = payload.get("sensors") or []
+        floors_list = []
+        sensor_ids = []
+        for k, s in enumerate(sensors_in[:20]):
+            stype = str(s.get("type", "radar"))
+            if stype not in SENSOR_TYPES:
+                continue
+            d = SENSOR_DEFAULTS[stype]
+            enu = s.get("enu")
+            if isinstance(enu, list) and len(enu) >= 2:
+                se, sn = float(enu[0]), float(enu[1])
+            else:
+                se, sn, _ = env.geodetic_to_enu(float(s["lon"]), float(s["lat"]), env.up_median)
+            spec = SensorSpec(
+                id=str(s.get("id") or f"{stype}-{k + 1}"),
+                type=stype,
+                east=se,
+                north=sn,
+                mast_agl_m=_clampf(s.get("mastAglM"), 1.0, 120.0, d["mastAglM"]),
+                max_range_m=_clampf(s.get("maxRangeM"), 200.0, 40000.0, d["maxRangeM"]),
+                min_elevation_deg=_clampf(s.get("minElevationDeg"), -90.0, 30.0, d["minElevationDeg"]),
+                clutter_floor_agl_m=_clampf(s.get("clutterFloorAglM"), 0.0, 500.0, d["clutterFloorAglM"]),
+                sector_center_deg=_clampf(s.get("sectorCenterDeg"), -360.0, 360.0, 0.0) % 360.0,
+                sector_width_deg=_clampf(s.get("sectorWidthDeg"), 10.0, 360.0, 360.0),
+                label=str(s.get("label") or s.get("id") or f"{stype}-{k + 1}"),
+            )
+            rng = effective_range_m(spec, threat, weather)
+            floors_list.append(
+                floor_agl_map(obs, grid, spec, rng, include_buildings=include_buildings, jammers=jammers)
+            )
+            sensor_ids.append(spec.id)
+
+        floors = np.stack(floors_list) if floors_list else np.zeros((0, grid.count), dtype=np.float32)
+        return find_adversarial_route(
+            obs=obs,
+            grid=grid,
+            floors=floors,
+            sensor_ids=sensor_ids,
+            asset_east=ae,
+            asset_north=an,
+            agl_m=agl_m,
+            speed_mps=speed_mps,
+            start_edge=start_edge,
+        )
+
+    # -- Cross-simulation sensor-network handoff --------------------------
+    def export_network(self, payload: dict[str, Any]) -> dict[str, Any]:
+        env_id = str(payload.get("environmentId") or next(iter(self._presets)))
+        _, env, _ = self._get_env(env_id)
+        sensors = payload.get("sensors") or []
+        job_id = payload.get("jobId")
+        if not sensors and job_id:
+            assets = self.run_assets(str(job_id))
+            if assets:
+                rp = assets[0] / "replay.json"
+                if rp.is_file():
+                    rep = json.loads(rp.read_text(encoding="utf-8"))
+                    cfg = rep["configs"].get("optimized") or rep["configs"].get("baseline")
+                    sensors = cfg["sensors"] if cfg else []
+        if not sensors:
+            raise ValueError("Provide sensors or a completed jobId to export a sensor network.")
+        return self._network_store.save(
+            name=str(payload.get("name") or f"{env_id} optimized sensor network"),
+            environment_id=env_id,
+            manifest_sha256=env.manifest_sha256,
+            sensors=sensors,
+            source_job_id=str(job_id) if job_id else None,
+            metrics=payload.get("metrics"),
+        )
+
+    def list_networks(self, environment_id: str | None = None) -> list[dict[str, Any]]:
+        return self._network_store.list(environment_id=environment_id)

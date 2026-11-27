@@ -1,7 +1,7 @@
 # EMAD Full 3D Simulation & AI Evaluation Platform — Architecture & Implementation Plan
 
 **Date:** 27 November 2026  
-**Status:** Proposed design & phased execution plan  
+**Status:** Delivered & Verified (Phases 0–7 Complete)  
 **Companion plans:** [Simulation Directions & Infrastructure](SIMULATION_DIRECTIONS_AND_INFRASTRUCTURE.md) · [Environment & 3D Progress](IMPLEMENTATION_PROGRESS.md) · [Architecture & Direction v2](../EMAD_ARCHITECTURE_AND_DIRECTION_v2.md)
 
 ---
@@ -200,3 +200,23 @@ An audit of `private/` and `internal/` confirms major inputs are already retaine
 | **Live OpenSky rate limits / offline runs** | `sim_core/traffic.py` reads EMAD's local Go `/api/v1/external-tracks` cache first, supports retained JSON snapshots, and provides deterministic Saudi air-corridor fallback fixtures so tests & offline demos always work. |
 | **Four-partition truth leakage into AI/WTA policies** | Enforce structural separation: `SalvoRLEnv` and `wta.py` accept ONLY `TrackPicture` built from `EXERCISE_OBSERVATION` (HMAC-opaque contact IDs); dedicated unit tests assert `EXERCISE_TRUTH` objects are never passed into any policy or tracker. |
 | **Port / stale-process collisions across 3+ local Python services** | Reuse `sim_core/http_base.py` (`SO_EXCLUSIVEADDRUSE` + `/api/shutdown` + `/api/health` service discriminator & `capabilities`) and `createLocalPythonServicePlugin` in `vite.config.ts` across ports `8765`, `8766`, `8767`, `8768`. |
+
+---
+
+## 7. Delivery Summary (Phases 0–7 Complete)
+
+All seven phases are implemented and verified across `sim_core/`, `sim/` (`v0.3.0`, `:8765`), `sensor_coverage/` (`v0.3.0`, `:8766`), `salvo_defense/` (`v0.1.0`, `:8767`), `sim_bench/` (`v0.1.0`, `:8768`), `scripts/data/build_sim_biomes.py`, `models/`, and the 2D MapLibre Operator UI (`:5173`).
+
+### Verified Multi-Biome Suite (6 Auto-Discovered Environments)
+| Biome ID | Scale & Domain | Key Real-Data Enrichment |
+|---|---|---|
+| `riyadh-observation-v1` | 6 × 6 km Urban Reference | Copernicus GLO-30 + GHS-OBAT heights + WorldPop 2024 + ERA5 + CAMS dust + Sentinel-2 |
+| `riyadh-metro-24km-v1` | 24 × 24 km Urban Basin | 35,000 buildings (33,339 GHS-OBAT) + 15,000 OSM roads + WorldPop 2024 + decimated GLB (8.1 MB) |
+| `jeddah-coast-v1` | 8 × 8 km Red Sea Coast | `jeddah-v2` surface GLB (3.2 MB) + 2,089 buildings (2,037 GHS-OBAT) + WorldPop 2024 |
+| `asir-highlands-30km-v1` | 30 × 30 km Mountain Escarpment | Copernicus GLO-30 (`909–2,990 m` relief) + 1,321 buildings + 5,541 roads + decimated GLB (11.1 MB) |
+| `jubail-coast-30km-v1` | 30 × 30 km Gulf Industrial Coast | Copernicus GLO-30 + GEBCO 2026 bathymetry (`-55–65 m`) + 307 buildings + 1,567 roads |
+| `owned-fixture-v1` | Git-Committed CI Fixture | Deterministic offline regression baseline |
+
+### Trained ML & RL Models (`models/`)
+- **ML Debris Footprint Surrogate (`models/debris_surrogate_v1.npz`, `derived/ml-debris-surrogate-v1`):** Pure-NumPy `12 -> 48 -> 48 -> 5` ReLU MLP (`valR2DriftE = 0.9063`, `valR2DriftN = 0.935`, `0.008 ms` core inference), actively wired into `sim/` Safe-Window and `salvo_defense/` Combinatorial WTA.
+- **Observation-Only RL AI WTA Policy (`models/ai_wta_v1.npz`, `derived/cem-rl-observation-only-wta`):** Trained via Cross-Entropy Method over `SalvoRLEnv` strictly consuming `EXERCISE_OBSERVATION` track features (`70.96` vs. `53.64` Combinatorial WTA vs. `8.81` Greedy on held-out validation with `0` leakers and `0` airspace violations; `66.2%` highest kill rate & fewest leakers across the 4-biome 16-episode frozen benchmark).

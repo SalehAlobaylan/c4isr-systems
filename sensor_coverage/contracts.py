@@ -1,10 +1,10 @@
 """Contracts for the EMAD Sensor Coverage & Blind-Spot Optimizer.
 
 All request inputs are frozen as ``EXERCISE_INPUT`` and all computed coverage
-maps, objectives, and route warning times are ``EVALUATION`` products. Every
-coverage surface is explicitly labelled ``synthetic/derived`` because it is a
-model computed from verified terrain + derived building heights, never a
-surveyed sensor-performance truth.
+maps, objectives, adversarial routes, and warning times are ``EVALUATION``
+products. Every coverage surface is explicitly labelled ``synthetic/derived``
+because it is a model computed from verified terrain + derived building
+heights, never a surveyed sensor-performance truth.
 """
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from dataclasses import asdict, dataclass, field, replace
 import math
 from typing import Any
 
-COV_ENGINE_VERSION = "emad-cov-py-0.2.0"
+COV_ENGINE_VERSION = "emad-cov-py-0.3.0"
 COVERAGE_REPLAY_SCHEMA = "emad.coverage-replay.v1"
 SCOPE_EXERCISE_INPUT = "EXERCISE_INPUT"
 SCOPE_EVALUATION = "EVALUATION"
@@ -24,10 +24,6 @@ REFRACTION_K = 4.0 / 3.0
 
 SENSOR_TYPES = ("radar", "eo_ir", "acoustic")
 
-# Per-type physical defaults. ``maxRangeM`` is interpreted as:
-#  - radar: instrumented detection range against a 1 m^2 reference target (R^4 law scaling)
-#  - eo_ir: clear-air recognition range (further limited by meteorological visibility)
-#  - acoustic: calm-air detection range (reduced by surface wind noise; no LOS needed)
 SENSOR_DEFAULTS: dict[str, dict[str, Any]] = {
     "radar": {
         "mastAglM": 15.0,
@@ -92,7 +88,26 @@ class SensorSpec:
     def buildings_block(self) -> bool:
         return bool(SENSOR_DEFAULTS[self.type]["buildingsBlock"])
 
-    def moved_to(self, east: float, north: float, *, origin: str = "optimized") -> "SensorSpec":
+    @property
+    def is_directional(self) -> bool:
+        return self.sector_width_deg < 359.5
+
+    def moved_to(
+        self,
+        east: float,
+        north: float,
+        *,
+        origin: str = "optimized",
+        sector_center_deg: float | None = None,
+    ) -> "SensorSpec":
+        if sector_center_deg is not None:
+            return replace(
+                self,
+                east=float(east),
+                north=float(north),
+                sector_center_deg=float(sector_center_deg) % 360.0,
+                origin=origin,
+            )
         return replace(self, east=float(east), north=float(north), origin=origin)
 
     def profile_key(self) -> tuple[Any, ...]:
@@ -106,6 +121,30 @@ class SensorSpec:
             round(self.sector_center_deg, 1),
             round(self.sector_width_deg, 1),
         )
+
+    def omni_profile_key(self) -> tuple[Any, ...]:
+        """Position- and azimuth-independent signature for fast 8-heading sector sweeps."""
+        return (
+            self.type,
+            round(self.mast_agl_m, 2),
+            round(self.max_range_m, 1),
+            round(self.min_elevation_deg, 2),
+            round(self.clutter_floor_agl_m, 2),
+            "omni",
+        )
+
+
+@dataclass(frozen=True)
+class JammerSpec:
+    """Stand-off electronic-warfare (EW) radar jammer specification (synthetic/derived)."""
+
+    id: str
+    east: float
+    north: float
+    agl_m: float = 150.0
+    erp_ratio: float = 12.0  # Dimensionless J/S power ratio at 3 km reference range
+    beam_width_deg: float = 34.0  # Mainlobe jammed azimuth cone width around sensor->jammer bearing
+    label: str = "Stand-off EW Jammer"
 
 
 @dataclass(frozen=True)
@@ -156,6 +195,7 @@ class OptimizerSpec:
     redundancy_weight: float = 0.15
     route_weight: float = 2.5
     swap_passes: int = 2
+    optimize_orientation: bool = True
 
 
 @dataclass(frozen=True)
@@ -171,6 +211,7 @@ class CoverageScenario:
     optimizer: OptimizerSpec
     include_buildings: bool = True
     analysis_cell_m: float | None = None
+    jammers: list[JammerSpec] = field(default_factory=list)
     extra: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -192,13 +233,46 @@ def effective_range_m(sensor: SensorSpec, threat: ThreatSpec, weather: WeatherSp
     raise ValueError(f"Unsupported sensor type: {sensor.type}")
 
 
-def sector_mask(az_rad: Any, sensor: SensorSpec) -> Any:
-    """Boolean mask of azimuths (radians from north, clockwise) inside the sensor sector."""
+def jammer_range_scale(sensor: SensorSpec, az_rad: Any, jammers: list[JammerSpec] | None) -> Any:
+    """Directional radar burn-through range scale factor (0..1] under stand-off EW jamming.
+
+    Only radar receivers suffer RF jamming; EO/IR and acoustic sensors remain unaffected.
+    Models mainlobe + low sidelobe J/S degradation: R' = R / (1 + sum_j J/S_j(az))^(1/4).
+    """
     import numpy as np
 
-    if sensor.sector_width_deg >= 359.9:
+    az = np.asarray(az_rad, dtype=np.float64)
+    if sensor.type != "radar" or not jammers:
+        return np.ones_like(az, dtype=np.float64)
+
+    js_total = np.zeros_like(az, dtype=np.float64)
+    for jam in jammers:
+        dx = float(jam.east) - float(sensor.east)
+        dy = float(jam.north) - float(sensor.north)
+        dist = max(400.0, math.hypot(dx, dy))
+        jam_az = math.atan2(dx, dy) % (2.0 * math.pi)
+        diff = np.abs(np.angle(np.exp(1j * (az - jam_az))))
+        half_rad = math.radians(max(6.0, float(jam.beam_width_deg)) * 0.5)
+        # Smooth raised-cosine mainlobe + 6% sidelobe leakage
+        mainlobe = np.where(diff <= half_rad, 0.5 * (1.0 + np.cos(math.pi * diff / half_rad)), 0.0)
+        gain = 0.06 + 0.94 * mainlobe
+        dist_factor = (3000.0 / dist) ** 2
+        js_total += max(0.0, float(jam.erp_ratio)) * min(9.0, dist_factor) * gain
+    return np.power(1.0 + js_total, -0.25)
+
+
+def sector_mask(az_rad: Any, sensor: SensorSpec) -> Any:
+    """Boolean mask of azimuths (radians from north, clockwise) inside the sensor sector."""
+    return sector_mask_angles(az_rad, sensor.sector_center_deg, sensor.sector_width_deg)
+
+
+def sector_mask_angles(az_rad: Any, center_deg: float, width_deg: float) -> Any:
+    """Boolean mask of azimuths (radians from north, clockwise) inside a sector."""
+    import numpy as np
+
+    if width_deg >= 359.5:
         return np.ones(np.shape(az_rad), dtype=bool)
-    center = math.radians(sensor.sector_center_deg)
-    half = math.radians(sensor.sector_width_deg) / 2.0
+    center = math.radians(center_deg)
+    half = math.radians(width_deg) / 2.0
     diff = np.angle(np.exp(1j * (np.asarray(az_rad) - center)))
     return np.abs(diff) <= half

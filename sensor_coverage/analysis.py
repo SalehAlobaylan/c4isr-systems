@@ -1,6 +1,7 @@
 """Coverage metrics, blind-spot geometry, and ingress-route warning-time analysis."""
 from __future__ import annotations
 
+import heapq
 import math
 from typing import Any
 
@@ -11,6 +12,7 @@ from shapely.geometry import shape
 
 from .contracts import (
     AssetSpec,
+    JammerSpec,
     LayerSpec,
     RouteSpec,
     SensorSpec,
@@ -18,6 +20,7 @@ from .contracts import (
     WeatherSpec,
     curvature_drop_m,
     effective_range_m,
+    jammer_range_scale,
     sector_mask,
 )
 from .grid import AnalysisGrid, ObstructionGrid
@@ -88,8 +91,9 @@ def blind_cause_breakdown(
     weather: WeatherSpec,
     agl_m: float,
     include_buildings: bool,
+    jammers: list[JammerSpec] | None = None,
 ) -> dict[str, Any]:
-    """Decompose blind area at ``agl_m`` into building-blocked, terrain-blocked, and range/sector-limited."""
+    """Decompose blind area at ``agl_m`` into building-blocked, terrain-blocked, jammed, and range/sector-limited."""
     valid = grid.valid
     blind = (coverage_counts(floors_with_buildings, agl_m) == 0) & valid
     total_blind_km2 = float(np.sum(blind)) * grid.cell_area_km2
@@ -99,11 +103,12 @@ def blind_cause_breakdown(
             "totalBlindKm2": round(total_blind_km2, 3),
             "buildingBlockedKm2": 0.0,
             "terrainBlockedKm2": 0.0,
+            "jammedKm2": 0.0,
             "outOfRangeOrSectorKm2": round(total_blind_km2, 3),
         }
 
-    # Check which blind cells are at least within range + sector + clutter of >=1 sensor
     in_envelope = np.zeros(grid.count, dtype=bool)
+    in_unjammed_envelope = np.zeros(grid.count, dtype=bool)
     bare_floors_list = []
     for s in sensors:
         rng = effective_range_m(s, threat, weather)
@@ -111,9 +116,12 @@ def blind_cause_breakdown(
         dy = grid.north - s.north
         dist = np.hypot(dx, dy)
         az = np.mod(np.arctan2(dx, dy), 2.0 * math.pi)
-        in_envelope |= (dist <= rng) & sector_mask(az, s) & (agl_m >= s.clutter_floor_agl_m)
+        sec_ok = sector_mask(az, s) & (agl_m >= s.clutter_floor_agl_m)
+        in_unjammed_envelope |= (dist <= rng) & sec_ok
+        eff_rng = rng * jammer_range_scale(s, az, jammers) if (jammers and s.type == "radar") else rng
+        in_envelope |= (dist <= eff_rng) & sec_ok
         if include_buildings and s.requires_los and s.buildings_block:
-            bare_floors_list.append(floor_agl_map(obs, grid, s, rng, include_buildings=False))
+            bare_floors_list.append(floor_agl_map(obs, grid, s, rng, include_buildings=False, jammers=jammers))
         else:
             bare_floors_list.append(None)
 
@@ -126,7 +134,8 @@ def blind_cause_breakdown(
     else:
         building_blocked = np.zeros(grid.count, dtype=bool)
 
-    out_of_env = blind & (~in_envelope)
+    jammed = blind & in_unjammed_envelope & (~in_envelope) & (~building_blocked)
+    out_of_env = blind & (~in_unjammed_envelope)
     terrain_blocked = blind & in_envelope & (~building_blocked)
 
     return {
@@ -134,6 +143,7 @@ def blind_cause_breakdown(
         "totalBlindKm2": round(total_blind_km2, 3),
         "buildingBlockedKm2": round(float(np.sum(building_blocked)) * grid.cell_area_km2, 3),
         "terrainBlockedKm2": round(float(np.sum(terrain_blocked)) * grid.cell_area_km2, 3),
+        "jammedKm2": round(float(np.sum(jammed)) * grid.cell_area_km2, 3),
         "outOfRangeOrSectorKm2": round(float(np.sum(out_of_env)) * grid.cell_area_km2, 3),
     }
 
@@ -148,6 +158,7 @@ def los_cross_section(
     threat: ThreatSpec,
     weather: WeatherSpec,
     include_buildings: bool,
+    jammers: list[JammerSpec] | None = None,
     n_profile_samples: int = 72,
 ) -> dict[str, Any]:
     """Compute exact 8m obstruction-raster LOS & elevation profile from every sensor to a target point."""
@@ -156,12 +167,14 @@ def los_cross_section(
 
     rays: list[dict[str, Any]] = []
     for s in sensors:
-        rng = effective_range_m(s, threat, weather)
+        base_rng = effective_range_m(s, threat, weather)
         site_up, s_up = sensor_site_up(obs, s)
         dx = target_east - s.east
         dy = target_north - s.north
         horiz_m = math.hypot(dx, dy)
         az_rad = math.atan2(dx, dy) % (2.0 * math.pi)
+        jam_scale = float(jammer_range_scale(s, np.array([az_rad]), jammers)[0]) if (jammers and s.type == "radar") else 1.0
+        rng = base_rng * jam_scale
         in_sec = bool(sector_mask(az_rad, s))
 
         status = "clear"
@@ -169,7 +182,6 @@ def los_cross_section(
         block_dist_m: float | None = None
         min_clearance_m: float | None = None
 
-        # Sample dense profile along the ray for accurate obstruction hit & SVG chart
         step = max(obs.cell_m, horiz_m / 400.0) if horiz_m > 1.0 else obs.cell_m
         n_dense = max(4, min(600, int(math.ceil(horiz_m / max(step, 1.0))) + 1))
         fracs = np.linspace(0.0, 1.0, n_dense)
@@ -178,14 +190,14 @@ def los_cross_section(
         dists = fracs * horiz_m
         terr_z, _ = obs.sample(pe, pn, buildings=False)
         surf_z, _ = obs.sample(pe, pn, buildings=include_buildings and s.buildings_block)
-        # Straight radio ray with 4/3-earth curvature drop relative to tangent line
-        # At fraction f: ray height above terrain Datum drops by drop(d) - f*drop(D)
         drop_d = curvature_drop_m(dists)
         drop_tot = curvature_drop_m(horiz_m)
         ray_z = s_up + fracs * (target_up - s_up) + (drop_d - fracs * drop_tot)
 
-        if horiz_m > rng:
+        if horiz_m > base_rng:
             status = "out_of_range"
+        elif horiz_m > rng:
+            status = "ew_jammed"
         elif not in_sec:
             status = "out_of_sector"
         elif target_agl_m < s.clutter_floor_agl_m:
@@ -427,3 +439,175 @@ def route_metrics(
             }
         )
     return out
+
+
+def find_adversarial_route(
+    *,
+    obs: ObstructionGrid,
+    grid: AnalysisGrid,
+    floors: np.ndarray,
+    sensor_ids: list[str],
+    asset_east: float,
+    asset_north: float,
+    agl_m: float = 35.0,
+    speed_mps: float = 65.0,
+    start_edge: str = "any",  # any | north | south | east | west
+) -> dict[str, Any]:
+    """A* / Dijkstra least-detection adversarial stealth path finder from perimeter to defended asset.
+
+    Discovers the worst-case blind valley / urban-canyon corridor that minimizes
+    cumulative sensor exposure at ``agl_m`` before reaching ``(asset_east, asset_north)``.
+    """
+    nx, ny = grid.nx, grid.ny
+    n_cells = grid.count
+    valid = grid.valid
+    counts = coverage_counts(floors, agl_m) if floors.size else np.zeros(n_cells, dtype=np.int16)
+
+    # Cell traversal cost multiplier: 1.0 in blind spots, steeply penalized where >=1 sensor detects
+    cell_mult = np.where(counts == 0, 1.0, 1.0 + 22.0 * counts.astype(np.float64))
+    # Slight preference to fly around tall obstacles if cruising below building height
+    bldg_h, _ = obs.sample(grid.east, grid.north, buildings=True)
+    terr_h = grid.ground_up
+    obs_above = (bldg_h - terr_h) > max(5.0, agl_m * 0.85)
+    cell_mult = np.where(obs_above, cell_mult * 1.35, cell_mult)
+
+    goal_idx = int(grid.nearest_index(np.array([asset_east]), np.array([asset_north]))[0])
+    goal_r, goal_c = divmod(goal_idx, nx)
+
+    # Multi-source Dijkstra starting from valid AOI perimeter cells (exact optimum from any perimeter entry!)
+    dist_g = np.full(n_cells, np.inf, dtype=np.float64)
+    parent = np.full(n_cells, -1, dtype=np.int32)
+    heap: list[tuple[float, int]] = []
+
+    for r in range(ny):
+        for c in range(nx):
+            on_n = r == ny - 1
+            on_s = r == 0
+            on_e = c == nx - 1
+            on_w = c == 0
+            if start_edge == "north" and not on_n:
+                continue
+            if start_edge == "south" and not on_s:
+                continue
+            if start_edge == "east" and not on_e:
+                continue
+            if start_edge == "west" and not on_w:
+                continue
+            if start_edge == "any" and not (on_n or on_s or on_e or on_w):
+                continue
+            idx = r * nx + c
+            if not valid[idx]:
+                continue
+            # Small heuristic bias toward goal so A* expands far fewer nodes
+            h_rem = math.hypot((goal_c - c) * grid.cell_m, (goal_r - r) * grid.cell_m)
+            dist_g[idx] = 0.0
+            heapq.heappush(heap, (h_rem, idx))
+
+    if not heap:
+        raise ValueError("No valid perimeter entry cells found for adversarial routing.")
+
+    step_card = float(grid.cell_m)
+    step_diag = float(grid.cell_m) * math.sqrt(2.0)
+    neighbors = (
+        (-1, 0, step_card),
+        (1, 0, step_card),
+        (0, -1, step_card),
+        (0, 1, step_card),
+        (-1, -1, step_diag),
+        (-1, 1, step_diag),
+        (1, -1, step_diag),
+        (1, 1, step_diag),
+    )
+
+    found = False
+    while heap:
+        f_cur, u = heapq.heappop(heap)
+        ur, uc = divmod(u, nx)
+        g_u = dist_g[u]
+        if u == goal_idx:
+            found = True
+            break
+        # Skip stale heap entries
+        h_u = math.hypot((goal_c - uc) * step_card, (goal_r - ur) * step_card)
+        if f_cur > g_u + h_u + 1e-6:
+            continue
+
+        for dr, dc, step_d in neighbors:
+            vr, vc = ur + dr, uc + dc
+            if vr < 0 or vr >= ny or vc < 0 or vc >= nx:
+                continue
+            v = vr * nx + vc
+            if not valid[v]:
+                continue
+            edge_cost = step_d * 0.5 * (cell_mult[u] + cell_mult[v])
+            cand_g = g_u + edge_cost
+            if cand_g < dist_g[v]:
+                dist_g[v] = cand_g
+                parent[v] = u
+                h_v = math.hypot((goal_c - vc) * step_card, (goal_r - vr) * step_card)
+                heapq.heappush(heap, (cand_g + h_v, v))
+
+    if not found:
+        raise ValueError("Unable to find a valid adversarial corridor to the defended asset.")
+
+    # Reconstruct cell path perimeter -> goal
+    path_cells: list[int] = []
+    cur = goal_idx
+    while cur >= 0:
+        path_cells.append(cur)
+        cur = int(parent[cur])
+    path_cells.reverse()
+
+    # Subsample slightly to smooth staircase jitter while preserving valley turns
+    if len(path_cells) > 3:
+        stride = max(1, len(path_cells) // 48)
+        picked = path_cells[::stride]
+        if picked[-1] != path_cells[-1]:
+            picked.append(path_cells[-1])
+    else:
+        picked = path_cells
+
+    pts_enu = [
+        [round(float(grid.east[i]), 1), round(float(grid.north[i]), 1), round(float(agl_m), 1)]
+        for i in picked
+    ]
+    pts_enu[-1][0] = round(float(asset_east), 1)
+    pts_enu[-1][1] = round(float(asset_north), 1)
+
+    route_spec = RouteSpec(
+        id="adversarial-stealth-route",
+        points_enu=pts_enu,
+        speed_mps=float(speed_mps),
+        label=f"Adversarial Stealth Corridor ({int(round(agl_m))}m AGL)",
+    )
+    smp = sample_route(route_spec, obs, max(20.0, grid.cell_m * 0.5))
+    metrics = route_metrics(route_spec, smp, floors, sensor_ids, grid)
+
+    env = obs.env
+    lons, lats = env.enu_to_lonlat_fast(smp["east"], smp["north"])
+    points_ll = [[round(float(lons[k]), 6), round(float(lats[k]), 6), round(float(agl_m), 1)] for k in range(len(lons))]
+    samples_3d = [
+        [round(float(smp["east"][k]), 1), round(float(smp["north"][k]), 1), round(float(smp["up"][k]), 1), round(float(smp["agl"][k]), 1)]
+        for k in range(len(smp["s"]))
+    ]
+    return {
+        "routeId": route_spec.id,
+        "label": route_spec.label,
+        "derivation": "synthetic/derived least-detection A* stealth corridor",
+        "aglM": round(float(agl_m), 1),
+        "speedMps": round(float(speed_mps), 1),
+        "startEdge": start_edge,
+        "stealthFraction": round(1.0 - float(metrics["trackedFraction"]), 4),
+        "trackedFraction": metrics["trackedFraction"],
+        "lengthM": metrics["lengthM"],
+        "flightTimeS": metrics["flightTimeS"],
+        "warningTimeS": metrics["warningTimeS"],
+        "warningDistanceM": metrics["warningDistanceM"],
+        "longestGapAfterDetectionS": metrics["longestGapAfterDetectionS"],
+        "firstDetectionIndex": metrics["firstDetectionIndex"],
+        "firstDetectionEnu": metrics["firstDetectionEnu"],
+        "firstDetectionBy": metrics["firstDetectionBy"],
+        "detected": metrics["detected"],
+        "samples": samples_3d,
+        "pointsLonLat": points_ll,
+    }

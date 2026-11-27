@@ -54,7 +54,14 @@ def evaluate_layout(
     sensors_out = []
     for s in sensors:
         rng = effective_range_m(s, scenario.threat, scenario.weather)
-        f = floor_agl_map(obs, grid, s, rng, include_buildings=scenario.include_buildings)
+        f = floor_agl_map(
+            obs,
+            grid,
+            s,
+            rng,
+            include_buildings=scenario.include_buildings,
+            jammers=scenario.jammers,
+        )
         floors_list.append(f)
         site_up, ant_up = sensor_site_up(obs, s)
         lon, lat, _ = env.enu_to_geodetic(s.east, s.north, ant_up)
@@ -112,6 +119,7 @@ def evaluate_layout(
         weather=scenario.weather,
         agl_m=primary_agl,
         include_buildings=scenario.include_buildings,
+        jammers=scenario.jammers,
     )
     curve = coverage_curve(floors, weights, grid)
     return {
@@ -220,6 +228,7 @@ def run_coverage(
             weather=scenario.weather,
             spec=scenario.optimizer,
             include_buildings=scenario.include_buildings,
+            jammers=scenario.jammers,
             cache=cache,
             cache_scope=cache_scope,
             extra_template=extra_template,
@@ -232,7 +241,12 @@ def run_coverage(
         g_max = float(np.max(gains)) if gains.size and np.max(gains) > 0 else 1.0
         opt_info = {
             "enabled": True,
-            "method": "greedy weighted max-coverage (1-1/e) + 1-swap local search",
+            "method": (
+                "joint greedy (site + 8-heading sector azimuth) + 1-swap local search"
+                if result.get("optimizedOrientations")
+                else "greedy weighted max-coverage (1-1/e) + 1-swap local search"
+            ),
+            "optimizedOrientations": bool(result.get("optimizedOrientations", False)),
             "candidates": [
                 {
                     "enu": [round(c.east, 1), round(c.north, 1), round(c.site_up, 1)],
@@ -285,6 +299,24 @@ def run_coverage(
             }
         )
 
+    jammers_out = []
+    for j in scenario.jammers:
+        j_ground = obs.height_at(j.east, j.north, buildings=False)
+        j_up = j_ground + float(j.agl_m)
+        jlon, jlat, _ = env.enu_to_geodetic(j.east, j.north, j_up)
+        jammers_out.append(
+            {
+                "id": j.id,
+                "label": j.label,
+                "enu": [round(j.east, 1), round(j.north, 1), round(j_up, 1)],
+                "lon": round(jlon, 6),
+                "lat": round(jlat, 6),
+                "aglM": j.agl_m,
+                "erpRatio": j.erp_ratio,
+                "beamWidthDeg": j.beam_width_deg,
+            }
+        )
+
     configs: dict[str, Any] = {
         "baseline": {"label": "Baseline (operator layout)", "sensors": base["sensors"], "metrics": base["metrics"]},
         "optimized": (
@@ -317,6 +349,7 @@ def run_coverage(
             "windSource": weather.wind_source,
         },
         "assets": assets_out,
+        "jammers": jammers_out,
         "routes": routes_out,
         "configs": configs,
         "optimizer": opt_info,

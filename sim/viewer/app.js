@@ -448,6 +448,7 @@ async function init() {
   let fragMeshes = [];
   let impactMeshes = [];
   let obsDotObjects = [];
+  let civilianActors = [];
   let pickableObjects = [];
 
   function applyZScale(scaleVal) {
@@ -749,10 +750,54 @@ async function init() {
       )
       .join('<br/>');
 
-    // Rebuild static scenario sites (radar, launcher, protected zone, coverage fan, wind arrows)
+    // Rebuild static scenario sites (radar, launcher, protected zone, coverage fan, wind arrows, civilian airliners)
     disposeGroup(layerGroups.staticSites);
     disposeGroup(layerGroups.coverage);
     disposeGroup(layerGroups.wind);
+    civilianActors = [];
+
+    for (const ct of replay.civilianTraffic || []) {
+      const grp = new THREE.Group();
+      const isAir = ct.kind === 'civilian_airliner';
+      const body = new THREE.Mesh(
+        isAir ? new THREE.ConeGeometry(24, 90, 6) : new THREE.BoxGeometry(28, 16, 75),
+        new THREE.MeshStandardMaterial({ color: 0xe0f2fe, emissive: 0x0284c7, emissiveIntensity: 0.45, roughness: 0.3 })
+      );
+      if (isAir) body.rotation.x = Math.PI / 2;
+      grp.add(body);
+      if (isAir) {
+        const wing = new THREE.Mesh(
+          new THREE.BoxGeometry(115, 4, 22),
+          new THREE.MeshStandardMaterial({ color: 0xbae6fd, emissive: 0x0369a1, emissiveIntensity: 0.3 })
+        );
+        grp.add(wing);
+        // Translucent 1,500 m x 450 m civilian airspace safety cylinder
+        const cylGeo = new THREE.CylinderGeometry(
+          ct.safety_radius_m || 1500,
+          ct.safety_radius_m || 1500,
+          (ct.safety_half_height_m || 450) * 2,
+          36,
+          1,
+          true
+        );
+        const safetyCyl = new THREE.Mesh(
+          cylGeo,
+          new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.08, side: THREE.DoubleSide, depthWrite: false })
+        );
+        grp.add(safetyCyl);
+      }
+      layerGroups.staticSites.add(grp);
+      if (ct.samples && ct.samples.length >= 2) {
+        const pathPts = ct.samples.map((s) => enuToThree(s.enu));
+        const pathLine = new THREE.Line(
+          new THREE.BufferGeometry().setFromPoints(pathPts),
+          new THREE.LineDashedMaterial({ color: 0x7dd3fc, dashSize: 90, gapSize: 55, transparent: true, opacity: 0.45 })
+        );
+        pathLine.computeLineDistances();
+        layerGroups.staticSites.add(pathLine);
+      }
+      civilianActors.push({ track: ct, group: grp });
+    }
 
     radarPos = enuToThree(replay.radarPositionEnu);
     const launcherPos = enuToThree(replay.launcherPositionEnu);
@@ -1117,22 +1162,25 @@ async function init() {
 
     const exp = ev.shrapnelExposure || {};
     const fp = ev.shrapnelFootprint || {};
+    const ri = ev.roadImpact || {};
+    const ad = ev.airspaceDeconfliction || {};
     const intr = ev.interception;
     const sens = ev.sensing;
     const expPct = exp.urbanExposureFraction != null ? (exp.urbanExposureFraction * 100).toFixed(1) + '%' : 'N/A';
     const expCls = exp.urbanExposureFraction != null ? (exp.urbanExposureFraction < 0.15 ? 'good' : exp.urbanExposureFraction > 0.35 ? 'bad' : 'warn') : '';
+    const airCls = ad.warningLevel === 'HOLD_FIRE' ? 'bad' : ad.warningLevel === 'ADVISORY' ? 'warn' : 'good';
 
     document.getElementById('metrics-grid').innerHTML = `
       <div class="metric"><div class="label">Intercept</div><div class="val ${intr.intercepted ? 'good' : 'bad'}">${intr.intercepted ? `t=${intr.interceptTimeS}s` : 'MISS'}</div></div>
       <div class="metric"><div class="label">Intercept Alt</div><div class="val">${intr.interceptAglM != null ? intr.interceptAglM.toFixed(0) + 'm AGL' : '—'}</div></div>
       <div class="metric"><div class="label">Building Hits (≥80J)</div><div class="val ${exp.buildingHits > 10 ? 'bad' : exp.buildingHits > 0 ? 'warn' : 'good'}">${exp.buildingHits ?? '—'}${exp.hazardousBuildingHits != null ? ` (${exp.hazardousBuildingHits})` : ''}</div></div>
-      <div class="metric"><div class="label">Road Hits</div><div class="val ${exp.roadHits > 20 ? 'warn' : ''}">${exp.roadHits ?? '—'}</div></div>
+      <div class="metric"><div class="label">WorldPop Exposed</div><div class="val ${exp.estimatedPopulationExposed > 25 ? 'bad' : exp.estimatedPopulationExposed > 5 ? 'warn' : 'good'}">${exp.estimatedPopulationExposed != null ? `~${exp.estimatedPopulationExposed.toFixed(1)}` : '—'}</div></div>
+      <div class="metric"><div class="label">Road Impact / Detour</div><div class="val ${ri.emergencyDetourDelayS > 60 ? 'warn' : ''}">${ri.blockedRoadKm != null ? `${ri.blockedRoadKm.toFixed(2)}km (+${Math.round(ri.emergencyDetourDelayS || 0)}s)` : `${exp.roadHits ?? '—'} hits`}</div></div>
+      <div class="metric"><div class="label">Civil Airspace</div><div class="val ${airCls}">${ad.warningLevel || 'CLEAR'}${ad.closestCallsign ? ` (${ad.closestCallsign})` : ''}</div></div>
       <div class="metric"><div class="label">Urban Exposure</div><div class="val ${expCls}">${expPct}</div></div>
       <div class="metric"><div class="label">Wind Drift</div><div class="val">${fp.driftDistanceM != null ? fp.driftDistanceM.toFixed(0) + 'm' : '—'}</div></div>
       <div class="metric"><div class="label">Hazardous Debris</div><div class="val warn">${exp.hazardousHits != null ? `${exp.hazardousHits}/${exp.total}` : '—'}</div></div>
-      <div class="metric"><div class="label">Max Impact Energy</div><div class="val">${exp.maxImpactEnergyJ != null ? (exp.maxImpactEnergyJ >= 1000 ? (exp.maxImpactEnergyJ / 1000).toFixed(1) + ' kJ' : exp.maxImpactEnergyJ.toFixed(0) + ' J') : '—'}</div></div>
       <div class="metric"><div class="label">Radar Occlusion</div><div class="val">${(sens.occlusionFraction * 100).toFixed(0)}%</div></div>
-      <div class="metric"><div class="label">Mean Track Err</div><div class="val">${sens.meanTrackErrorM != null ? sens.meanTrackErrorM.toFixed(1) + 'm' : '—'}</div></div>
     `;
 
     const deltaBox = document.getElementById('delta-box');
@@ -1184,6 +1232,15 @@ async function init() {
 
   function updateAtTime(t) {
     if (!currentRun) return;
+    // Propagate frozen civilian airliners & vessels smoothly in sync with replay clock
+    for (const actor of civilianActors) {
+      const s = actor.track.start_enu;
+      const v = actor.track.vel_enu;
+      const pos = enuToThree([s[0] + v[0] * t, s[1] + v[1] * t, s[2] + v[2] * t]);
+      const nxt = enuToThree([s[0] + v[0] * (t + 1), s[1] + v[1] * (t + 1), s[2] + v[2] * (t + 1)]);
+      actor.group.position.copy(pos);
+      if (pos.distanceToSquared(nxt) > 1e-4) actor.group.lookAt(nxt);
+    }
     const tr = currentRun.truth;
     const obs = currentRun.observations;
     const intT = tr.intercept.intercepted ? tr.intercept.interceptTimeS : Infinity;

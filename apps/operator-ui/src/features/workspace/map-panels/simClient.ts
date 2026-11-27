@@ -79,6 +79,25 @@ export interface SimSetupDraft {
     windScale: number
     windAddEnuMps: [number, number, number]
   }
+  enableCivilianTraffic?: boolean
+  sensorNetworkId?: string
+}
+
+export interface SharedSensorNetwork {
+  layoutId: string
+  name: string
+  environmentId: string
+  sensorCount: number
+  createdAt: string
+  sensors: {
+    id: string
+    type: string
+    label: string
+    lon: number
+    lat: number
+    mastAglM?: number
+    maxRangeM?: number
+  }[]
 }
 
 export interface SimEnvironment {
@@ -161,10 +180,26 @@ export interface SimRunJob {
       interceptorDebrisCount?: number
       maxImpactEnergyJ?: number
       meanImpactEnergyJ?: number
+      estimatedPopulationExposed?: number
+      populationSource?: string | null
     }
     footprint?: {
       driftDistanceM: number
     }
+    roadImpact?: {
+      blockedEdgeCount: number
+      blockedRoadKm: number
+      emergencyDetourDelayS: number
+      routeSevered: boolean
+      affectedArterials?: string[]
+    } | null
+    airspaceDeconfliction?: {
+      safe: boolean
+      warningLevel: string
+      minHorizontalSeparationM: number | null
+      minVerticalSeparationM: number | null
+      closestCallsign: string | null
+    } | null
   } | null
   resultOverlay: FeatureCollection | null
 }
@@ -206,6 +241,7 @@ async function simJson<T>(path: string, init?: RequestInit): Promise<T> {
 export const fetchSimHealth = () => simJson<SimHealth>('/api/health')
 export const fetchSimEnvironments = async () => (await simJson<{ environments: SimEnvironment[] }>('/api/environments')).environments
 export const fetchSimRuns = async () => (await simJson<{ runs: SimRunJob[] }>('/api/runs')).runs
+export const fetchSimNetworks = async () => (await simJson<{ networks: SharedSensorNetwork[] }>('/api/networks')).networks
 export const fetchSimRun = (jobId: string) => simJson<SimRunJob>(`/api/runs/${encodeURIComponent(jobId)}`)
 export const startSimRun = (draft: SimSetupDraft, jobId?: string) =>
   simJson<SimRunJob>('/api/runs', {
@@ -261,6 +297,7 @@ export function draftFromEnvironment(env: SimEnvironment): SimSetupDraft {
         env.defaults.atmosphere.windAddEnuMps[2],
       ],
     },
+    enableCivilianTraffic: true,
   }
 }
 

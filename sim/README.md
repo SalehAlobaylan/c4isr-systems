@@ -1,8 +1,8 @@
-# EMAD 3D Simulation Core (`sim/`)
+# EMAD 3D Intercept & Shrapnel Exposure Engine (`sim/`, `v0.3.0`)
 
-Reusable, deterministic 3-DOF simulation package operating directly on verified
-EMAD geographic environment packages (`prepared.zip`) and retained ERA5
-pressure-level wind fields (`emad.era5-pressure-subset.v1`).
+Reusable, deterministic 3-DOF simulation package operating on `sim_core/` verified
+Saudi geographic biomes (`prepared.zip`, GHS-OBAT building heights, WorldPop 2024
+population density, GEBCO bathymetry) and retained ERA5 / CAMS atmospheric fields.
 
 ## Architecture & Partition Discipline
 
@@ -16,14 +16,15 @@ Every simulation run preserves EMAD's four-partition boundary:
 | `evaluation.json` / `comparison.json` | `EVALUATION` | Sensing/interception/shrapnel exposure metrics comparing baseline vs. optimizer policies |
 | `replay.json` | Viewer bundle | Compact replay data + terrain/vector context for the offline Three.js 3D viewer |
 
-## Reusable Primitives
+## Reusable Primitives & v0.3 Capabilities
 
-- **`sim/environment.py` (`EnvironmentModel`):** Loads verified `prepared.zip` rasters (with EGM2008 geoid undulation and exact `pyproj` ENU alignment matching `prepare_display_terrain.py`), provides vectorized NumPy elevation lookups, 3D terrain + derived-building line-of-sight raycasting, and Shapely `STRtree` impact exposure classification.
-- **`sim/atmosphere.py` (`AtmosphereModel`):** Loads retained `emad.era5-pressure-subset.v1` weather grids (embedded or external), enforces `known_at` cutoffs, maps pressure levels to ISA altitudes with neutral boundary-layer shear, and returns vectorized 3D wind `(u, v, w)` and air density `rho(z)`.
-- **`sim/physics.py`:** Modular 3-DOF threat flight (AGL terrain-following), acceleration-limited proportional-lead interceptor pursuit, and vectorized RK2 shrapnel dispersion with quadratic aerodynamic drag and 3D wind drift.
-- **`sim/sensors.py`:** Synthetic terrain-masked radar (`EXERCISE_TRUTH -> EXERCISE_OBSERVATION`) and alpha-beta observation-only tracker.
-- **`sim/engine.py`:** Deterministic end-to-end runner plus head-to-head policy comparison (`earliest` baseline vs. `safe_window` wind-aware exposure optimizer).
-- **`sim/viewer/`:** Zero-CDN offline Three.js replay viewer supporting EMAD's verified terrain GLB and Sentinel-2 optical drape.
+- **`sim_core/environment.py` (`EnvironmentModel`):** Loads verified `prepared.zip` rasters across all 6 Saudi biomes (Riyadh Pilot, Riyadh Metro 24 km, Jeddah Coast, Asir Highlands 30 km, Jubail Coast 30 km, and Owned Fixture) with EGM2008 geoid alignment, **GHS-OBAT modeled building heights**, **WorldPop 2024 population density**, **GEBCO 2026 bathymetry**, and adaptive vectorized `ObstructionGrid` LOS raycasting.
+- **`sim_core/atmosphere.py` (`AtmosphereModel`):** Loads retained `emad.era5-pressure-subset.v1` weather grids plus **CAMS Dust Koschmieder optical extinction**, enforces `known_at` cutoffs, and returns vectorized 3D wind `(u, v, w)` and air density `rho(z)`.
+- **`sim_core/traffic.py` & `sim_core/road_impact.py`:** Freezes live/historical `OpenSky` / `AIS` tracks (or deterministic Saudi civil-corridor fallbacks) into read-only `EXERCISE_INPUT` civilian airliners with `1,500 m × 450 m` `HOLD_FIRE` safety cylinders, and computes OSM road blockage km plus Dijkstra emergency-response detour penalties.
+- **`sim/physics.py`:** Modular 3-DOF threat flight (AGL terrain-following UAV, cruise, and high-apogee ballistic), acceleration-limited proportional-lead interceptor pursuit, and numerically clamped vectorized RK2 shrapnel dispersion with quadratic aerodynamic drag and 3D wind drift.
+- **`sim/sensors.py` & `sim_core/handoff.py`:** Synthetic terrain-masked radar (`EXERCISE_TRUTH -> EXERCISE_OBSERVATION`), alpha-beta observation-only tracker, and 1-click import of `emad.sensor-network.v1` layouts exported from `sensor_coverage/`.
+- **`sim/engine.py`:** Deterministic end-to-end runner plus head-to-head policy comparison (`earliest` baseline vs. `safe_window` optimizing over buildings, OSM roads, protected zones, WorldPop population exposure, and civilian airspace safety, cross-checked by `< 0.5 ms` `derived/ml-debris-surrogate-v1` predictions).
+- **`sim/viewer/`:** Zero-CDN offline Three.js replay viewer supporting EMAD's verified terrain GLB, Sentinel-2 optical drape, animated civilian airliners + translucent airspace safety cylinders, and WorldPop / road-impact KPIs.
 
 ## Quick Start
 

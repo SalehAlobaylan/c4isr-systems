@@ -23,6 +23,9 @@ from typing import Any
 
 import numpy as np
 
+from sim_core.road_impact import get_road_analyzer
+from sim_core.traffic import CivilianTrack, check_airspace_deconfliction, load_frozen_traffic
+
 from .atmosphere import AtmosphereModel
 from .contracts import (
     FIDELITY_KINEMATIC_3DOF,
@@ -91,6 +94,7 @@ def _choose_engagement(
     track_estimates: list[TrackEstimate],
     launch_pos: np.ndarray,
     protected_center: tuple[float, float],
+    civilian_tracks: list[CivilianTrack] | None = None,
 ) -> dict[str, Any]:
     """Select interceptor launch time using strictly OBSERVATION-ONLY track estimates."""
     site = spec.interceptor_site
@@ -195,15 +199,46 @@ def _choose_engagement(
             bldg_frac = exp["buildingHits"] / total_f
             road_frac = exp["roadHits"] / total_f
             zone_frac = exp["protectedZoneHits"] / total_f
+            pop_exposed = float(exp.get("estimatedPopulationExposed") or 0.0)
+            air_check = check_airspace_deconfliction(civilian_tracks or [], p_int, t_int)
+            air_pen = spec.safe_window_civilian_weight if not air_check["safe"] else (
+                0.2 * spec.safe_window_civilian_weight if air_check["warningLevel"] == "ADVISORY" else 0.0
+            )
 
-            # Exposure objective + tiny preference for earlier intercept when exposure is tied
+            # Exposure objective (buildings + roads + protected zone + WorldPop + civilian airspace safety)
             delay_tiebreak = 0.004 * (cand_launch_s - plan_est.t_s)
             cost = (
                 spec.safe_window_building_weight * bldg_frac
                 + spec.safe_window_road_weight * road_frac
                 + spec.safe_window_protected_zone_weight * zone_frac
+                + spec.safe_window_population_weight * min(pop_exposed, 250.0)
+                + air_pen
                 + delay_tiebreak
             )
+            # Optional <0.5ms ML Debris Surrogate cross-check (derived/ml-debris-surrogate-v1)
+            surrogate_pred = None
+            try:
+                from sim_bench.surrogate import load_debris_surrogate
+
+                surrogate = load_debris_surrogate()
+                if surrogate is not None:
+                    g_here = env.height_at(float(p_int[0]), float(p_int[1]), fallback=env.up_median)
+                    we, wn, _, _, _ = atm.sample(
+                        np.array([float(p_int[0])]),
+                        np.array([float(p_int[1])]),
+                        np.array([float(p_int[2])]),
+                        ground_up_m=np.array([g_here]),
+                    )
+                    surrogate_pred = surrogate.predict_exposure(
+                        intercept_enu=p_int,
+                        threat_vel_enu=plan_est.vel_enu,
+                        wind_en=(float(we[0]), float(wn[0])),
+                        agl_m=max(20.0, float(p_int[2]) - g_here),
+                        env=env,
+                    )
+            except Exception:
+                surrogate_pred = None
+
             cand_record = {
                 "candidateLaunchS": cand_launch_s,
                 "predictedInterceptS": round(t_int, 2),
@@ -213,9 +248,13 @@ def _choose_engagement(
                 "previewRoadHits": exp["roadHits"],
                 "previewProtectedHits": exp["protectedZoneHits"],
                 "previewUrbanFraction": exp["urbanExposureFraction"],
+                "previewPopExposed": round(pop_exposed, 1),
+                "airspaceWarning": air_check["warningLevel"],
                 "previewDriftM": preview["footprint"]["driftDistanceM"],
                 "objectiveCost": round(cost, 4),
             }
+            if surrogate_pred is not None:
+                cand_record["surrogatePreview"] = surrogate_pred
             candidates.append(cand_record)
             if best is None or cost < best["objectiveCost"]:
                 best = cand_record
@@ -295,6 +334,13 @@ def run_simulation(
         protected_center = (float(last_wp[0]), float(last_wp[1]))
     protected_ground = env.height_at(protected_center[0], protected_center[1], fallback=env.up_median)
 
+    # Stage 0: Freeze Civilian Airspace & Maritime Traffic (EXERCISE_INPUT)
+    civilian_tracks: list[CivilianTrack] = (
+        load_frozen_traffic(env, duration_s=spec.duration_s, seed=spec.seed)
+        if spec.enable_civilian_traffic
+        else []
+    )
+
     # Stage 1: Inbound Threat Truth Trajectory
     threat_samples = build_threat_trajectory(spec.threat, env, duration_s=spec.duration_s, dt_s=spec.dt_s)
 
@@ -305,11 +351,13 @@ def run_simulation(
     track_estimates: list[TrackEstimate] = [tracker.ingest(obs) for obs in radar_scan["observations"]]
 
     # Stage 3: Policy Engagement Decision (strictly using OBSERVATION track estimates!)
-    decision = _choose_engagement(spec, env, atm, track_estimates, launch_pos, protected_center)
+    decision = _choose_engagement(spec, env, atm, track_estimates, launch_pos, protected_center, civilian_tracks)
 
-    # Stage 4: Interceptor Pursuit & Wind-Drifted Shrapnel Propagation
+    # Stage 4: Interceptor Pursuit, Airspace Deconfliction & Wind-Drifted Shrapnel Propagation
     interceptor_result: dict[str, Any] = {"intercepted": False, "reason": decision.get("reason", "no-launch"), "samples": []}
     shrapnel_result: dict[str, Any] | None = None
+    airspace_deconfliction: dict[str, Any] | None = None
+    road_impact: dict[str, Any] | None = None
     intercept_idx: int | None = None
 
     if decision["decided"]:
@@ -324,6 +372,11 @@ def run_simulation(
         )
         if interceptor_result["intercepted"]:
             intercept_idx = int(interceptor_result["interceptIndex"])
+            airspace_deconfliction = check_airspace_deconfliction(
+                civilian_tracks,
+                interceptor_result["interceptPosEnu"],
+                float(interceptor_result["interceptTimeS"]),
+            )
             shrapnel_result = simulate_shrapnel_cloud(
                 interceptor_result["interceptPosEnu"],
                 interceptor_result["threatVelEnu"],
@@ -335,6 +388,13 @@ def run_simulation(
                 record_trails=True,
                 protected_center=protected_center,
                 protected_radius_m=spec.protected_zone_radius_m,
+            )
+            frags = shrapnel_result["fragments"]
+            road_impact = get_road_analyzer(env).evaluate_debris_impact(
+                np.array([f["impactEnu"][0] for f in frags], dtype=np.float64),
+                np.array([f["impactEnu"][1] for f in frags], dtype=np.float64),
+                np.array([bool(f["hazardous"]) for f in frags], dtype=bool),
+                protected_center=protected_center,
             )
 
     # Trim threat truth trajectory & post-intercept observations after intercept instant
@@ -432,6 +492,13 @@ def run_simulation(
             "centerEnu": [round(protected_center[0], 2), round(protected_center[1], 2), round(protected_ground, 2)],
             "radiusM": spec.protected_zone_radius_m,
         },
+        "civilianTraffic": [
+            {
+                **ct.to_dict(),
+                "samples": ct.sample_trajectory(spec.duration_s, dt_s=2.0),
+            }
+            for ct in civilian_tracks
+        ],
     }
 
     interceptor_truth_samples = [
@@ -485,8 +552,10 @@ def run_simulation(
         },
         "engagementDecision": decision,
         "interception": intercept_metrics,
+        "airspaceDeconfliction": airspace_deconfliction,
         "shrapnelExposure": shrapnel_result["exposure"] if shrapnel_result else None,
         "shrapnelFootprint": shrapnel_result["footprint"] if shrapnel_result else None,
+        "roadImpact": road_impact,
     }
 
     return {
@@ -622,6 +691,7 @@ def save_run_bundle(
         "radarPositionEnu": primary["manifest"]["radarPositionEnu"],
         "launcherPositionEnu": primary["manifest"]["launcherPositionEnu"],
         "protectedZone": primary["manifest"]["protectedZone"],
+        "civilianTraffic": primary["manifest"].get("civilianTraffic") or [],
         "radarCoverageRing": coverage_ring,
         "windProfile": atm.profile_summary(0.0, 0.0),
         "viewerContext": env.export_viewer_context(),

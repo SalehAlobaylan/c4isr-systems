@@ -106,6 +106,8 @@ class ReplayRouter:
                 return self._json_response({"environments": self.service.list_environments()})
             if method == "GET" and req_path == "/api/runs":
                 return self._json_response({"runs": self.service.list_runs()})
+            if method == "GET" and req_path == "/api/networks":
+                return self._json_response({"networks": self.service.list_sensor_networks()})
             if method == "POST" and req_path == "/api/runs":
                 try:
                     payload = json.loads(body.decode("utf-8") or "{}")
@@ -211,6 +213,18 @@ class ReplayHandler(BaseHTTPRequestHandler):
         self._dispatch("GET")
 
     def do_POST(self) -> None:
+        if unquote(urlparse(self.path).path) == "/api/shutdown" and self.router.service is not None:
+            data = json.dumps({"status": "shutting_down"}).encode("utf-8")
+            self.send_response(HTTPStatus.OK)
+            self._write_cors()
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            import threading
+
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
+            return
         self._dispatch("POST")
 
 

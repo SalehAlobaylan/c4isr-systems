@@ -8,6 +8,7 @@ import {
   ListIcon,
   RadarIcon,
   RulerIcon,
+  ShieldAlertIcon,
   SignalIcon,
 } from '@/components/icons'
 import { MapWorkbenchChooser } from '../MapWorkbenchChooser'
@@ -132,6 +133,30 @@ export function MapRail({
       >
         <SignalIcon className="size-4" />
         <span className="map-rail-label">Coverage</span>
+      </button>
+
+      <button
+        type="button"
+        className="map-rail-item"
+        aria-label="Salvo Defense"
+        aria-pressed={drawerOpen && activePanel === 'salvo'}
+        onClick={() => onTogglePanel('salvo', 'Salvo Defense')}
+        title="Simulate multi-threat salvos (decoys, UAVs, cruise, ballistic) with 3-tier layered air defense"
+      >
+        <ShieldAlertIcon className="size-4" />
+        <span className="map-rail-label">Salvo</span>
+      </button>
+
+      <button
+        type="button"
+        className="map-rail-item"
+        aria-label="Monte Carlo & AI Benchmarks"
+        aria-pressed={drawerOpen && activePanel === 'bench'}
+        onClick={() => onTogglePanel('bench', 'Benchmarks & Monte Carlo')}
+        title="Run Monte Carlo debris heatmaps, ML surrogate validation, and multi-biome AI WTA leaderboards"
+      >
+        <LayoutGridIcon className="size-4" />
+        <span className="map-rail-label">Bench</span>
       </button>
 
       <div className="map-rail-divider" aria-hidden="true" />

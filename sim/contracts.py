@@ -21,7 +21,7 @@ SCOPE_EXERCISE_OBSERVATION = "EXERCISE_OBSERVATION"
 SCOPE_EVALUATION = "EVALUATION"
 
 FIDELITY_KINEMATIC_3DOF = "kinematic_3dof_drag_wind_v1"
-SIM_ENGINE_VERSION = "emad-sim-py-0.2.0"
+SIM_ENGINE_VERSION = "emad-sim-py-0.3.0"
 
 
 @dataclass(frozen=True)
@@ -147,6 +147,9 @@ class ScenarioSpec:
     safe_window_building_weight: float = 4.0
     safe_window_road_weight: float = 1.5
     safe_window_protected_zone_weight: float = 10.0
+    enable_civilian_traffic: bool = True
+    safe_window_civilian_weight: float = 25.0
+    safe_window_population_weight: float = 0.04
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> "ScenarioSpec":
@@ -177,6 +180,9 @@ class ScenarioSpec:
             safe_window_building_weight=float(raw.get("safeWindowBuildingWeight", 4.0)),
             safe_window_road_weight=float(raw.get("safeWindowRoadWeight", 1.5)),
             safe_window_protected_zone_weight=float(raw.get("safeWindowProtectedZoneWeight", 10.0)),
+            enable_civilian_traffic=bool(raw.get("enableCivilianTraffic", True)),
+            safe_window_civilian_weight=float(raw.get("safeWindowCivilianWeight", 25.0)),
+            safe_window_population_weight=float(raw.get("safeWindowPopulationWeight", 0.04)),
         )
 
     def with_policy(self, policy: str) -> "ScenarioSpec":
@@ -208,6 +214,9 @@ class ScenarioSpec:
             safe_window_building_weight=data["safe_window_building_weight"],
             safe_window_road_weight=data["safe_window_road_weight"],
             safe_window_protected_zone_weight=data["safe_window_protected_zone_weight"],
+            enable_civilian_traffic=data["enable_civilian_traffic"],
+            safe_window_civilian_weight=data["safe_window_civilian_weight"],
+            safe_window_population_weight=data["safe_window_population_weight"],
         )
 
     def to_dict(self) -> dict[str, Any]:

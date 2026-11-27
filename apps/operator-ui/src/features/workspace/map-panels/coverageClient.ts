@@ -1,8 +1,31 @@
 import type { Feature, FeatureCollection } from 'geojson'
 
-export type CovPlacementTool = null | 'add-radar' | 'add-eo_ir' | 'add-acoustic' | 'asset' | 'route-pt'
+export type CovPlacementTool = null | 'add-radar' | 'add-eo_ir' | 'add-acoustic' | 'add-jammer' | 'asset' | 'route-pt'
 export type CovSensorType = 'radar' | 'eo_ir' | 'acoustic'
-export type CovPresetId = 'baseline_multimodal' | 'dust_storm' | 'gap_filler_radar' | 'stealth_uav'
+export type CovPresetId = 'baseline_multimodal' | 'dust_storm' | 'gap_filler_radar' | 'stealth_uav' | 'ew_jammed'
+
+export interface CovJammerDraft {
+  id: string
+  label: string
+  lon: number
+  lat: number
+  aglM: number
+  erpRatio: number
+  beamWidthDeg: number
+}
+
+export interface CovAdversarialRoute {
+  routeId: string
+  label: string
+  aglM: number
+  speedMps: number
+  stealthFraction: number
+  trackedFraction: number
+  lengthM: number
+  warningTimeS: number
+  warningDistanceM: number
+  pointsLonLat: [number, number, number][]
+}
 
 export interface CovPresetMeta {
   id: CovPresetId
@@ -18,8 +41,8 @@ export const COV_TACTICAL_PRESETS: CovPresetMeta[] = [
   },
   {
     id: 'dust_storm',
-    label: 'Dust Storm (EO Degraded)',
-    summary: '1.8 km visibility + 14 m/s wind stressing EO/IR & acoustic range',
+    label: 'CAMS Dust Storm',
+    summary: '1.5 km CAMS dust visibility + 14 m/s wind stressing EO/IR & acoustic range',
   },
   {
     id: 'gap_filler_radar',
@@ -30,6 +53,11 @@ export const COV_TACTICAL_PRESETS: CovPresetMeta[] = [
     id: 'stealth_uav',
     label: 'Low-RCS Micro-UAV',
     summary: 'Tiny 0.02 m² RCS target at 20–120 m AGL with rooftop siting',
+  },
+  {
+    id: 'ew_jammed',
+    label: 'Stand-Off EW Jammer',
+    summary: 'Active stand-off RF jammer degrading radar burn-through along NW ingress',
   },
 ]
 
@@ -94,7 +122,9 @@ export interface CovSetupDraft {
     swapPasses: number
     redundancyWeight: number
     routeWeight?: number
+    optimizeOrientation?: boolean
   }
+  jammers?: CovJammerDraft[]
   includeBuildings: boolean
   mapLayerAglM: number
 }
@@ -131,6 +161,7 @@ export interface CovBlindCauses {
   totalBlindKm2: number
   buildingBlockedKm2: number
   terrainBlockedKm2: number
+  jammedKm2?: number
   outOfRangeOrSectorKm2: number
 }
 
@@ -232,6 +263,35 @@ export const startCovRun = (draft: CovSetupDraft, jobId?: string) =>
     body: JSON.stringify(jobId ? { ...draft, jobId } : draft),
   })
 
+export const exportCovNetwork = (payload: {
+  environmentId: string
+  jobId?: string
+  name?: string
+  sensors?: unknown[]
+}) =>
+  covJson<{ layoutId: string; name: string; sensorCount: number }>('/api/export-network', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
+export const findCovAdversarialRoute = (payload: {
+  environmentId: string
+  aglM: number
+  speedMps?: number
+  includeBuildings?: boolean
+  rcsM2?: number
+  visibilityKm?: number
+  surfaceWindMps?: number
+  assetLon?: number
+  assetLat?: number
+  jammers?: CovJammerDraft[]
+  sensors: unknown[]
+}) =>
+  covJson<CovAdversarialRoute>('/api/adversarial-route', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+
 export async function startLocalCovService(): Promise<{ ok: boolean; origin?: string; error?: string }> {
   const res = await fetch('/__local/cov/start', { method: 'POST' })
   const text = await res.text()
@@ -270,12 +330,31 @@ export function applyCovPreset(env: CovEnvironment, presetId: CovPresetId): CovS
   if (presetId === 'dust_storm') {
     return {
       ...base,
-      title: `${shortTitle} — Dust Storm EO/Acoustic Stress`,
+      title: `${shortTitle} — CAMS Dust Storm EO/Acoustic Stress`,
       weather: {
-        visibilityKm: 1.8,
+        visibilityKm: 1.5,
         useEra5Wind: false,
         surfaceWindMps: 14,
       },
+      jammers: [],
+    }
+  }
+  if (presetId === 'ew_jammed') {
+    const [w, s, e, n] = env.boundsWgs84
+    return {
+      ...base,
+      title: `${shortTitle} — Stand-Off EW Jammed Radar`,
+      jammers: [
+        {
+          id: 'jammer-1',
+          label: 'Stand-Off EW Jammer',
+          lon: Number((w + (e - w) * 0.16).toFixed(6)),
+          lat: Number((s + (n - s) * 0.84).toFixed(6)),
+          aglM: 180,
+          erpRatio: 16,
+          beamWidthDeg: 36,
+        },
+      ],
     }
   }
   if (presetId === 'gap_filler_radar') {
@@ -346,6 +425,7 @@ export function buildCoverageOverlay(
   draft: CovSetupDraft | undefined,
   resultOverlay: FeatureCollection | null,
   overlayConfig: 'both' | 'baseline' | 'optimized',
+  stealthRoute?: CovAdversarialRoute | null,
 ): FeatureCollection {
   const features: Feature[] = []
   if (!env || !draft) return { type: 'FeatureCollection', features }
@@ -424,6 +504,30 @@ export function buildCoverageOverlay(
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [sensor.lon, sensor.lat] },
       properties: { simKind: `cov-sensor-${sensor.type}`, label: sensor.label },
+    })
+  }
+
+  // Stand-off EW jammers
+  for (const jam of draft.jammers ?? []) {
+    features.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [jam.lon, jam.lat] },
+      properties: { simKind: 'cov-detect-baseline', label: `EW: ${jam.label}` },
+    })
+  }
+
+  // Adversarial A* least-detection stealth route
+  if (stealthRoute && stealthRoute.pointsLonLat.length >= 2) {
+    features.push({
+      type: 'Feature',
+      geometry: {
+        type: 'LineString',
+        coordinates: stealthRoute.pointsLonLat.map((p) => [p[0], p[1]]),
+      },
+      properties: {
+        simKind: 'cov-move',
+        label: `Stealth (${Math.round(stealthRoute.stealthFraction * 100)}% unseen · ${stealthRoute.warningTimeS}s warn)`,
+      },
     })
   }
 
