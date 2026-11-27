@@ -1,4 +1,12 @@
 import type { Feature, FeatureCollection } from 'geojson'
+import {
+  buildSimViewerHref,
+  resolveSimViewerOrigin,
+  restartUnifiedLocalSimHub,
+  simPlatformJson,
+  startUnifiedLocalSimHub,
+  subscribeSimPlatformRun,
+} from './simPlatformGateway'
 
 export type CovPlacementTool = null | 'add-radar' | 'add-eo_ir' | 'add-acoustic' | 'add-jammer' | 'asset' | 'route-pt'
 export type CovSensorType = 'radar' | 'eo_ir' | 'acoustic'
@@ -182,7 +190,7 @@ export interface CovRunJob {
   environmentId: string
   environmentTitle: string
   title: string
-  status: 'running' | 'completed' | 'failed' | 'interrupted'
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'interrupted' | 'cancelled'
   stage: string
   createdAt: string
   completedAt: string | null
@@ -228,40 +236,31 @@ export interface CovHealth {
   totalRuns: number
 }
 
-const COV_API_BASE = '/cov-api'
+const covJson = <T>(path: string, init?: RequestInit): Promise<T> =>
+  simPlatformJson<T>('coverage', path, init, 'Sensor coverage service')
 
-async function covJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${COV_API_BASE}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-  })
-  const text = await res.text()
-  let parsed: unknown = null
-  try {
-    parsed = text ? JSON.parse(text) : null
-  } catch {
-    // Non-JSON proxy error
-  }
-  if (!res.ok) {
-    const errField =
-      parsed !== null && typeof parsed === 'object' && 'error' in parsed
-        ? String((parsed as { error: unknown }).error)
-        : ''
-    throw new Error(errField || `Sensor coverage service returned HTTP ${res.status}`)
-  }
-  return parsed as T
+export const fetchCovHealth = async (): Promise<CovHealth> => {
+  const h = await covJson<CovHealth>('/health')
+  return { ...h, viewerOrigin: await resolveSimViewerOrigin('coverage', h.viewerOrigin) }
 }
-
-export const fetchCovHealth = () => covJson<CovHealth>('/api/health')
 export const fetchCovEnvironments = async () =>
-  (await covJson<{ environments: CovEnvironment[] }>('/api/environments')).environments
-export const fetchCovRuns = async () => (await covJson<{ runs: CovRunJob[] }>('/api/runs')).runs
-export const fetchCovRun = (jobId: string) => covJson<CovRunJob>(`/api/runs/${encodeURIComponent(jobId)}`)
+  (await covJson<{ environments: CovEnvironment[] }>('/environments')).environments
+export const fetchCovRuns = async () => (await covJson<{ runs: CovRunJob[] }>('/runs')).runs
+export const fetchCovRun = (jobId: string) => covJson<CovRunJob>(`/runs/${encodeURIComponent(jobId)}`)
 export const startCovRun = (draft: CovSetupDraft, jobId?: string) =>
-  covJson<CovRunJob>('/api/runs', {
+  covJson<CovRunJob>('/runs', {
     method: 'POST',
+    headers: jobId ? { 'Idempotency-Key': jobId } : undefined,
     body: JSON.stringify(jobId ? { ...draft, jobId } : draft),
   })
+export const cancelCovRun = (jobId: string) =>
+  covJson<CovRunJob>(`/runs/${encodeURIComponent(jobId)}/cancel`, { method: 'POST' })
+export const subscribeCovRun = (
+  jobId: string,
+  onUpdate: (job: CovRunJob) => void,
+  onTerminal?: (job: CovRunJob) => void,
+) => subscribeSimPlatformRun('coverage', jobId, fetchCovRun, onUpdate, onTerminal)
+export { buildSimViewerHref }
 
 export const exportCovNetwork = (payload: {
   environmentId: string
@@ -269,7 +268,7 @@ export const exportCovNetwork = (payload: {
   name?: string
   sensors?: unknown[]
 }) =>
-  covJson<{ layoutId: string; name: string; sensorCount: number }>('/api/export-network', {
+  covJson<{ layoutId: string; name: string; sensorCount: number }>('/export-network', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -287,35 +286,13 @@ export const findCovAdversarialRoute = (payload: {
   jammers?: CovJammerDraft[]
   sensors: unknown[]
 }) =>
-  covJson<CovAdversarialRoute>('/api/adversarial-route', {
+  covJson<CovAdversarialRoute>('/adversarial-route', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 
-export async function startLocalCovService(): Promise<{ ok: boolean; origin?: string; error?: string }> {
-  const res = await fetch('/__local/cov/start', { method: 'POST' })
-  const text = await res.text()
-  try {
-    const parsed = JSON.parse(text) as { ok?: boolean; origin?: string; error?: string }
-    return { ok: Boolean(res.ok && parsed.ok), origin: parsed.origin, error: parsed.error }
-  } catch {
-    return {
-      ok: false,
-      error: `Auto-start endpoint unavailable (HTTP ${res.status}). Start manually with "task dev:coverage".`,
-    }
-  }
-}
-
-export async function restartLocalCovService(): Promise<{ ok: boolean; origin?: string; error?: string }> {
-  const res = await fetch('/__local/cov/restart', { method: 'POST' })
-  const text = await res.text()
-  try {
-    const parsed = JSON.parse(text) as { ok?: boolean; origin?: string; error?: string }
-    return { ok: Boolean(res.ok && parsed.ok), origin: parsed.origin, error: parsed.error }
-  } catch {
-    return { ok: false, error: `Restart endpoint unavailable (HTTP ${res.status}).` }
-  }
-}
+export const startLocalCovService = () => startUnifiedLocalSimHub('/__local/cov/start', 'task dev:sim-hub')
+export const restartLocalCovService = () => restartUnifiedLocalSimHub('/__local/cov/restart')
 
 export function cloneCovDraft(draft: CovSetupDraft): CovSetupDraft {
   return JSON.parse(JSON.stringify(draft)) as CovSetupDraft

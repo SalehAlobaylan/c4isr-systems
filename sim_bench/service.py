@@ -10,6 +10,7 @@ import numpy as np
 
 from salvo_defense.wta import DEFAULT_AI_WTA_PATH, load_ai_wta_model
 from sim_core.atmosphere import AtmosphereModel, AtmosphereOverrideConfig
+from sim_core.cache import SharedBiomeCache
 from sim_core.environment import EnvironmentModel
 from sim_core.registry import BiomePreset, discover_biomes
 
@@ -24,31 +25,22 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 class BenchService:
     """Serves Monte Carlo debris risk heatmaps, ML model metadata, and AI WTA leaderboards."""
 
-    def __init__(self, *, repo_root: Path = REPO_ROOT, public_origin: str = "http://127.0.0.1:8768") -> None:
+    def __init__(
+        self,
+        *,
+        repo_root: Path = REPO_ROOT,
+        public_origin: str = "http://127.0.0.1:8768",
+        biome_cache: SharedBiomeCache | None = None,
+    ) -> None:
         self.repo_root = Path(repo_root).resolve()
         self.public_origin = public_origin.rstrip("/")
-        self._presets: dict[str, BiomePreset] = {p.id: p for p in discover_biomes(self.repo_root)}
-        self._env_cache: dict[str, EnvironmentModel] = {}
-        self._env_lock = threading.Lock()
+        self._biome_cache = biome_cache or SharedBiomeCache(self.repo_root)
+        self._presets: dict[str, BiomePreset] = self._biome_cache.presets
         self._bench_lock = threading.Lock()
         self._bench_running = False
 
     def _get_env(self, env_id: str) -> tuple[BiomePreset, EnvironmentModel]:
-        preset = self._presets.get(env_id)
-        if preset is None:
-            raise KeyError(f"Unknown environmentId: {env_id}")
-        with self._env_lock:
-            env = self._env_cache.get(env_id)
-            if env is None:
-                env = EnvironmentModel(
-                    preset.package_path,
-                    expected_manifest_sha256=preset.expected_manifest_sha256,
-                    ghs_obat_path=preset.ghs_obat_path,
-                    worldpop_path=preset.worldpop_path,
-                    gebco_path=preset.gebco_path,
-                )
-                self._env_cache[env_id] = env
-        return preset, env
+        return self._biome_cache.get_env(env_id)
 
     def health(self) -> dict[str, Any]:
         return {

@@ -4,16 +4,17 @@ import { ExternalLinkIcon, RadarIcon, RefreshIcon } from '@/components/icons'
 import {
   SIM_TACTICAL_PRESETS,
   applyTacticalPreset,
+  buildSimViewerHref,
   buildSimulationOverlay,
   draftFromEnvironment,
   fetchSimEnvironments,
   fetchSimHealth,
   fetchSimNetworks,
-  fetchSimRun,
   fetchSimRuns,
   isPointInEnvBounds,
   startLocalSimService,
   startSimRun,
+  subscribeSimRun,
   type SharedSensorNetwork,
   type SimEnvironment,
   type SimHealth,
@@ -202,38 +203,30 @@ export function SimulationSetupPanel({
     return () => registerMapClick(null)
   }, [activeTool, selectedEnv, draft, defaultWaypointAgl, registerMapClick, onSelectTool, onNotice])
 
-  // Poll active running job so 2D map & metrics update live
+  // Stream active job updates via Go SSE (with automatic polling fallback in zero-Docker mode)
   useEffect(() => {
-    if (!activeJob || activeJob.status !== 'running') return
+    if (!activeJob || (activeJob.status !== 'running' && activeJob.status !== 'queued')) return
     let cancelled = false
-    const timer = window.setInterval(() => {
-      void fetchSimRun(activeJob.jobId)
-        .then((updated) => {
-          if (cancelled) return
-          setActiveJob(updated)
-          setRuns((prev) => prev.map((r) => (r.jobId === updated.jobId ? updated : r)))
-          if (updated.status !== 'running') {
-            window.clearInterval(timer)
-            void fetchSimRuns().then((list) => {
-              if (!cancelled) setRuns(list)
-            })
-          }
+    const unsub = subscribeSimRun(
+      activeJob.jobId,
+      (updated) => {
+        if (cancelled) return
+        setActiveJob(updated)
+        setRuns((prev) => prev.map((r) => (r.jobId === updated.jobId ? updated : r)))
+      },
+      () => {
+        void fetchSimRuns().then((list) => {
+          if (!cancelled) setRuns(list)
         })
-        .catch(() => {
-          /* retry next tick */
-        })
-    }, 350)
+      },
+    )
     return () => {
       cancelled = true
-      window.clearInterval(timer)
+      unsub()
     }
   }, [activeJob?.jobId, activeJob?.status])
 
-  const buildViewerHref = (job: SimRunJob) => {
-    const url = new URL(job.viewerUrl)
-    url.searchParams.set('mapOrigin', window.location.origin)
-    return url.toString()
-  }
+  const buildViewerHref = (job: SimRunJob) => buildSimViewerHref(job.viewerUrl)
 
   const handleRun = async () => {
     if (!draft || !health) return
@@ -387,7 +380,7 @@ export function SimulationSetupPanel({
               </button>
             </div>
             <p className="text-xs ux-muted">
-              Manual fallback: <code>task dev:sim</code>
+              Manual fallback: <code>task dev:sim-hub</code>
             </p>
           </div>
         )}

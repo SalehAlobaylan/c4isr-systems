@@ -1,4 +1,12 @@
 import type { Feature, FeatureCollection } from 'geojson'
+import {
+  buildSimViewerHref,
+  resolveSimViewerOrigin,
+  restartUnifiedLocalSimHub,
+  simPlatformJson,
+  startUnifiedLocalSimHub,
+  subscribeSimPlatformRun,
+} from './simPlatformGateway'
 
 export type SimPlacementTool = null | 'radar' | 'launcher' | 'protected' | 'threat'
 export type SimRunMode = 'compare' | 'earliest' | 'safe_window'
@@ -144,7 +152,7 @@ export interface SimRunJob {
   title: string
   mode: SimRunMode
   seed: number
-  status: 'running' | 'completed' | 'failed' | 'interrupted'
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'interrupted' | 'cancelled'
   stage: string
   createdAt: string
   completedAt: string | null
@@ -214,65 +222,36 @@ export interface SimHealth {
   totalRuns: number
 }
 
-const SIM_API_BASE = '/sim-api'
+const simJson = <T>(path: string, init?: RequestInit): Promise<T> =>
+  simPlatformJson<T>('sim', path, init, 'Simulation service')
 
-async function simJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${SIM_API_BASE}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-  })
-  const text = await res.text()
-  let parsed: unknown = null
-  try {
-    parsed = text ? JSON.parse(text) : null
-  } catch {
-    // Non-JSON proxy error (e.g., ECONNREFUSED when service is down)
-  }
-  if (!res.ok) {
-    const errField =
-      parsed !== null && typeof parsed === 'object' && 'error' in parsed
-        ? String((parsed as { error: unknown }).error)
-        : ''
-    throw new Error(errField || `Simulation service returned HTTP ${res.status}`)
-  }
-  return parsed as T
+export const fetchSimHealth = async (): Promise<SimHealth> => {
+  const h = await simJson<SimHealth>('/health')
+  return { ...h, viewerOrigin: await resolveSimViewerOrigin('sim', h.viewerOrigin) }
 }
-
-export const fetchSimHealth = () => simJson<SimHealth>('/api/health')
-export const fetchSimEnvironments = async () => (await simJson<{ environments: SimEnvironment[] }>('/api/environments')).environments
-export const fetchSimRuns = async () => (await simJson<{ runs: SimRunJob[] }>('/api/runs')).runs
-export const fetchSimNetworks = async () => (await simJson<{ networks: SharedSensorNetwork[] }>('/api/networks')).networks
-export const fetchSimRun = (jobId: string) => simJson<SimRunJob>(`/api/runs/${encodeURIComponent(jobId)}`)
+export const fetchSimEnvironments = async () =>
+  (await simJson<{ environments: SimEnvironment[] }>('/environments')).environments
+export const fetchSimRuns = async () => (await simJson<{ runs: SimRunJob[] }>('/runs')).runs
+export const fetchSimNetworks = async () =>
+  (await simJson<{ networks: SharedSensorNetwork[] }>('/networks')).networks
+export const fetchSimRun = (jobId: string) => simJson<SimRunJob>(`/runs/${encodeURIComponent(jobId)}`)
 export const startSimRun = (draft: SimSetupDraft, jobId?: string) =>
-  simJson<SimRunJob>('/api/runs', {
+  simJson<SimRunJob>('/runs', {
     method: 'POST',
+    headers: jobId ? { 'Idempotency-Key': jobId } : undefined,
     body: JSON.stringify(jobId ? { ...draft, jobId } : draft),
   })
+export const cancelSimRun = (jobId: string) =>
+  simJson<SimRunJob>(`/runs/${encodeURIComponent(jobId)}/cancel`, { method: 'POST' })
+export const subscribeSimRun = (
+  jobId: string,
+  onUpdate: (job: SimRunJob) => void,
+  onTerminal?: (job: SimRunJob) => void,
+) => subscribeSimPlatformRun('sim', jobId, fetchSimRun, onUpdate, onTerminal)
+export { buildSimViewerHref }
 
-export async function startLocalSimService(): Promise<{ ok: boolean; origin?: string; error?: string }> {
-  const res = await fetch('/__local/sim/start', { method: 'POST' })
-  const text = await res.text()
-  try {
-    const parsed = JSON.parse(text) as { ok?: boolean; origin?: string; error?: string }
-    return { ok: Boolean(res.ok && parsed.ok), origin: parsed.origin, error: parsed.error }
-  } catch {
-    return {
-      ok: false,
-      error: `Auto-start endpoint unavailable (HTTP ${res.status}). Start manually with "task dev:sim".`,
-    }
-  }
-}
-
-export async function restartLocalSimService(): Promise<{ ok: boolean; origin?: string; error?: string }> {
-  const res = await fetch('/__local/sim/restart', { method: 'POST' })
-  const text = await res.text()
-  try {
-    const parsed = JSON.parse(text) as { ok?: boolean; origin?: string; error?: string }
-    return { ok: Boolean(res.ok && parsed.ok), origin: parsed.origin, error: parsed.error }
-  } catch {
-    return { ok: false, error: `Restart endpoint unavailable (HTTP ${res.status}).` }
-  }
-}
+export const startLocalSimService = () => startUnifiedLocalSimHub('/__local/sim/start', 'task dev:sim-hub')
+export const restartLocalSimService = () => restartUnifiedLocalSimHub('/__local/sim/restart')
 
 export function draftFromEnvironment(env: SimEnvironment): SimSetupDraft {
   return {

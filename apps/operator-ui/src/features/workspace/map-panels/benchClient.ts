@@ -1,4 +1,5 @@
 import type { Feature, FeatureCollection } from 'geojson'
+import { simPlatformJson, startUnifiedLocalSimHub } from './simPlatformGateway'
 
 export interface BenchEnvironment {
   id: string
@@ -97,33 +98,15 @@ export interface BenchmarkReport {
   leaderboard: LeaderboardEntry[]
 }
 
-const BENCH_API = '/bench-api'
+const benchJson = <T>(path: string, init?: RequestInit): Promise<T> =>
+  simPlatformJson<T>('bench', path, init, 'Benchmark service')
 
-async function benchJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BENCH_API}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-  })
-  const text = await res.text()
-  let parsed: unknown = null
-  try {
-    parsed = text ? JSON.parse(text) : null
-  } catch {
-    /* non-JSON */
-  }
-  if (!res.ok) {
-    const err = parsed && typeof parsed === 'object' && 'error' in parsed ? String((parsed as { error: unknown }).error) : ''
-    throw new Error(err || `Benchmark service returned HTTP ${res.status}`)
-  }
-  return parsed as T
-}
-
-export const fetchBenchHealth = () => benchJson<BenchHealth>('/api/health')
+export const fetchBenchHealth = () => benchJson<BenchHealth>('/health')
 export const fetchBenchEnvironments = async () =>
-  (await benchJson<{ environments: BenchEnvironment[] }>('/api/environments')).environments
-export const fetchBenchModels = () => benchJson<BenchModelsStatus>('/api/models')
+  (await benchJson<{ environments: BenchEnvironment[] }>('/environments')).environments
+export const fetchBenchModels = () => benchJson<BenchModelsStatus>('/models')
 export const fetchBenchLeaderboard = async () =>
-  (await benchJson<{ leaderboard: BenchmarkReport | null }>('/api/leaderboard')).leaderboard
+  (await benchJson<{ leaderboard: BenchmarkReport | null }>('/leaderboard')).leaderboard
 export const runMonteCarloApi = (payload: {
   environmentId: string
   lon: number
@@ -135,25 +118,17 @@ export const runMonteCarloApi = (payload: {
   windSigmaMps: number
   windAddEnuMps: [number, number, number]
 }) =>
-  benchJson<MonteCarloResult>('/api/monte-carlo', {
+  benchJson<MonteCarloResult>('/monte-carlo', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 export const runBenchmarkApi = (payload: { biomes?: string[]; seeds?: number[] }) =>
-  benchJson<BenchmarkReport>('/api/benchmark', {
+  benchJson<BenchmarkReport>('/benchmark', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 
-export async function startLocalBenchService(): Promise<{ ok: boolean; origin?: string; error?: string }> {
-  const res = await fetch('/__local/bench/start', { method: 'POST' })
-  try {
-    const p = (await res.json()) as { ok?: boolean; origin?: string; error?: string }
-    return { ok: Boolean(res.ok && p.ok), origin: p.origin, error: p.error }
-  } catch {
-    return { ok: false, error: `Auto-start failed (HTTP ${res.status}). Start manually with "task dev:bench".` }
-  }
-}
+export const startLocalBenchService = () => startUnifiedLocalSimHub('/__local/bench/start', 'task dev:sim-hub')
 
 export function buildBenchOverlay(
   env: BenchEnvironment | undefined,

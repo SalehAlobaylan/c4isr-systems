@@ -53,6 +53,7 @@ import (
 	"github.com/SalehAlobaylan/c4isr-systems/internal/recordings"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/reference"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/scenarios"
+	"github.com/SalehAlobaylan/c4isr-systems/internal/simgateway"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/simruntime"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/simscene"
 	"github.com/SalehAlobaylan/c4isr-systems/internal/sources"
@@ -74,6 +75,7 @@ type App struct {
 	pool               *pgxpool.Pool
 	handler            http.Handler
 	scenarios          *scenarios.Service
+	simGateway         *simgateway.Service
 	staleMonitorCancel context.CancelFunc
 	staleMonitorDone   <-chan struct{}
 }
@@ -265,12 +267,23 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, options ..
 	}
 	studio := &simscene.Service{Pool: pool, Assets: modelassets.New(pool, artifactStore), Packages: contextpackage.NewService(pool, artifactSvc)}
 	recorder := &recordings.Service{Pool: pool, Store: artifactStore}
+	allowLocalDebrief := cfg.Environment == config.EnvironmentDevelopment || cfg.Environment == config.EnvironmentTest
+	simGatewaySvc := simgateway.NewService(
+		cfg.SimWorkerURL,
+		cfg.SimWorkerSecret,
+		cfg.SimMaxConcurrentJobs,
+		allowLocalDebrief,
+		pool,
+		artifactStore,
+		logger,
+	)
 	router := buildRouter(cfg, logger, pool, metrics, lookupOperator, identityStore, moduleHandlers{
 		blobStore:       artifactStore,
 		recordings:      recorder,
 		modelAssets:     studio.Assets,
 		studio:          studio,
 		runtime:         &simruntime.Broker{Pool: pool, Scenes: studio, Exercise: native, Recorder: recorder, AdmittedBuilds: cfg.RuntimeBuilds},
+		simGateway:      simGatewaySvc,
 		contextRecords:  publiccontext.Service{Pool: pool},
 		externalTracks:  externaltracks.Service{Pool: pool},
 		artifacts:       artifacts.Handler{Service: artifactSvc},
@@ -315,6 +328,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger, options ..
 		pool:               pool,
 		handler:            router,
 		scenarios:          scenarioSvc,
+		simGateway:         simGatewaySvc,
 		staleMonitorCancel: staleMonitorCancel,
 		staleMonitorDone:   staleMonitorDone,
 	}, nil
@@ -325,6 +339,9 @@ func (a *App) Handler() http.Handler { return a.handler }
 
 // Close releases the connection pool.
 func (a *App) Close() {
+	if a.simGateway != nil {
+		a.simGateway.Close()
+	}
 	if a.staleMonitorCancel != nil {
 		a.staleMonitorCancel()
 		if a.staleMonitorDone != nil {
@@ -401,6 +418,7 @@ type moduleHandlers struct {
 	blobStore       artifacts.Store
 	studio          *simscene.Service
 	runtime         *simruntime.Broker
+	simGateway      *simgateway.Service
 	recordings      *recordings.Service
 	modelAssets     *modelassets.Service
 	contextRecords  publiccontext.Service
@@ -525,6 +543,9 @@ func buildRouter(cfg config.Config, logger *slog.Logger, pool *pgxpool.Pool, met
 		}
 		if !cfg.MapOnly() && h.modelAssets != nil {
 			h.modelAssets.Mount(r)
+		}
+		if h.simGateway != nil {
+			h.simGateway.Mount(r)
 		}
 		h.contextRecords.Mount(r)
 		h.externalTracks.Mount(r)

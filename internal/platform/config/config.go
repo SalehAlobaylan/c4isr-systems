@@ -4,7 +4,9 @@ package config
 import (
 	"encoding/hex"
 	"fmt"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -33,6 +35,9 @@ type Config struct {
 	// PublicConnectorsFile is an optional trusted location manifest; empty means no external retrieval.
 	PublicConnectorsFile string
 	RuntimeBuilds        []string
+	SimWorkerURL         string
+	SimWorkerSecret      string
+	SimMaxConcurrentJobs int
 	HTTPAddr             string
 	DatabaseURL          string
 	LogLevel             string
@@ -203,6 +208,21 @@ func Load() (Config, error) {
 	if environment == EnvironmentStaging {
 		cfg.EnvironmentParallel = 2
 	}
+	cfg.SimWorkerURL = strings.TrimRight(strings.TrimSpace(os.Getenv("C4ISR_SIM_WORKER_URL")), "/")
+	if cfg.SimWorkerURL == "" && (environment == EnvironmentDevelopment || environment == EnvironmentTest) {
+		cfg.SimWorkerURL = "http://127.0.0.1:8765"
+	}
+	if cfg.SimWorkerSecret, err = secretEnv("C4ISR_SIM_WORKER_SECRET"); err != nil {
+		return Config{}, err
+	}
+	cfg.SimMaxConcurrentJobs = 2
+	if raw := strings.TrimSpace(os.Getenv("C4ISR_SIM_MAX_CONCURRENT")); raw != "" {
+		parsed, parseErr := strconv.Atoi(raw)
+		if parseErr != nil || parsed < 1 || parsed > 8 {
+			return Config{}, fmt.Errorf("C4ISR_SIM_MAX_CONCURRENT must be between 1 and 8")
+		}
+		cfg.SimMaxConcurrentJobs = parsed
+	}
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
 	}
@@ -323,6 +343,15 @@ func (cfg Config) Validate() error {
 	}
 	if environment != EnvironmentDevelopment && environment != EnvironmentTest && !strings.EqualFold(strings.TrimSpace(cfg.LogFormat), "json") {
 		return fmt.Errorf("C4ISR_LOG_FORMAT=json is required in staging and production")
+	}
+	if cfg.SimWorkerURL != "" {
+		u, err := url.Parse(cfg.SimWorkerURL)
+		if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil {
+			return fmt.Errorf("C4ISR_SIM_WORKER_URL must be a valid HTTP(S) origin without credentials")
+		}
+		if environment == EnvironmentProduction && u.Scheme != "https" && u.Hostname() != "127.0.0.1" && u.Hostname() != "localhost" {
+			return fmt.Errorf("C4ISR_SIM_WORKER_URL requires HTTPS off loopback in production")
+		}
 	}
 	return nil
 }

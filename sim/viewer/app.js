@@ -2,6 +2,28 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+const API_BASE = (() => {
+  const p = window.location.pathname;
+  if (p.startsWith('/sim-viewers/sim')) return '/api/v1/sim-platform/sim';
+  if (p.startsWith('/viewer/sim')) return '/api/sim';
+  return '/api';
+})();
+const USES_GO_GATEWAY = API_BASE.startsWith('/api/v1/');
+function apiHeaders(extra = {}) {
+  const h = { ...extra };
+  const tok = window.__C4ISR_CONFIG__?.apiToken;
+  if (USES_GO_GATEWAY && tok) h.Authorization = `Bearer ${tok}`;
+  return h;
+}
+function apiFetch(relPath, opts = {}) {
+  return fetch(`${API_BASE}${relPath}`, { ...opts, headers: apiHeaders(opts.headers || {}) });
+}
+async function loadGlbAuth(url) {
+  const loader = new GLTFLoader();
+  loader.setRequestHeader(apiHeaders());
+  return loader.loadAsync(url);
+}
+
 // Coordinate conversion matching EMAD prepare_display_terrain.py:
 // ENU [east, north, up] -> Three.js [east, up, -north]
 function enuToThree(p) {
@@ -289,9 +311,11 @@ async function resolveDataEndpoints(overrideRunId = null) {
         document.getElementById('map-return-link').href = `${u.origin}/map`;
       }
     } catch { /* ignore */ }
+  } else if (window.location.pathname.startsWith('/sim-viewers/')) {
+    document.getElementById('map-return-link').href = '/map';
   }
 
-  const meta = await (await fetch('/data/meta.json')).json();
+  const meta = API_BASE === '/api' ? await (await fetch('/data/meta.json')).json() : { serviceMode: true };
   if (!meta.serviceMode) {
     return {
       serviceMode: false,
@@ -305,7 +329,7 @@ async function resolveDataEndpoints(overrideRunId = null) {
     };
   }
 
-  const runsPayload = await (await fetch('/api/runs')).json();
+  const runsPayload = await (await apiFetch('/runs')).json();
   const allRuns = runsPayload.runs || [];
   let jobId = requestedRun;
 
@@ -328,7 +352,7 @@ async function resolveDataEndpoints(overrideRunId = null) {
   let job = null;
   let notFoundRetries = 0;
   while (true) {
-    const res = await fetch(`/api/runs/${encodeURIComponent(jobId)}`);
+    const res = await apiFetch(`/runs/${encodeURIComponent(jobId)}`);
     if (res.status === 404 && notFoundRetries < 25) {
       notFoundRetries += 1;
       setLoading(
@@ -342,7 +366,7 @@ async function resolveDataEndpoints(overrideRunId = null) {
     if (!res.ok) throw new Error(`Simulation run "${jobId}" was not found on this service.`);
     job = await res.json();
     if (job.status === 'completed') break;
-    if (job.status === 'failed' || job.status === 'interrupted') {
+    if (job.status === 'failed' || job.status === 'interrupted' || job.status === 'cancelled') {
       throw new Error(job.error || job.stage || 'Simulation failed.');
     }
     setLoading(
@@ -353,15 +377,15 @@ async function resolveDataEndpoints(overrideRunId = null) {
     await new Promise((r) => setTimeout(r, 260));
   }
 
-  const latestRuns = (await (await fetch('/api/runs')).json()).runs || allRuns;
+  const latestRuns = (await (await apiFetch('/runs')).json()).runs || allRuns;
   return {
     serviceMode: true,
     jobId,
     hasGlb: Boolean(job.hasGlb),
     hasImagery: Boolean(job.hasImagery),
-    replayUrl: `/api/runs/${encodeURIComponent(jobId)}/replay.json`,
-    glbUrl: `/api/runs/${encodeURIComponent(jobId)}/terrain.glb`,
-    imageryUrl: `/api/runs/${encodeURIComponent(jobId)}/imagery.json`,
+    replayUrl: `${API_BASE}/runs/${encodeURIComponent(jobId)}/replay.json`,
+    glbUrl: `${API_BASE}/runs/${encodeURIComponent(jobId)}/terrain.glb`,
+    imageryUrl: `${API_BASE}/runs/${encodeURIComponent(jobId)}/imagery.json`,
     allRuns: latestRuns,
   };
 }
@@ -523,7 +547,7 @@ async function init() {
     let terrainObject = null;
     if (ep.hasGlb) {
       statusEl.textContent = 'Loading verified EMAD terrain GLB…';
-      const gltf = await new GLTFLoader().loadAsync(ep.glbUrl);
+      const gltf = await loadGlbAuth(ep.glbUrl);
       terrainObject = gltf.scene;
       terrainObject.traverse((o) => {
         if (o.isMesh) {
@@ -570,7 +594,7 @@ async function init() {
     if (ep.hasImagery && terrainObject) {
       try {
         statusEl.textContent = 'Draping Sentinel-2 optical imagery…';
-        const imgData = await (await fetch(ep.imageryUrl)).json();
+        const imgData = await (await fetch(ep.imageryUrl, { headers: apiHeaders() })).json();
         const rawBytes = Uint8Array.from(atob(imgData.texture), (c) => c.charCodeAt(0));
         const bitmap = await createImageBitmap(new Blob([rawBytes], { type: 'image/png' }), { imageOrientation: 'flipY' });
         const texture = new THREE.Texture(bitmap);
@@ -661,10 +685,43 @@ async function init() {
     }
   }
 
+  let activeViewScope = new URLSearchParams(window.location.search).get('view') === 'operator' ? 'operator' : 'debrief';
+
+  function syncViewScopeButtons(noteText = '') {
+    const btnOp = document.getElementById('btn-view-operator');
+    const btnDeb = document.getElementById('btn-view-debrief');
+    const noteEl = document.getElementById('view-scope-note');
+    if (btnOp) btnOp.classList.toggle('active', activeViewScope === 'operator');
+    if (btnDeb) btnDeb.classList.toggle('active', activeViewScope === 'debrief');
+    if (noteEl) {
+      if (noteText) {
+        noteEl.textContent = noteText;
+        noteEl.style.display = 'block';
+      } else if (activeViewScope === 'operator') {
+        noteEl.textContent = 'EXERCISE_OBSERVATION ONLY — Sealed threat truth & evaluation stripped on server.';
+        noteEl.style.display = 'block';
+      } else {
+        noteEl.style.display = 'none';
+      }
+    }
+  }
+
   // ── Load a Replay Bundle (supports initial load AND live What-If hot reloads!) ──
   async function loadRunBundle(ep, preserveCamera = false) {
     endpoints = ep;
-    replay = await (await fetch(ep.replayUrl)).json();
+    const sep = ep.replayUrl.includes('?') ? '&' : '?';
+    const scopedUrl = ep.serviceMode ? `${ep.replayUrl}${sep}view=${encodeURIComponent(activeViewScope)}` : ep.replayUrl;
+    let repRes = await fetch(scopedUrl, { headers: apiHeaders(), cache: 'no-store' });
+    let scopeNote = '';
+    if (repRes.status === 403 && activeViewScope === 'debrief') {
+      activeViewScope = 'operator';
+      scopeNote = 'Debrief truth requires sim.truth.read authorization — showing Operator COP (EXERCISE_OBSERVATION).';
+      repRes = await fetch(`${ep.replayUrl}${sep}view=operator`, { headers: apiHeaders(), cache: 'no-store' });
+    }
+    if (!repRes.ok) throw new Error(`Replay load failed (HTTP ${repRes.status})`);
+    replay = await repRes.json();
+    if (replay.truthRedacted) activeViewScope = 'operator';
+    syncViewScopeButtons(scopeNote);
     await loadEnvironmentGeometry(replay, ep);
 
     // Populate run switcher
@@ -709,7 +766,7 @@ async function init() {
     const wiStatus = document.getElementById('whatif-status');
     if (!draftForWhatIf && ep.serviceMode) {
       try {
-        const [envRes, healthRes] = await Promise.all([fetch('/api/environments'), fetch('/api/health')]);
+        const [envRes, healthRes] = await Promise.all([apiFetch('/environments'), apiFetch('/health')]);
         const envList = envRes.ok ? (await envRes.json()).environments || [] : [];
         const healthDoc = healthRes.ok ? await healthRes.json() : null;
         const matched = envList.find((e) => e.manifestSha256 === replay.environment?.manifestSha256) || envList[0];
@@ -735,7 +792,10 @@ async function init() {
       document.getElementById('wi-wind-e').value = sd.atmosphere?.windAddEnuMps?.[0] ?? 0;
       document.getElementById('wi-wind-n').value = sd.atmosphere?.windAddEnuMps?.[1] ?? 0;
       document.getElementById('wi-seed').value = sd.seed ?? 20261125;
-      document.getElementById('btn-whatif-run').disabled = !ep.serviceMode;
+      document.getElementById('btn-whatif-run').disabled = !ep.serviceMode || Boolean(replay.truthRedacted);
+      if (replay.truthRedacted) {
+        wiStatus.textContent = 'Switch to Evaluator Debrief to edit sealed threat waypoints & run What-If.';
+      }
     } else {
       document.getElementById('btn-whatif-run').disabled = true;
     }
@@ -895,33 +955,36 @@ async function init() {
     obsDotObjects = [];
     pickableObjects = [];
 
-    const tr = currentRun.truth;
-    const obs = currentRun.observations;
-    const ev = currentRun.evaluation;
+    const tr = currentRun.truth || null;
+    const ownIntTraj = tr?.interceptorTrajectory || currentRun.ownForceTelemetry?.interceptorTrajectory || [];
+    const obs = currentRun.observations || { detections: [], tracks: [] };
+    const ev = currentRun.evaluation || null;
     const rawEvents = currentRun.timelineEvents || {};
     const events = {
       firstDetectionS: rawEvents.firstDetectionS ?? (obs.detections?.length ? obs.detections[0].tS : null),
-      launchS: rawEvents.launchS ?? (tr.intercept?.launchTimeS ?? null),
-      interceptS: rawEvents.interceptS ?? (tr.intercept?.intercepted ? tr.intercept.interceptTimeS : null),
+      launchS: rawEvents.launchS ?? (tr?.intercept?.launchTimeS ?? (ownIntTraj.length ? ownIntTraj[0].tS : null)),
+      interceptS: rawEvents.interceptS ?? (tr?.intercept?.intercepted ? tr.intercept.interceptTimeS : null),
       lastImpactS:
         rawEvents.lastImpactS ??
-        (tr.intercept?.intercepted && tr.shrapnel?.footprint?.maxFallTimeS != null
+        (tr?.intercept?.intercepted && tr.shrapnel?.footprint?.maxFallTimeS != null
           ? Number((tr.intercept.interceptTimeS + tr.shrapnel.footprint.maxFallTimeS).toFixed(1))
           : null),
     };
 
-    const lastThreatT = tr.threatTrajectory.length ? tr.threatTrajectory[tr.threatTrajectory.length - 1].tS : 30;
-    const fallT = tr.shrapnel ? tr.shrapnel.footprint.maxFallTimeS : 0;
-    const intT = tr.intercept.intercepted ? tr.intercept.interceptTimeS : lastThreatT;
-    maxTime = Math.max(lastThreatT, intT + fallT) + 2.0;
+    const lastObsT = obs.tracks?.length ? obs.tracks[obs.tracks.length - 1].tS : 30;
+    const lastOwnIntT = ownIntTraj.length ? ownIntTraj[ownIntTraj.length - 1].tS : 0;
+    const lastThreatT = tr?.threatTrajectory?.length ? tr.threatTrajectory[tr.threatTrajectory.length - 1].tS : Math.max(lastObsT, lastOwnIntT, 30);
+    const fallT = tr?.shrapnel ? tr.shrapnel.footprint.maxFallTimeS : 0;
+    const intT = tr?.intercept?.intercepted ? tr.intercept.interceptTimeS : lastThreatT;
+    maxTime = Math.max(lastThreatT, intT + fallT, lastOwnIntT) + 2.0;
 
     const slider = document.getElementById('time-slider');
     slider.max = maxTime.toFixed(1);
     simTime = 0;
     slider.value = '0';
 
-    // 1. Faint full path guides + bright progressive animated trail lines
-    threatLineCoords = tr.threatTrajectory.map((s) => enuToThree(s.enu));
+    // 1. Faint full path guides + bright progressive animated trail lines (only when truth is authorized)
+    threatLineCoords = (tr?.threatTrajectory || []).map((s) => enuToThree(s.enu));
     if (threatLineCoords.length > 1) {
       const guide = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints(threatLineCoords),
@@ -939,6 +1002,7 @@ async function init() {
     }
 
     threatModel = createThreatModel(currentRun.threatKind || 'one_way_uav');
+    threatModel.visible = false;
     layerGroups.truth.add(threatModel);
 
     // Radar LOS beam
@@ -946,10 +1010,11 @@ async function init() {
       new THREE.BufferGeometry().setFromPoints([radarPos.clone(), radarPos.clone()]),
       new THREE.LineBasicMaterial({ color: 0x58d5ff, transparent: true, opacity: 0.85 })
     );
+    losLine.visible = false;
     layerGroups.truth.add(losLine);
 
-    // Interceptor trail & oriented missile model
-    intLineCoords = tr.interceptorTrajectory.map((s) => enuToThree(s.enu));
+    // Interceptor trail & oriented missile model (permitted own-force telemetry in both Operator & Debrief views)
+    intLineCoords = ownIntTraj.map((s) => enuToThree(s.enu));
     if (intLineCoords.length > 1) {
       const guide = new THREE.Line(
         new THREE.BufferGeometry().setFromPoints(intLineCoords),
@@ -961,13 +1026,13 @@ async function init() {
       const progGeom = new THREE.BufferGeometry().setFromPoints(intLineCoords);
       progGeom.setDrawRange(0, 0);
       activeIntLine = new THREE.Line(progGeom, new THREE.LineBasicMaterial({ color: 0x69f0ae }));
-      layerGroups.truth.add(activeIntLine);
+      layerGroups.obs.add(activeIntLine);
     } else {
       activeIntLine = null;
     }
     interceptorModel = createInterceptorModel();
     interceptorModel.visible = false;
-    layerGroups.truth.add(interceptorModel);
+    layerGroups.obs.add(interceptorModel);
 
     // Intercept burst sphere + expanding shockwave ring
     burstMesh = new THREE.Mesh(
@@ -979,7 +1044,7 @@ async function init() {
       new THREE.MeshBasicMaterial({ color: 0xfff3c4, side: THREE.DoubleSide, transparent: true, opacity: 0.0 })
     );
     shockRingMesh.rotation.x = -Math.PI / 2;
-    if (tr.intercept.intercepted) {
+    if (tr?.intercept?.intercepted) {
       const ip = enuToThree(tr.intercept.interceptEnu);
       burstMesh.position.copy(ip);
       shockRingMesh.position.copy(ip);
@@ -1090,8 +1155,8 @@ async function init() {
       }
     }
 
-    // 5. Shrapnel trails, animated fragments, clickable impacts, and active 90% ellipse
-    if (tr.intercept.intercepted && tr.shrapnel) {
+    // 5. Shrapnel trails, animated fragments, clickable impacts, and active 90% ellipse (Debrief only)
+    if (tr?.intercept?.intercepted && tr.shrapnel) {
       const classColor = { heavy: 0xff5c72, medium: 0xffca63, light: 0x8be9ff };
       for (const trail of tr.shrapnel.trails) {
         const pts = trail.points.map((p) => enuToThree([p[1], p[2], p[3]]));
@@ -1160,28 +1225,37 @@ async function init() {
       tabs.appendChild(b);
     }
 
-    const exp = ev.shrapnelExposure || {};
-    const fp = ev.shrapnelFootprint || {};
-    const ri = ev.roadImpact || {};
-    const ad = ev.airspaceDeconfliction || {};
-    const intr = ev.interception;
-    const sens = ev.sensing;
-    const expPct = exp.urbanExposureFraction != null ? (exp.urbanExposureFraction * 100).toFixed(1) + '%' : 'N/A';
-    const expCls = exp.urbanExposureFraction != null ? (exp.urbanExposureFraction < 0.15 ? 'good' : exp.urbanExposureFraction > 0.35 ? 'bad' : 'warn') : '';
-    const airCls = ad.warningLevel === 'HOLD_FIRE' ? 'bad' : ad.warningLevel === 'ADVISORY' ? 'warn' : 'good';
+    if (ev) {
+      const exp = ev.shrapnelExposure || {};
+      const fp = ev.shrapnelFootprint || {};
+      const ri = ev.roadImpact || {};
+      const ad = ev.airspaceDeconfliction || {};
+      const intr = ev.interception;
+      const sens = ev.sensing;
+      const expPct = exp.urbanExposureFraction != null ? (exp.urbanExposureFraction * 100).toFixed(1) + '%' : 'N/A';
+      const expCls = exp.urbanExposureFraction != null ? (exp.urbanExposureFraction < 0.15 ? 'good' : exp.urbanExposureFraction > 0.35 ? 'bad' : 'warn') : '';
+      const airCls = ad.warningLevel === 'HOLD_FIRE' ? 'bad' : ad.warningLevel === 'ADVISORY' ? 'warn' : 'good';
 
-    document.getElementById('metrics-grid').innerHTML = `
-      <div class="metric"><div class="label">Intercept</div><div class="val ${intr.intercepted ? 'good' : 'bad'}">${intr.intercepted ? `t=${intr.interceptTimeS}s` : 'MISS'}</div></div>
-      <div class="metric"><div class="label">Intercept Alt</div><div class="val">${intr.interceptAglM != null ? intr.interceptAglM.toFixed(0) + 'm AGL' : '—'}</div></div>
-      <div class="metric"><div class="label">Building Hits (≥80J)</div><div class="val ${exp.buildingHits > 10 ? 'bad' : exp.buildingHits > 0 ? 'warn' : 'good'}">${exp.buildingHits ?? '—'}${exp.hazardousBuildingHits != null ? ` (${exp.hazardousBuildingHits})` : ''}</div></div>
-      <div class="metric"><div class="label">WorldPop Exposed</div><div class="val ${exp.estimatedPopulationExposed > 25 ? 'bad' : exp.estimatedPopulationExposed > 5 ? 'warn' : 'good'}">${exp.estimatedPopulationExposed != null ? `~${exp.estimatedPopulationExposed.toFixed(1)}` : '—'}</div></div>
-      <div class="metric"><div class="label">Road Impact / Detour</div><div class="val ${ri.emergencyDetourDelayS > 60 ? 'warn' : ''}">${ri.blockedRoadKm != null ? `${ri.blockedRoadKm.toFixed(2)}km (+${Math.round(ri.emergencyDetourDelayS || 0)}s)` : `${exp.roadHits ?? '—'} hits`}</div></div>
-      <div class="metric"><div class="label">Civil Airspace</div><div class="val ${airCls}">${ad.warningLevel || 'CLEAR'}${ad.closestCallsign ? ` (${ad.closestCallsign})` : ''}</div></div>
-      <div class="metric"><div class="label">Urban Exposure</div><div class="val ${expCls}">${expPct}</div></div>
-      <div class="metric"><div class="label">Wind Drift</div><div class="val">${fp.driftDistanceM != null ? fp.driftDistanceM.toFixed(0) + 'm' : '—'}</div></div>
-      <div class="metric"><div class="label">Hazardous Debris</div><div class="val warn">${exp.hazardousHits != null ? `${exp.hazardousHits}/${exp.total}` : '—'}</div></div>
-      <div class="metric"><div class="label">Radar Occlusion</div><div class="val">${(sens.occlusionFraction * 100).toFixed(0)}%</div></div>
-    `;
+      document.getElementById('metrics-grid').innerHTML = `
+        <div class="metric"><div class="label">Intercept</div><div class="val ${intr.intercepted ? 'good' : 'bad'}">${intr.intercepted ? `t=${intr.interceptTimeS}s` : 'MISS'}</div></div>
+        <div class="metric"><div class="label">Intercept Alt</div><div class="val">${intr.interceptAglM != null ? intr.interceptAglM.toFixed(0) + 'm AGL' : '—'}</div></div>
+        <div class="metric"><div class="label">Building Hits (≥80J)</div><div class="val ${exp.buildingHits > 10 ? 'bad' : exp.buildingHits > 0 ? 'warn' : 'good'}">${exp.buildingHits ?? '—'}${exp.hazardousBuildingHits != null ? ` (${exp.hazardousBuildingHits})` : ''}</div></div>
+        <div class="metric"><div class="label">WorldPop Exposed</div><div class="val ${exp.estimatedPopulationExposed > 25 ? 'bad' : exp.estimatedPopulationExposed > 5 ? 'warn' : 'good'}">${exp.estimatedPopulationExposed != null ? `~${exp.estimatedPopulationExposed.toFixed(1)}` : '—'}</div></div>
+        <div class="metric"><div class="label">Road Impact / Detour</div><div class="val ${ri.emergencyDetourDelayS > 60 ? 'warn' : ''}">${ri.blockedRoadKm != null ? `${ri.blockedRoadKm.toFixed(2)}km (+${Math.round(ri.emergencyDetourDelayS || 0)}s)` : `${exp.roadHits ?? '—'} hits`}</div></div>
+        <div class="metric"><div class="label">Civil Airspace</div><div class="val ${airCls}">${ad.warningLevel || 'CLEAR'}${ad.closestCallsign ? ` (${ad.closestCallsign})` : ''}</div></div>
+        <div class="metric"><div class="label">Urban Exposure</div><div class="val ${expCls}">${expPct}</div></div>
+        <div class="metric"><div class="label">Wind Drift</div><div class="val">${fp.driftDistanceM != null ? fp.driftDistanceM.toFixed(0) + 'm' : '—'}</div></div>
+        <div class="metric"><div class="label">Hazardous Debris</div><div class="val warn">${exp.hazardousHits != null ? `${exp.hazardousHits}/${exp.total}` : '—'}</div></div>
+        <div class="metric"><div class="label">Radar Occlusion</div><div class="val">${(sens.occlusionFraction * 100).toFixed(0)}%</div></div>
+      `;
+    } else {
+      document.getElementById('metrics-grid').innerHTML = `
+        <div class="metric"><div class="label">Partition Scope</div><div class="val warn">OBSERVATION</div></div>
+        <div class="metric"><div class="label">Detections</div><div class="val">${obs.detections?.length ?? 0}</div></div>
+        <div class="metric"><div class="label">Track Updates</div><div class="val">${obs.tracks?.length ?? 0}</div></div>
+        <div class="metric"><div class="label">Truth &amp; Eval</div><div class="val warn">SEALED</div></div>
+      `;
+    }
 
     const deltaBox = document.getElementById('delta-box');
     const d = replay.comparison?.safeWindowVsEarliest;
@@ -1241,12 +1315,13 @@ async function init() {
       actor.group.position.copy(pos);
       if (pos.distanceToSquared(nxt) > 1e-4) actor.group.lookAt(nxt);
     }
-    const tr = currentRun.truth;
-    const obs = currentRun.observations;
-    const intT = tr.intercept.intercepted ? tr.intercept.interceptTimeS : Infinity;
+    const tr = currentRun.truth || null;
+    const ownIntTraj = tr?.interceptorTrajectory || currentRun.ownForceTelemetry?.interceptorTrajectory || [];
+    const obs = currentRun.observations || { detections: [], tracks: [] };
+    const intT = tr?.intercept?.intercepted ? tr.intercept.interceptTimeS : Infinity;
 
-    // Threat position, orientation & progressive trail
-    const th = interpTrajectory(tr.threatTrajectory, Math.min(t, intT));
+    // Threat position, orientation & progressive trail (only in Evaluator Debrief)
+    const th = tr?.threatTrajectory?.length ? interpTrajectory(tr.threatTrajectory, Math.min(t, intT)) : null;
     if (th && t <= intT) {
       threatModel.visible = true;
       threatModel.position.copy(th.pos);
@@ -1263,7 +1338,7 @@ async function init() {
       }
 
       let clear = true;
-      for (const scan of tr.radarLosTruth) {
+      for (const scan of tr.radarLosTruth || []) {
         if (scan.sampleS <= t) clear = scan.losClear;
         else break;
       }
@@ -1281,9 +1356,9 @@ async function init() {
       if (activeThreatLine) activeThreatLine.geometry.setDrawRange(0, threatLineCoords.length);
     }
 
-    // Interceptor position, orientation & progressive trail
-    const ic = interpTrajectory(tr.interceptorTrajectory, t);
-    if (ic && t <= intT) {
+    // Interceptor position, orientation & progressive trail (own-force telemetry)
+    const ic = ownIntTraj.length ? interpTrajectory(ownIntTraj, t) : null;
+    if (ic && !ic.ended && t <= intT) {
       interceptorModel.visible = true;
       interceptorModel.position.copy(ic.pos);
       if (ic.vel.lengthSq() > 1e-4) {
@@ -1291,8 +1366,8 @@ async function init() {
       }
       if (activeIntLine) {
         let count = 0;
-        for (let i = 0; i < tr.interceptorTrajectory.length; i++) {
-          if (tr.interceptorTrajectory[i].tS <= t) count = i + 1;
+        for (let i = 0; i < ownIntTraj.length; i++) {
+          if (ownIntTraj[i].tS <= t) count = i + 1;
           else break;
         }
         activeIntLine.geometry.setDrawRange(0, count);
@@ -1300,12 +1375,13 @@ async function init() {
     } else {
       interceptorModel.visible = false;
       if (activeIntLine) {
-        activeIntLine.geometry.setDrawRange(0, t > intT ? intLineCoords.length : 0);
+        const finished = t > intT || Boolean(ic?.ended);
+        activeIntLine.geometry.setDrawRange(0, finished ? intLineCoords.length : 0);
       }
     }
 
-    // Burst flash + shockwave ring
-    if (tr.intercept.intercepted && t >= intT && t <= intT + 2.8) {
+    // Burst flash + shockwave ring (Debrief only)
+    if (tr?.intercept?.intercepted && t >= intT && t <= intT + 2.8) {
       const age = (t - intT) / 2.8;
       burstMesh.visible = true;
       burstMesh.scale.setScalar(0.35 + age * 2.5);
@@ -1332,8 +1408,8 @@ async function init() {
       trackHeadMesh.visible = false;
     }
 
-    // Animated shrapnel fragments, progressive trails & ground impacts
-    if (tr.intercept.intercepted && t >= intT) {
+    // Animated shrapnel fragments, progressive trails & ground impacts (Debrief only)
+    if (tr?.intercept?.intercepted && t >= intT) {
       const tRel = t - intT;
       for (const fm of fragMeshes) {
         const res = interpTrailPoint(fm.points, tRel);
@@ -1359,9 +1435,9 @@ async function init() {
       for (const im of impactMeshes) im.mesh.visible = false;
     }
 
-    let phase = 'Threat Approaching';
-    if (tr.intercept.intercepted && t >= intT) phase = 'Post-Intercept Shrapnel Drift & Impact';
-    else if (ic && t <= intT) phase = 'Interceptor Pursuing Threat';
+    let phase = tr ? 'Threat Approaching' : 'Monitoring Airspace (Observation Only)';
+    if (tr?.intercept?.intercepted && t >= intT) phase = 'Post-Intercept Shrapnel Drift & Impact';
+    else if (ic && t <= intT) phase = 'Interceptor Pursuing Track';
     else if (latestTrack) phase = `Radar Tracking (${latestTrack.updateCount} obs)`;
 
     document.getElementById('live-status').textContent = `t = ${t.toFixed(1)}s · ${phase}`;
@@ -1539,7 +1615,7 @@ async function init() {
         ],
       };
 
-      const res = await fetch('/api/runs', {
+      const res = await apiFetch('/runs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(base),
@@ -1565,6 +1641,29 @@ async function init() {
       runBtn.disabled = false;
     }
   };
+
+  const btnViewOp = document.getElementById('btn-view-operator');
+  const btnViewDeb = document.getElementById('btn-view-debrief');
+  if (btnViewOp) {
+    btnViewOp.onclick = async () => {
+      if (!endpoints || activeViewScope === 'operator') return;
+      activeViewScope = 'operator';
+      const u = new URL(window.location.href);
+      u.searchParams.set('view', 'operator');
+      window.history.replaceState({}, '', u.toString());
+      await loadRunBundle(endpoints, true);
+    };
+  }
+  if (btnViewDeb) {
+    btnViewDeb.onclick = async () => {
+      if (!endpoints || activeViewScope === 'debrief') return;
+      activeViewScope = 'debrief';
+      const u = new URL(window.location.href);
+      u.searchParams.set('view', 'debrief');
+      window.history.replaceState({}, '', u.toString());
+      await loadRunBundle(endpoints, true);
+    };
+  }
 
   // Keyboard shortcuts & smooth WASD/QE free-fly
   window.addEventListener('keydown', (e) => {

@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import re
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from sim_core.http_base import (
     BaseSimHandler,
@@ -17,12 +17,14 @@ from sim_core.http_base import (
     json_response,
     serve_three_vendor,
 )
+from sim_core.truth_filter import filter_salvo_replay
 
 from ..service import SalvoService
 
 VIEWER_DIR = Path(__file__).resolve().parent
 REPO_ROOT = VIEWER_DIR.parents[1]
-RUN_ASSET_RE = re.compile(r"^/api/runs/([a-zA-Z0-9_-]+)(?:/(replay\.json|terrain\.glb|imagery\.json))?$")
+RUN_ASSET_RE = re.compile(r"^/api/runs/([a-zA-Z0-9_-]+)(?:/(replay\.json|terrain\.glb|imagery\.json|cancel))?$")
+SESSION_RE = re.compile(r"^/api/sessions/([a-zA-Z0-9_-]+)(?:/(step|commands|stop))?$")
 
 
 class SalvoRouter:
@@ -53,6 +55,58 @@ class SalvoRouter:
             return json_response({"runs": self.service.list_runs()})
         if method == "GET" and req_path == "/api/networks":
             return json_response({"networks": self.service.list_networks()})
+
+        # Live interactive command-in-the-loop sessions (Phase 4)
+        if method == "GET" and req_path == "/api/sessions":
+            return json_response({"sessions": self.service.list_sessions()})
+        if method == "POST" and req_path == "/api/sessions":
+            try:
+                payload = json.loads(body.decode("utf-8") or "{}")
+                if not isinstance(payload, dict):
+                    raise ValueError("Request body must be a JSON object")
+                sess = self.service.start_session(payload)
+                return json_response(sess, HTTPStatus.CREATED)
+            except (ValueError, KeyError) as exc:
+                return json_response({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            except Exception as exc:
+                return json_response({"error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+        smatch = SESSION_RE.match(req_path)
+        if smatch:
+            sid, saction = smatch.group(1), smatch.group(2)
+            if method == "GET" and saction is None:
+                sess = self.service.get_session(sid)
+                if sess is None:
+                    return json_response({"error": "Session not found"}, HTTPStatus.NOT_FOUND)
+                return json_response(sess)
+            if method == "POST" and saction == "step":
+                try:
+                    payload = json.loads(body.decode("utf-8") or "{}")
+                    ticks = int(payload.get("ticks", 1))
+                    cmds = payload.get("commands")
+                    sess = self.service.step_session(sid, ticks=ticks, commands=cmds if isinstance(cmds, list) else None)
+                    if sess is None:
+                        return json_response({"error": "Session not found"}, HTTPStatus.NOT_FOUND)
+                    return json_response(sess)
+                except (ValueError, TypeError) as exc:
+                    return json_response({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            if method == "POST" and saction == "commands":
+                try:
+                    payload = json.loads(body.decode("utf-8") or "{}")
+                    if not isinstance(payload, dict) or not payload.get("kind"):
+                        raise ValueError("Command payload must include kind")
+                    sess = self.service.command_session(sid, payload)
+                    if sess is None:
+                        return json_response({"error": "Session not found"}, HTTPStatus.NOT_FOUND)
+                    return json_response(sess, HTTPStatus.ACCEPTED)
+                except ValueError as exc:
+                    return json_response({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
+            if method == "POST" and saction == "stop":
+                sess = self.service.stop_session(sid)
+                if sess is None:
+                    return json_response({"error": "Session not found"}, HTTPStatus.NOT_FOUND)
+                return json_response(sess)
+
         if method == "POST" and req_path == "/api/runs":
             try:
                 payload = json.loads(body.decode("utf-8") or "{}")
@@ -67,6 +121,11 @@ class SalvoRouter:
                 return json_response({"error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
         match = RUN_ASSET_RE.match(req_path)
+        if method == "POST" and match and match.group(2) == "cancel":
+            job = self.service.cancel_run(match.group(1))
+            if job is None:
+                return json_response({"error": "Run not found"}, HTTPStatus.NOT_FOUND)
+            return json_response(job)
         if method == "GET" and match:
             job_id, asset = match.group(1), match.group(2)
             if asset is None:
@@ -79,7 +138,15 @@ class SalvoRouter:
                 return int(HTTPStatus.NOT_FOUND), "text/plain; charset=utf-8", b"Run not found"
             run_dir, glb, imagery = assets
             if asset == "replay.json":
-                return file_response(run_dir / "replay.json", "application/json")
+                rp = run_dir / "replay.json"
+                if not rp.is_file():
+                    return int(HTTPStatus.NOT_FOUND), "text/plain; charset=utf-8", b"Not found"
+                qs = parse_qs(urlparse(raw_path).query)
+                view = (qs.get("view") or ["debrief"])[0].lower()
+                if view == "operator":
+                    doc = json.loads(rp.read_text(encoding="utf-8"))
+                    return json_response(filter_salvo_replay(doc, view="operator"))
+                return file_response(rp, "application/json")
             if asset == "terrain.glb":
                 if glb is None:
                     return int(HTTPStatus.NOT_FOUND), "text/plain; charset=utf-8", b"No GLB"

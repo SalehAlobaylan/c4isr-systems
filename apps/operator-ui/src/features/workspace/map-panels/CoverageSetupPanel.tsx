@@ -5,17 +5,18 @@ import {
   COV_TACTICAL_PRESETS,
   applyCovPreset,
   buildCoverageOverlay,
+  buildSimViewerHref,
   cloneCovDraft,
   exportCovNetwork,
   fetchCovEnvironments,
   fetchCovHealth,
-  fetchCovRun,
   fetchCovRuns,
   findCovAdversarialRoute,
   isPointInCovBounds,
   restartLocalCovService,
   startCovRun,
   startLocalCovService,
+  subscribeCovRun,
   type CovAdversarialRoute,
   type CovEnvironment,
   type CovHealth,
@@ -277,38 +278,30 @@ export function CoverageSetupPanel({
     return () => registerMapClick(null)
   }, [activeTool, selectedEnv, draft, routeAglM, registerMapClick, onSelectTool, onNotice])
 
-  // Poll running job until complete
+  // Stream running/queued job updates via Go SSE (with automatic polling fallback)
   useEffect(() => {
-    if (!activeJob || activeJob.status !== 'running') return
+    if (!activeJob || (activeJob.status !== 'running' && activeJob.status !== 'queued')) return
     let cancelled = false
-    const timer = window.setInterval(() => {
-      void fetchCovRun(activeJob.jobId)
-        .then((updated) => {
-          if (cancelled) return
-          setActiveJob(updated)
-          setRuns((prev) => prev.map((r) => (r.jobId === updated.jobId ? updated : r)))
-          if (updated.status !== 'running') {
-            window.clearInterval(timer)
-            void fetchCovRuns().then((list) => {
-              if (!cancelled) setRuns(list)
-            })
-          }
+    const unsub = subscribeCovRun(
+      activeJob.jobId,
+      (updated) => {
+        if (cancelled) return
+        setActiveJob(updated)
+        setRuns((prev) => prev.map((r) => (r.jobId === updated.jobId ? updated : r)))
+      },
+      () => {
+        void fetchCovRuns().then((list) => {
+          if (!cancelled) setRuns(list)
         })
-        .catch(() => {
-          /* retry next tick */
-        })
-    }, 350)
+      },
+    )
     return () => {
       cancelled = true
-      window.clearInterval(timer)
+      unsub()
     }
   }, [activeJob?.jobId, activeJob?.status])
 
-  const buildViewerHref = (job: CovRunJob) => {
-    const url = new URL(job.viewerUrl)
-    url.searchParams.set('mapOrigin', window.location.origin)
-    return url.toString()
-  }
+  const buildViewerHref = (job: CovRunJob) => buildSimViewerHref(job.viewerUrl)
 
   const handleRun = async () => {
     if (!draft || !health) return
@@ -505,7 +498,7 @@ export function CoverageSetupPanel({
           </div>
         ) : startingService || loading ? (
           <p className="ux-muted" role="status">
-            Starting local Sensor Coverage engine on <code>127.0.0.1:8766</code>…
+            Starting unified Simulation Hub on <code>127.0.0.1:8765</code>…
           </p>
         ) : (
           <div className="ux-notice space-y-2" role="alert">
@@ -528,7 +521,7 @@ export function CoverageSetupPanel({
               </button>
             </div>
             <p className="text-xs ux-muted">
-              Manual fallback: <code>task dev:coverage</code>
+              Manual fallback: <code>task dev:sim-hub</code>
             </p>
           </div>
         )}
@@ -1119,7 +1112,7 @@ export function CoverageSetupPanel({
               <div className="space-y-2 pt-2 border-t border-slate-300/40">
                 <div className="flex items-center justify-between gap-2 text-xs">
                   <span className="font-semibold">
-                    {activeJob.status === 'running'
+                    {activeJob.status === 'running' || activeJob.status === 'queued'
                       ? 'Computing…'
                       : activeJob.status === 'completed'
                         ? `Completed (${activeJob.summary?.elapsedS ?? '—'}s)`
@@ -1137,7 +1130,7 @@ export function CoverageSetupPanel({
                     </a>
                   )}
                 </div>
-                {activeJob.status === 'running' && <p className="ux-muted text-xs">{activeJob.stage}</p>}
+                {(activeJob.status === 'running' || activeJob.status === 'queued') && <p className="ux-muted text-xs">{activeJob.stage}</p>}
                 {activeJob.error && <p className="ux-notice text-xs">{activeJob.error}</p>}
 
                 {activeJob.status === 'completed' && activeJob.summary?.baseline && (

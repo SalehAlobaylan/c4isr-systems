@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EMAD 3D Simulation Workbench</title>
+  <script src="/config.js" onerror="void 0"></script>
   <script type="importmap">
     {
       "imports": {
@@ -210,6 +211,12 @@
       <div id="scenario-meta" class="subtitle"></div>
       <div id="badges"></div>
 
+      <div id="view-scope-bar" class="tabs-bar" style="margin-top:6px;">
+        <button id="btn-view-operator" class="btn" type="button" style="flex:1;font-size:10.5px;" title="Show strictly EXERCISE_OBSERVATION detections, tracker & own-force telemetry (truth stripped on server)">🛡 Operator COP</button>
+        <button id="btn-view-debrief" class="btn active" type="button" style="flex:1;font-size:10.5px;" title="Unlock sealed EXERCISE_TRUTH & evaluation debrief (requires sim.truth.read)">🔍 Evaluator Debrief</button>
+      </div>
+      <div id="view-scope-note" class="subtitle" style="margin-top:4px;font-size:10.5px;color:var(--amber);display:none;"></div>
+
       <div class="tabs-bar">
         <button id="tab-telemetry" class="btn active" type="button" style="flex:1;">Telemetry &amp; Eval</button>
         <button id="tab-whatif" class="btn" type="button" style="flex:1;">⚡ What-If Re-Run</button>
@@ -402,6 +409,6 @@
     </div>
   </div>
 
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>

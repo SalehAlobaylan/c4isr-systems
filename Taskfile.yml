@@ -73,9 +73,13 @@ tasks:
     cmds:
       - '"{{.RECOVERY_PYTHON}}" scripts/ops/paired_backup.py restore-test'
   dev:
-    desc: Start the map API, web application, 3D simulation & coverage services and public workers
+    desc: Start the map API, web application, unified 3D simulation hub and public workers
     cmds:
       - python scripts/ops/local.py dev
+  dev:sim-hub:
+    desc: Start the unified Python simulation compute hub (sim + coverage + salvo + bench) on http://127.0.0.1:8765
+    cmds:
+      - '"{{.RECOVERY_PYTHON}}" -m sim_core service --host 127.0.0.1 --port {{.C4ISR_SIM_PORT | default "8765"}} --standalone'
   dev:sim:
     desc: Start the standalone local 3D simulation service and replay viewer on http://127.0.0.1:8765
     cmds:
@@ -237,7 +241,7 @@ tasks:
   test:race:
     desc: Run concurrency-sensitive tests with the race detector
     cmds:
-      - go test -race ./internal/realtime ./internal/platform/presentation ./internal/platform/access ./internal/platform/httpx ./internal/platform/observability ./internal/scenarios ./internal/telemetry ./internal/tracks ./internal/geospatial ./internal/alerts ./internal/incidents ./internal/missions ./internal/commands ./internal/publicingest ./internal/publicevents ./internal/eventrules ./internal/reference ./internal/simulation ./internal/contextpackage ./internal/exerciseingest ./internal/observations ./internal/sources ./internal/artifacts ./internal/imagery ./internal/imageryanalysis ./internal/assessments ./internal/externaltracks ./internal/publiccontext ./internal/modelassets ./internal/simscene ./internal/simruntime ./internal/nativeexercise ./internal/recordings ./apps/emad-recordings
+      - go test -race ./internal/realtime ./internal/platform/presentation ./internal/platform/access ./internal/platform/httpx ./internal/platform/observability ./internal/scenarios ./internal/telemetry ./internal/tracks ./internal/geospatial ./internal/alerts ./internal/incidents ./internal/missions ./internal/commands ./internal/publicingest ./internal/publicevents ./internal/eventrules ./internal/reference ./internal/simulation ./internal/simgateway ./internal/contextpackage ./internal/exerciseingest ./internal/observations ./internal/sources ./internal/artifacts ./internal/imagery ./internal/imageryanalysis ./internal/assessments ./internal/externaltracks ./internal/publiccontext ./internal/modelassets ./internal/simscene ./internal/simruntime ./internal/nativeexercise ./internal/recordings ./apps/emad-recordings
 
   test:e2e:
     desc: Run operator UI browser smoke tests (Chromium required)

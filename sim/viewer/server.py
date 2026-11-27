@@ -24,7 +24,9 @@ import re
 import socket
 import sys
 from typing import Any
-from urllib.parse import unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
+
+from sim_core.truth_filter import filter_sim_replay
 
 from ..service import SimulationService
 
@@ -36,7 +38,7 @@ mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("application/javascript", ".mjs")
 mimetypes.add_type("model/gltf-binary", ".glb")
 
-RUN_ASSET_RE = re.compile(r"^/api/runs/([a-zA-Z0-9_-]+)(?:/(replay\.json|terrain\.glb|imagery\.json))?$")
+RUN_ASSET_RE = re.compile(r"^/api/runs/([a-zA-Z0-9_-]+)(?:/(replay\.json|terrain\.glb|imagery\.json|cancel))?$")
 
 
 def _cors_origin(origin: str | None) -> str | None:
@@ -122,6 +124,11 @@ class ReplayRouter:
                     return self._json_response({"error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
             match = RUN_ASSET_RE.match(req_path)
+            if method == "POST" and match and match.group(2) == "cancel":
+                job = self.service.cancel_run(match.group(1))
+                if job is None:
+                    return self._json_response({"error": "Run not found"}, HTTPStatus.NOT_FOUND)
+                return self._json_response(job)
             if method == "GET" and match:
                 job_id, asset = match.group(1), match.group(2)
                 if asset is None:
@@ -134,7 +141,15 @@ class ReplayRouter:
                     return int(HTTPStatus.NOT_FOUND), "text/plain; charset=utf-8", b"Run not found"
                 run_dir, glb, imagery = assets
                 if asset == "replay.json":
-                    return self._file_response(run_dir / "replay.json", "application/json")
+                    rp = run_dir / "replay.json"
+                    if not rp.is_file():
+                        return int(HTTPStatus.NOT_FOUND), "text/plain; charset=utf-8", b"Not found"
+                    qs = parse_qs(urlparse(raw_path).query)
+                    view = (qs.get("view") or ["debrief"])[0].lower()
+                    if view == "operator":
+                        doc = json.loads(rp.read_text(encoding="utf-8"))
+                        return self._json_response(filter_sim_replay(doc, view="operator"))
+                    return self._file_response(rp, "application/json")
                 if asset == "terrain.glb":
                     if glb is None:
                         return int(HTTPStatus.NOT_FOUND), "text/plain; charset=utf-8", b"No GLB for environment"

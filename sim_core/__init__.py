@@ -15,8 +15,10 @@ and ``sim_bench``):
 - ``ExclusiveThreadingHTTPServer`` & loopback HTTP helpers.
 """
 from .atmosphere import AtmosphereModel, AtmosphereOverrideConfig, cams_dust_to_visibility_km
+from .cache import SharedBiomeCache
 from .environment import BuildingRecord, EnvironmentModel, RoadRecord, SurfaceTile
 from .handoff import SENSOR_NETWORK_SCHEMA, SensorNetworkStore
+from .hub import HubRouter, SIM_HUB_VERSION, UnifiedSimHub
 from .obstruction import AnalysisGrid, ObstructionGrid
 from .registry import BiomePreset, discover_biomes
 
@@ -27,11 +29,15 @@ __all__ = [
     "BiomePreset",
     "BuildingRecord",
     "EnvironmentModel",
+    "HubRouter",
     "ObstructionGrid",
     "RoadRecord",
     "SENSOR_NETWORK_SCHEMA",
+    "SIM_HUB_VERSION",
     "SensorNetworkStore",
+    "SharedBiomeCache",
     "SurfaceTile",
+    "UnifiedSimHub",
     "cams_dust_to_visibility_km",
     "discover_biomes",
 ]

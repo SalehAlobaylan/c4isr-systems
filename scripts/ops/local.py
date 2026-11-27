@@ -98,6 +98,14 @@ def environment(cfg):
                 'VITE_API_PROXY_TARGET': 'http://127.0.0.1:' + str(cfg['apiPort']),
                 'C4ISR_LOG_LEVEL': 'warn'})
     env.setdefault('C4ISR_DATABASE_URL', 'postgres://c4isr:c4isr@localhost:5433/c4isr?sslmode=disable')
+    sim_port = int(cfg.get('simPort', 8765))
+    sim_secret_path = CREDS / 'sim-worker.secret'
+    if not sim_secret_path.exists():
+        write_new(sim_secret_path, secrets.token_hex(32))
+    sim_secret = sim_secret_path.read_text(encoding='utf-8').strip()
+    env['C4ISR_SIM_WORKER_URL'] = f"http://127.0.0.1:{sim_port}"
+    env['C4ISR_SIM_WORKER_SECRET'] = sim_secret
+    env['VITE_SIM_API_TARGET'] = f"http://127.0.0.1:{sim_port}"
     if library:
         ensure_python()
         env['C4ISR_ENVIRONMENT_TOOLCHAIN'] = run(
@@ -290,30 +298,20 @@ def develop(cfg):
             if state['state'] != 'CONFIGURED' or connector == 'usgs-history': continue
             name = 'worker-' + connector
             worker([ROOT/'bin'/('emad-connectors'+EXE),'-token-file',CREDS/(name+'.token'),'-source',source_id(connector)],name,'connectors')
-        # Launch Vite directly with Node so terminating this supervisor does not
-        # leave a package-manager child holding the frontend port.
+        # Launch the single unified Python Simulation Compute Hub (shares one biome
+        # cache across sim, sensor_coverage, salvo_defense, and sim_bench) fronted by
+        # Go's c4isr-server (/api/v1/sim-platform/*) with loopback worker-secret auth.
         sim_port = int(cfg.get('simPort', 8765))
         if PYTHON.exists() and port_free(sim_port):
-            worker([PYTHON, '-m', 'sim', 'service', '--host', '127.0.0.1', '--port', str(sim_port)], 'sim-service')
-        env['VITE_SIM_API_TARGET'] = f"http://127.0.0.1:{sim_port}"
-        cov_port = int(cfg.get('coveragePort', 8766))
-        if PYTHON.exists() and port_free(cov_port):
-            worker([PYTHON, '-m', 'sensor_coverage', 'service', '--host', '127.0.0.1', '--port', str(cov_port)], 'coverage-service')
-        env['VITE_COV_API_TARGET'] = f"http://127.0.0.1:{cov_port}"
-        salvo_port = int(cfg.get('salvoPort', 8767))
-        if PYTHON.exists() and port_free(salvo_port):
-            worker([PYTHON, '-m', 'salvo_defense', 'service', '--host', '127.0.0.1', '--port', str(salvo_port)], 'salvo-service')
-        env['VITE_SALVO_API_TARGET'] = f"http://127.0.0.1:{salvo_port}"
-        bench_port = int(cfg.get('benchPort', 8768))
-        if PYTHON.exists() and port_free(bench_port):
-            worker([PYTHON, '-m', 'sim_bench', 'service', '--host', '127.0.0.1', '--port', str(bench_port)], 'bench-service')
-        env['VITE_BENCH_API_TARGET'] = f"http://127.0.0.1:{bench_port}"
+            worker([PYTHON, '-m', 'sim_core', 'service', '--host', '127.0.0.1', '--port', str(sim_port)], 'sim-core-hub')
+        # Launch Vite directly with Node so terminating this supervisor does not
+        # leave a package-manager child holding the frontend port.
         processes.append(spawn(['node', ROOT / 'apps/operator-ui/node_modules/vite/bin/vite.js', ROOT / 'apps/operator-ui', '--host', '127.0.0.1', '--port', str(cfg['webPort']), '--strictPort'], dict(env, INIT_CWD=str(ROOT)), 'web'))
         # The bookmarked local address follows the normal UI/API lifecycle;
         # it must not depend on a one-hour evaluation server or another API.
         if cfg['webPort'] != 5198 and port_free(5198):
             processes.append(spawn(['node', ROOT / 'scripts/ops/local_web_entry.mjs', '--port', '5198', '--target', f"http://127.0.0.1:{cfg['webPort']}"], env, 'web-entry'))
-        print(f"EMAD: http://127.0.0.1:{cfg['webPort']} · API: http://127.0.0.1:{cfg['apiPort']} · Sim: :{sim_port} · Cov: :{cov_port} · Salvo: :{salvo_port} · Bench: :{bench_port}", flush=True)
+        print(f"EMAD: http://127.0.0.1:{cfg['webPort']} · API: http://127.0.0.1:{cfg['apiPort']} · Unified Sim Hub: :{sim_port}", flush=True)
         print('Scoped '+product_profile(cfg)+' session. Other credentials: private/local/credentials. Logs: private/local/logs.', flush=True)
         while not done.wait(1):
             marker=PRIVATE/'stop-request.json'

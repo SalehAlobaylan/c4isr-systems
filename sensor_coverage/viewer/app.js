@@ -2,6 +2,28 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+const API_BASE = (() => {
+  const p = window.location.pathname;
+  if (p.startsWith('/sim-viewers/coverage')) return '/api/v1/sim-platform/coverage';
+  if (p.startsWith('/viewer/coverage')) return '/api/coverage';
+  return '/api';
+})();
+const USES_GO_GATEWAY = API_BASE.startsWith('/api/v1/');
+function apiHeaders(extra = {}) {
+  const h = { ...extra };
+  const tok = window.__C4ISR_CONFIG__?.apiToken;
+  if (USES_GO_GATEWAY && tok) h.Authorization = `Bearer ${tok}`;
+  return h;
+}
+function apiFetch(relPath, opts = {}) {
+  return fetch(`${API_BASE}${relPath}`, { ...opts, headers: apiHeaders(opts.headers || {}) });
+}
+async function loadGlbAuth(url) {
+  const loader = new GLTFLoader();
+  loader.setRequestHeader(apiHeaders());
+  return loader.loadAsync(url);
+}
+
 // Coordinate contract matching EMAD prepare_display_terrain.py:
 // ENU [east, north, up] -> Three.js [east, up, -north]
 function enuToThree(p) {
@@ -318,15 +340,17 @@ async function resolveEndpoints(stageEl) {
   const mapOrigin = params.get('mapOrigin');
   if (mapOrigin) {
     document.getElementById('back-to-map').href = `${mapOrigin.replace(/\/$/, '')}/map`;
+  } else if (window.location.pathname.startsWith('/sim-viewers/')) {
+    document.getElementById('back-to-map').href = '/map';
   }
   const runParam = params.get('run');
 
   try {
-    const hRes = await fetch('/api/health', { cache: 'no-store' });
+    const hRes = await apiFetch('/health', { cache: 'no-store' });
     if (hRes.ok) {
       const health = await hRes.json();
       if (health.status === 'ok') {
-        const runsRes = await fetch('/api/runs', { cache: 'no-store' });
+        const runsRes = await apiFetch('/runs', { cache: 'no-store' });
         const runsData = runsRes.ok ? await runsRes.json() : { runs: [] };
         const runs = runsData.runs || [];
 
@@ -337,11 +361,11 @@ async function resolveEndpoints(stageEl) {
             jobId = completed.jobId;
           } else {
             stageEl.textContent = 'No completed study yet — launching default Riyadh coverage study…';
-            const envRes = await fetch('/api/environments', { cache: 'no-store' });
+            const envRes = await apiFetch('/environments', { cache: 'no-store' });
             const envData = await envRes.json();
             const firstEnv = (envData.environments || [])[0];
             if (!firstEnv) throw new Error('No verified EMAD environments discovered.');
-            const createRes = await fetch('/api/runs', {
+            const createRes = await apiFetch('/runs', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(firstEnv.defaults),
@@ -353,7 +377,7 @@ async function resolveEndpoints(stageEl) {
 
         let job = null;
         for (let attempt = 0; attempt < 360; attempt++) {
-          const jRes = await fetch(`/api/runs/${encodeURIComponent(jobId)}`, { cache: 'no-store' });
+          const jRes = await apiFetch(`/runs/${encodeURIComponent(jobId)}`, { cache: 'no-store' });
           if (jRes.status === 404) {
             stageEl.textContent = 'Waiting for study registration from 2D map…';
             await new Promise((r) => setTimeout(r, 250));
@@ -362,7 +386,7 @@ async function resolveEndpoints(stageEl) {
           if (!jRes.ok) throw new Error(`Study ${jobId} returned HTTP ${jRes.status}`);
           job = await jRes.json();
           if (job.status === 'completed') break;
-          if (job.status === 'failed' || job.status === 'interrupted') {
+          if (job.status === 'failed' || job.status === 'interrupted' || job.status === 'cancelled') {
             throw new Error(job.error || job.stage || 'Coverage study failed.');
           }
           stageEl.textContent = job.stage || 'Computing viewsheds & optimizing placement…';
@@ -370,7 +394,7 @@ async function resolveEndpoints(stageEl) {
         }
         if (!job || job.status !== 'completed') throw new Error('Timed out waiting for coverage study.');
 
-        const freshRunsRes = await fetch('/api/runs', { cache: 'no-store' });
+        const freshRunsRes = await apiFetch('/runs', { cache: 'no-store' });
         const freshRuns = freshRunsRes.ok ? ((await freshRunsRes.json()).runs || []) : runs;
         return {
           serviceMode: true,
@@ -378,9 +402,9 @@ async function resolveEndpoints(stageEl) {
           runs: freshRuns,
           hasGlb: Boolean(job.hasGlb),
           hasImagery: Boolean(job.hasImagery),
-          replayUrl: `/api/runs/${encodeURIComponent(jobId)}/replay.json`,
-          glbUrl: `/api/runs/${encodeURIComponent(jobId)}/terrain.glb`,
-          imageryUrl: `/api/runs/${encodeURIComponent(jobId)}/imagery.json`,
+          replayUrl: `${API_BASE}/runs/${encodeURIComponent(jobId)}/replay.json`,
+          glbUrl: `${API_BASE}/runs/${encodeURIComponent(jobId)}/terrain.glb`,
+          imageryUrl: `${API_BASE}/runs/${encodeURIComponent(jobId)}/imagery.json`,
         };
       }
     }
@@ -669,7 +693,7 @@ async function main() {
     let terrainObject = null;
     if (ep.hasGlb) {
       statusEl.textContent = 'Loading verified EMAD terrain GLB…';
-      const gltf = await new GLTFLoader().loadAsync(ep.glbUrl);
+      const gltf = await loadGlbAuth(ep.glbUrl);
       terrainObject = gltf.scene;
       terrainObject.traverse((o) => {
         if (o.isMesh) {
@@ -717,7 +741,7 @@ async function main() {
     if (ep.hasImagery && terrainObject) {
       try {
         statusEl.textContent = 'Draping Sentinel-2 optical imagery…';
-        const rawImg = await (await fetch(ep.imageryUrl)).json();
+        const rawImg = await (await fetch(ep.imageryUrl, { headers: apiHeaders() })).json();
         const imgData = rawImg.data || rawImg;
         if (imgData && imgData.texture && imgData.bounds) {
           const rawBytes = Uint8Array.from(atob(imgData.texture), (c) => c.charCodeAt(0));
@@ -1606,7 +1630,7 @@ async function main() {
 
     if (serviceMode) {
       try {
-        const res = await fetch('/api/los-profile', {
+        const res = await apiFetch('/los-profile', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -1652,7 +1676,7 @@ async function main() {
     const mastAglM = Math.max(2, Math.min(100, Number(document.getElementById('drop-sensor-mast').value) || 15));
     statusEl.textContent = `Computing live ${stype.toUpperCase()} viewshed at (${Math.round(eCoord)}, ${Math.round(nCoord)})…`;
     try {
-      const res = await fetch('/api/preview-sensor', {
+      const res = await apiFetch('/preview-sensor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1753,7 +1777,7 @@ async function main() {
   async function loadReplayBundle(ep, { resetCamera = true } = {}) {
     stageEl.textContent = 'Fetching coverage replay data…';
     serviceMode = Boolean(ep.serviceMode);
-    const newReplay = await (await fetch(ep.replayUrl, { cache: 'no-store' })).json();
+    const newReplay = await (await fetch(ep.replayUrl, { headers: apiHeaders(), cache: 'no-store' })).json();
     replay = newReplay;
 
     await loadEnvironmentGeometry(newReplay, ep);
@@ -1888,7 +1912,7 @@ async function main() {
   }
 
   async function submitAndReloadDraft(draftPayload, statusTarget) {
-    const res = await fetch('/api/runs', {
+    const res = await apiFetch('/runs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(draftPayload),
@@ -1896,7 +1920,7 @@ async function main() {
     const created = await res.json();
     if (!res.ok) throw new Error(created.error || `HTTP ${res.status}`);
     for (let i = 0; i < 360; i++) {
-      const poll = await (await fetch(`/api/runs/${encodeURIComponent(created.jobId)}`, { cache: 'no-store' })).json();
+      const poll = await (await apiFetch(`/runs/${encodeURIComponent(created.jobId)}`, { cache: 'no-store' })).json();
       if (statusTarget) statusTarget.textContent = poll.stage || 'Running…';
       if (poll.status === 'completed') {
         const url = new URL(window.location.href);
@@ -1907,7 +1931,7 @@ async function main() {
         if (statusTarget) statusTarget.textContent = `Completed (${created.jobId.slice(-6)}) in ${replay.elapsedS}s`;
         return;
       }
-      if (poll.status === 'failed') throw new Error(poll.error || 'Run failed.');
+      if (poll.status === 'failed' || poll.status === 'cancelled') throw new Error(poll.error || poll.stage || 'Run failed.');
       await new Promise((r) => setTimeout(r, 250));
     }
     throw new Error('Timed out waiting for coverage run.');
@@ -2036,7 +2060,7 @@ async function main() {
     try {
       const { sensors } = getActiveSensorsAndFloors();
       const asset = (replay.assets || [])[0];
-      const res = await fetch('/api/adversarial-route', {
+      const res = await apiFetch('/adversarial-route', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2105,7 +2129,7 @@ async function main() {
     st.textContent = 'Exporting active sensor layout…';
     try {
       const { cfgName, sensors } = getActiveSensorsAndFloors();
-      const res = await fetch('/api/export-network', {
+      const res = await apiFetch('/export-network', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -2189,7 +2213,7 @@ async function main() {
     try {
       let baseDraft = replay.sourceDraft ? JSON.parse(JSON.stringify(replay.sourceDraft)) : null;
       if (!baseDraft) {
-        const envRes = await fetch('/api/environments');
+        const envRes = await apiFetch('/environments');
         const envs = (await envRes.json()).environments || [];
         const match = envs.find((e) => e.id === replay.environmentId) || envs[0];
         baseDraft = match ? JSON.parse(JSON.stringify(match.defaults)) : null;

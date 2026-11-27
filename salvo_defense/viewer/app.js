@@ -2,6 +2,28 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
+const API_BASE = (() => {
+  const p = window.location.pathname;
+  if (p.startsWith('/sim-viewers/salvo')) return '/api/v1/sim-platform/salvo';
+  if (p.startsWith('/viewer/salvo')) return '/api/salvo';
+  return '/api';
+})();
+const USES_GO_GATEWAY = API_BASE.startsWith('/api/v1/');
+function apiHeaders(extra = {}) {
+  const h = { ...extra };
+  const tok = window.__C4ISR_CONFIG__?.apiToken;
+  if (USES_GO_GATEWAY && tok) h.Authorization = `Bearer ${tok}`;
+  return h;
+}
+function apiFetch(relPath, opts = {}) {
+  return fetch(`${API_BASE}${relPath}`, { ...opts, headers: apiHeaders(opts.headers || {}) });
+}
+async function loadGlbAuth(url) {
+  const loader = new GLTFLoader();
+  loader.setRequestHeader(apiHeaders());
+  return loader.loadAsync(url);
+}
+
 function enuToThree(p) {
   return new THREE.Vector3(p[0], p[2], -p[1]);
 }
@@ -86,9 +108,10 @@ async function resolveEndpoint(stageEl) {
   const params = new URLSearchParams(window.location.search);
   const mapOrigin = params.get('mapOrigin');
   if (mapOrigin) document.getElementById('back-to-map').href = `${mapOrigin.replace(/\/$/, '')}/map`;
+  else if (window.location.pathname.startsWith('/sim-viewers/')) document.getElementById('back-to-map').href = '/map';
   const runParam = params.get('run');
 
-  const runsRes = await fetch('/api/runs', { cache: 'no-store' });
+  const runsRes = await apiFetch('/runs', { cache: 'no-store' });
   const runs = runsRes.ok ? ((await runsRes.json()).runs || []) : [];
   let jobId = runParam;
   if (!jobId) {
@@ -97,9 +120,9 @@ async function resolveEndpoint(stageEl) {
       jobId = done.jobId;
     } else {
       stageEl.textContent = 'No completed salvo yet — launching default layered defense salvo…';
-      const envs = ((await (await fetch('/api/environments', { cache: 'no-store' })).json()).environments || []);
+      const envs = ((await (await apiFetch('/environments', { cache: 'no-store' })).json()).environments || []);
       if (!envs.length) throw new Error('No verified environments found.');
-      const cr = await fetch('/api/runs', {
+      const cr = await apiFetch('/runs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(envs[0].defaults),
@@ -111,7 +134,7 @@ async function resolveEndpoint(stageEl) {
 
   let job = null;
   for (let i = 0; i < 360; i++) {
-    const res = await fetch(`/api/runs/${encodeURIComponent(jobId)}`, { cache: 'no-store' });
+    const res = await apiFetch(`/runs/${encodeURIComponent(jobId)}`, { cache: 'no-store' });
     if (res.status === 404) {
       stageEl.textContent = 'Waiting for salvo run registration…';
       await new Promise((r) => setTimeout(r, 250));
@@ -120,20 +143,20 @@ async function resolveEndpoint(stageEl) {
     if (!res.ok) throw new Error(`Salvo job HTTP ${res.status}`);
     job = await res.json();
     if (job.status === 'completed') break;
-    if (job.status === 'failed' || job.status === 'interrupted') throw new Error(job.error || job.stage || 'Salvo failed.');
+    if (job.status === 'failed' || job.status === 'interrupted' || job.status === 'cancelled') throw new Error(job.error || job.stage || 'Salvo failed.');
     stageEl.textContent = job.stage || 'Running salvo simulation…';
     await new Promise((r) => setTimeout(r, 250));
   }
   if (!job || job.status !== 'completed') throw new Error('Timed out waiting for salvo run.');
-  const freshRuns = ((await (await fetch('/api/runs', { cache: 'no-store' })).json()).runs || runs);
+  const freshRuns = ((await (await apiFetch('/runs', { cache: 'no-store' })).json()).runs || runs);
   return {
     jobId,
     runs: freshRuns,
     hasGlb: Boolean(job.hasGlb),
     hasImagery: Boolean(job.hasImagery),
-    replayUrl: `/api/runs/${encodeURIComponent(jobId)}/replay.json`,
-    glbUrl: `/api/runs/${encodeURIComponent(jobId)}/terrain.glb`,
-    imageryUrl: `/api/runs/${encodeURIComponent(jobId)}/imagery.json`,
+    replayUrl: `${API_BASE}/runs/${encodeURIComponent(jobId)}/replay.json`,
+    glbUrl: `${API_BASE}/runs/${encodeURIComponent(jobId)}/terrain.glb`,
+    imageryUrl: `${API_BASE}/runs/${encodeURIComponent(jobId)}/imagery.json`,
   };
 }
 
@@ -208,7 +231,7 @@ async function main() {
 
     let terrainObj = null;
     if (ep.hasGlb) {
-      const gltf = await new GLTFLoader().loadAsync(ep.glbUrl);
+      const gltf = await loadGlbAuth(ep.glbUrl);
       terrainObj = gltf.scene;
       terrainObj.traverse((o) => {
         if (o.isMesh) o.material = new THREE.MeshStandardMaterial({ color: 0x6f6858, roughness: 0.92, metalness: 0.05 });
@@ -246,7 +269,7 @@ async function main() {
 
     if (ep.hasImagery && terrainObj) {
       try {
-        const rawImg = await (await fetch(ep.imageryUrl)).json();
+        const rawImg = await (await fetch(ep.imageryUrl, { headers: apiHeaders() })).json();
         const img = rawImg.data || rawImg;
         if (img?.texture && img?.bounds) {
           const rawBytes = Uint8Array.from(atob(img.texture), (c) => c.charCodeAt(0));
@@ -355,14 +378,16 @@ async function main() {
       groups.sites.add(m);
     }
 
-    // Batteries & range rings
-    for (const b of ev.batteries || []) {
+    // Batteries & range rings (available in both Debrief & Operator COP via ownForceTelemetry)
+    const siteBatts = ev?.batteries || run.ownForceTelemetry?.batteries || [];
+    for (const b of siteBatts) {
+      if (!b.enu) continue;
       const p = enuToThree(b.enu);
       const col = TIER_COLORS[b.tier] || 0x38bdf8;
       const base = new THREE.Mesh(new THREE.BoxGeometry(40, 26, 40), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.35 }));
       base.position.set(p.x, p.y + 13, p.z);
       groups.sites.add(base);
-      const ring = makeCircle(Math.min(b.maxRangeM, 18000), col, 8);
+      const ring = makeCircle(Math.min(b.maxRangeM || 12000, 18000), col, 8);
       ring.position.copy(p);
       groups.rings.add(ring);
     }
@@ -386,8 +411,11 @@ async function main() {
       civilActors.push({ track: ct, group: grp });
     }
 
-    // Truth Threats
-    for (const th of run.truth.threats || []) {
+    const tr = run.truth || null;
+    const ownInts = tr?.interceptors || run.ownForceTelemetry?.interceptors || [];
+
+    // Truth Threats (stripped on server in Operator COP mode)
+    for (const th of tr?.threats || []) {
       const col = THREAT_COLORS[th.kind] || 0xff5c72;
       const pts = th.samples.map((s) => enuToThree([s[1], s[2], s[3]]));
       const line = new THREE.Line(
@@ -407,8 +435,8 @@ async function main() {
       threatActors.push({ th, mesh });
     }
 
-    // Interceptors
-    for (const flt of run.truth.interceptors || []) {
+    // Own-force Interceptors (permitted in both Operator COP and Debrief)
+    for (const flt of ownInts) {
       if (!flt.samples || flt.samples.length < 2) continue;
       const col = TIER_COLORS[flt.batteryTier] || 0x34d399;
       const pts = flt.samples.map((s) => enuToThree([s[1], s[2], s[3]]));
@@ -417,14 +445,14 @@ async function main() {
         new THREE.LineBasicMaterial({ color: col, transparent: true, opacity: 0.85 })
       );
       line.geometry.setDrawRange(0, 0);
-      groups.truth.add(line);
+      groups.obs.add(line);
       const mesh = new THREE.Mesh(new THREE.ConeGeometry(16, 56, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
       mesh.visible = false;
-      groups.truth.add(mesh);
+      groups.obs.add(mesh);
       intActors.push({ flt, mesh, line });
     }
 
-    // Intercept & Leaker Bursts
+    // Intercept & Leaker Bursts (only present in Debrief)
     for (const evItem of run.events || []) {
       if ((evItem.kind === 'intercept_kill' || evItem.kind === 'leaker_impact') && evItem.enu) {
         const isKill = evItem.kind === 'intercept_kill';
@@ -439,9 +467,9 @@ async function main() {
       }
     }
 
-    // Shrapnel ground impacts
+    // Shrapnel ground impacts (only present in Debrief)
     const catCol = { building: 0xff2e4c, road: 0xff9e3d, protected_zone: 0xf065d8, open: 0x58e08e };
-    for (const imp of (run.truth.shrapnelImpacts || []).slice(0, 600)) {
+    for (const imp of (tr?.shrapnelImpacts || []).slice(0, 600)) {
       const m = new THREE.Mesh(
         new THREE.SphereGeometry(imp.hazardous ? 18 : 11, 6, 6),
         new THREE.MeshBasicMaterial({ color: catCol[imp.category] || 0x58e08e })
@@ -472,14 +500,25 @@ async function main() {
       btn.classList.toggle('good-active', p === activePolicy && p !== 'greedy_earliest');
     });
 
-    document.getElementById('kpi-grid').innerHTML = `
-      <div class="kpi"><div class="k">Defense Score</div><div class="v ${ev.compositeScore >= 75 ? 'good' : ev.compositeScore >= 45 ? 'warn' : 'bad'}">${ev.compositeScore.toFixed(1)}/100</div></div>
-      <div class="kpi"><div class="k">Lethal Killed / Leakers</div><div class="v ${ev.leakers === 0 ? 'good' : 'bad'}">${ev.lethalIntercepted}/${ev.lethalThreats} (${ev.leakers} leak)</div></div>
-      <div class="kpi"><div class="k">Interceptor Spend</div><div class="v cyan">$${ev.totalCostKUsd.toLocaleString()}k (${ev.shotsFired} shots)</div></div>
-      <div class="kpi"><div class="k">Decoy Waste / Air Viol.</div><div class="v ${ev.decoyShotsWasted === 0 && ev.airspaceViolations === 0 ? 'good' : 'warn'}">${ev.decoyShotsWasted} decoy · ${ev.airspaceViolations} air</div></div>
-      <div class="kpi"><div class="k">Debris Bldgs / WorldPop</div><div class="v">${ev.debrisBuildingHits} bldg · ~${ev.estimatedPopulationExposed} pop</div></div>
-      <div class="kpi"><div class="k">Road Blocked / Detour</div><div class="v">${ev.roadImpact.blockedRoadKm.toFixed(2)}km (+${Math.round(ev.roadImpact.emergencyDetourDelayS || 0)}s)</div></div>
-    `;
+    if (ev) {
+      document.getElementById('kpi-grid').innerHTML = `
+        <div class="kpi"><div class="k">Defense Score</div><div class="v ${ev.compositeScore >= 75 ? 'good' : ev.compositeScore >= 45 ? 'warn' : 'bad'}">${ev.compositeScore.toFixed(1)}/100</div></div>
+        <div class="kpi"><div class="k">Lethal Killed / Leakers</div><div class="v ${ev.leakers === 0 ? 'good' : 'bad'}">${ev.lethalIntercepted}/${ev.lethalThreats} (${ev.leakers} leak)</div></div>
+        <div class="kpi"><div class="k">Interceptor Spend</div><div class="v cyan">$${ev.totalCostKUsd.toLocaleString()}k (${ev.shotsFired} shots)</div></div>
+        <div class="kpi"><div class="k">Decoy Waste / Air Viol.</div><div class="v ${ev.decoyShotsWasted === 0 && ev.airspaceViolations === 0 ? 'good' : 'warn'}">${ev.decoyShotsWasted} decoy · ${ev.airspaceViolations} air</div></div>
+        <div class="kpi"><div class="k">Debris Bldgs / WorldPop</div><div class="v">${ev.debrisBuildingHits} bldg · ~${ev.estimatedPopulationExposed} pop</div></div>
+        <div class="kpi"><div class="k">Road Blocked / Detour</div><div class="v">${ev.roadImpact.blockedRoadKm.toFixed(2)}km (+${Math.round(ev.roadImpact.emergencyDetourDelayS || 0)}s)</div></div>
+      `;
+    } else {
+      const launchCount = ownInts.length;
+      const trackFramesCount = (run.observations?.trackFrames || []).length;
+      document.getElementById('kpi-grid').innerHTML = `
+        <div class="kpi"><div class="k">View Partition</div><div class="v warn">OBSERVATION</div></div>
+        <div class="kpi"><div class="k">Own Launches</div><div class="v cyan">${launchCount} missiles</div></div>
+        <div class="kpi"><div class="k">Fused Frames</div><div class="v">${trackFramesCount} ticks</div></div>
+        <div class="kpi"><div class="k">Truth &amp; Eval</div><div class="v warn">SEALED</div></div>
+      `;
+    }
 
     const d = replay.comparison?.wtaVsGreedy;
     const db = document.getElementById('delta-banner');
@@ -492,7 +531,7 @@ async function main() {
     const rows = Object.entries(replay.comparison?.policies || {}).map(([p, r]) =>
       `<div class="track-row"><span>${POLICY_LABELS[p] || p}</span><span>${r.compositeScore} pts · ${r.leakers}L · $${r.totalCostKUsd}k</span></div>`
     );
-    document.getElementById('policy-table').innerHTML = rows.join('');
+    document.getElementById('policy-table').innerHTML = rows.join('') || '<div style="font-size:10.5px;color:var(--muted);">Unlock Evaluator Debrief to view policy scoring.</div>';
 
     const evHtml = (run.events || [])
       .filter((x) => x.kind !== 'launch')
@@ -502,9 +541,11 @@ async function main() {
         return `<div class="event-item"><span class="cyan">t=${x.tS}s</span> <span class="${cls}">${x.kind.replace('_', ' ')}</span> ${x.threatId || ''} ${x.batteryId ? `← ${x.batteryId}` : ''}</div>`;
       })
       .join('');
-    document.getElementById('event-log').innerHTML = evHtml || '<span style="color:var(--muted);">No terminal events.</span>';
+    document.getElementById('event-log').innerHTML = evHtml || '<span style="color:var(--muted);">No operator-visible events.</span>';
 
-    maxTime = Math.max(25, ...((run.truth.threats || []).map((t) => t.endS + 6)));
+    const trEnds = (tr?.threats || []).map((t) => t.endS + 6);
+    const tfEnds = (run.observations?.trackFrames || []).map((f) => f.tS + 4);
+    maxTime = Math.max(25, Number(replay.scenario?.durationS || 60), ...trEnds, ...tfEnds);
     document.getElementById('time-slider').max = String(Math.ceil(maxTime));
     simTime = 0;
     updateAtTime(0);
@@ -579,15 +620,25 @@ async function main() {
       if (mf.tS <= t) curMags = mf.magazines;
       else break;
     }
-    const batts = run.evaluation.batteries || [];
+    const batts = run.evaluation?.batteries || run.ownForceTelemetry?.batteries || (replay.scenario?.batteries || []).map((b) => ({
+      id: b.id,
+      label: b.label || b.id,
+      color: b.tier === 'tier1_sam' ? '#38bdf8' : b.tier === 'tier2_shorad' ? '#34d399' : '#fbbf24',
+      magazineInitial: b.magazine || 8,
+      magazineRemaining: b.magazine || 8,
+      costKUsd: b.tier === 'tier1_sam' ? 1200 : b.tier === 'tier2_shorad' ? 180 : 18,
+      shotsFired: '—',
+      kills: '—',
+    }));
     document.getElementById('magazine-bars').innerHTML = batts.map((b) => {
       const rem = curMags ? (curMags[b.id] ?? b.magazineRemaining) : b.magazineInitial;
       const pct = Math.round((rem / Math.max(1, b.magazineInitial)) * 100);
+      const killsLabel = b.kills !== undefined && b.kills !== '—' ? `${b.kills} kills` : 'COP';
       return `
         <div class="mag-card">
           <div class="mag-head"><span style="color:${b.color};">${b.label}</span><span>${rem}/${b.magazineInitial}</span></div>
           <div class="mag-bar"><div class="mag-fill" style="width:${pct}%;background:${b.color};"></div></div>
-          <div class="mag-meta"><span>$${b.costKUsd}k/shot</span><span>${b.shotsFired} fired · ${b.kills} kills</span></div>
+          <div class="mag-meta"><span>$${b.costKUsd}k/shot</span><span>${b.shotsFired} fired · ${killsLabel}</span></div>
         </div>`;
     }).join('');
 
@@ -613,6 +664,304 @@ async function main() {
       : '<div style="font-size:11px;color:var(--muted);">No active fused tracks at this instant.</div>';
   }
 
+  // --- Phase 4: Live Interactive Command-in-the-Loop Exercise (EXERCISE_OBSERVATION only) ---
+  const SESSIONS_BASE = USES_GO_GATEWAY ? '/api/v1/sim-platform/sessions' : `${API_BASE}/sessions`;
+  let liveSession = null;
+  let liveAbort = null;
+  let liveStepTimer = null;
+  let livePaused = false;
+  let liveIntPool = [];
+
+  function ensureLivePools() {
+    while (liveIntPool.length < 32) {
+      const cone = new THREE.Mesh(
+        new THREE.ConeGeometry(18, 60, 6),
+        new THREE.MeshBasicMaterial({ color: 0x34d399 })
+      );
+      cone.visible = false;
+      groups.obs.add(cone);
+      liveIntPool.push(cone);
+    }
+    while (obsDotPool.length < 28) {
+      const wire = new THREE.Mesh(
+        new THREE.OctahedronGeometry(38, 0),
+        new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true })
+      );
+      wire.visible = false;
+      groups.obs.add(wire);
+      obsDotPool.push(wire);
+    }
+  }
+
+  function syncLiveButtons() {
+    const toggleBtn = document.getElementById('btn-live-toggle');
+    const hfBtn = document.getElementById('btn-live-holdfire');
+    const badge = document.getElementById('live-badge');
+    const isLive = Boolean(liveSession);
+    if (toggleBtn) {
+      toggleBtn.textContent = isLive ? '⏹ Stop Live' : '▶ Start Live';
+      toggleBtn.classList.toggle('primary', !isLive);
+      toggleBtn.classList.toggle('active', isLive);
+    }
+    if (hfBtn) {
+      hfBtn.disabled = !isLive;
+      hfBtn.classList.toggle('active', Boolean(liveSession?.holdFire));
+      hfBtn.textContent = liveSession?.holdFire ? '✅ Clear Hold Fire' : '🛑 Hold Fire';
+    }
+    if (badge) {
+      if (!isLive) {
+        badge.textContent = 'REPLAY';
+        badge.className = 'badge';
+      } else if (liveSession.status === 'completed') {
+        badge.textContent = 'LIVE DONE';
+        badge.className = 'badge good';
+      } else if (livePaused) {
+        badge.textContent = 'LIVE PAUSED';
+        badge.className = 'badge warn';
+      } else {
+        badge.textContent = 'LIVE COP';
+        badge.className = 'badge good';
+      }
+    }
+  }
+
+  async function sendLiveCommand(kind, payload = {}) {
+    if (!liveSession) return;
+    try {
+      const res = await fetch(`${SESSIONS_BASE}/${encodeURIComponent(liveSession.sessionId)}/commands`, {
+        method: 'POST',
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ kind, payload }),
+      });
+      if (res.ok && !USES_GO_GATEWAY) {
+        const snap = await res.json();
+        if (snap.observation) applyLiveSnapshot(snap);
+      }
+    } catch (err) {
+      console.warn('Live command error:', err);
+    }
+  }
+
+  async function controlLiveSession(action, timeScale = playSpeed) {
+    if (!liveSession) return;
+    if (action === 'pause') livePaused = true;
+    if (action === 'resume') livePaused = false;
+    syncLiveButtons();
+    if (USES_GO_GATEWAY) {
+      await fetch(`${SESSIONS_BASE}/${encodeURIComponent(liveSession.sessionId)}/control`, {
+        method: 'POST',
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ action, timeScale }),
+      }).catch(() => {});
+    }
+  }
+
+  function applyLiveSnapshot(snap) {
+    if (!snap || !liveSession) return;
+    liveSession = { ...liveSession, ...snap };
+    ensureLivePools();
+
+    // Hide sealed truth/debris layers during live EXERCISE_OBSERVATION COP!
+    groups.truth.visible = false;
+    groups.debris.visible = false;
+    intActors.forEach((a) => { a.mesh.visible = false; a.line.visible = false; });
+
+    const obs = snap.observation || {};
+    const vt = Number(snap.virtualTimeS || 0);
+    const dur = Number(snap.durationS || 115);
+    document.getElementById('time-slider').max = String(Math.ceil(dur));
+    document.getElementById('time-slider').value = String(vt);
+    document.getElementById('time-readout').textContent = `LIVE t = ${vt.toFixed(1)}s`;
+
+    // Sync active policy buttons
+    document.querySelectorAll('#policy-buttons button').forEach((btn) => {
+      const p = btn.dataset.policy;
+      btn.classList.toggle('active', p === snap.policy);
+      btn.classList.toggle('good-active', p === snap.policy && p !== 'greedy_earliest');
+    });
+
+    // Live fused tracks (strictly EXERCISE_OBSERVATION)
+    const tracks = obs.tracks || [];
+    obsDotPool.forEach((m, i) => {
+      const tr = tracks[i];
+      if (tr) {
+        m.visible = true;
+        m.position.copy(enuToThree(tr.posEnu));
+        m.material.color.setHex(tr.iffCooperative ? 0x7dd3fc : tr.topClass === 'decoy' ? 0xfde047 : 0x38bdf8);
+      } else {
+        m.visible = false;
+      }
+    });
+
+    // Live own-force airborne interceptors
+    const activeInts = obs.activeInterceptors || [];
+    liveIntPool.forEach((m, i) => {
+      const f = activeInts[i];
+      if (f && f.enu) {
+        m.visible = true;
+        m.position.copy(enuToThree(f.enu));
+        m.material.color.setHex(TIER_COLORS[f.batteryTier] || 0x34d399);
+      } else {
+        m.visible = false;
+      }
+    });
+
+    // Live civilian airliners
+    const civById = new Map((obs.civilianTraffic || []).map((c) => [c.id, c]));
+    for (const a of civilActors) {
+      const liveC = civById.get(a.track.id);
+      if (liveC && liveC.enu) a.group.position.copy(enuToThree(liveC.enu));
+    }
+
+    // Live battery magazines with interactive TOGGLE_BATTERY
+    const batts = obs.batteries || [];
+    document.getElementById('magazine-bars').innerHTML = batts.map((b) => {
+      const pct = Math.round((b.magazineRemaining / Math.max(1, b.magazineInitial)) * 100);
+      const stateBadge = b.enabled ? 'ONLINE' : 'OFFLINE';
+      return `
+        <div class="mag-card" style="opacity:${b.enabled ? 1 : 0.5};">
+          <div class="mag-head">
+            <span style="color:${b.color};">${b.label}</span>
+            <span>${b.magazineRemaining}/${b.magazineInitial} <button class="chip" data-toggle-batt="${b.id}" data-next-enabled="${!b.enabled}" style="padding:1px 5px;font-size:9.5px;">${stateBadge}</button></span>
+          </div>
+          <div class="mag-bar"><div class="mag-fill" style="width:${pct}%;background:${b.color};"></div></div>
+          <div class="mag-meta"><span>$${b.costKUsd}k/shot</span><span>${b.shotsFired} fired · ${b.activeInterceptors} in air</span></div>
+        </div>`;
+    }).join('');
+    document.querySelectorAll('#magazine-bars button[data-toggle-batt]').forEach((btn) => {
+      btn.onclick = () => sendLiveCommand('TOGGLE_BATTERY', { batteryId: btn.dataset.toggleBatt, enabled: btn.dataset.nextEnabled === 'true' });
+    });
+
+    // Live Fused Track COP with interactive ENGAGE_TRACK
+    document.getElementById('track-list').innerHTML = tracks.length
+      ? tracks.map((tr) => `
+          <div class="track-row">
+            <span>${tr.trackId} (${tr.topClass.replace('_', ' ')})</span>
+            <span style="display:flex;align-items:center;gap:4px;">
+              ${tr.speedMps}m/s
+              ${tr.iffCooperative ? '<span class="cyan">IFF</span>' : `<button class="chip" data-engage-track="${tr.trackId}" style="padding:1px 5px;font-size:9.5px;">🎯 Engage</button>`}
+            </span>
+          </div>`).join('')
+      : '<div style="font-size:11px;color:var(--muted);">Scanning airspace — no fused tracks yet.</div>';
+    document.querySelectorAll('#track-list button[data-engage-track]').forEach((btn) => {
+      btn.onclick = () => sendLiveCommand('ENGAGE_TRACK', { trackId: btn.dataset.engageTrack });
+    });
+
+    // Live KPIs & Operator Events
+    const totalShots = batts.reduce((s, b) => s + Number(b.shotsFired || 0), 0);
+    document.getElementById('kpi-grid').innerHTML = `
+      <div class="kpi"><div class="k">Live Mode</div><div class="v good">INTERACTIVE COP</div></div>
+      <div class="kpi"><div class="k">Weapons Control</div><div class="v ${snap.holdFire ? 'bad' : 'good'}">${snap.holdFire ? 'HOLD FIRE' : 'WEAPONS FREE'}</div></div>
+      <div class="kpi"><div class="k">Fused Tracks</div><div class="v cyan">${tracks.length} active</div></div>
+      <div class="kpi"><div class="k">Own Launches</div><div class="v">${totalShots} (${activeInts.length} in flight)</div></div>
+    `;
+    const evs = (obs.recentEvents || []).slice().reverse();
+    document.getElementById('event-log').innerHTML = evs.length
+      ? evs.map((x) => `<div class="event-item"><span class="cyan">t=${x.tS}s</span> <span class="warn">${x.kind.replace(/_/g, ' ')}</span> ${x.command || x.trackId || ''} ${x.batteryId ? `← ${x.batteryId}` : ''}</div>`).join('')
+      : '<span style="color:var(--muted);">Waiting for live operator or sensor events…</span>';
+
+    if (snap.completed || snap.status === 'completed' || snap.status === 'stopped') {
+      liveSession.status = snap.completed ? 'completed' : 'stopped';
+      if (liveStepTimer) { clearInterval(liveStepTimer); liveStepTimer = null; }
+      statusEl.textContent = `Live Exercise ${liveSession.status} at t=${vt.toFixed(1)}s (EXERCISE_OBSERVATION).`;
+    }
+    syncLiveButtons();
+  }
+
+  async function stopLiveSession() {
+    if (!liveSession) return;
+    const sid = liveSession.sessionId;
+    if (liveAbort) { liveAbort.abort(); liveAbort = null; }
+    if (liveStepTimer) { clearInterval(liveStepTimer); liveStepTimer = null; }
+    liveIntPool.forEach((m) => { m.visible = false; });
+    liveSession = null;
+    livePaused = false;
+    syncLiveButtons();
+    await fetch(`${SESSIONS_BASE}/${encodeURIComponent(sid)}/stop`, {
+      method: 'POST',
+      headers: apiHeaders(),
+    }).catch(() => {});
+    // Restore replay view
+    groups.truth.visible = document.getElementById('tog-truth')?.checked ?? true;
+    groups.debris.visible = document.getElementById('tog-debris')?.checked ?? true;
+    intActors.forEach((a) => { a.line.visible = true; });
+    if (replay) buildPolicyScene(activePolicy);
+    statusEl.textContent = 'Returned to replay mode.';
+  }
+
+  async function startLiveSession() {
+    if (!replay) return;
+    if (liveSession) { await stopLiveSession(); return; }
+    const base = replay.sourceDraft ? JSON.parse(JSON.stringify(replay.sourceDraft)) : { environmentId: replay.environmentId };
+    base.policy = activePolicy;
+    base.timeScale = playSpeed;
+    statusEl.textContent = 'Starting live interactive Salvo exercise (EXERCISE_OBSERVATION)…';
+    const res = await fetch(SESSIONS_BASE, {
+      method: 'POST',
+      headers: apiHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify(base),
+    });
+    const initSnap = await res.json();
+    if (!res.ok) throw new Error(initSnap.error || `Live session HTTP ${res.status}`);
+
+    liveSession = initSnap;
+    livePaused = false;
+    playing = true;
+    playBtn.textContent = '⏸ Pause';
+    playBtn.classList.add('active');
+    syncViewScopeUI('LIVE EXERCISE_OBSERVATION COP — Sealed truth hidden while exercise is active.');
+    applyLiveSnapshot(initSnap);
+    statusEl.textContent = `Live session ${initSnap.sessionId} active (${USES_GO_GATEWAY ? 'Go SSE clock' : 'Python step loop'}).`;
+
+    if (USES_GO_GATEWAY) {
+      liveAbort = new AbortController();
+      (async () => {
+        try {
+          const evRes = await fetch(`${SESSIONS_BASE}/${encodeURIComponent(initSnap.sessionId)}/events`, {
+            headers: apiHeaders({ Accept: 'text/event-stream' }),
+            signal: liveAbort.signal,
+          });
+          if (!evRes.ok || !evRes.body) return;
+          const reader = evRes.body.getReader();
+          const dec = new TextDecoder();
+          let buf = '';
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buf += dec.decode(value, { stream: true });
+            const chunks = buf.split('\n\n');
+            buf = chunks.pop() || '';
+            for (const chunk of chunks) {
+              const dataLine = chunk.split('\n').find((l) => l.startsWith('data:'));
+              if (dataLine) {
+                try { applyLiveSnapshot(JSON.parse(dataLine.slice(5).trim())); } catch {}
+              }
+            }
+          }
+        } catch (err) {
+          if (err?.name !== 'AbortError') console.warn('Live SSE closed:', err);
+        }
+      })();
+    } else {
+      let inFlight = false;
+      liveStepTimer = setInterval(async () => {
+        if (!liveSession || livePaused || inFlight || liveSession.completed || liveSession.stopped) return;
+        inFlight = true;
+        try {
+          const ticks = Math.max(1, Math.round(playSpeed));
+          const stRes = await fetch(`${SESSIONS_BASE}/${encodeURIComponent(liveSession.sessionId)}/step`, {
+            method: 'POST',
+            headers: apiHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ ticks }),
+          });
+          if (stRes.ok) applyLiveSnapshot(await stRes.json());
+        } finally {
+          inFlight = false;
+        }
+      }, 250);
+    }
+  }
+
   function moveCamera(preset) {
     const a0 = (replay?.assets || [])[0];
     const hub = a0 ? enuToThree(a0.enu) : sceneCenter;
@@ -631,15 +980,52 @@ async function main() {
     }
   }
 
+  let activeViewScope = new URLSearchParams(window.location.search).get('view') === 'operator' ? 'operator' : 'debrief';
+  let currentEp = null;
+
+  function syncViewScopeUI(noteText = '') {
+    const opBtn = document.getElementById('btn-view-operator');
+    const debBtn = document.getElementById('btn-view-debrief');
+    const noteEl = document.getElementById('view-scope-note');
+    if (opBtn) opBtn.classList.toggle('active', activeViewScope === 'operator');
+    if (debBtn) debBtn.classList.toggle('active', activeViewScope === 'debrief');
+    if (noteEl) {
+      if (noteText) {
+        noteEl.textContent = noteText;
+        noteEl.style.display = 'block';
+      } else if (activeViewScope === 'operator') {
+        noteEl.textContent = 'EXERCISE_OBSERVATION ONLY — Sealed raid truth, decoy flags & evaluation stripped on server.';
+        noteEl.style.display = 'block';
+      } else {
+        noteEl.style.display = 'none';
+      }
+    }
+  }
+
   async function loadBundle(ep, resetCam = true) {
+    currentEp = ep;
     stageEl.textContent = 'Fetching 3D Salvo replay bundle…';
-    replay = await (await fetch(ep.replayUrl, { cache: 'no-store' })).json();
+    const sep = ep.replayUrl.includes('?') ? '&' : '?';
+    let repRes = await fetch(`${ep.replayUrl}${sep}view=${encodeURIComponent(activeViewScope)}`, { headers: apiHeaders(), cache: 'no-store' });
+    let scopeNote = '';
+    if (repRes.status === 403 && activeViewScope === 'debrief') {
+      activeViewScope = 'operator';
+      scopeNote = 'Debrief truth requires sim.truth.read authorization — showing Operator COP (EXERCISE_OBSERVATION).';
+      repRes = await fetch(`${ep.replayUrl}${sep}view=operator`, { headers: apiHeaders(), cache: 'no-store' });
+    }
+    if (!repRes.ok) throw new Error(`Salvo replay HTTP ${repRes.status}`);
+    replay = await repRes.json();
+    if (replay.truthRedacted) activeViewScope = 'operator';
+    syncViewScopeUI(scopeNote);
     await loadEnvGeometry(replay, ep);
 
     document.getElementById('scenario-title').textContent = replay.scenario.title || 'Multi-Threat Salvo';
+    const threatBadge = replay.truthRedacted
+      ? '<span class="badge warn">EXERCISE_OBSERVATION COP</span>'
+      : `<span class="badge">${(replay.scenario.threats || []).length} threats</span>`;
     document.getElementById('env-badges').innerHTML =
-      `<span class="badge">${replay.scenario.threats.length} threats</span>` +
-      `<span class="badge">${replay.scenario.batteries.length} batteries</span>` +
+      threatBadge +
+      `<span class="badge">${(replay.scenario.batteries || []).length} batteries</span>` +
       `<span class="badge good">${replay.engineVersion}</span>`;
     statusEl.textContent = `Manifest ${replay.environment.manifestSha256.slice(0, 12)}… · Computed in ${replay.elapsedS}s`;
 
@@ -652,7 +1038,12 @@ async function main() {
     polBtns.innerHTML = (replay.policies || ['greedy_earliest', 'combinatorial_wta'])
       .map((p) => `<button class="chip" data-policy="${p}">${POLICY_LABELS[p] || p}</button>`)
       .join('');
-    polBtns.querySelectorAll('button').forEach((b) => { b.onclick = () => buildPolicyScene(b.dataset.policy); });
+    polBtns.querySelectorAll('button').forEach((b) => {
+      b.onclick = () => {
+        if (liveSession) sendLiveCommand('SET_POLICY', { policy: b.dataset.policy });
+        else buildPolicyScene(b.dataset.policy);
+      };
+    });
 
     const sd = replay.sourceDraft || {};
     document.getElementById('wi-decoys').value = String(sd.raid?.decoys ?? 3);
@@ -661,6 +1052,10 @@ async function main() {
     document.getElementById('wi-ballistic').value = String(sd.raid?.ballisticMissiles ?? 1);
     document.getElementById('wi-vis').value = String(sd.visibilityKm ?? 10);
     document.getElementById('wi-seed').value = String(sd.seed ?? replay.scenario.seed ?? 20261127);
+    const wiBtn = document.getElementById('btn-whatif-run');
+    const wiSt = document.getElementById('wi-status');
+    if (wiBtn) wiBtn.disabled = Boolean(replay.truthRedacted);
+    if (wiSt) wiSt.textContent = replay.truthRedacted ? 'Switch to Evaluator Debrief to edit sealed raid composition.' : '';
 
     const pref = replay.runs.combinatorial_wta ? 'combinatorial_wta' : replay.policies[0];
     buildPolicyScene(pref);
@@ -695,22 +1090,63 @@ async function main() {
 
   const playBtn = document.getElementById('btn-play');
   const togglePlay = () => {
+    if (liveSession) {
+      livePaused = !livePaused;
+      playBtn.textContent = livePaused ? '▶ Resume' : '⏸ Pause';
+      playBtn.classList.toggle('active', !livePaused);
+      void controlLiveSession(livePaused ? 'pause' : 'resume', playSpeed);
+      return;
+    }
     playing = !playing;
     playBtn.textContent = playing ? '⏸ Pause' : '▶ Play';
     playBtn.classList.toggle('active', playing);
   };
   playBtn.onclick = togglePlay;
+  document.getElementById('btn-live-toggle').onclick = () => {
+    startLiveSession().catch((err) => {
+      statusEl.textContent = `Live error: ${err.message}`;
+    });
+  };
+  document.getElementById('btn-live-holdfire').onclick = () => {
+    if (!liveSession) return;
+    if (liveSession.holdFire) void sendLiveCommand('CLEAR_HOLD_FIRE', {});
+    else void sendLiveCommand('HOLD_FIRE_ZONE', { enabled: true });
+  };
   document.getElementById('time-slider').oninput = (e) => {
+    if (liveSession) return;
     playing = false;
     playBtn.textContent = '▶ Play';
     playBtn.classList.remove('active');
     simTime = Number(e.target.value);
     updateAtTime(simTime);
   };
-  document.getElementById('speed-select').onchange = (e) => { playSpeed = Number(e.target.value) || 1; };
+  document.getElementById('speed-select').onchange = (e) => {
+    playSpeed = Number(e.target.value) || 1;
+    if (liveSession) void controlLiveSession('speed', playSpeed);
+  };
   document.querySelectorAll('#dock button[data-cam]').forEach((b) => { b.onclick = () => moveCamera(b.dataset.cam); });
 
+  document.getElementById('btn-view-operator').onclick = async () => {
+    if (liveSession) await stopLiveSession();
+    if (!currentEp || activeViewScope === 'operator') return;
+    activeViewScope = 'operator';
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', 'operator');
+    window.history.replaceState({}, '', url.toString());
+    await loadBundle(currentEp, false);
+  };
+  document.getElementById('btn-view-debrief').onclick = async () => {
+    if (liveSession) await stopLiveSession();
+    if (!currentEp || activeViewScope === 'debrief') return;
+    activeViewScope = 'debrief';
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', 'debrief');
+    window.history.replaceState({}, '', url.toString());
+    await loadBundle(currentEp, false);
+  };
+
   document.getElementById('run-switcher').onchange = async (e) => {
+    if (liveSession) await stopLiveSession();
     const url = new URL(window.location.href);
     url.searchParams.set('run', e.target.value);
     window.history.replaceState({}, '', url.toString());
@@ -720,6 +1156,7 @@ async function main() {
 
   document.getElementById('btn-whatif-run').onclick = async () => {
     if (!replay) return;
+    if (liveSession) await stopLiveSession();
     const st = document.getElementById('wi-status');
     const btn = document.getElementById('btn-whatif-run');
     btn.disabled = true;
@@ -735,7 +1172,7 @@ async function main() {
       };
       base.visibilityKm = Number(document.getElementById('wi-vis').value);
       base.seed = Number(document.getElementById('wi-seed').value);
-      const res = await fetch('/api/runs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(base) });
+      const res = await apiFetch('/runs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(base) });
       const created = await res.json();
       if (!res.ok) throw new Error(created.error || `HTTP ${res.status}`);
       const url = new URL(window.location.href);
@@ -786,7 +1223,7 @@ async function main() {
       if (keysHeld.has('q')) d.y -= spd;
       camera.position.add(d); controls.target.add(d);
     }
-    if (playing && replay) {
+    if (playing && replay && !liveSession) {
       simTime += dt * playSpeed * 3.5;
       if (simTime > maxTime) simTime = 0;
       updateAtTime(simTime);

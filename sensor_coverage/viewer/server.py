@@ -28,7 +28,7 @@ mimetypes.add_type("application/javascript", ".js")
 mimetypes.add_type("application/javascript", ".mjs")
 mimetypes.add_type("model/gltf-binary", ".glb")
 
-RUN_ASSET_RE = re.compile(r"^/api/runs/([a-zA-Z0-9_-]+)(?:/(replay\.json|terrain\.glb|imagery\.json))?$")
+RUN_ASSET_RE = re.compile(r"^/api/runs/([a-zA-Z0-9_-]+)(?:/(replay\.json|terrain\.glb|imagery\.json|cancel))?$")
 
 
 def _cors_origin(origin: str | None) -> str | None:
@@ -152,6 +152,11 @@ class CoverageRouter:
                     return self._json_response({"error": str(exc)}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
             match = RUN_ASSET_RE.match(req_path)
+            if method == "POST" and match and match.group(2) == "cancel":
+                job = self.service.cancel_run(match.group(1))
+                if job is None:
+                    return self._json_response({"error": "Run not found"}, HTTPStatus.NOT_FOUND)
+                return self._json_response(job)
             if method == "GET" and match:
                 job_id, asset = match.group(1), match.group(2)
                 if asset is None:

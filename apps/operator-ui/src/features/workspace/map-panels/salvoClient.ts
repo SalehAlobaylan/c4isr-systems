@@ -1,4 +1,11 @@
 import type { Feature, FeatureCollection } from 'geojson'
+import {
+  buildSimViewerHref,
+  resolveSimViewerOrigin,
+  simPlatformJson,
+  startUnifiedLocalSimHub,
+  subscribeSimPlatformRun,
+} from './simPlatformGateway'
 
 export type SalvoPlacementTool = null | 'add-sam' | 'add-shorad' | 'add-pd' | 'move-asset'
 export type SalvoBatteryTier = 'tier1_sam' | 'tier2_shorad' | 'tier3_point_defense'
@@ -121,7 +128,7 @@ export interface SalvoRunJob {
   environmentId: string
   environmentTitle: string
   title: string
-  status: 'running' | 'completed' | 'failed' | 'interrupted'
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'interrupted' | 'cancelled'
   stage: string
   createdAt: string
   completedAt: string | null
@@ -164,49 +171,35 @@ export interface SalvoNetworkItem {
   sensors: SalvoSensorDraft[]
 }
 
-const SALVO_API = '/salvo-api'
+const salvoJson = <T>(path: string, init?: RequestInit): Promise<T> =>
+  simPlatformJson<T>('salvo', path, init, 'Salvo Defense service')
 
-async function salvoJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${SALVO_API}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-  })
-  const text = await res.text()
-  let parsed: unknown = null
-  try {
-    parsed = text ? JSON.parse(text) : null
-  } catch {
-    /* non-JSON proxy error */
-  }
-  if (!res.ok) {
-    const errField = parsed && typeof parsed === 'object' && 'error' in parsed ? String((parsed as { error: unknown }).error) : ''
-    throw new Error(errField || `Salvo Defense service returned HTTP ${res.status}`)
-  }
-  return parsed as T
+export const fetchSalvoHealth = async (): Promise<SalvoHealth> => {
+  const h = await salvoJson<SalvoHealth>('/health')
+  return { ...h, viewerOrigin: await resolveSimViewerOrigin('salvo', h.viewerOrigin) }
 }
-
-export const fetchSalvoHealth = () => salvoJson<SalvoHealth>('/api/health')
 export const fetchSalvoEnvironments = async () =>
-  (await salvoJson<{ environments: SalvoEnvironment[] }>('/api/environments')).environments
-export const fetchSalvoRuns = async () => (await salvoJson<{ runs: SalvoRunJob[] }>('/api/runs')).runs
+  (await salvoJson<{ environments: SalvoEnvironment[] }>('/environments')).environments
+export const fetchSalvoRuns = async () => (await salvoJson<{ runs: SalvoRunJob[] }>('/runs')).runs
 export const fetchSalvoNetworks = async () =>
-  (await salvoJson<{ networks: SalvoNetworkItem[] }>('/api/networks')).networks
-export const fetchSalvoRun = (jobId: string) => salvoJson<SalvoRunJob>(`/api/runs/${encodeURIComponent(jobId)}`)
+  (await salvoJson<{ networks: SalvoNetworkItem[] }>('/networks')).networks
+export const fetchSalvoRun = (jobId: string) => salvoJson<SalvoRunJob>(`/runs/${encodeURIComponent(jobId)}`)
 export const startSalvoRun = (draft: SalvoSetupDraft, jobId?: string) =>
-  salvoJson<SalvoRunJob>('/api/runs', {
+  salvoJson<SalvoRunJob>('/runs', {
     method: 'POST',
+    headers: jobId ? { 'Idempotency-Key': jobId } : undefined,
     body: JSON.stringify(jobId ? { ...draft, jobId } : draft),
   })
+export const cancelSalvoRun = (jobId: string) =>
+  salvoJson<SalvoRunJob>(`/runs/${encodeURIComponent(jobId)}/cancel`, { method: 'POST' })
+export const subscribeSalvoRun = (
+  jobId: string,
+  onUpdate: (job: SalvoRunJob) => void,
+  onTerminal?: (job: SalvoRunJob) => void,
+) => subscribeSimPlatformRun('salvo', jobId, fetchSalvoRun, onUpdate, onTerminal)
+export { buildSimViewerHref }
 
-export async function startLocalSalvoService(): Promise<{ ok: boolean; origin?: string; error?: string }> {
-  const res = await fetch('/__local/salvo/start', { method: 'POST' })
-  try {
-    const p = (await res.json()) as { ok?: boolean; origin?: string; error?: string }
-    return { ok: Boolean(res.ok && p.ok), origin: p.origin, error: p.error }
-  } catch {
-    return { ok: false, error: `Auto-start failed (HTTP ${res.status}). Start manually with "task dev:salvo".` }
-  }
-}
+export const startLocalSalvoService = () => startUnifiedLocalSimHub('/__local/salvo/start', 'task dev:sim-hub')
 
 export function cloneSalvoDraft(d: SalvoSetupDraft): SalvoSetupDraft {
   return JSON.parse(JSON.stringify(d)) as SalvoSetupDraft

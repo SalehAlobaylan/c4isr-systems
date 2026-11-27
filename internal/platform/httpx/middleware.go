@@ -286,6 +286,9 @@ func PolicyFor(method, rawPath string) RoutePolicy {
 	if permission := geographicEnvironmentPermission(method, parts); permission != "" {
 		return RoutePolicy{Known: true, Permission: permission}
 	}
+	if permission := simPlatformPermission(method, parts); permission != "" {
+		return RoutePolicy{Known: true, Permission: permission}
+	}
 	if len(parts) == 4 && parts[0] == "sources" && parts[2] == "scheduler" && parts[3] == "run" && method == http.MethodPost {
 		return RoutePolicy{Known: true, Permission: "connectors.execute"}
 	}

@@ -8,6 +8,7 @@ Riyadh / owned-fixture packages, but keeps its own jobs, artifacts
 from __future__ import annotations
 
 import base64
+from concurrent.futures import Executor
 import datetime as dt
 import json
 import math
@@ -21,6 +22,7 @@ import numpy as np
 import shapely
 
 from sim_core.atmosphere import AtmosphereModel, load_cams_dust
+from sim_core.cache import SharedBiomeCache
 from sim_core.environment import EnvironmentModel
 from sim_core.handoff import SensorNetworkStore
 from sim_core.registry import BiomePreset, discover_biomes
@@ -72,22 +74,30 @@ class CoverageService:
         repo_root: Path = REPO_ROOT,
         runs_root: Path = DEFAULT_RUNS_ROOT,
         public_origin: str = "http://127.0.0.1:8766",
+        biome_cache: SharedBiomeCache | None = None,
+        network_store: SensorNetworkStore | None = None,
+        compute_executor: Executor | None = None,
+        viewer_path_prefix: str = "",
     ) -> None:
         self.repo_root = Path(repo_root).resolve()
         self.runs_root = Path(runs_root).resolve()
         self.runs_root.mkdir(parents=True, exist_ok=True)
         self.public_origin = public_origin.rstrip("/")
-        self._presets: dict[str, BiomePreset] = {p.id: p for p in discover_biomes(self.repo_root)}
-        self._network_store = SensorNetworkStore(self.repo_root / "tmp" / "shared-layouts")
-        self._env_cache: dict[str, EnvironmentModel] = {}
-        self._obs_cache: dict[str, ObstructionGrid] = {}
-        self._wind_cache: dict[str, tuple[float, str]] = {}
-        self._env_lock = threading.Lock()
+        self.viewer_path_prefix = viewer_path_prefix.rstrip("/")
+        self._biome_cache = biome_cache or SharedBiomeCache(self.repo_root)
+        self._presets: dict[str, BiomePreset] = self._biome_cache.presets
+        self._network_store = network_store or SensorNetworkStore(self.repo_root / "tmp" / "shared-layouts")
+        self._compute_executor = compute_executor
         self._jobs_lock = threading.Lock()
         self._run_lock = threading.Lock()  # one heavy optimization at a time
         self._jobs: dict[str, dict[str, Any]] = {}
+        self._cancel_flags: dict[str, threading.Event] = {}
         self._floor_cache = CandidateFloorCache()
         self._load_existing_runs()
+
+    def _viewer_url(self, job_id: str) -> str:
+        prefix = f"{self.viewer_path_prefix}/" if self.viewer_path_prefix else "/"
+        return f"{self.public_origin}{prefix}?run={job_id}"
 
     # -- persistence ------------------------------------------------------
     def _load_existing_runs(self) -> None:
@@ -98,7 +108,7 @@ class CoverageService:
                 if rec.get("status") == "running":
                     rec["status"] = "interrupted"
                     rec["stage"] = "Server restarted before run completed"
-                rec["viewerUrl"] = f"{self.public_origin}/?run={job_id}"
+                rec["viewerUrl"] = self._viewer_url(job_id)
                 self._jobs[job_id] = rec
             except Exception:
                 continue
@@ -110,50 +120,10 @@ class CoverageService:
         return {}
 
     def _get_env(self, env_id: str) -> tuple[BiomePreset, EnvironmentModel, ObstructionGrid]:
-        preset = self._presets.get(env_id)
-        if preset is None:
-            raise KeyError(f"Unknown environmentId: {env_id}")
-        with self._env_lock:
-            env = self._env_cache.get(env_id)
-            if env is None:
-                tpl = self._template(preset)
-                env = EnvironmentModel(
-                    preset.package_path,
-                    expected_manifest_sha256=preset.expected_manifest_sha256,
-                    derived_building_height_m=float(tpl.get("derivedBuildingHeightM", 11.0)),
-                    road_buffer_m=float(tpl.get("roadExposureBufferM", 14.0)),
-                    ghs_obat_path=preset.ghs_obat_path,
-                    worldpop_path=preset.worldpop_path,
-                    gebco_path=preset.gebco_path,
-                )
-                self._env_cache[env_id] = env
-            obs = self._obs_cache.get(env_id)
-            if obs is None:
-                obs = env.obstruction_grid()
-                self._obs_cache[env_id] = obs
-        return preset, env, obs
+        return self._biome_cache.get_env_and_obs(env_id)
 
     def _era5_surface_wind(self, preset: BiomePreset, env: EnvironmentModel) -> tuple[float, str]:
-        cached = self._wind_cache.get(preset.id)
-        if cached is not None:
-            return cached
-        try:
-            tpl = self._template(preset)
-            ov = ScenarioSpec.from_dict(tpl).atmosphere if tpl else None
-            atm = AtmosphereModel.load(
-                env,
-                external_path=preset.weather_field_path,
-                override=ov,
-                cams_dust_path=preset.cams_dust_path,
-            )
-            prof = atm.profile_summary(0.0, 0.0)
-            speed = float(prof[0]["speedMps"]) if prof else 0.0
-            ed = atm.document.get("edition") or "ERA5"
-            src = f"{ed} {atm.valid_time or ''} · {prof[0]['altitudeAglM']:.0f} m AGL at origin".strip()
-        except Exception:
-            speed, src = 0.0, "ERA5 unavailable — calm assumed"
-        self._wind_cache[preset.id] = (round(speed, 2), src)
-        return self._wind_cache[preset.id]
+        return self._biome_cache.get_surface_wind(preset.id)
 
     def _enu_to_ll(self, env: EnvironmentModel, e: float, n: float) -> list[float]:
         lon, lat, _ = env.enu_to_geodetic(float(e), float(n), env.up_median)
@@ -332,7 +302,7 @@ class CoverageService:
                 "orientation-opt",
                 "export-network",
             ],
-            "viewerOrigin": self.public_origin,
+            "viewerOrigin": f"{self.public_origin}{self.viewer_path_prefix}",
             "environmentCount": len(self._presets),
             "runningJobs": running,
             "totalRuns": total,
@@ -347,7 +317,30 @@ class CoverageService:
     def get_run(self, job_id: str) -> dict[str, Any] | None:
         with self._jobs_lock:
             rec = self._jobs.get(job_id)
-            return dict(rec) if rec is not None else None
+            if rec is None:
+                return None
+            out = dict(rec)
+            out["viewerUrl"] = self._viewer_url(job_id)
+            return out
+
+    def cancel_run(self, job_id: str) -> dict[str, Any] | None:
+        with self._jobs_lock:
+            rec = self._jobs.get(job_id)
+            if rec is None:
+                return None
+            flag = self._cancel_flags.get(job_id)
+            if flag is not None:
+                flag.set()
+            if rec.get("status") in ("running", "queued"):
+                rec["status"] = "cancelled"
+                rec["stage"] = "Cancelled by operator"
+                rec["completedAt"] = dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
+            out = dict(rec)
+            out["viewerUrl"] = self._viewer_url(job_id)
+        run_dir = self.runs_root / job_id
+        if run_dir.is_dir():
+            (run_dir / "job.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
+        return out
 
     def run_assets(self, job_id: str) -> tuple[Path, Path | None, Path | None] | None:
         rec = self.get_run(job_id)
@@ -595,7 +588,7 @@ class CoverageService:
             "stage": "1/5 Loading verified environment & obstruction raster…",
             "createdAt": now_iso,
             "completedAt": None,
-            "viewerUrl": f"{self.public_origin}/?run={job_id}",
+            "viewerUrl": self._viewer_url(job_id),
             "hasGlb": bool(preset.glb_path and preset.glb_path.is_file()),
             "hasImagery": bool(preset.imagery_path and preset.imagery_path.is_file()),
             "sensorCount": len(scenario.sensors),
@@ -604,13 +597,17 @@ class CoverageService:
             "summary": None,
             "resultOverlay": None,
         }
+        cancel_ev = threading.Event()
         with self._jobs_lock:
             self._jobs[job_id] = record
+            self._cancel_flags[job_id] = cancel_ev
         (run_dir / "job.json").write_text(json.dumps(record, indent=2), encoding="utf-8")
         draft = {k: v for k, v in payload.items() if k not in ("_sync", "jobId")}
         draft["environmentId"] = preset.id
 
         def set_stage(stage: str) -> None:
+            if cancel_ev.is_set():
+                raise RuntimeError("Job cancelled")
             with self._jobs_lock:
                 self._jobs[job_id]["stage"] = stage
 
@@ -671,12 +668,20 @@ class CoverageService:
                 (run_dir / "job.json").write_text(json.dumps(snap, indent=2), encoding="utf-8")
             except Exception as exc:  # pragma: no cover - surfaced to UI
                 with self._jobs_lock:
-                    self._jobs[job_id].update(status="failed", stage="Failed", error=str(exc))
+                    if cancel_ev.is_set():
+                        self._jobs[job_id].update(status="cancelled", stage="Cancelled by operator", error=None)
+                    else:
+                        self._jobs[job_id].update(status="failed", stage="Failed", error=str(exc))
                     snap = dict(self._jobs[job_id])
                 (run_dir / "job.json").write_text(json.dumps(snap, indent=2), encoding="utf-8")
+            finally:
+                with self._jobs_lock:
+                    self._cancel_flags.pop(job_id, None)
 
         if sync:
             execute()
+        elif self._compute_executor is not None:
+            self._compute_executor.submit(execute)
         else:
             threading.Thread(target=execute, name=f"cov-job-{job_id}", daemon=True).start()
         return self.get_run(job_id) or record

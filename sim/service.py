@@ -12,6 +12,7 @@ Provides:
 """
 from __future__ import annotations
 
+from concurrent.futures import Executor
 from dataclasses import dataclass
 import datetime as dt
 import json
@@ -23,6 +24,7 @@ import threading
 from typing import Any
 
 from sim_core.atmosphere import AtmosphereModel, load_cams_dust
+from sim_core.cache import SharedBiomeCache
 from sim_core.environment import EnvironmentModel
 from sim_core.handoff import SensorNetworkStore
 from sim_core.registry import BiomePreset, discover_biomes
@@ -233,19 +235,29 @@ class SimulationService:
         repo_root: Path = REPO_ROOT,
         runs_root: Path = DEFAULT_RUNS_ROOT,
         public_origin: str = "http://127.0.0.1:8765",
+        biome_cache: SharedBiomeCache | None = None,
+        network_store: SensorNetworkStore | None = None,
+        compute_executor: Executor | None = None,
+        viewer_path_prefix: str = "",
     ) -> None:
         self.repo_root = Path(repo_root).resolve()
         self.runs_root = Path(runs_root).resolve()
         self.runs_root.mkdir(parents=True, exist_ok=True)
         self.public_origin = public_origin.rstrip("/")
+        self.viewer_path_prefix = viewer_path_prefix.rstrip("/")
 
-        self._presets: dict[str, BiomePreset] = {p.id: p for p in discover_presets(self.repo_root)}
-        self._network_store = SensorNetworkStore(self.repo_root / "tmp" / "shared-layouts")
-        self._env_cache: dict[str, EnvironmentModel] = {}
-        self._env_lock = threading.Lock()
+        self._biome_cache = biome_cache or SharedBiomeCache(self.repo_root)
+        self._presets: dict[str, BiomePreset] = self._biome_cache.presets
+        self._network_store = network_store or SensorNetworkStore(self.repo_root / "tmp" / "shared-layouts")
+        self._compute_executor = compute_executor
         self._jobs_lock = threading.Lock()
         self._jobs: dict[str, dict[str, Any]] = {}
+        self._cancel_flags: dict[str, threading.Event] = {}
         self._load_existing_runs()
+
+    def _viewer_url(self, job_id: str) -> str:
+        prefix = f"{self.viewer_path_prefix}/" if self.viewer_path_prefix else "/"
+        return f"{self.public_origin}{prefix}?run={job_id}"
 
     def _load_existing_runs(self) -> None:
         """Reload persisted run metadata from disk so history survives server restarts."""
@@ -258,7 +270,7 @@ class SimulationService:
                 if rec.get("status") == "running":
                     rec["status"] = "interrupted"
                     rec["stage"] = "Server restarted before run completed"
-                rec["viewerUrl"] = f"{self.public_origin}/?run={job_id}"
+                rec["viewerUrl"] = self._viewer_url(job_id)
                 self._jobs[job_id] = rec
             except Exception:
                 continue
@@ -269,28 +281,7 @@ class SimulationService:
         return _auto_template_for_env(preset, env)
 
     def _get_env(self, env_id: str) -> tuple[BiomePreset, EnvironmentModel]:
-        preset = self._presets.get(env_id)
-        if preset is None:
-            raise KeyError(f"Unknown environmentId: {env_id}")
-        with self._env_lock:
-            model = self._env_cache.get(env_id)
-            if model is None:
-                tpl = (
-                    json.loads(preset.scenario_template_path.read_text(encoding="utf-8"))
-                    if (preset.scenario_template_path and preset.scenario_template_path.is_file())
-                    else {}
-                )
-                model = EnvironmentModel(
-                    preset.package_path,
-                    expected_manifest_sha256=preset.expected_manifest_sha256,
-                    derived_building_height_m=float(tpl.get("derivedBuildingHeightM", 11.0)),
-                    road_buffer_m=float(tpl.get("roadExposureBufferM", 14.0)),
-                    ghs_obat_path=preset.ghs_obat_path,
-                    worldpop_path=preset.worldpop_path,
-                    gebco_path=preset.gebco_path,
-                )
-                self._env_cache[env_id] = model
-        return preset, model
+        return self._biome_cache.get_env(env_id)
 
     def _preset_summary(self, preset: BiomePreset) -> dict[str, Any]:
         _, env = self._get_env(preset.id)
@@ -401,7 +392,7 @@ class SimulationService:
             "status": "ok",
             "engineVersion": SIM_ENGINE_VERSION,
             "fidelityProfile": FIDELITY_KINEMATIC_3DOF,
-            "viewerOrigin": self.public_origin,
+            "viewerOrigin": f"{self.public_origin}{self.viewer_path_prefix}",
             "environmentCount": len(self._presets),
             "runningJobs": running,
             "totalRuns": total,
@@ -416,7 +407,30 @@ class SimulationService:
     def get_run(self, job_id: str) -> dict[str, Any] | None:
         with self._jobs_lock:
             rec = self._jobs.get(job_id)
-            return dict(rec) if rec is not None else None
+            if rec is None:
+                return None
+            out = dict(rec)
+            out["viewerUrl"] = self._viewer_url(job_id)
+            return out
+
+    def cancel_run(self, job_id: str) -> dict[str, Any] | None:
+        with self._jobs_lock:
+            rec = self._jobs.get(job_id)
+            if rec is None:
+                return None
+            flag = self._cancel_flags.get(job_id)
+            if flag is not None:
+                flag.set()
+            if rec.get("status") in ("running", "queued"):
+                rec["status"] = "cancelled"
+                rec["stage"] = "Cancelled by operator"
+                rec["completedAt"] = dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
+            out = dict(rec)
+            out["viewerUrl"] = self._viewer_url(job_id)
+        run_dir = self.runs_root / job_id
+        if run_dir.is_dir():
+            (run_dir / "job.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
+        return out
 
     def run_assets(self, job_id: str) -> tuple[Path, Path | None, Path | None] | None:
         rec = self.get_run(job_id)
@@ -640,7 +654,7 @@ class SimulationService:
             "stage": "1/4 Loading ERA5 wind field & threat trajectory…",
             "createdAt": now_iso,
             "completedAt": None,
-            "viewerUrl": f"{self.public_origin}/?run={job_id}",
+            "viewerUrl": self._viewer_url(job_id),
             "hasGlb": bool(preset.glb_path and preset.glb_path.is_file()),
             "hasImagery": bool(preset.imagery_path and preset.imagery_path.is_file()),
             "error": None,
@@ -648,12 +662,16 @@ class SimulationService:
             "summary": None,
             "resultOverlay": None,
         }
+        cancel_ev = threading.Event()
         with self._jobs_lock:
             self._jobs[job_id] = record
+            self._cancel_flags[job_id] = cancel_ev
         (run_dir / "job.json").write_text(json.dumps(record, indent=2), encoding="utf-8")
 
         def execute() -> None:
             def set_stage(stage: str) -> None:
+                if cancel_ev.is_set():
+                    raise RuntimeError("Job cancelled")
                 with self._jobs_lock:
                     self._jobs[job_id]["stage"] = stage
 
@@ -753,12 +771,20 @@ class SimulationService:
                 (run_dir / "job.json").write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
             except Exception as exc:
                 with self._jobs_lock:
-                    self._jobs[job_id].update(status="failed", stage="Failed", error=str(exc))
+                    if cancel_ev.is_set():
+                        self._jobs[job_id].update(status="cancelled", stage="Cancelled by operator", error=None)
+                    else:
+                        self._jobs[job_id].update(status="failed", stage="Failed", error=str(exc))
                     snapshot = dict(self._jobs[job_id])
                 (run_dir / "job.json").write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+            finally:
+                with self._jobs_lock:
+                    self._cancel_flags.pop(job_id, None)
 
         if sync:
             execute()
+        elif self._compute_executor is not None:
+            self._compute_executor.submit(execute)
         else:
             threading.Thread(target=execute, name=f"sim-job-{job_id}", daemon=True).start()
 

@@ -6,6 +6,7 @@ enrichment, and ``emad.sensor-network.v1`` handoff store.
 """
 from __future__ import annotations
 
+from concurrent.futures import Executor
 import datetime as dt
 import json
 import math
@@ -16,6 +17,7 @@ import threading
 from typing import Any
 
 from sim_core.atmosphere import AtmosphereModel, AtmosphereOverrideConfig
+from sim_core.cache import SharedBiomeCache
 from sim_core.environment import EnvironmentModel
 from sim_core.handoff import SensorNetworkStore
 from sim_core.registry import BiomePreset, discover_biomes
@@ -31,6 +33,7 @@ from .contracts import (
     SalvoThreatSpec,
 )
 from .engine import run_salvo_comparison
+from .session import SalvoSessionManager
 from .wta import load_ai_wta_model
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -55,19 +58,30 @@ class SalvoService:
         repo_root: Path = REPO_ROOT,
         runs_root: Path = DEFAULT_RUNS_ROOT,
         public_origin: str = "http://127.0.0.1:8767",
+        biome_cache: SharedBiomeCache | None = None,
+        network_store: SensorNetworkStore | None = None,
+        compute_executor: Executor | None = None,
+        viewer_path_prefix: str = "",
     ) -> None:
         self.repo_root = Path(repo_root).resolve()
         self.runs_root = Path(runs_root).resolve()
         self.runs_root.mkdir(parents=True, exist_ok=True)
         self.public_origin = public_origin.rstrip("/")
+        self.viewer_path_prefix = viewer_path_prefix.rstrip("/")
 
-        self._presets: dict[str, BiomePreset] = {p.id: p for p in discover_biomes(self.repo_root)}
-        self._network_store = SensorNetworkStore(self.repo_root / "tmp" / "shared-layouts")
-        self._env_cache: dict[str, EnvironmentModel] = {}
-        self._env_lock = threading.Lock()
+        self._biome_cache = biome_cache or SharedBiomeCache(self.repo_root)
+        self._presets: dict[str, BiomePreset] = self._biome_cache.presets
+        self._network_store = network_store or SensorNetworkStore(self.repo_root / "tmp" / "shared-layouts")
+        self._compute_executor = compute_executor
         self._jobs_lock = threading.Lock()
         self._jobs: dict[str, dict[str, Any]] = {}
+        self._cancel_flags: dict[str, threading.Event] = {}
+        self._sessions = SalvoSessionManager()
         self._load_existing_runs()
+
+    def _viewer_url(self, job_id: str) -> str:
+        prefix = f"{self.viewer_path_prefix}/" if self.viewer_path_prefix else "/"
+        return f"{self.public_origin}{prefix}?run={job_id}"
 
     def _load_existing_runs(self) -> None:
         for mp in sorted(self.runs_root.glob("*/job.json")):
@@ -77,27 +91,13 @@ class SalvoService:
                 if rec.get("status") == "running":
                     rec["status"] = "interrupted"
                     rec["stage"] = "Server restarted before run completed"
-                rec["viewerUrl"] = f"{self.public_origin}/?run={jid}"
+                rec["viewerUrl"] = self._viewer_url(jid)
                 self._jobs[jid] = rec
             except Exception:
                 continue
 
     def _get_env(self, env_id: str) -> tuple[BiomePreset, EnvironmentModel]:
-        preset = self._presets.get(env_id)
-        if preset is None:
-            raise KeyError(f"Unknown environmentId: {env_id}")
-        with self._env_lock:
-            env = self._env_cache.get(env_id)
-            if env is None:
-                env = EnvironmentModel(
-                    preset.package_path,
-                    expected_manifest_sha256=preset.expected_manifest_sha256,
-                    ghs_obat_path=preset.ghs_obat_path,
-                    worldpop_path=preset.worldpop_path,
-                    gebco_path=preset.gebco_path,
-                )
-                self._env_cache[env_id] = env
-        return preset, env
+        return self._biome_cache.get_env(env_id)
 
     def _enu_to_ll(self, env: EnvironmentModel, e: float, n: float) -> list[float]:
         lon, lat, _ = env.enu_to_geodetic(float(e), float(n), env.up_median)
@@ -230,11 +230,19 @@ class SalvoService:
             "service": "emad-salvo-defense",
             "engineVersion": SALVO_ENGINE_VERSION,
             "aiPolicyAvailable": load_ai_wta_model() is not None,
-            "capabilities": ["multi-sensor-fusion", "layered-wta", "decoy-discrimination", "airspace-deconfliction", "network-import"],
-            "viewerOrigin": self.public_origin,
+            "capabilities": [
+                "multi-sensor-fusion",
+                "layered-wta",
+                "decoy-discrimination",
+                "airspace-deconfliction",
+                "network-import",
+                "live-interactive-sessions",
+            ],
+            "viewerOrigin": f"{self.public_origin}{self.viewer_path_prefix}",
             "environmentCount": len(self._presets),
             "runningJobs": running,
             "totalRuns": total,
+            "liveSessions": len(self._sessions.list()),
         }
 
     def list_environments(self) -> list[dict[str, Any]]:
@@ -274,7 +282,30 @@ class SalvoService:
     def get_run(self, job_id: str) -> dict[str, Any] | None:
         with self._jobs_lock:
             rec = self._jobs.get(job_id)
-            return dict(rec) if rec is not None else None
+            if rec is None:
+                return None
+            out = dict(rec)
+            out["viewerUrl"] = self._viewer_url(job_id)
+            return out
+
+    def cancel_run(self, job_id: str) -> dict[str, Any] | None:
+        with self._jobs_lock:
+            rec = self._jobs.get(job_id)
+            if rec is None:
+                return None
+            flag = self._cancel_flags.get(job_id)
+            if flag is not None:
+                flag.set()
+            if rec.get("status") in ("running", "queued"):
+                rec["status"] = "cancelled"
+                rec["stage"] = "Cancelled by operator"
+                rec["completedAt"] = dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
+            out = dict(rec)
+            out["viewerUrl"] = self._viewer_url(job_id)
+        run_dir = self.runs_root / job_id
+        if run_dir.is_dir():
+            (run_dir / "job.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
+        return out
 
     def run_assets(self, job_id: str) -> tuple[Path, Path | None, Path | None] | None:
         rec = self.get_run(job_id)
@@ -448,7 +479,7 @@ class SalvoService:
             "stage": "1/3 Running Multi-Sensor Fusion & Greedy Baseline…",
             "createdAt": now_iso,
             "completedAt": None,
-            "viewerUrl": f"{self.public_origin}/?run={job_id}",
+            "viewerUrl": self._viewer_url(job_id),
             "hasGlb": bool(preset.glb_path and preset.glb_path.is_file()),
             "hasImagery": bool(preset.imagery_path and preset.imagery_path.is_file()),
             "threatCount": len(spec.threats),
@@ -457,8 +488,10 @@ class SalvoService:
             "comparison": None,
             "resultOverlay": None,
         }
+        cancel_ev = threading.Event()
         with self._jobs_lock:
             self._jobs[job_id] = rec
+            self._cancel_flags[job_id] = cancel_ev
         (run_dir / "job.json").write_text(json.dumps(rec, indent=2), encoding="utf-8")
 
         # Optional ML debris surrogate if trained in Phase 6
@@ -472,6 +505,8 @@ class SalvoService:
 
         def execute() -> None:
             try:
+                if cancel_ev.is_set():
+                    raise RuntimeError("Job cancelled")
                 ov = AtmosphereOverrideConfig(
                     wind_scale=spec.wind_scale,
                     wind_add_enu_mps=list(spec.wind_add_enu_mps),
@@ -487,6 +522,8 @@ class SalvoService:
                 draft_clean = {k: v for k, v in payload.items() if k not in ("_sync", "jobId")}
                 draft_clean["environmentId"] = preset.id
                 replay = run_salvo_comparison(spec, env=env, atm=atm, surrogate=surrogate, source_draft=draft_clean)
+                if cancel_ev.is_set():
+                    raise RuntimeError("Job cancelled")
                 replay["jobId"] = job_id
                 replay["environmentId"] = preset.id
                 with self._jobs_lock:
@@ -508,12 +545,79 @@ class SalvoService:
                 (run_dir / "job.json").write_text(json.dumps(snap, indent=2), encoding="utf-8")
             except Exception as exc:
                 with self._jobs_lock:
-                    self._jobs[job_id].update(status="failed", stage="Failed", error=str(exc))
+                    if cancel_ev.is_set():
+                        self._jobs[job_id].update(status="cancelled", stage="Cancelled by operator", error=None)
+                    else:
+                        self._jobs[job_id].update(status="failed", stage="Failed", error=str(exc))
                     snap = dict(self._jobs[job_id])
                 (run_dir / "job.json").write_text(json.dumps(snap, indent=2), encoding="utf-8")
+            finally:
+                with self._jobs_lock:
+                    self._cancel_flags.pop(job_id, None)
 
         if sync:
             execute()
+        elif self._compute_executor is not None:
+            self._compute_executor.submit(execute)
         else:
             threading.Thread(target=execute, name=f"salvo-job-{job_id}", daemon=True).start()
         return self.get_run(job_id) or rec
+
+    # --- Live Interactive Salvo Sessions (Phase 4) ---
+
+    def start_session(self, payload: dict[str, Any]) -> dict[str, Any]:
+        preset, env, spec = self.build_scenario(payload)
+        ov = AtmosphereOverrideConfig(
+            wind_scale=spec.wind_scale,
+            wind_add_enu_mps=list(spec.wind_add_enu_mps),
+        )
+        atm = AtmosphereModel.load(
+            env,
+            external_path=preset.weather_field_path,
+            override=ov,
+            cams_dust_path=preset.cams_dust_path,
+        )
+        surrogate = None
+        try:
+            from sim_bench.surrogate import load_debris_surrogate
+
+            surrogate = load_debris_surrogate()
+        except Exception:
+            surrogate = None
+        policy = str(payload.get("policy") or "combinatorial_wta")
+        sess = self._sessions.create(
+            spec=spec,
+            env=env,
+            atm=atm,
+            policy=policy,
+            surrogate=surrogate,
+        )
+        return sess.state_dict()
+
+    def list_sessions(self) -> list[dict[str, Any]]:
+        return self._sessions.list()
+
+    def get_session(self, session_id: str) -> dict[str, Any] | None:
+        sess = self._sessions.get(session_id)
+        return sess.state_dict() if sess is not None else None
+
+    def step_session(
+        self,
+        session_id: str,
+        *,
+        ticks: int = 1,
+        commands: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any] | None:
+        sess = self._sessions.get(session_id)
+        if sess is None:
+            return None
+        return sess.step(ticks=ticks, commands=commands)
+
+    def command_session(self, session_id: str, cmd: dict[str, Any]) -> dict[str, Any] | None:
+        sess = self._sessions.get(session_id)
+        if sess is None:
+            return None
+        return sess.apply_command(cmd)
+
+    def stop_session(self, session_id: str) -> dict[str, Any] | None:
+        return self._sessions.stop(session_id)

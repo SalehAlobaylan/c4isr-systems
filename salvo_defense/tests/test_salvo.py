@@ -88,6 +88,86 @@ class TestSalvoDefense(unittest.TestCase):
             msg=f"Expected WTA ({w}) to outperform or undercut Greedy ({g})",
         )
 
+        # Operator COP projection (?view=operator) must strip truth & evaluation while keeping own-force telemetry
+        st_op, _, raw_op = self.router.resolve(f"/api/runs/{job['jobId']}/replay.json?view=operator")
+        self.assertEqual(st_op, 200)
+        op_rep = json.loads(raw_op)
+        self.assertTrue(op_rep["truthRedacted"])
+        self.assertEqual(op_rep["viewScope"], "EXERCISE_OBSERVATION")
+        self.assertIsNone(op_rep["comparison"])
+        self.assertNotIn("threats", op_rep.get("scenario", {}))
+        op_wta = op_rep["runs"]["combinatorial_wta"]
+        self.assertNotIn("truth", op_wta)
+        self.assertIsNone(op_wta["evaluation"])
+        self.assertGreater(len(op_wta["ownForceTelemetry"]["batteries"]), 0)
+        for batt in op_wta["ownForceTelemetry"]["batteries"]:
+            self.assertNotIn("kills", batt)
+
+    def test_live_interactive_salvo_session(self) -> None:
+        envs = self.service.list_environments()
+        fixture = next((e for e in envs if e["id"] == "owned-fixture-v1"), None)
+        self.assertIsNotNone(fixture)
+        assert fixture is not None
+
+        draft = json.loads(json.dumps(fixture["defaults"]))
+        draft["policy"] = "combinatorial_wta"
+        st_c, _, raw_c = self.router.resolve("/api/sessions", method="POST", body=json.dumps(draft).encode("utf-8"))
+        self.assertEqual(st_c, 201)
+        sess = json.loads(raw_c)
+        sid = sess["sessionId"]
+        self.assertEqual(sess["viewScope"], "EXERCISE_OBSERVATION")
+        self.assertNotIn("threats", sess["observation"])
+
+        # Enable HOLD_FIRE_ZONE and step 24 ticks (6 seconds) -> zero shots must be fired!
+        st_hf, _, raw_hf = self.router.resolve(
+            f"/api/sessions/{sid}/step",
+            method="POST",
+            body=json.dumps({"ticks": 24, "commands": [{"kind": "HOLD_FIRE_ZONE", "payload": {"enabled": True}}]}).encode("utf-8"),
+        )
+        self.assertEqual(st_hf, 200)
+        s_hf = json.loads(raw_hf)
+        self.assertTrue(s_hf["holdFire"])
+        self.assertEqual(s_hf["tick"], 24)
+        for b in s_hf["observation"]["batteries"]:
+            self.assertEqual(b["shotsFired"], 0)
+        for tr in s_hf["observation"]["tracks"]:
+            self.assertTrue(str(tr["trackId"]).startswith("trk_"))
+            self.assertNotIn("lethal", tr)
+            self.assertNotIn("truthId", tr)
+
+        # Clear HOLD_FIRE, toggle policy, and step forward -> defense engages
+        st_clr, _, raw_clr = self.router.resolve(
+            f"/api/sessions/{sid}/step",
+            method="POST",
+            body=json.dumps({
+                "ticks": 24,
+                "commands": [
+                    {"kind": "CLEAR_HOLD_FIRE", "payload": {}},
+                    {"kind": "SET_POLICY", "payload": {"policy": "greedy_earliest"}},
+                ],
+            }).encode("utf-8"),
+        )
+        self.assertEqual(st_clr, 200)
+        s_clr = json.loads(raw_clr)
+        self.assertFalse(s_clr["holdFire"])
+        self.assertEqual(s_clr["policy"], "greedy_earliest")
+
+        # Direct /commands endpoint (TOGGLE_BATTERY) & /stop
+        first_batt = s_clr["observation"]["batteries"][0]["id"]
+        st_cmd, _, raw_cmd = self.router.resolve(
+            f"/api/sessions/{sid}/commands",
+            method="POST",
+            body=json.dumps({"kind": "TOGGLE_BATTERY", "payload": {"batteryId": first_batt, "enabled": False}}).encode("utf-8"),
+        )
+        self.assertEqual(st_cmd, 202)
+        s_cmd = json.loads(raw_cmd)
+        b_map = {b["id"]: b["enabled"] for b in s_cmd["observation"]["batteries"]}
+        self.assertFalse(b_map[first_batt])
+
+        st_stop, _, raw_stop = self.router.resolve(f"/api/sessions/{sid}/stop", method="POST")
+        self.assertEqual(st_stop, 200)
+        self.assertTrue(json.loads(raw_stop)["stopped"])
+
 
 if __name__ == "__main__":
     unittest.main()

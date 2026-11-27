@@ -21,13 +21,11 @@ function isLoopbackRequest(hostHeader: string | undefined, remoteAddress: string
   }
 }
 
-function probeServiceHealth(
-  origin: string,
-  expectedService?: string,
-  timeoutMs = 700,
-): Promise<boolean> {
+function probeHubHealth(origin: string, workerSecret?: string, timeoutMs = 700): Promise<boolean> {
   return new Promise((done) => {
-    const req = http.get(`${origin}/api/health`, { timeout: timeoutMs }, (res) => {
+    const headers: Record<string, string> = {}
+    if (workerSecret) headers['X-EMAD-Worker-Secret'] = workerSecret
+    const req = http.get(`${origin}/api/health`, { timeout: timeoutMs, headers }, (res) => {
       let body = ''
       res.setEncoding('utf8')
       res.on('data', (chunk) => {
@@ -40,19 +38,7 @@ function probeServiceHealth(
         }
         try {
           const parsed = JSON.parse(body) as { status?: string; service?: string }
-          if (parsed.status !== 'ok') {
-            done(false)
-            return
-          }
-          if (expectedService) {
-            done(parsed.service === expectedService)
-          } else {
-            done(
-              parsed.service !== 'emad-sensor-coverage' &&
-                parsed.service !== 'emad-salvo-defense' &&
-                parsed.service !== 'emad-sim-bench',
-            )
-          }
+          done(parsed.status === 'ok' && (parsed.service === 'emad-sim-hub' || !parsed.service))
         } catch {
           done(false)
         }
@@ -99,50 +85,41 @@ export default defineConfig(({ mode }) => {
   const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
   const localCredential = resolve(repoRoot, 'private/local/credentials/local-map-analyst.token')
   const apiTarget = process.env.VITE_API_PROXY_TARGET ?? env.VITE_API_PROXY_TARGET ?? 'http://localhost:8080'
-  const simTarget = process.env.VITE_SIM_API_TARGET ?? env.VITE_SIM_API_TARGET ?? 'http://127.0.0.1:8765'
-  const covTarget = process.env.VITE_COV_API_TARGET ?? env.VITE_COV_API_TARGET ?? 'http://127.0.0.1:8766'
-  const salvoTarget = process.env.VITE_SALVO_API_TARGET ?? env.VITE_SALVO_API_TARGET ?? 'http://127.0.0.1:8767'
-  const benchTarget = process.env.VITE_BENCH_API_TARGET ?? env.VITE_BENCH_API_TARGET ?? 'http://127.0.0.1:8768'
+  const hubTarget =
+    process.env.C4ISR_SIM_WORKER_URL ??
+    process.env.VITE_SIM_API_TARGET ??
+    env.VITE_SIM_API_TARGET ??
+    'http://127.0.0.1:8765'
+  const workerSecret = (process.env.C4ISR_SIM_WORKER_SECRET ?? '').trim() || undefined
+
   const target = new URL(apiTarget)
   if (!['http:', 'https:'].includes(target.protocol) || target.username || target.password || target.pathname !== '/' || target.search || target.hash) {
     throw new Error('VITE_API_PROXY_TARGET must be an HTTP(S) origin without credentials, path, query or fragment.')
   }
-  const simUrl = new URL(simTarget)
-  const covUrl = new URL(covTarget)
-  const salvoUrl = new URL(salvoTarget)
-  const benchUrl = new URL(benchTarget)
+  const hubUrl = new URL(hubTarget)
 
-  const createLocalPythonServicePlugin = (opts: {
-    pluginName: string
-    label: string
-    pythonModule: string
-    logFileName: string
-    host: string
-    preferredPort: number
-    apiPrefix: string
-    controlPrefix: string
-    expectedService?: string
-    autoStart: boolean
-  }): Plugin => ({
-    name: opts.pluginName,
+  const createUnifiedSimHubPlugin = (autoStart: boolean): Plugin => ({
+    name: 'emad-unified-sim-hub',
     apply: 'serve',
     configureServer(server) {
       const pythonBin = process.platform === 'win32'
         ? resolve(repoRoot, '.venv-recovery/Scripts/python.exe')
         : resolve(repoRoot, '.venv-recovery/bin/python')
-      let activePort = opts.preferredPort
+      const hubHost = hubUrl.hostname
+      const preferredPort = Number(hubUrl.port || 8765)
+      let activePort = preferredPort
       let child: ChildProcess | null = null
       let starting: Promise<{ ok: boolean; origin: string; port: number; error?: string }> | null = null
 
-      const activeOrigin = () => `http://${opts.host}:${activePort}`
+      const activeOrigin = () => `http://${hubHost}:${activePort}`
 
-      const ensureService = (forceFresh = false): Promise<{ ok: boolean; origin: string; port: number; error?: string }> => {
+      const ensureHub = (forceFresh = false): Promise<{ ok: boolean; origin: string; port: number; error?: string }> => {
         if (starting) return starting
         starting = (async () => {
           if (!forceFresh) {
-            for (const candidatePort of [...new Set([activePort, opts.preferredPort])]) {
-              const origin = `http://${opts.host}:${candidatePort}`
-              if (await probeServiceHealth(origin, opts.expectedService, 500)) {
+            for (const candidatePort of [...new Set([activePort, preferredPort])]) {
+              const origin = `http://${hubHost}:${candidatePort}`
+              if (await probeHubHealth(origin, workerSecret, 500)) {
                 activePort = candidatePort
                 return { ok: true, origin, port: candidatePort }
               }
@@ -159,15 +136,15 @@ export default defineConfig(({ mode }) => {
           }
 
           let chosenPort: number | null = null
-          for (let p = opts.preferredPort; p < opts.preferredPort + 20; p++) {
+          for (let p = preferredPort; p < preferredPort + 20; p++) {
             if (!forceFresh) {
-              const origin = `http://${opts.host}:${p}`
-              if (await probeServiceHealth(origin, opts.expectedService, 300)) {
+              const origin = `http://${hubHost}:${p}`
+              if (await probeHubHealth(origin, workerSecret, 300)) {
                 activePort = p
                 return { ok: true, origin, port: p }
               }
             }
-            if (!(await isPortListening(opts.host, p, 200))) {
+            if (!(await isPortListening(hubHost, p, 200))) {
               chosenPort = p
               break
             }
@@ -177,7 +154,7 @@ export default defineConfig(({ mode }) => {
               ok: false,
               origin: activeOrigin(),
               port: activePort,
-              error: `No free loopback port available in range ${opts.preferredPort}-${opts.preferredPort + 19}.`,
+              error: `No free loopback port available in range ${preferredPort}-${preferredPort + 19}.`,
             }
           }
 
@@ -187,32 +164,31 @@ export default defineConfig(({ mode }) => {
           }
           const logDir = resolve(repoRoot, 'private/local/logs')
           mkdirSync(logDir, { recursive: true })
-          const logFd = openSync(resolve(logDir, opts.logFileName), 'a')
+          const logFd = openSync(resolve(logDir, 'sim-core-hub.log'), 'a')
           try {
-            child = spawn(
-              pythonBin,
-              ['-m', opts.pythonModule, 'service', '--host', opts.host, '--port', String(chosenPort)],
-              {
-                cwd: repoRoot,
-                stdio: ['ignore', logFd, logFd],
-                windowsHide: true,
-              },
-            )
+            const args = ['-m', 'sim_core', 'service', '--host', hubHost, '--port', String(chosenPort)]
+            if (!workerSecret) args.push('--standalone')
+            child = spawn(pythonBin, args, {
+              cwd: repoRoot,
+              env: { ...process.env },
+              stdio: ['ignore', logFd, logFd],
+              windowsHide: true,
+            })
             child.once('exit', () => {
               child = null
             })
           } catch (err) {
             return {
               ok: false,
-              origin: `http://${opts.host}:${chosenPort}`,
+              origin: `http://${hubHost}:${chosenPort}`,
               port: chosenPort,
-              error: err instanceof Error ? err.message : `Failed to spawn ${opts.label}.`,
+              error: err instanceof Error ? err.message : 'Failed to spawn unified simulation hub.',
             }
           }
 
-          const chosenOrigin = `http://${opts.host}:${chosenPort}`
+          const chosenOrigin = `http://${hubHost}:${chosenPort}`
           for (let attempt = 0; attempt < 40; attempt++) {
-            if (await probeServiceHealth(chosenOrigin, opts.expectedService, 500)) {
+            if (await probeHubHealth(chosenOrigin, workerSecret, 500)) {
               activePort = chosenPort
               return { ok: true, origin: chosenOrigin, port: chosenPort }
             }
@@ -221,7 +197,7 @@ export default defineConfig(({ mode }) => {
                 ok: false,
                 origin: chosenOrigin,
                 port: chosenPort,
-                error: `${opts.label} exited during startup. Check private/local/logs/${opts.logFileName}.`,
+                error: 'Unified simulation hub exited during startup. Check private/local/logs/sim-core-hub.log.',
               }
             }
             await new Promise((r) => setTimeout(r, 250))
@@ -230,7 +206,7 @@ export default defineConfig(({ mode }) => {
             ok: false,
             origin: chosenOrigin,
             port: chosenPort,
-            error: `${opts.label} did not respond in time. Check private/local/logs/${opts.logFileName}.`,
+            error: 'Unified simulation hub did not respond in time. Check private/local/logs/sim-core-hub.log.',
           }
         })().finally(() => {
           starting = null
@@ -238,8 +214,8 @@ export default defineConfig(({ mode }) => {
         return starting
       }
 
-      if (opts.autoStart && existsSync(pythonBin)) {
-        void ensureService()
+      if (autoStart && existsSync(pythonBin)) {
+        void ensureHub()
       }
 
       server.httpServer?.once('close', () => {
@@ -249,16 +225,64 @@ export default defineConfig(({ mode }) => {
         }
       })
 
+      const proxyToHub = (
+        request: http.IncomingMessage,
+        response: http.ServerResponse,
+        forwardPath: string,
+      ) => {
+        const headers: http.OutgoingHttpHeaders = {
+          ...request.headers,
+          host: `${hubHost}:${activePort}`,
+        }
+        if (workerSecret) {
+          headers['x-emad-worker-secret'] = workerSecret
+        }
+        const upstream = http.request(
+          {
+            hostname: hubHost,
+            port: activePort,
+            path: forwardPath,
+            method: request.method,
+            headers,
+            timeout: 120_000,
+          },
+          (reply) => {
+            response.writeHead(reply.statusCode ?? 502, reply.headers)
+            reply.pipe(response)
+          },
+        )
+        upstream.on('error', () => {
+          if (!response.headersSent) {
+            response.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
+            response.end(JSON.stringify({ error: `Unified simulation hub unavailable at ${activeOrigin()}` }))
+          } else {
+            response.destroy()
+          }
+        })
+        request.pipe(upstream)
+      }
+
+      const legacyApiRoutes: readonly [string, string][] = [
+        ['/sim-api', 'sim'],
+        ['/cov-api', 'coverage'],
+        ['/salvo-api', 'salvo'],
+        ['/bench-api', 'bench'],
+      ]
+
       server.middlewares.use((request, response, next) => {
         const rawUrl = request.url ?? ''
-        const pathname = rawUrl.split('?')[0]
+        const qIdx = rawUrl.indexOf('?')
+        const pathname = qIdx >= 0 ? rawUrl.slice(0, qIdx) : rawUrl
+        const query = qIdx >= 0 ? rawUrl.slice(qIdx) : ''
 
-        if (pathname === `${opts.controlPrefix}/start` || pathname === `${opts.controlPrefix}/restart`) {
+        // Unified control endpoints (also preserves legacy /__local/{sim,cov,salvo,bench}/{start,restart})
+        const ctrlMatch = /^\/__local\/(sim-hub|sim|cov|salvo|bench)\/(start|restart)$/.exec(pathname)
+        if (ctrlMatch) {
           if (!isLoopbackRequest(request.headers.host, request.socket.remoteAddress)) {
-            response.writeHead(403).end(`Local ${opts.label} control is available only on this computer.`)
+            response.writeHead(403).end('Local simulation hub control is available only on this computer.')
             return
           }
-          const isRestart = pathname === `${opts.controlPrefix}/restart`
+          const isRestart = ctrlMatch[2] === 'restart'
           response.setHeader('Cache-Control', 'no-store')
           response.setHeader('Content-Type', 'application/json; charset=utf-8')
           void (async () => {
@@ -268,8 +292,10 @@ export default defineConfig(({ mode }) => {
                 child = null
               }
               await new Promise<void>((done) => {
+                const headers: Record<string, string> = {}
+                if (workerSecret) headers['X-EMAD-Worker-Secret'] = workerSecret
                 const req = http.request(
-                  { hostname: opts.host, port: activePort, path: '/api/shutdown', method: 'POST', timeout: 400 },
+                  { hostname: hubHost, port: activePort, path: '/api/shutdown', method: 'POST', headers, timeout: 400 },
                   (res) => { res.resume(); done() },
                 )
                 req.on('timeout', () => { req.destroy(); done() })
@@ -278,43 +304,49 @@ export default defineConfig(({ mode }) => {
               })
               await new Promise((r) => setTimeout(r, 350))
             }
-            const result = await ensureService(isRestart)
+            const result = await ensureHub(isRestart)
             response.writeHead(result.ok ? 200 : 503)
             response.end(JSON.stringify(result))
           })()
           return
         }
 
-        if (pathname.startsWith(`${opts.apiPrefix}/`)) {
+        // Same-origin 3D Workbenches (/sim-viewers/{sim,coverage,salvo}/) + Three.js vendor bundle
+        if (pathname === '/sim-viewers/sim' || pathname === '/sim-viewers/coverage' || pathname === '/sim-viewers/salvo') {
+          response.writeHead(302, { Location: `${pathname}/${query}` })
+          response.end()
+          return
+        }
+        if (pathname.startsWith('/sim-viewers/')) {
           if (!isLoopbackRequest(request.headers.host, request.socket.remoteAddress)) {
-            response.writeHead(403).end(`Local ${opts.label} proxy is available only on this computer.`)
+            response.writeHead(403).end('Local 3D workbenches are available only on this computer.')
             return
           }
-          const forwardPath = rawUrl.slice(opts.apiPrefix.length) || '/'
-          const upstream = http.request(
-            {
-              hostname: opts.host,
-              port: activePort,
-              path: forwardPath,
-              method: request.method,
-              headers: { ...request.headers, host: `${opts.host}:${activePort}` },
-              timeout: 60_000,
-            },
-            (reply) => {
-              response.writeHead(reply.statusCode ?? 502, reply.headers)
-              reply.pipe(response)
-            },
-          )
-          upstream.on('error', () => {
-            if (!response.headersSent) {
-              response.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' })
-              response.end(JSON.stringify({ error: `${opts.label} unavailable at ${activeOrigin()}` }))
-            } else {
-              response.destroy()
-            }
-          })
-          request.pipe(upstream)
+          const forwardPath = `/viewer/${pathname.slice('/sim-viewers/'.length)}${query}`
+          proxyToHub(request, response, forwardPath)
           return
+        }
+        if (pathname.startsWith('/vendor/three/')) {
+          if (!isLoopbackRequest(request.headers.host, request.socket.remoteAddress)) {
+            response.writeHead(403).end('Local Three.js assets are available only on this computer.')
+            return
+          }
+          proxyToHub(request, response, rawUrl)
+          return
+        }
+
+        // Zero-Docker fallback API proxies -> single unified Python hub
+        for (const [prefix, engine] of legacyApiRoutes) {
+          if (pathname.startsWith(`${prefix}/`)) {
+            if (!isLoopbackRequest(request.headers.host, request.socket.remoteAddress)) {
+              response.writeHead(403).end('Local simulation proxy is available only on this computer.')
+              return
+            }
+            let tail = pathname.slice(prefix.length)
+            if (tail.startsWith('/api/')) tail = tail.slice('/api'.length)
+            proxyToHub(request, response, `/api/${engine}${tail}${query}`)
+            return
+          }
         }
 
         next()
@@ -353,53 +385,7 @@ export default defineConfig(({ mode }) => {
       })
     },
   },
-  createLocalPythonServicePlugin({
-    pluginName: 'emad-sim-service',
-    label: 'Simulation service',
-    pythonModule: 'sim',
-    logFileName: 'sim-service.log',
-    host: simUrl.hostname,
-    preferredPort: Number(simUrl.port || 8765),
-    apiPrefix: '/sim-api',
-    controlPrefix: '/__local/sim',
-    autoStart: localAutoEntry && process.env.EMAD_DISABLE_AUTO_SIM !== '1',
-  }),
-  createLocalPythonServicePlugin({
-    pluginName: 'emad-coverage-service',
-    label: 'Sensor coverage service',
-    pythonModule: 'sensor_coverage',
-    logFileName: 'coverage-service.log',
-    host: covUrl.hostname,
-    preferredPort: Number(covUrl.port || 8766),
-    apiPrefix: '/cov-api',
-    controlPrefix: '/__local/cov',
-    expectedService: 'emad-sensor-coverage',
-    autoStart: localAutoEntry && process.env.EMAD_DISABLE_AUTO_SIM !== '1',
-  }),
-  createLocalPythonServicePlugin({
-    pluginName: 'emad-salvo-service',
-    label: 'Salvo defense service',
-    pythonModule: 'salvo_defense',
-    logFileName: 'salvo-service.log',
-    host: salvoUrl.hostname,
-    preferredPort: Number(salvoUrl.port || 8767),
-    apiPrefix: '/salvo-api',
-    controlPrefix: '/__local/salvo',
-    expectedService: 'emad-salvo-defense',
-    autoStart: localAutoEntry && process.env.EMAD_DISABLE_AUTO_SIM !== '1',
-  }),
-  createLocalPythonServicePlugin({
-    pluginName: 'emad-bench-service',
-    label: 'Benchmark & Monte Carlo service',
-    pythonModule: 'sim_bench',
-    logFileName: 'bench-service.log',
-    host: benchUrl.hostname,
-    preferredPort: Number(benchUrl.port || 8768),
-    apiPrefix: '/bench-api',
-    controlPrefix: '/__local/bench',
-    expectedService: 'emad-sim-bench',
-    autoStart: localAutoEntry && process.env.EMAD_DISABLE_AUTO_SIM !== '1',
-  })],
+  createUnifiedSimHubPlugin(localAutoEntry && process.env.EMAD_DISABLE_AUTO_SIM !== '1')],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

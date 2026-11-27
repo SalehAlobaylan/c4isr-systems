@@ -211,7 +211,7 @@ export function BenchmarksPanel({
             </div>
           </div>
         ) : starting || loading ? (
-          <p className="ux-muted text-xs">Starting local Benchmark service on <code>127.0.0.1:8768</code>…</p>
+          <p className="ux-muted text-xs">Starting unified Simulation Hub on <code>127.0.0.1:8765</code>…</p>
         ) : (
           <div className="ux-notice space-y-2 text-xs" role="alert">
             <p><strong>Benchmark service offline.</strong></p>
